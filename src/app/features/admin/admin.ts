@@ -19,6 +19,11 @@ export class Admin {
   requests = this.store.requests;
   approvals = this.store.approvals;
   logsMap = this.store.logs;
+  reportsMap = this.store.reports;
+  agreementsMap = this.store.agreements;
+  designStatementsMap = this.store.designStatements;
+  assignmentsMap = this.store.assignments;
+  freelanceMap = this.store.freelance;
   facultyList = this.store.facultySupervisors;
   companyList = this.store.companies;
   siteList = this.store.siteSupervisors;
@@ -39,6 +44,7 @@ export class Admin {
   siteNewPw: Record<string, string> = {};
 
   approve(id: string) { this.store.approveStudent(id); this.toast.success('Student approved'); }
+  viewDetails(id: string) { this.selectedId = id; }
   assign(id: string) {
     if (!this.facultyId || !this.siteId) return;
     this.store.assignSupervisors(id, this.facultyId, this.siteId);
@@ -155,6 +161,14 @@ export class Admin {
     const s = this.siteList().find(x => x.id === id);
     return s?.name ?? '-';
   }
+  // Per-student data getters
+  approvalsOf(id: string) { return this.approvals()[id] ?? []; }
+  logsOf(id: string) { return this.logsMap()[id] ?? []; }
+  reportsOf(id: string) { return this.reportsMap()[id] ?? []; }
+  agreementsOf(id: string) { return this.agreementsMap()[id] ?? []; }
+  designStatementsOf(id: string) { return this.designStatementsMap()[id] ?? []; }
+  assignmentsOf(id: string) { return this.assignmentsMap()[id] ?? []; }
+  freelanceOf(id: string) { return this.freelanceMap()[id] ?? []; }
   requestPrimary(r: import('../../shared/services/store.service').RequestItem) {
     if (r.type === 'company') return r.name;
     // site
@@ -165,6 +179,21 @@ export class Admin {
     const rr = r as any;
     const comp = rr.companyName || this.companyName(rr.companyId);
     return comp ? `Company: ${comp}` : undefined;
+  }
+
+  // Download assignment file
+  downloadAssignment(a: any) {
+    try {
+      const byteChars = atob(a.contentBase64);
+      const byteNumbers = new Array(byteChars.length);
+      for (let i = 0; i < byteChars.length; i++) byteNumbers[i] = byteChars.charCodeAt(i);
+      const blob = new Blob([new Uint8Array(byteNumbers)], { type: a.fileType || 'application/octet-stream' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url; link.download = a.fileName || 'assignment';
+      document.body.appendChild(link); link.click(); document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch {}
   }
 
   // Weekly Log compliance helpers
