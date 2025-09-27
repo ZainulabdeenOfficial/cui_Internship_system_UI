@@ -1,6 +1,9 @@
 <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
 	<div class="container">
-		<a class="navbar-brand" routerLink="/">CUI Internship System</a>
+		<a class="navbar-brand d-flex align-items-center gap-2" routerLink="/">
+			<img src="/assets/cui-logo.jpg" alt="COMSATS University Logo" width="36" height="36" class="bg-white p-0" style="object-fit: contain; border-radius: 4px;" />
+			<span>CUI Internship System</span>
+		</a>
 		<button class="navbar-toggler" type="button" (click)="toggleMenu()" aria-controls="navbarNav"
 			[attr.aria-expanded]="showMobileMenu" aria-label="Toggle navigation">
 			<span class="navbar-toggler-icon"></span>
@@ -11,7 +14,7 @@
 								<li class="nav-item" *ngIf="user.role === 'admin'"><a class="nav-link" routerLink="/admin" routerLinkActive="active">Internship Office</a></li>
 								<li class="nav-item" *ngIf="user.role === 'faculty'"><a class="nav-link" routerLink="/faculty" routerLinkActive="active">Faculty</a></li>
 								<li class="nav-item" *ngIf="user.role === 'site'"><a class="nav-link" routerLink="/site" routerLinkActive="active">Site</a></li>
-								<li class="nav-item"><button class="btn btn-sm btn-light ms-3" (click)="store.logout()">Logout</button></li>
+								<li class="nav-item"><button class="btn btn-sm btn-light ms-3" (click)="logout()">Logout</button></li>
 							</ul>
 					<ng-template #loggedOut>
 								<ul class="navbar-nav ms-auto">

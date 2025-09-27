@@ -116,3 +116,12 @@
     }
   }
 }
+
+/* Navbar brand image tweaks for crisp rendering */
+.navbar-brand img {
+  display: inline-block;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+}
