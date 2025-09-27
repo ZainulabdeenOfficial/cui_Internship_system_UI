@@ -1,59 +1,207 @@
-# CuiInternshipSystem
+# CUI Internship Management System
+## Project Overview
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 20.0.5.
+The **CUI Internship Management System** is designed to digitize and streamline the internship process defined by the **Internship Handbook**. It provides a web-based platform for students, supervisors, and the Internship Office to manage internships, reports, evaluations, and results efficiently.
 
-## Development server
+This system ensures alignment with university academic policies, supports freelancing-based internships (Fiverr/Upwork), and automates reporting, approval, and grading.
 
-To start a local development server, run:
+---
 
-```bash
-ng serve
+## Key Features
+
+- **Student Portal**
+  - Internship registration (on-site, virtual, freelancing)
+  - Internship proposal/design submission
+  - Weekly activity log submissions
+  - Upload of internship reports, certificates, and reflective summaries
+
+- **Faculty Supervisor Dashboard**
+  - Monitor assigned students
+  - Review reports & logs
+  - Submit evaluations (Faculty Supervisor Evaluation Form)
+
+- **Internship Office Module**
+  - Approve placements & track timelines
+  - Maintain database of organizations and MoUs
+  - Evaluate reports/logs and finalize results
+
+- **Site Supervisor Integration**
+  - Submit student performance evaluations online
+  - Provide mid-term and final feedback
+
+- **Freelancing Internship Support**
+  - Validate Fiverr/Upwork accounts & contracts
+  - Upload client reviews, chat logs, contracts, and earnings evidence
+
+---
+
+## Workflow Diagram
+
+```mermaid
+flowchart TD
+    A[Student Registers Internship] --> B[Internship Office Approval]
+    B --> C[Internship Starts]
+    C --> D[Weekly Logs Submitted]
+    C --> E[Supervisor Monitoring]
+    C --> F[Site Supervisor Evaluation]
+    D --> G[Final Internship Report]
+    E --> H[Faculty Evaluation]
+    F --> H
+    G --> H
+    H --> I[Internship Office Review]
+    I --> J[Final Result: Pass/Fail]
+````
+
+---
+
+## Data Model (ER Diagram)
+
+```mermaid
+erDiagram
+  STUDENT {
+    Int id PK
+    String name
+    String email
+    String roll_no
+  }
+  INTERNSHIP {
+    Int id PK
+    String type
+    String organization
+    String start_date
+    String end_date
+  }
+  WEEKLY_LOG {
+    Int id PK
+    Int studentId FK
+    String description
+    DateTime submittedAt
+  }
+  REPORT {
+    Int id PK
+    Int studentId FK
+    String file_path
+    String type
+  }
+  SUPERVISOR {
+    Int id PK
+    String name
+    String role
+  }
+  EVALUATION {
+    Int id PK
+    Int studentId FK
+    Int supervisorId FK
+    Int score
+    String comments
+  }
+
+  STUDENT ||--o{ INTERNSHIP : "enrolls"
+  STUDENT ||--o{ WEEKLY_LOG : "submits"
+  STUDENT ||--o{ REPORT : "writes"
+  SUPERVISOR ||--o{ EVALUATION : "performs"
+  STUDENT ||--o{ EVALUATION : "receives"
 ```
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+---
 
-## Code scaffolding
+## Internship Program Rules (From Handbook)
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+* **Eligibility:** Minimum 4 semesters completed, CGPA ≥ 2.0
+* **Duration:** 6–8 continuous weeks (3 credit hours)
+* **Types:** On-site, Virtual, Freelancing (Fiverr/Upwork)
+* **Reports Required:**
 
-```bash
-ng generate component component-name
-```
+  * Internship Proposal/Design Statement
+  * Weekly Logs
+  * Internship Report (~3,500 words)
+  * Reflective Summary (1 page)
+  * Supervisor Evaluations
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+---
 
-```bash
-ng generate --help
-```
+## Evaluation & Assessment
 
-## Building
+* **On-Site / Virtual Internship**
 
-To build the project run:
+  * Site Supervisor: 40%
+  * Faculty Supervisor: 40%
+  * Internship Office (Design, Logs, Report): 20%
 
-```bash
-ng build
-```
+* **Freelancing Internship (Fiverr/Upwork)**
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
+  * Faculty Supervisor: 60%
+  * Internship Office: 40%
 
-## Running unit tests
+**Passing Criteria:** Minimum 60/100
 
-To execute unit tests with the [Karma](https://karma-runner.github.io) test runner, use the following command:
+---
 
-```bash
-ng test
-```
+## Environment Setup
 
-## Running end-to-end tests
+1. Clone repository:
 
-For end-to-end (e2e) testing, run:
+   ```bash
+   git clone https://github.com/talha24603/cui-internship_management_system.git
+   cd cui-internship_management_system
+   ```
 
-```bash
-ng e2e
-```
+2. Install dependencies:
 
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
+   ```bash
+   npm install
+   ```
 
-## Additional Resources
+3. Configure `.env`:
 
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+   ```ini
+   DATABASE_URL="postgresql://user:password@localhost:5432/internship_db"
+   JWT_SECRET="your_secret"
+   ```
+
+4. Run migrations:
+
+   ```bash
+   npx prisma migrate dev
+   ```
+
+5. Start dev server:
+
+   ```bash
+   npm run dev
+   ```
+
+---
+
+## Deployment
+
+* Recommended: **Vercel** for frontend + backend API routes.
+* Add environment variables in Vercel project settings.
+* Auto-deploy on `main` branch push.
+
+---
+
+## Contribution Guidelines
+
+* Fork → Create branch → Commit → Push → Pull Request.
+* Follow project coding standards and naming conventions.
+* Ensure reports, logs, and supervisor forms align with Handbook requirements.
+
+---
+
+## License
+
+MIT License (update if restricted).
+
+---
+
+## Acknowledgements
+
+* Department of Computer Science, CUI Islamabad
+* Internship Office & Supervisors
+* Students contributing to digital automation of internship workflows
+
+
+
+
+
