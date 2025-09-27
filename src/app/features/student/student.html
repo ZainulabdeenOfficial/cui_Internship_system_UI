@@ -361,7 +361,7 @@
   </div>
 
   <!-- Weekly logs -->
-  <div class="card mb-3" *ngIf="selectedId">
+  <div class="card mb-3" *ngIf="selectedId && isApproved()">
     <div class="card-header">Weekly Logs</div>
     <div class="card-body">
       <form (ngSubmit)="addWeekly()" #w="ngForm" class="row g-3">
@@ -384,7 +384,7 @@
   </div>
 
   <!-- Final report -->
-  <div class="card mb-3" *ngIf="selectedId">
+  <div class="card mb-3" *ngIf="selectedId && isApproved()">
     <div class="card-header">Final Report</div>
     <div class="card-body">
       <form (ngSubmit)="addFinal()" #fr="ngForm" class="row g-3">
@@ -410,7 +410,7 @@
   </div>
 
   <!-- Assignments upload -->
-  <div class="card mb-3" *ngIf="selectedId">
+  <div class="card mb-3" *ngIf="selectedId && isApproved()">
     <div class="card-header">Assignments (PDF, DOCX, PPTX, any file type)</div>
     <div class="card-body">
       <div class="row g-3 align-items-end">
@@ -439,6 +439,11 @@
       </div>
       <ng-template #noAssign><div class="text-muted">No assignments uploaded yet.</div></ng-template>
     </div>
+  </div>
+
+  <!-- Unlock notice when pending approval -->
+  <div class="alert alert-warning" *ngIf="selectedId && !isApproved()">
+    Your internship is pending approval by the Internship Office. Weekly logs, reports, and assignment uploads will unlock after approval.
   </div>
 
   <!-- Complaints & Grievances -->

@@ -19,6 +19,7 @@ export class Student {
   selectedId: string | null = null;
   selectedStudent = computed(() => this.selectedId ? this.students().find(s => s.id === this.selectedId!) : undefined);
   myStudentId = computed(() => this.me()?.studentId ?? null);
+  isApproved = computed(() => !!this.selectedStudent()?.approved);
   // Keep selection locked to the logged-in student's own id
   private lockSelection = effect(() => {
     const mine = this.myStudentId();
@@ -133,9 +134,17 @@ export class Student {
     }
     return true;
   }
+  private ensureApproved(): boolean {
+    if (!this.isApproved()) {
+      this.toast.warning('Weekly logs and reports unlock after Internship Office approval');
+      return false;
+    }
+    return true;
+  }
   addWeekly() {
     if (!this.selectedId || !this.weekly.note) return;
   if (!this.ensureMine()) return;
+  if (!this.ensureApproved()) return;
   this.store.submitWeeklyLog(this.selectedId, { week: this.weekly.week, note: this.weekly.note });
   this.toast.info('Weekly log added');
     this.weekly = { week: this.weekly.week + 1, note: '' };
@@ -143,6 +152,7 @@ export class Student {
   addProgress() {
     if (!this.selectedId || !this.progress.title) return;
   if (!this.ensureMine()) return;
+  if (!this.ensureApproved()) return;
   this.store.submitReport(this.selectedId, { type: 'progress', title: this.progress.title, content: this.progress.content });
   this.toast.success('Progress report submitted');
     this.progress = { title: '', content: '' };
@@ -150,6 +160,7 @@ export class Student {
   addFinal() {
     if (!this.selectedId || !this.final.title) return;
   if (!this.ensureMine()) return;
+  if (!this.ensureApproved()) return;
   this.store.submitReport(this.selectedId, { type: 'final', title: this.final.title, content: this.final.content });
   this.toast.success('Final report submitted');
     this.final = { title: '', content: '' };
@@ -212,6 +223,7 @@ export class Student {
   submitReflective() {
     if (!this.selectedId || !this.reflective.content) return;
     if (!this.ensureMine()) return;
+    if (!this.ensureApproved()) return;
     this.store.submitReport(this.selectedId, { type: 'reflective', title: this.reflective.title, content: this.reflective.content });
     this.toast.success('Reflective summary submitted');
     this.reflective = { title: 'Reflective Summary', content: '' };
