@@ -483,8 +483,8 @@
     </div>
   </div>
 
-  <!-- Marks view -->
-  <div class="card mb-3" *ngIf="selectedId">
+  <!-- Marks view (only after Internship Office approval) -->
+  <div class="card mb-3" *ngIf="selectedId && isApproved()">
     <div class="card-header">Marks</div>
     <div class="card-body">
       <div class="row g-3" *ngIf="selectedStudent() as ss">
