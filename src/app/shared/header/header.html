@@ -1,0 +1,27 @@
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+	<div class="container">
+		<a class="navbar-brand" routerLink="/">CUI Internship System</a>
+		<button class="navbar-toggler" type="button" (click)="toggleMenu()" aria-controls="navbarNav"
+			[attr.aria-expanded]="showMobileMenu" aria-label="Toggle navigation">
+			<span class="navbar-toggler-icon"></span>
+		</button>
+		<div class="collapse navbar-collapse" [class.show]="showMobileMenu" id="navbarNav">
+							<ul class="navbar-nav ms-auto" *ngIf="store.currentUser() as user; else loggedOut">
+								<li class="nav-item" *ngIf="user.role === 'student'"><a class="nav-link" routerLink="/student" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Student</a></li>
+								<li class="nav-item" *ngIf="user.role === 'admin'"><a class="nav-link" routerLink="/admin" routerLinkActive="active">Internship Office</a></li>
+								<li class="nav-item" *ngIf="user.role === 'faculty'"><a class="nav-link" routerLink="/faculty" routerLinkActive="active">Faculty</a></li>
+								<li class="nav-item" *ngIf="user.role === 'site'"><a class="nav-link" routerLink="/site" routerLinkActive="active">Site</a></li>
+								<li class="nav-item"><button class="btn btn-sm btn-light ms-3" (click)="store.logout()">Logout</button></li>
+							</ul>
+					<ng-template #loggedOut>
+								<ul class="navbar-nav ms-auto">
+									<li class="nav-item"><a class="nav-link" routerLink="/login" routerLinkActive="active">Student Login</a></li>
+									<li class="nav-item"><a class="nav-link" routerLink="/faculty-login" routerLinkActive="active">Faculty Login</a></li>
+									<li class="nav-item"><a class="nav-link" routerLink="/site-login" routerLinkActive="active">Site Login</a></li>
+									<li class="nav-item"><a class="nav-link" routerLink="/signup" routerLinkActive="active">Signup</a></li>
+									<!-- Admin login intentionally hidden from normal UI; accessible only via direct route -->
+								</ul>
+					</ng-template>
+		</div>
+	</div>
+ </nav>

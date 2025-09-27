@@ -1,0 +1,513 @@
+<div class="container py-4">
+  <h2 class="mb-3">Student</h2>
+
+  <div class="alert alert-info" role="alert">
+    Guidance: Choose suitable host organizations (software houses, IT divisions in banks/telecom, startups, government IT, academia/research, NGOs with digital initiatives). Freelancing via Fiverr/Upwork is acceptable for technical gigs only (Development, Data/AI/ML, APIs/Automation, DevOps/Cloud, Cybersecurity, Database, Testing, UI implementation). Non-technical roles (content writing, blogging, customer support, data entry, etc.) are not permitted.
+  </div>
+
+  <!-- Assignment and Approval Status -->
+  <div class="card mb-3" *ngIf="selectedStudent() as ss">
+    <div class="card-body d-flex flex-wrap gap-3 align-items-center">
+      <span><strong>Status:</strong> <span class="badge" [class.text-bg-success]="ss.approved" [class.text-bg-secondary]="!ss.approved">{{ ss.approved ? 'Approved' : 'Pending Approval' }}</span></span>
+      <span><strong>Faculty Supervisor:</strong> {{ facultyName(ss.facultyId) }}</span>
+      <span><strong>Site Supervisor:</strong> {{ siteName(ss.siteId) }} <small class="text-muted">{{ siteEmail(ss.siteId) }}</small></span>
+    </div>
+  </div>
+
+  <!-- Create Account (quick) -->
+  <div class="card mb-3" *ngIf="!myStudentId()">
+    <div class="card-header">Create Account</div>
+    <div class="card-body">
+      <p class="text-muted">Tip: You can also <a routerLink="/signup">sign up</a> or <a routerLink="/login">login</a> from the header.</p>
+      <form (ngSubmit)="addStudent()" #f="ngForm" class="row g-3">
+        <div class="col-md-4">
+          <label class="form-label">Name</label>
+          <input class="form-control" [(ngModel)]="newStudent.name" name="name" required />
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Email</label>
+          <input class="form-control" [(ngModel)]="newStudent.email" name="email" required />
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Registration No (FAyy-PROGRAM-ROLL)</label>
+          <input class="form-control" [(ngModel)]="newStudent.registrationNo" name="reg" required />
+        </div>
+        <div class="col-12">
+          <small class="text-muted">Use your CUI Sahiwal email (e.g., fa22-bcs-090@students.cuisahiwal.edu.pk) and Registration No like FA22-BCS-090</small>
+        </div>
+        <div class="col-md-4 align-self-end">
+          <button class="btn btn-primary" [disabled]="!f.form.valid" type="submit">Create</button>
+        </div>
+      </form>
+      <div class="mt-3">
+        <label class="form-label">Select Current Student</label>
+        <select class="form-select" [(ngModel)]="selectedId" name="selected">
+          <option [ngValue]="null">-- none --</option>
+          <option *ngFor="let s of students()" [ngValue]="s.id">{{ s.name }} ({{ s.email }})</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Internship approval/agreement/design proposal (simplified as progress report) -->
+  <div class="card mb-3" *ngIf="selectedId">
+    <div class="card-header">Internship Approval Form</div>
+    <div class="card-body">
+      <div class="alert alert-secondary py-2" *ngIf="approvals().length as ct">
+        <ng-container *ngIf="approvals()[ct-1] as last">
+          <div class="d-flex flex-wrap gap-3 align-items-center">
+            <span>Latest status: <span class="badge"
+              [class.text-bg-secondary]="!last.status || last.status==='pending'"
+              [class.text-bg-success]="last.status==='approved'"
+              [class.text-bg-danger]="last.status==='rejected'">
+              {{ last.status || 'pending' }}
+            </span></span>
+            <span *ngIf="last.officerComment">Officer comment: <em>{{ last.officerComment }}</em></span>
+            <button class="btn btn-sm btn-outline-primary" (click)="loadLatestApproval()">Edit latest and resubmit</button>
+          </div>
+        </ng-container>
+      </div>
+      <form (ngSubmit)="submitApproval()" #af="ngForm" class="row g-3">
+        <div class="col-12"><h6 class="text-muted">Student Information</h6></div>
+        <div class="col-md-3">
+          <label class="form-label">Name</label>
+          <input class="form-control" [(ngModel)]="approval.studentInfo.name" name="sname" required />
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Student ID</label>
+          <input class="form-control" [(ngModel)]="approval.studentInfo.studentId" name="sid" required />
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Program</label>
+          <input class="form-control" [(ngModel)]="approval.studentInfo.program" name="program" required />
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Semester</label>
+          <input class="form-control" [(ngModel)]="approval.studentInfo.semester" name="semester" required />
+        </div>
+
+        <div class="col-12"><h6 class="text-muted mt-2">Company Details</h6></div>
+        <div class="col-md-4">
+          <label class="form-label">Company Name</label>
+          <input class="form-control" [(ngModel)]="approval.company.name" name="cname" required />
+        </div>
+        <div class="col-md-8">
+          <label class="form-label">Address</label>
+          <input class="form-control" [(ngModel)]="approval.company.address" name="caddress" required />
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Supervisor Name</label>
+          <input class="form-control" [(ngModel)]="approval.company.supervisorName" name="supname" required />
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Supervisor Email</label>
+          <input type="email" class="form-control" [(ngModel)]="approval.company.supervisorEmail" name="supemail" required />
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Supervisor Phone</label>
+          <input class="form-control" [(ngModel)]="approval.company.supervisorPhone" name="supphone" required />
+        </div>
+
+        <div class="col-12"><h6 class="text-muted mt-2">Internship Details</h6></div>
+        <div class="col-md-3">
+          <label class="form-label">Start Date</label>
+          <input type="date" class="form-control" [(ngModel)]="approval.internship.startDate" name="start" required />
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">End Date</label>
+          <input type="date" class="form-control" [(ngModel)]="approval.internship.endDate" name="end" required />
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Hours/Week</label>
+          <input type="number" min="1" class="form-control" [(ngModel)]="approval.internship.hoursPerWeek" name="hours" required />
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Paid</label>
+          <select class="form-select" [(ngModel)]="approval.internship.paid" name="paid" required>
+            <option [ngValue]="'Yes'">Yes</option>
+            <option [ngValue]="'No'">No</option>
+          </select>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Objectives</label>
+          <textarea class="form-control" rows="2" [(ngModel)]="approval.objectives" name="objectives" required></textarea>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Expected Outcomes</label>
+          <textarea class="form-control" rows="2" [(ngModel)]="approval.outcomes" name="outcomes" required></textarea>
+        </div>
+        <div class="col-12">
+          <button class="btn btn-success" [disabled]="!af.form.valid" type="submit">Submit Approval</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="card mb-3" *ngIf="selectedId">
+    <div class="card-header">Internship Agreement</div>
+    <div class="card-body">
+      <form (ngSubmit)="submitAgreement()" #ag="ngForm" class="row g-3">
+        <div class="col-md-4 form-check">
+          <input class="form-check-input" type="checkbox" id="ack" [(ngModel)]="agreement.policyAcknowledgement" name="ack" />
+          <label class="form-check-label" for="ack">I acknowledge program policies</label>
+        </div>
+        <div class="col-md-4 form-check">
+          <input class="form-check-input" type="checkbox" id="conf" [(ngModel)]="agreement.confidentialityAgreement" name="conf" />
+          <label class="form-check-label" for="conf">Confidentiality agreement</label>
+        </div>
+        <div class="col-md-4 form-check">
+          <input class="form-check-input" type="checkbox" id="safe" [(ngModel)]="agreement.safetyTraining" name="safe" />
+          <label class="form-check-label" for="safe">Safety training completed</label>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Student Signature (Name)</label>
+          <input class="form-control" [(ngModel)]="agreement.studentSignatureName" name="sig" required />
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Date</label>
+          <input type="date" class="form-control" [(ngModel)]="agreement.date" name="adate" required />
+        </div>
+        <div class="col-12">
+          <button class="btn btn-success" [disabled]="!ag.form.valid" type="submit">Submit Agreement</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="card mb-3" *ngIf="selectedId">
+    <div class="card-header">Design Proposal</div>
+    <div class="card-body">
+      <form (ngSubmit)="submitProposal()" #dp="ngForm" class="row g-3">
+        <div class="col-md-5">
+          <label class="form-label">Title</label>
+          <input class="form-control" [(ngModel)]="proposal.title" name="dtitle" required />
+        </div>
+        <div class="col-md-7">
+          <label class="form-label">Summary</label>
+          <textarea class="form-control" rows="2" [(ngModel)]="proposal.content" name="dcontent" required></textarea>
+        </div>
+        <div class="col-12">
+          <button class="btn btn-primary" [disabled]="!dp.form.valid" type="submit">Submit Proposal</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Internship Design Statement -->
+  <div class="card mb-3" *ngIf="selectedId">
+    <div class="card-header">Internship Design Statement (submit in first week)</div>
+    <div class="card-body">
+      <form (ngSubmit)="submitDesign()" #dsf="ngForm" class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label">Career Goal</label>
+          <input class="form-control" [(ngModel)]="design.careerGoal" name="career" required />
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Learning Objectives</label>
+          <input class="form-control" [(ngModel)]="design.learningObjectives" name="learn" required />
+        </div>
+        <div class="col-12"><h6 class="text-muted mt-2">Internship Placement Overview</h6></div>
+        <div class="col-md-4">
+          <label class="form-label">Organization</label>
+          <input class="form-control" [(ngModel)]="design.placement.organization" name="org" required />
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Mode</label>
+          <select class="form-select" [(ngModel)]="design.placement.mode" name="mode">
+            <option [ngValue]="'On-site'">On-site</option>
+            <option [ngValue]="'Remote'">Remote</option>
+            <option [ngValue]="'Hybrid'">Hybrid</option>
+          </select>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Functional Area</label>
+          <input class="form-control" [(ngModel)]="design.placement.functionalArea" name="func" required />
+        </div>
+        <div class="col-12">
+          <label class="form-label">Overview (optional)</label>
+          <textarea class="form-control" rows="2" [(ngModel)]="design.placement.overview" name="ov"></textarea>
+        </div>
+        <div class="col-12"><h6 class="text-muted mt-2">Supervisor Details</h6></div>
+        <div class="col-md-3"><input class="form-control" placeholder="Name" [(ngModel)]="design.supervisor.name" name="sname2" required /></div>
+        <div class="col-md-3"><input class="form-control" placeholder="Designation" [(ngModel)]="design.supervisor.designation" name="sdes" required /></div>
+        <div class="col-md-3"><input type="email" class="form-control" placeholder="Email" [(ngModel)]="design.supervisor.email" name="semail3" required /></div>
+        <div class="col-md-3"><input class="form-control" placeholder="Contact" [(ngModel)]="design.supervisor.contact" name="scont" required /></div>
+        <div class="col-md-6">
+          <label class="form-label">Scope of Work / Deliverables</label>
+          <textarea class="form-control" rows="2" [(ngModel)]="design.scopeAndDeliverables" name="scope" required></textarea>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Academic Preparation (courses/projects)</label>
+          <textarea class="form-control" rows="2" [(ngModel)]="design.academicPreparation" name="prep" required></textarea>
+        </div>
+        <div class="col-12">
+          <label class="form-label">Additional Comments (optional)</label>
+          <textarea class="form-control" rows="2" [(ngModel)]="design.comments" name="cmt"></textarea>
+        </div>
+        <div class="col-12">
+          <button class="btn btn-primary" [disabled]="!dsf.form.valid" type="submit">Submit Design Statement</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Reflective Summary (one page) -->
+  <div class="card mb-3" *ngIf="selectedId">
+    <div class="card-header">One-page Reflective Summary</div>
+    <div class="card-body">
+      <form (ngSubmit)="submitReflective()" #rsf="ngForm" class="row g-3">
+        <div class="col-12">
+          <label class="form-label">Summary (approx. 1 page)</label>
+          <textarea class="form-control" rows="4" [(ngModel)]="reflective.content" name="rcontent" required></textarea>
+        </div>
+        <div class="col-12">
+          <button class="btn btn-success" [disabled]="!rsf.form.valid" type="submit">Submit Reflective Summary</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Freelancing / On-site submission aligned with handbook -->
+  <div class="card mb-3" *ngIf="selectedId">
+    <div class="card-header">Internship Evidence (Fiverr/Upwork/On-site/Virtual)</div>
+    <div class="card-body">
+      <form (ngSubmit)="submitFreelance()" #ff="ngForm" class="row g-3">
+        <div class="col-md-3">
+          <label class="form-label">Mode/Platform</label>
+          <select class="form-select" [(ngModel)]="freel.platform" name="platform">
+            <option [ngValue]="'Fiverr'">Fiverr</option>
+            <option [ngValue]="'Upwork'">Upwork</option>
+            <option [ngValue]="'OnSite'">On-site</option>
+            <option [ngValue]="'Virtual'">Virtual</option>
+          </select>
+        </div>
+        <div class="col-md-3" *ngIf="freel.platform === 'Fiverr' || freel.platform === 'Upwork'">
+          <label class="form-label">Profile Authentic</label>
+          <select class="form-select" [(ngModel)]="freel.profileAuthentic" name="auth">
+            <option [ngValue]="true">Yes</option>
+            <option [ngValue]="false">No</option>
+          </select>
+        </div>
+        <div class="col-md-3" *ngIf="freel.platform === 'Fiverr'">
+          <label class="form-label">Gigs Completed</label>
+          <input type="number" class="form-control" [(ngModel)]="freel.gigsCompleted" name="gigs" min="0" />
+        </div>
+        <div class="col-md-3" *ngIf="freel.platform === 'Upwork'">
+          <label class="form-label">Proposals Applied</label>
+          <input type="number" class="form-control" [(ngModel)]="freel.proposalsApplied" name="props" min="0" />
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Earnings (USD)</label>
+          <input type="number" class="form-control" [(ngModel)]="freel.earningsUSD" name="earn" min="0" />
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Avg Rating</label>
+          <input type="number" step="0.1" class="form-control" [(ngModel)]="freel.avgRating" name="rate" min="0" max="5" />
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Client Feedback (summary)</label>
+          <input class="form-control" [(ngModel)]="freel.clientFeedback" name="feedback" />
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Approval Evidence (summary)</label>
+          <input class="form-control" [(ngModel)]="freel.approvalEvidence" name="evidence" />
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Contract/Chat Summary</label>
+          <textarea class="form-control" rows="2" [(ngModel)]="freel.contractSummary" name="contract"></textarea>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Work Summary / Deliverables</label>
+          <textarea class="form-control" rows="2" [(ngModel)]="freel.workSummary" name="work"></textarea>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Mentor/Supervisor Name</label>
+          <input class="form-control" [(ngModel)]="freel.mentorName" name="mentor" />
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Mentor Contact</label>
+          <input class="form-control" [(ngModel)]="freel.mentorContact" name="mcontact" />
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Technologies/Tools Used</label>
+          <input class="form-control" [(ngModel)]="freel.technologies" name="tech" />
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Logbook/Portfolio Notes</label>
+          <textarea class="form-control" rows="2" [(ngModel)]="freel.logbook" name="log"></textarea>
+        </div>
+        <div class="col-12">
+          <button class="btn btn-primary" type="submit">Save Evidence</button>
+        </div>
+      </form>
+      <div class="mt-3">
+        <h6>Submitted Evidence</h6>
+        <ul class="list-group">
+          <li class="list-group-item d-flex justify-content-between align-items-center" *ngFor="let f of freelances()">
+            <span>
+              <strong>{{ f.platform }}</strong>
+              <span class="text-muted">— {{ f.createdAt | date:'short' }}</span>
+            </span>
+            <span *ngIf="f.platform==='Fiverr'" class="badge" [class.text-bg-success]="meetsFiverr(f)" [class.text-bg-danger]="!meetsFiverr(f)">
+              Fiverr: {{ (f.gigsCompleted||0) }} gigs / ${{ (f.earningsUSD||0) }}
+            </span>
+            <span *ngIf="f.platform==='Upwork'" class="badge" [class.text-bg-success]="meetsUpwork(f)" [class.text-bg-danger]="!meetsUpwork(f)">
+              Upwork: {{ (f.proposalsApplied||0) }} proposals / ${{ (f.earningsUSD||0) }}
+            </span>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Weekly logs -->
+  <div class="card mb-3" *ngIf="selectedId">
+    <div class="card-header">Weekly Logs</div>
+    <div class="card-body">
+      <form (ngSubmit)="addWeekly()" #w="ngForm" class="row g-3">
+        <div class="col-md-2">
+          <label class="form-label">Week</label>
+          <input type="number" min="1" class="form-control" [(ngModel)]="weekly.week" name="week" required />
+        </div>
+        <div class="col-md-8">
+          <label class="form-label">Note</label>
+          <input class="form-control" [(ngModel)]="weekly.note" name="note" required />
+        </div>
+        <div class="col-md-2 align-self-end">
+          <button class="btn btn-primary" [disabled]="!w.form.valid" type="submit">Add</button>
+        </div>
+      </form>
+      <ul class="list-group mt-3">
+        <li class="list-group-item" *ngFor="let l of logs()">Week {{ l.week }} · {{ l.note }} <span class="text-muted">— {{ l.date | date:'short' }}</span></li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Final report -->
+  <div class="card mb-3" *ngIf="selectedId">
+    <div class="card-header">Final Report</div>
+    <div class="card-body">
+      <form (ngSubmit)="addFinal()" #fr="ngForm" class="row g-3">
+        <div class="col-md-5">
+          <label class="form-label">Title</label>
+          <input class="form-control" [(ngModel)]="final.title" name="ftitle" required />
+        </div>
+        <div class="col-md-7">
+          <label class="form-label">Content</label>
+          <textarea class="form-control" rows="2" [(ngModel)]="final.content" name="fcontent"></textarea>
+        </div>
+        <div class="col-12">
+          <button class="btn btn-success" [disabled]="!fr.form.valid" type="submit">Submit Final</button>
+        </div>
+      </form>
+      <div class="mt-3">
+        <h6>Submitted Reports</h6>
+        <ul class="list-group">
+          <li class="list-group-item" *ngFor="let r of reports()">{{ r.type | titlecase }}: {{ r.title }} <span class="text-muted">— {{ r.date | date:'short' }}</span></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Assignments upload -->
+  <div class="card mb-3" *ngIf="selectedId">
+    <div class="card-header">Assignments (PDF, DOCX, PPTX, any file type)</div>
+    <div class="card-body">
+      <div class="row g-3 align-items-end">
+        <div class="col-md-6">
+          <label class="form-label">Select file</label>
+          <input id="afile" type="file" class="form-control" (change)="onAssignmentFileChange($event)" />
+        </div>
+        <div class="col-md-3">
+          <button class="btn btn-primary" (click)="submitAssignment()">Upload</button>
+        </div>
+      </div>
+      <div class="table-responsive mt-3" *ngIf="assignments().length; else noAssign">
+        <table class="table table-sm align-middle">
+          <thead><tr><th>File</th><th>Type</th><th>Size</th><th>Uploaded</th><th>Faculty Mark</th><th></th></tr></thead>
+          <tbody>
+            <tr *ngFor="let a of assignments()">
+              <td>{{ a.fileName }}</td>
+              <td>{{ a.fileType }}</td>
+              <td>{{ a.fileSize | number }} bytes</td>
+              <td>{{ a.uploadedAt | date:'short' }}</td>
+              <td>{{ a.facultyMark ?? '-' }}</td>
+              <td><button class="btn btn-sm btn-outline-secondary" (click)="downloadAssignment(a)">Download</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <ng-template #noAssign><div class="text-muted">No assignments uploaded yet.</div></ng-template>
+    </div>
+  </div>
+
+  <!-- Complaints & Grievances -->
+  <div class="card mb-3" *ngIf="selectedId">
+    <div class="card-header">Complaints & Grievances</div>
+    <div class="card-body">
+      <form (ngSubmit)="submitComplaint()" #cf="ngForm" class="row g-3">
+        <div class="col-md-3">
+          <label class="form-label">Category</label>
+          <select class="form-select" [(ngModel)]="complaint.category" name="ccat" required>
+            <option [ngValue]="'Technical'">Technical</option>
+            <option [ngValue]="'Supervisor'">Supervisor</option>
+            <option [ngValue]="'Organization'">Organization</option>
+            <option [ngValue]="'Other'">Other</option>
+          </select>
+        </div>
+        <div class="col-md-9">
+          <label class="form-label">Message</label>
+          <input class="form-control" [(ngModel)]="complaint.message" name="cmsg" required />
+        </div>
+        <div class="col-12">
+          <button class="btn btn-outline-danger" [disabled]="!cf.form.valid" type="submit">Submit Complaint</button>
+        </div>
+      </form>
+      <div class="mt-3">
+        <h6>Your Complaints</h6>
+        <ul class="list-group">
+          <li class="list-group-item d-flex justify-content-between align-items-center" *ngFor="let c of myComplaints()">
+            <span>
+              <strong>{{ c.category }}</strong> — {{ c.message }}
+              <span class="text-muted"> · {{ c.createdAt | date:'short' }}</span>
+            </span>
+            <span class="badge" [class.text-bg-secondary]="c.status==='open'" [class.text-bg-success]="c.status==='resolved'">{{ c.status }}</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Marks view -->
+  <div class="card mb-3" *ngIf="selectedId">
+    <div class="card-header">Marks</div>
+    <div class="card-body">
+      <div class="row g-3" *ngIf="selectedStudent() as ss">
+    <div class="col-md-3"><strong>Faculty:</strong> {{ ss.marks?.faculty ?? 0 }}/40</div>
+    <div class="col-md-3"><strong>Internship Office (sub):</strong> {{ ss.marks?.admin ?? 0 }}/20</div>
+    <div class="col-md-3"><strong>Site:</strong> {{ ss.marks?.site ?? 0 }}/40</div>
+        <div class="col-md-3"><strong>Total:</strong> {{ (ss.marks?.faculty ?? 0) + (ss.marks?.admin ?? 0) + (ss.marks?.site ?? 0) }}</div>
+      </div>
+      <div class="row g-3 mt-2" *ngIf="selectedStudent() as ss2">
+        <div class="col-12 small text-muted">Internship Office breakdown: Proposal {{ ss2.marks?.adminProposal ?? 0 }}/5, Activity Log {{ ss2.marks?.adminLogs ?? 0 }}/5, Final Report {{ ss2.marks?.adminFinal ?? 0 }}/10</div>
+      </div>
+      <ng-container *ngIf="agreements() as agrs">
+        <div class="row g-3 mt-2" *ngIf="agrs.length > 0">
+          <div class="col-12" >
+            <small class="text-muted">Latest Agreement Signatures:</small>
+            <ng-container *ngIf="agrs[agrs.length-1] as last">
+              <div class="small">
+                Faculty: {{ last.facultySignatureName || '-' }}
+                <span class="text-muted"> — {{ last.facultySignedAt | date:'short' }}</span>
+              </div>
+              <div class="small">
+                Internship Office: {{ last.officeSignatureName || '-' }}
+                <span class="text-muted"> — {{ last.officeSignedAt | date:'short' }}</span>
+              </div>
+            </ng-container>
+          </div>
+        </div>
+      </ng-container>
+    </div>
+  </div>
+</div>

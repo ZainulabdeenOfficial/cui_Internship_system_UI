@@ -1,0 +1,78 @@
+<div class="container py-4">
+  <h2 class="mb-3">Site Supervisor</h2>
+  <div class="row g-3 align-items-end">
+    <div class="col-md-6">
+      <label class="form-label">Select Student</label>
+      <select class="form-select" [(ngModel)]="selectedId" name="ssid">
+        <option [ngValue]="null">-- choose --</option>
+        <option *ngFor="let s of myStudents()" [ngValue]="s.id">{{ s.name }} ({{ s.email }})</option>
+      </select>
+    </div>
+    <div class="col-md-3">
+      <label class="form-label">Site Marks (0-40)</label>
+      <input type="number" min="0" max="40" class="form-control" (ngModelChange)="setSiteMarks($event)" [ngModel]="selectedStudent()?.marks?.site ?? ''" />
+    </div>
+  </div>
+  <div class="row g-3 mt-3" *ngIf="selectedId">
+    <div class="col-md-6">
+      <h5>Weekly Logs</h5>
+      <ul class="list-group">
+        <li class="list-group-item" *ngFor="let l of logs()">Week {{ l.week }} · {{ l.note }} <span class="text-muted">— {{ l.date | date:'short' }}</span></li>
+      </ul>
+    </div>
+    <div class="col-md-6">
+      <h5>Student Reports</h5>
+      <ul class="list-group">
+        <li class="list-group-item" *ngFor="let r of reports()">{{ r.type | titlecase }}: {{ r.title }} <span class="text-muted">— {{ r.date | date:'short' }}</span></li>
+      </ul>
+    </div>
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-header">Mid Report</div>
+        <div class="card-body">
+          <div class="mb-2">
+            <input class="form-control" placeholder="Title" [(ngModel)]="mid.title" name="midTitle" />
+          </div>
+          <div class="mb-2">
+            <textarea class="form-control" rows="3" placeholder="Content" [(ngModel)]="mid.content" name="midContent"></textarea>
+          </div>
+          <button class="btn btn-primary" (click)="submitMid()" [disabled]="!mid.title">Submit Mid</button>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-header">Final Report</div>
+        <div class="card-body">
+          <div class="mb-2">
+            <input class="form-control" placeholder="Title" [(ngModel)]="fin.title" name="finTitle" />
+          </div>
+          <div class="mb-2">
+            <textarea class="form-control" rows="3" placeholder="Content" [(ngModel)]="fin.content" name="finContent"></textarea>
+          </div>
+          <button class="btn btn-success" (click)="submitFinal()" [disabled]="!fin.title">Submit Final</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <hr class="my-4" />
+  <h5>Change Password</h5>
+  <div class="row g-3">
+    <div class="col-md-4">
+      <label class="form-label">Old Password</label>
+      <input type="password" class="form-control" [(ngModel)]="pw.old" />
+    </div>
+    <div class="col-md-4">
+      <label class="form-label">New Password</label>
+      <input type="password" class="form-control" [(ngModel)]="pw.next" />
+    </div>
+    <div class="col-md-4">
+      <label class="form-label">Confirm Password</label>
+      <input type="password" class="form-control" [(ngModel)]="pw.confirm" />
+    </div>
+    <div class="col-12">
+      <button class="btn btn-outline-primary" (click)="changePassword()">Change Password</button>
+    </div>
+  </div>
+</div>

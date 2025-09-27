@@ -1,0 +1,35 @@
+<div class="container py-5" style="max-width:520px">
+  <h2 class="mb-4">Student Signup</h2>
+  <div class="card">
+    <div class="card-body">
+      <form (ngSubmit)="submit()" #f="ngForm" class="row g-3">
+        <div class="col-12">
+          <label class="form-label">Name</label>
+          <input class="form-control" [(ngModel)]="model.name" name="name" required />
+        </div>
+        <div class="col-12">
+          <label class="form-label">Registration No (FAyy-PROGRAM-ROLL)</label>
+          <input class="form-control" [(ngModel)]="model.registrationNo" name="reg" required placeholder="FA22-BCS-090" />
+        </div>
+        <div class="col-12">
+          <label class="form-label">Email</label>
+          <input type="email" class="form-control" [(ngModel)]="model.email" name="email" required />
+          <small class="text-muted">Use your CUI Sahiwal email (e.g., fa22-bcs-090@students.cuisahiwal.edu.pk or name@sahiwal.comsats.edu.pk)</small>
+        </div>
+        <div class="col-12">
+          <label class="form-label">Password</label>
+          <input type="password" class="form-control" [(ngModel)]="model.password" name="password" required minlength="4" />
+        </div>
+        <div class="col-12">
+          <button class="btn btn-success w-100" [disabled]="!f.form.valid">Create Account</button>
+        </div>
+        <div class="col-12" *ngIf="error">
+          <div class="alert alert-danger">{{ error }}</div>
+        </div>
+        <div class="col-12 text-center">
+          <a routerLink="/login">Already have an account? Login</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

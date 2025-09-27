@@ -1,0 +1,211 @@
+import { Component, inject } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { StoreService } from '../../shared/services/store.service';
+import { ToastService } from '../../shared/toast/toast.service';
+
+@Component({
+  selector: 'app-admin',
+  standalone: true,
+  imports: [CommonModule, FormsModule],
+  templateUrl: './admin.html',
+  styleUrl: './admin.css'
+})
+export class Admin {
+  private store = inject(StoreService);
+  private toast = inject(ToastService);
+  students = this.store.students;
+  complaints = this.store.complaints;
+  requests = this.store.requests;
+  approvals = this.store.approvals;
+  logsMap = this.store.logs;
+  facultyList = this.store.facultySupervisors;
+  companyList = this.store.companies;
+  siteList = this.store.siteSupervisors;
+  facultyId = '';
+  siteId = '';
+  selectedId: string | null = null;
+  officers = this.store.internshipOfficers;
+  officer = { name: '', email: '' };
+  responses: Record<string, string> = {};
+  // forms for adding supervisors/company
+  faculty = { name: '', email: '', department: '', password: '' };
+  company = { name: '', address: '' };
+  site = { name: '', email: '', companyId: '', password: '' };
+  // assign company
+  companyForStudent: Record<string, string> = {};
+  // password reset buffers
+  facultyNewPw: Record<string, string> = {};
+  siteNewPw: Record<string, string> = {};
+
+  approve(id: string) { this.store.approveStudent(id); this.toast.success('Student approved'); }
+  assign(id: string) {
+    if (!this.facultyId || !this.siteId) return;
+    this.store.assignSupervisors(id, this.facultyId, this.siteId);
+    this.facultyId = this.siteId = '';
+    this.toast.success('Faculty and Site assigned');
+  }
+  setAdminMarks(id: string, value: number) { this.store.setAdminMarks(id, value); }
+  setAdminSubMarks(id: string, p: number, l: number, f: number) { this.store.setAdminSubMarks(id, p, l, f); }
+  addOfficer() {
+    if (!this.officer.name || !this.officer.email) return;
+    this.store.addInternshipOfficer(this.officer.name, this.officer.email);
+    this.officer = { name: '', email: '' };
+    this.toast.success('Internship Officer added');
+  }
+  addFaculty() {
+    const name = this.faculty.name?.trim();
+    const email = this.faculty.email?.trim();
+    const dept = this.faculty.department?.trim();
+    const pass = this.faculty.password?.trim();
+    if (!name || !email) { this.toast.warning('Name and email are required'); return; }
+    if (!pass) { this.toast.warning('Set a temporary password for the faculty supervisor'); return; }
+    this.store.addFacultySupervisor(name, email, dept, pass);
+    this.faculty = { name: '', email: '', department: '', password: '' };
+    this.toast.success('Faculty Supervisor added');
+  }
+  addCompany() {
+    if (!this.company.name) return;
+    const cid = this.store.addCompany(this.company.name, this.company.address);
+    if (this.site.companyId === '') this.site.companyId = cid;
+    this.company = { name: '', address: '' };
+    this.toast.success('Company added');
+  }
+  addSite() {
+    const name = this.site.name?.trim();
+    const email = this.site.email?.trim();
+    const cid = this.site.companyId?.trim();
+    const pass = this.site.password?.trim();
+    if (!name || !email) { this.toast.warning('Name and email are required'); return; }
+    if (!pass) { this.toast.warning('Set a temporary password for the site supervisor'); return; }
+    this.store.addSiteSupervisor(name, email, cid || undefined, pass);
+    this.site = { name: '', email: '', companyId: '', password: '' };
+    this.toast.success('Site Supervisor added');
+  }
+  companyName(id?: string) {
+    if (!id) return '-';
+    const c = this.companyList().find(x => x.id === id);
+    return c?.name ?? '-';
+  }
+  // Approval review state
+  approvalDecision: Record<string, 'approved'|'rejected'|''> = {};
+  approvalComment: Record<string, string> = {};
+  latestApproval(id: string) { const list = this.store.approvals()[id] ?? []; return list.length ? list[list.length - 1] : null; }
+  reviewApproval(id: string) {
+    const decision = this.approvalDecision[id];
+    if (!decision) return;
+    const comment = (this.approvalComment[id] ?? '').trim() || undefined;
+    this.store.reviewApproval(id, decision, comment);
+    delete this.approvalDecision[id];
+    delete this.approvalComment[id];
+    this.toast.success(`Application ${decision}`);
+  }
+  studentName(id: string) {
+    const s = this.students().find(x => x.id === id);
+    return s ? `${s.name} (${s.email})` : id;
+  }
+  resolve(id: string) {
+    const resp = this.responses[id];
+    if (!resp) return;
+    this.store.resolveComplaint(id, resp);
+    delete this.responses[id];
+    this.toast.success('Complaint resolved');
+  }
+  assignCompanyToStudent(studentId: string) {
+    const cid = this.companyForStudent[studentId];
+    if (!cid) return;
+    this.store.assignCompany(studentId, cid);
+    delete this.companyForStudent[studentId];
+    this.toast.success('Company assigned to student');
+  }
+  removeFaculty(id: string) {
+    if (confirm('Remove this faculty supervisor?')) { this.store.removeFacultySupervisor(id); this.toast.warning('Faculty Supervisor removed'); }
+  }
+  setFacultyPassword(id: string) {
+    const pw = (this.facultyNewPw[id] ?? '').trim();
+    if (!pw) { this.toast.warning('Enter a password'); return; }
+    this.store.updateFacultySupervisor(id, { password: pw });
+    delete this.facultyNewPw[id];
+    this.toast.success('Faculty password set');
+  }
+  removeSite(id: string) {
+    if (confirm('Remove this site supervisor?')) { this.store.removeSiteSupervisor(id); this.toast.warning('Site Supervisor removed'); }
+  }
+  setSitePassword(id: string) {
+    const pw = (this.siteNewPw[id] ?? '').trim();
+    if (!pw) { this.toast.warning('Enter a password'); return; }
+    this.store.updateSiteSupervisor(id, { password: pw });
+    delete this.siteNewPw[id];
+    this.toast.success('Site supervisor password set');
+  }
+  removeCompany(id: string) {
+    if (confirm('Remove this company?')) { this.store.removeCompany(id); this.toast.warning('Company removed'); }
+  }
+  approveRequest(id: string) { this.store.approveRequest(id); this.toast.success('Request approved'); }
+  rejectRequest(id: string) {
+    const note = prompt('Optional note for rejection:') || undefined;
+    this.store.rejectRequest(id, note); this.toast.warning('Request rejected');
+  }
+  facultyName(id: string) {
+    const f = this.facultyList().find(x => x.id === id);
+    return f ? `${f.name} (${f.email})` : id;
+  }
+  siteSupervisorName(id?: string) {
+    if (!id) return '-';
+    const s = this.siteList().find(x => x.id === id);
+    return s?.name ?? '-';
+  }
+  requestPrimary(r: import('../../shared/services/store.service').RequestItem) {
+    if (r.type === 'company') return r.name;
+    // site
+    return `${r.name} (${(r as any).email})`;
+  }
+  requestSecondary(r: import('../../shared/services/store.service').RequestItem) {
+    if (r.type === 'company') return r.address || '-';
+    const rr = r as any;
+    const comp = rr.companyName || this.companyName(rr.companyId);
+    return comp ? `Company: ${comp}` : undefined;
+  }
+
+  // Weekly Log compliance helpers
+  private startDate(studentId: string): Date | null {
+    const list = this.approvals()[studentId] ?? [];
+    if (!list.length) return null;
+    const s = list[0].internship?.startDate || list[0].createdAt;
+    if (!s) return null;
+    const d = new Date(s);
+    return isNaN(d.getTime()) ? null : d;
+    }
+  startDateString(studentId: string) {
+    const d = this.startDate(studentId);
+    return d ? d.toLocaleDateString() : '-';
+  }
+  expectedWeeks(studentId: string) {
+    const start = this.startDate(studentId);
+    if (!start) return 0;
+    const now = new Date();
+    const ms = now.getTime() - start.getTime();
+    const days = Math.max(0, Math.floor(ms / (1000 * 60 * 60 * 24)) + 1);
+    return Math.ceil(days / 7);
+  }
+  logsCount(studentId: string) {
+    return (this.logsMap()[studentId] ?? []).length;
+  }
+  hasLogThisWeek(studentId: string) {
+    const logs = this.logsMap()[studentId] ?? [];
+    if (!logs.length) return false;
+    const now = new Date().getTime();
+    const sevenDays = 7 * 24 * 60 * 60 * 1000;
+    return logs.some(l => {
+      const d = new Date(l.date).getTime();
+      return !isNaN(d) && (now - d) <= sevenDays;
+    });
+  }
+  // Applications filter
+  showPendingOnly = false;
+  showInApplications(id: string) {
+    const a = this.latestApproval(id);
+    if (!this.showPendingOnly) return true;
+    return !!a && (a.status === 'pending' || !a.status);
+  }
+}

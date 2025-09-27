@@ -1,0 +1,133 @@
+<div class="container py-4">
+  <h2 class="mb-3">Faculty Supervisor</h2>
+  <div class="alert alert-info">
+    <div class="fw-semibold">Evaluation Scheme</div>
+    <ul class="mb-0">
+      <li><strong>On-site / Virtual:</strong> Site Supervisor (40) + Faculty Supervisor (40) + Internship Office (20).</li>
+      <li><strong>Freelancing:</strong> Supervisor (60) + Internship Office (40). Office sub-marks are 5 (Proposal) + 5 (Logs) + 10 (Final Report).</li>
+    </ul>
+  </div>
+  <div class="row g-3 align-items-end mb-3">
+    <div class="col-md-6">
+      <label class="form-label">Select Student</label>
+      <select class="form-select" [(ngModel)]="selectedId" name="sid">
+        <option [ngValue]="null">-- choose --</option>
+        <option *ngFor="let s of myStudents()" [ngValue]="s.id">{{ s.name }} ({{ s.email }})</option>
+      </select>
+    </div>
+    <div class="col-md-3">
+      <label class="form-label">Marks (0-60)</label>
+      <input type="number" min="0" max="60" class="form-control" (ngModelChange)="setMarks($event)" [ngModel]="selectedStudent()?.marks?.faculty ?? ''" />
+    </div>
+  </div>
+  <div *ngIf="selectedId">
+    <div class="row g-3">
+      <div class="col-md-6">
+        <h5>Approval Forms</h5>
+        <div *ngIf="approvals().length; else noApproval">
+          <div class="card mb-2" *ngFor="let a of approvals(); let i = index">
+            <div class="card-header">Approval #{{ i+1 }} — {{ a.createdAt | date:'short' }}</div>
+            <div class="card-body small">
+              <div><strong>Student:</strong> {{ a.studentInfo.name }} ({{ a.studentInfo.studentId }}) — {{ a.studentInfo.program }}, {{ a.studentInfo.semester }}</div>
+              <div><strong>Company:</strong> {{ a.company.name }} — {{ a.company.address }}</div>
+              <div><strong>Supervisor:</strong> {{ a.company.supervisorName }} ({{ a.company.supervisorEmail }})</div>
+              <div><strong>Internship:</strong> {{ a.internship.startDate }} → {{ a.internship.endDate }}, {{ a.internship.hoursPerWeek }} hrs/week, Paid: {{ a.internship.paid }}</div>
+              <div><strong>Objectives:</strong> {{ a.objectives }}</div>
+              <div><strong>Outcomes:</strong> {{ a.outcomes }}</div>
+            </div>
+          </div>
+        </div>
+        <ng-template #noApproval><div class="text-muted">No approval form submitted yet.</div></ng-template>
+      </div>
+      <div class="col-md-6">
+        <h5>Weekly Logs</h5>
+        <ul class="list-group">
+          <li class="list-group-item" *ngFor="let l of logs()">Week {{ l.week }} · {{ l.note }} <span class="text-muted">— {{ l.date | date:'short' }}</span></li>
+        </ul>
+      </div>
+      <div class="col-md-6 mt-3">
+        <h5>Reports</h5>
+        <ul class="list-group">
+          <li class="list-group-item" *ngFor="let r of reports()">{{ r.type | titlecase }}: {{ r.title }} <span class="text-muted">— {{ r.date | date:'short' }}</span></li>
+        </ul>
+      </div>
+      <div class="col-md-6 mt-3">
+        <h5>Assignments</h5>
+        <div class="table-responsive">
+          <table class="table table-sm align-middle">
+            <thead><tr><th>File</th><th>Type</th><th>Size</th><th>Uploaded</th><th>Mark</th><th>Actions</th></tr></thead>
+            <tbody>
+              <tr *ngFor="let a of assignments()">
+                <td>{{ a.fileName }}</td>
+                <td>{{ a.fileType }}</td>
+                <td>{{ a.fileSize | number }} bytes</td>
+                <td>{{ a.uploadedAt | date:'short' }}</td>
+                <td style="width:130px"><input type="number" class="form-control form-control-sm" [(ngModel)]="assignMarks[a.id]" name="am{{a.id}}" [placeholder]="a.facultyMark != null ? (a.facultyMark + '') : '-'" /></td>
+                <td>
+                  <div class="btn-group btn-group-sm">
+                    <button class="btn btn-outline-secondary" (click)="downloadAssignment(a)">Download</button>
+                    <button class="btn btn-outline-primary" (click)="setAssignmentMark(a.id)">Save</button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="col-md-6 mt-3">
+        <h5>Agreement</h5>
+        <div *ngIf="agreements().length; else noAgreement">
+          <div class="card" *ngFor="let ag of agreements(); let i=index">
+            <div class="card-header">Agreement #{{ i+1 }} — {{ ag.createdAt | date:'short' }}</div>
+            <div class="card-body small">
+              <div><strong>Student Sign:</strong> {{ ag.studentSignatureName }} on {{ ag.date }}</div>
+              <div><strong>Faculty Sign:</strong> {{ ag.facultySignatureName || '-' }} <span class="text-muted" *ngIf="ag.facultySignedAt">({{ ag.facultySignedAt | date:'short' }})</span></div>
+              <div><strong>Office Sign:</strong> {{ ag.officeSignatureName || '-' }} <span class="text-muted" *ngIf="ag.officeSignedAt">({{ ag.officeSignedAt | date:'short' }})</span></div>
+            </div>
+          </div>
+        </div>
+        <ng-template #noAgreement><div class="text-muted">No agreement submitted yet.</div></ng-template>
+      </div>
+    </div>
+    <div class="row g-3 mt-3" *ngIf="selectedStudent() as ss">
+      <div class="col-md-4"><strong>Assigned Faculty:</strong> {{ facultyProfile()?.name || '-' }}</div>
+  <div class="col-md-4"><strong>Assigned Site:</strong> {{ siteName(ss.siteId) }}</div>
+      <div class="col-md-4"><strong>Company:</strong> {{ companyName(ss.companyId) }}</div>
+    </div>
+  </div>
+
+  <hr class="my-4" />
+  <h4>My Profile</h4>
+  <div class="row g-3" *ngIf="facultyProfile() as fp">
+    <div class="col-md-4">
+      <label class="form-label">Name</label>
+      <input class="form-control" [ngModel]="fp.name" (ngModelChange)="updateMyProfile({ name: $event })" />
+    </div>
+    <div class="col-md-4">
+      <label class="form-label">Department</label>
+      <input class="form-control" [ngModel]="fp.department" (ngModelChange)="updateMyProfile({ department: $event })" />
+    </div>
+    <div class="col-md-4">
+      <label class="form-label">Email</label>
+      <input class="form-control" [ngModel]="fp.email" (ngModelChange)="updateMyProfile({ email: $event })" />
+    </div>
+  </div>
+
+  <div class="row g-3 mt-3" *ngIf="facultyProfile()">
+    <div class="col-md-4">
+      <label class="form-label">Old Password</label>
+      <input type="password" class="form-control" [(ngModel)]="pw.old" />
+    </div>
+    <div class="col-md-4">
+      <label class="form-label">New Password</label>
+      <input type="password" class="form-control" [(ngModel)]="pw.next" />
+    </div>
+    <div class="col-md-4">
+      <label class="form-label">Confirm Password</label>
+      <input type="password" class="form-control" [(ngModel)]="pw.confirm" />
+    </div>
+    <div class="col-12">
+      <button class="btn btn-outline-primary" (click)="changePassword()">Change Password</button>
+    </div>
+  </div>
+</div>

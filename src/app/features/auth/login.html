@@ -1,0 +1,26 @@
+<div class="container py-5" style="max-width:520px">
+  <h2 class="mb-4">Student Login</h2>
+  <div class="card">
+    <div class="card-body">
+      <form (ngSubmit)="submit()" #f="ngForm" class="row g-3">
+        <div class="col-12">
+          <label class="form-label">Email</label>
+          <input type="email" class="form-control" [(ngModel)]="model.email" name="email" required />
+        </div>
+        <div class="col-12">
+          <label class="form-label">Password</label>
+          <input type="password" class="form-control" [(ngModel)]="model.password" name="password" required />
+        </div>
+        <div class="col-12">
+          <button class="btn btn-primary w-100" [disabled]="!f.form.valid">Login</button>
+        </div>
+        <div class="col-12" *ngIf="error">
+          <div class="alert alert-danger">{{ error }}</div>
+        </div>
+        <div class="col-12 text-center">
+          <a routerLink="/signup">Don't have an account? Sign up</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

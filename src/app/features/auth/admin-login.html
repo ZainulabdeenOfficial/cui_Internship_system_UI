@@ -1,0 +1,22 @@
+<div class="container my-4" style="max-width: 480px;">
+  <div class="card shadow-sm">
+    <div class="card-header bg-dark text-white">
+      <h5 class="mb-0">Internship Office Login</h5>
+    </div>
+    <div class="card-body">
+      <form (ngSubmit)="submit()" #form="ngForm" novalidate>
+        <div class="mb-3">
+          <label class="form-label">Username</label>
+          <input type="text" class="form-control" name="username" [(ngModel)]="model.username" required>
+          <div class="form-text">Use demo credentials: admin / admin123</div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Password</label>
+          <input type="password" class="form-control" name="password" [(ngModel)]="model.password" required>
+        </div>
+        <div *ngIf="error" class="alert alert-danger py-2">{{ error }}</div>
+        <button class="btn btn-primary w-100" [disabled]="form.invalid">Login</button>
+      </form>
+    </div>
+  </div>
+</div>

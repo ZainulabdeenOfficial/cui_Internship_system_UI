@@ -1,0 +1,2 @@
+.toast { opacity: 0.95; }
+.toast .btn-close { filter: invert(1); }
