@@ -1,1 +1,9 @@
 .nav .nav-link { padding: 0 .5rem; }
+
+footer .container .row .col-12:first-child img {
+	border: 1px solid rgba(255,255,255,0.1);
+	padding: 2px;
+}
+
+footer h6 { color: #eaeaea; }
+footer .small { color: #c9c9c9; }

@@ -118,10 +118,12 @@
 }
 
 /* Navbar brand image tweaks for crisp rendering */
-.navbar-brand img {
+.navbar-brand .brand-logo {
   display: inline-block;
   width: 36px;
   height: 36px;
-  border-radius: 50%;
-  object-fit: cover;
+  border-radius: 6px;
+  object-fit: contain;
+  background: #fff;
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.06) inset;
 }
