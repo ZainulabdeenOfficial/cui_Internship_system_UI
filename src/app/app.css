@@ -1,0 +1,20 @@
+/* Ensure full-height layout so footer sits at the bottom without white space */
+html, body {
+	height: 100%;
+}
+body {
+	margin: 0;
+}
+app-root, .app-shell {
+	display: flex;
+	flex-direction: column;
+	min-height: 100vh;
+}
+main.flex-grow-1 {
+	display: block;
+}
+/* Footer image responsiveness */
+footer img[alt="CUI Logo"] {
+	max-width: 100%;
+	height: auto;
+}

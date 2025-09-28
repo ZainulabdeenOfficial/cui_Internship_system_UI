@@ -1,4 +1,8 @@
-<app-toasts></app-toasts>
-<app-header></app-header>
-<router-outlet></router-outlet>
-<app-footer></app-footer>
+<div class="app-shell d-flex flex-column min-vh-100">
+	<app-toasts></app-toasts>
+	<app-header></app-header>
+	<main class="flex-grow-1">
+		<router-outlet></router-outlet>
+	</main>
+	<app-footer></app-footer>
+	</div>
