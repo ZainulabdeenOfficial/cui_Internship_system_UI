@@ -11,7 +11,7 @@
           <label class="form-label" for="auser">Username</label>
           <input id="auser" type="text" class="form-control" name="username" [(ngModel)]="model.username" #username="ngModel" required>
           <div class="form-text">Use demo: admin / admin123</div>
-          <div class="invalid-feedback d-block" *ngIf="(form.submitted || username.touched) && username.invalid">Username is required.</div>
+          @if ((form.submitted || username.touched) && username.invalid) {<div class="invalid-feedback d-block">Username is required.</div>}
         </div>
         <div class="col-12">
           <label class="form-label" for="apass">Password</label>
@@ -21,12 +21,12 @@
               <i class="pi" [ngClass]="showPassword ? 'pi-eye-slash' : 'pi-eye'"></i>
             </button>
           </div>
-          <div class="invalid-feedback d-block" *ngIf="(form.submitted || password.touched) && password.invalid">Password is required.</div>
+          @if ((form.submitted || password.touched) && password.invalid) {<div class="invalid-feedback d-block">Password is required.</div>}
         </div>
-        <div *ngIf="error" class="alert alert-danger py-2">{{ error }}</div>
+  @if (error) {<div class="alert alert-danger py-2">{{ error }}</div>}
         <div class="col-12">
           <button class="btn btn-primary w-100 d-inline-flex justify-content-center align-items-center" [disabled]="form.invalid || loading">
-            <span class="spinner-border spinner-border-sm me-2" role="status" *ngIf="loading"></span>
+            @if (loading) {<span class="spinner-border spinner-border-sm me-2" role="status"></span>}
             Login
           </button>
         </div>

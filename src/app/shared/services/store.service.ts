@@ -5,6 +5,16 @@ export type Report = { id: string; type: 'proposal'|'progress'|'final'|'mid'|'si
 export type StudentProfile = { id: string; name: string; email: string; registrationNo?: string; password?: string; avatarBase64?: string; bio?: string; approved?: boolean; facultyId?: string; siteId?: string; companyId?: string; internshipMode?: 'OnSite'|'Virtual'|'Fiverr'|'Upwork'; marks?: { faculty?: number; admin?: number; site?: number; adminProposal?: number; adminLogs?: number; adminFinal?: number } };
 export type Role = 'student'|'admin'|'faculty'|'site';
 
+// Public announcements displayed on Home page (managed by Internship Office)
+export type Announcement = {
+  id: string;
+  message: string;
+  title?: string;
+  link?: string;
+  pinned?: boolean;
+  createdAt: string;
+};
+
 // Additional forms
 export type ApprovalForm = {
   id: string;
@@ -132,6 +142,7 @@ export class StoreService {
   requests = signal<RequestItem[]>(load('requests', []));
   designStatements = signal<Record<string, DesignStatement[]>>(load('designStatements', {}));
   assignments = signal<Record<string, Assignment[]>>(load('assignments', {}));
+  announcements = signal<Announcement[]>(load('announcements', []));
   adminProfile = signal<{ username: string; password: string; name?: string; avatarBase64?: string; bio?: string }>(load('adminProfile', { username: 'admin', password: 'admin123', name: 'Internship Office' }));
 
   private persist() {
@@ -152,6 +163,7 @@ export class StoreService {
     save('requests', this.requests());
     save('designStatements', this.designStatements());
     save('assignments', this.assignments());
+    save('announcements', this.announcements());
     save('adminProfile', this.adminProfile());
   }
 
@@ -168,6 +180,22 @@ export class StoreService {
   }
   updateStudent(id: string, changes: Partial<StudentProfile>) {
     this.students.update(a => a.map(s => s.id === id ? { ...s, ...changes } : s));
+    this.persist();
+  }
+
+  // Announcements (Office)
+  addAnnouncement(message: string, title?: string, link?: string, pinned?: boolean) {
+    const a: Announcement = { id: crypto.randomUUID(), message, title, link, pinned, createdAt: new Date().toISOString() };
+    this.announcements.update(arr => [a, ...arr]);
+    this.persist();
+    return a;
+  }
+  updateAnnouncement(id: string, changes: Partial<Announcement>) {
+    this.announcements.update(arr => arr.map(x => x.id === id ? { ...x, ...changes } : x));
+    this.persist();
+  }
+  removeAnnouncement(id: string) {
+    this.announcements.update(arr => arr.filter(x => x.id !== id));
     this.persist();
   }
 

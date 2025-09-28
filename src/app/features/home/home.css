@@ -1,0 +1,62 @@
+.home .object-cover{ object-fit: cover; }
+html { scroll-behavior: smooth; }
+.scroll-link{ text-decoration: none; color: inherit; }
+.scroll-link:hover{ text-decoration: underline; }
+.overlay-gradient{ position:absolute; inset:0; background: linear-gradient(180deg, rgba(0,0,0,0.2), rgba(0,0,0,0.55)); z-index:1; pointer-events:none; }
+.carousel-caption{ position:absolute; left:2rem; right:2rem; bottom:2rem; text-shadow: 0 1px 2px rgba(0,0,0,.4); z-index:2; }
+.carousel-item{ position: relative; }
+.hero-wrapper{ height: var(--hero-h, 600px); width:100%; }
+.hero-img{ height: var(--hero-h, 600px); background:#e9ecef; }
+.hero-slide{ height: var(--hero-h, 600px); width: 100%; background-size: cover; background-position: center; }
+.kenburns{ animation: kenburns 10s ease-in-out infinite alternate; }
+@keyframes kenburns{ from{ transform: scale(1) translateZ(0); } to{ transform: scale(1.08) translateZ(0); } }
+.glass{ background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.25); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); color: #fff; }
+.carousel-indicators{ gap:.25rem; }
+.carousel-indicators [data-bs-target]{ width: 28px; height: 28px; border-radius: 50%; background: rgba(255,255,255,.2); color:#fff; font-size:.9rem; display:flex; align-items:center; justify-content:center; border:1px solid rgba(255,255,255,.45); text-indent: 0; }
+.carousel-indicators .active{ background: #0d6efd; border-color:#0d6efd; }
+.subnav{ backdrop-filter: blur(6px); }
+.feature-card:hover{ transform: translateY(-2px); transition: transform .2s ease; }
+.step-card:hover, .mode-card:hover{ transform: translateY(-2px); transition: transform .2s ease; }
+.quick-link{ transition: transform .2s ease, box-shadow .2s ease; }
+.quick-link:hover{ transform: translateY(-3px); box-shadow: 0 .5rem 1rem rgba(0,0,0,.15); }
+.back-to-top{ position: fixed; right: 1rem; bottom: 1rem; width: 44px; height: 44px; display:flex; align-items:center; justify-content:center; }
+.scroll-down-indicator{ position:absolute; left:50%; transform: translateX(-50%); bottom: .75rem; color:#fff; opacity:.85; text-decoration:none; font-size:1.25rem; transition: transform .2s ease, opacity .2s ease; }
+.scroll-down-indicator:hover{ transform: translateX(-50%) translateY(2px); opacity:1; }
+
+
+/* Caption entrance */
+.carousel-item .glass{ opacity:0; transform: translateY(10px); transition: all .6s ease; }
+.carousel-item.active .glass{ opacity:1; transform: translateY(0); }
+
+/* Subnav responsiveness */
+@media (max-width: 575.98px){
+	.subnav .container{ gap: .75rem !important; flex-wrap: wrap; }
+}
+
+/* Responsive hero height mapped to common device widths */
+/* Desktop ≥ 1400px: 600px height (1920x600 recommendation) */
+@media (min-width: 1400px){
+	.hero-wrapper, .hero-img, .hero-slide{ height: 600px; }
+}
+/* Laptop / Medium screens ~1366px: 500px height */
+@media (min-width: 992px) and (max-width: 1399.98px){
+	.hero-wrapper, .hero-img, .hero-slide{ height: 500px; }
+}
+/* Tablet ~1024px: 400px height */
+@media (min-width: 768px) and (max-width: 991.98px){
+	.hero-wrapper, .hero-img, .hero-slide{ height: 400px; }
+}
+/* Mobile ≤ 767px: 250px height */
+@media (max-width: 767.98px){
+	.hero-wrapper, .hero-img, .hero-slide{ height: 250px; }
+}
+
+/* About section logo should fully fit without cropping */
+.about-visual{ position: relative; display:flex; align-items:center; justify-content:center; overflow:hidden; 
+	background: #ffffff;
+	border: 1px solid rgba(0,0,0,0.06);
+}
+.about-logo{ max-width: 100%; max-height: 280px; width:auto; height:auto; object-fit: contain; }
+@media (min-width: 768px){
+	.about-logo{ max-height: 360px; }
+}

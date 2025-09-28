@@ -1,7 +1,7 @@
 <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
 	<div class="container">
 		<a class="navbar-brand d-flex align-items-center gap-2" routerLink="/">
-			<img src="/assets/cui-logo.jpg" alt="COMSATS University Logo" width="36" height="36" class="brand-logo" />
+			<img src="/assets/cui-logo.jpg" alt="COMSATS University Logo" width="40" height="40" class="brand-logo" />
 			<span>CUI Internship System</span>
 		</a>
 		<button class="navbar-toggler" type="button" (click)="toggleMenu()" aria-controls="navbarNav"
@@ -9,158 +9,177 @@
 			<span class="navbar-toggler-icon"></span>
 		</button>
 		<div class="collapse navbar-collapse" [class.show]="showMobileMenu" id="navbarNav">
-							<ul class="navbar-nav ms-auto" *ngIf="store.currentUser() as user; else loggedOut">
-																<li class="nav-item dropdown" *ngIf="user.role === 'student'">
-																	<a class="nav-link dropdown-toggle d-flex align-items-center gap-2" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-																		<span class="d-inline-block rounded-circle overflow-hidden" style="width:28px;height:28px;background:#fff">
-																			<img *ngIf="myStudent()?.avatarBase64; else sInit" [src]="myStudent()?.avatarBase64" alt="Avatar" style="width:100%;height:100%;object-fit:cover" />
-																		</span>
-																		<ng-template #sInit><span class="d-inline-flex justify-content-center align-items-center w-100 h-100 text-primary fw-bold" style="font-size:0.75rem">{{ (myStudent()?.name || 'S')[0] }}</span></ng-template>
-																		<span>Student</span>
-																	</a>
-																	<ul class="dropdown-menu dropdown-menu-end p-3" style="min-width:300px">
-																		<li class="mb-2">
-																			<label class="form-label small mb-1">Bio</label>
-																			<textarea class="form-control form-control-sm" rows="2" [(ngModel)]="myStudent()!.bio" (ngModelChange)="updateStudentProfile({ bio: $event })"></textarea>
-																		</li>
-																		<li class="mb-2">
-																			<label class="form-label small mb-1">Profile photo</label>
-																			<input type="file" accept="image/*" class="form-control form-control-sm" (change)="onStudentAvatarSelected($event)" />
-																		</li>
-																		<li class="mb-2">
-																			<label class="form-label small mb-1">Change Password</label>
-																			<div class="input-group input-group-sm mb-1"><span class="input-group-text">Old</span><input type="password" class="form-control" [(ngModel)]="changeStudentPw.old" /></div>
-																			<div class="input-group input-group-sm mb-1"><span class="input-group-text">New</span><input type="password" class="form-control" [(ngModel)]="changeStudentPw.next" /></div>
-																			<div class="input-group input-group-sm mb-2"><span class="input-group-text">Confirm</span><input type="password" class="form-control" [(ngModel)]="changeStudentPw.confirm" /></div>
-																			<button class="btn btn-sm btn-outline-light" (click)="submitStudentPassword()">Update Password</button>
-																		</li>
-																		<li><a class="dropdown-item" routerLink="/student">Open Dashboard</a></li>
-																	</ul>
-																</li>
-																<li class="nav-item dropdown" *ngIf="user.role === 'admin'">
-																											<a class="nav-link dropdown-toggle d-flex align-items-center gap-2" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-																												<span class="d-inline-block rounded-circle overflow-hidden" style="width:28px;height:28px;background:#fff">
-																													<img *ngIf="myAdmin().avatarBase64; else aInit" [src]="myAdmin().avatarBase64" alt="Avatar" style="width:100%;height:100%;object-fit:cover" />
-																												</span>
-																												<ng-template #aInit><span class="d-inline-flex justify-content-center align-items-center w-100 h-100 text-primary fw-bold" style="font-size:0.75rem">{{ (myAdmin().name || 'A')[0] }}</span></ng-template>
-																			<span>Internship Office</span>
-																		</a>
-																		<ul class="dropdown-menu dropdown-menu-end p-3" style="min-width:300px">
-																			<li class="mb-2">
-																				<label class="form-label small mb-1">Display Name</label>
-																													<input class="form-control form-control-sm" [ngModel]="myAdmin().name" (ngModelChange)="updateAdminProfile({ name: $event })" />
-																			</li>
-																			<li class="mb-2">
-																				<label class="form-label small mb-1">Bio</label>
-																													<textarea class="form-control form-control-sm" rows="2" [ngModel]="myAdmin().bio" (ngModelChange)="updateAdminProfile({ bio: $event })"></textarea>
-																			</li>
-																			<li class="mb-2">
-																				<label class="form-label small mb-1">Profile photo</label>
-																				<input type="file" accept="image/*" class="form-control form-control-sm" (change)="onAdminAvatarSelected($event)" />
-																			</li>
-																			<li class="mb-2">
-																				<label class="form-label small mb-1">Change Password</label>
-																				<div class="input-group input-group-sm mb-1"><span class="input-group-text">Old</span><input type="password" class="form-control" [(ngModel)]="changeAdminPw.old" /></div>
-																				<div class="input-group input-group-sm mb-1"><span class="input-group-text">New</span><input type="password" class="form-control" [(ngModel)]="changeAdminPw.next" /></div>
-																				<div class="input-group input-group-sm mb-2"><span class="input-group-text">Confirm</span><input type="password" class="form-control" [(ngModel)]="changeAdminPw.confirm" /></div>
-																				<button class="btn btn-sm btn-outline-light" (click)="submitAdminPassword()">Update Password</button>
-																			</li>
-																			<li><a class="dropdown-item" routerLink="/admin">Open Dashboard</a></li>
-																		</ul>
-																</li>
-								<li class="nav-item dropdown" *ngIf="user.role === 'faculty'">
-									<a class="nav-link dropdown-toggle d-flex align-items-center gap-2" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-										<span class="d-inline-block rounded-circle overflow-hidden" style="width:28px;height:28px;background:#fff">
-											<img *ngIf="myFaculty()?.avatarBase64; else avatarInitial" [src]="myFaculty()?.avatarBase64" alt="Avatar" style="width:100%;height:100%;object-fit:cover" />
-										</span>
-										<ng-template #avatarInitial>
-											<span class="d-inline-flex justify-content-center align-items-center w-100 h-100 text-primary fw-bold" style="font-size:0.75rem">{{ (myFaculty()?.name || 'F')[0] }}</span>
-										</ng-template>
-										<span>Faculty</span>
-									</a>
-																		<ul class="dropdown-menu dropdown-menu-end p-3" style="min-width:300px">
-																				<li class="mb-2">
-																					<label class="form-label small mb-1">Name</label>
-																					<input class="form-control form-control-sm" [ngModel]="myFaculty()?.name" (ngModelChange)="updateFacultyProfile({ name: $event })" />
-																					<div class="text-muted small mt-1">{{ myFaculty()?.email }}</div>
-																				</li>
-																				<li class="mb-2">
-																					<label class="form-label small mb-1">Department</label>
-																					<input class="form-control form-control-sm" [ngModel]="myFaculty()?.department" (ngModelChange)="updateFacultyProfile({ department: $event })" />
-																				</li>
-										<li class="mb-2">
-											<label class="form-label small mb-1">Bio</label>
-											<textarea class="form-control form-control-sm" rows="2" [(ngModel)]="myFaculty()!.bio" (ngModelChange)="updateFacultyProfile({ bio: $event })"></textarea>
-										</li>
-										<li class="mb-2">
-											<label class="form-label small mb-1">Profile photo</label>
-											<input type="file" accept="image/*" class="form-control form-control-sm" (change)="onAvatarSelected($event)" />
-										</li>
-										<li><a class="dropdown-item" routerLink="/faculty">Open Dashboard</a></li>
-									</ul>
-								</li>
-																<li class="nav-item dropdown" *ngIf="user.role === 'site'">
-																	<a class="nav-link dropdown-toggle d-flex align-items-center gap-2" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-																		<span class="d-inline-block rounded-circle overflow-hidden" style="width:28px;height:28px;background:#fff">
-																			<img *ngIf="mySite()?.avatarBase64; else tInit" [src]="mySite()?.avatarBase64" alt="Avatar" style="width:100%;height:100%;object-fit:cover" />
-																		</span>
-																		<ng-template #tInit><span class="d-inline-flex justify-content-center align-items-center w-100 h-100 text-primary fw-bold" style="font-size:0.75rem">{{ (mySite()?.name || 'T')[0] }}</span></ng-template>
-																		<span>Site</span>
-																	</a>
-																	<ul class="dropdown-menu dropdown-menu-end p-3" style="min-width:300px">
-																		<li class="mb-2">
-																			<label class="form-label small mb-1">Name</label>
-																			<input class="form-control form-control-sm" [ngModel]="mySite()?.name" (ngModelChange)="updateSiteProfile({ name: $event })" />
-																		</li>
-																		<li class="mb-2">
-																			<label class="form-label small mb-1">Bio</label>
-																			<textarea class="form-control form-control-sm" rows="2" [(ngModel)]="mySite()!.bio" (ngModelChange)="updateSiteProfile({ bio: $event })"></textarea>
-																		</li>
-																		<li class="mb-2">
-																			<label class="form-label small mb-1">Profile photo</label>
-																			<input type="file" accept="image/*" class="form-control form-control-sm" (change)="onSiteAvatarSelected($event)" />
-																		</li>
-																		<li class="mb-2">
-																			<label class="form-label small mb-1">Change Password</label>
-																			<div class="input-group input-group-sm mb-1"><span class="input-group-text">Old</span><input type="password" class="form-control" [(ngModel)]="changeSitePw.old" /></div>
-																			<div class="input-group input-group-sm mb-1"><span class="input-group-text">New</span><input type="password" class="form-control" [(ngModel)]="changeSitePw.next" /></div>
-																			<div class="input-group input-group-sm mb-2"><span class="input-group-text">Confirm</span><input type="password" class="form-control" [(ngModel)]="changeSitePw.confirm" /></div>
-																			<button class="btn btn-sm btn-outline-light" (click)="submitSitePassword()">Update Password</button>
-																		</li>
-																		<li><a class="dropdown-item" routerLink="/site">Open Dashboard</a></li>
-																	</ul>
-																</li>
-								<li class="nav-item">
-									<button class="btn btn-sm btn-light ms-3 d-flex align-items-center gap-1" (click)="logout()">
-										<i class="pi pi-sign-out" aria-hidden="true"></i><span>Logout</span>
-									</button>
-								</li>
-							</ul>
-					<ng-template #loggedOut>
-										<ul class="navbar-nav ms-auto">
-											<li class="nav-item">
-												<a class="nav-link d-flex align-items-center gap-1" routerLink="/login" routerLinkActive="active">
-													<i class="pi pi-sign-in" aria-hidden="true"></i><span>Student Login</span>
-												</a>
-											</li>
-											<li class="nav-item">
-												<a class="nav-link d-flex align-items-center gap-1" routerLink="/faculty-login" routerLinkActive="active">
-													<i class="pi pi-user" aria-hidden="true"></i><span>Faculty Login</span>
-												</a>
-											</li>
-											<li class="nav-item">
-												<a class="nav-link d-flex align-items-center gap-1" routerLink="/site-login" routerLinkActive="active">
-													<i class="pi pi-users" aria-hidden="true"></i><span>Site Login</span>
-												</a>
-											</li>
-											<li class="nav-item">
-												<a class="nav-link d-flex align-items-center gap-1" routerLink="/signup" routerLinkActive="active">
-													<i class="pi pi-user-plus" aria-hidden="true"></i><span>Signup</span>
-												</a>
-											</li>
-											<!-- Admin login intentionally hidden from normal UI; accessible only via direct route -->
-										</ul>
-					</ng-template>
+			@if (store.currentUser(); as user) {
+				<ul class="navbar-nav ms-auto">
+					@if (user.role === 'student') {
+					<li class="nav-item dropdown">
+						<a class="nav-link dropdown-toggle d-flex align-items-center gap-2" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+							<span class="d-inline-block rounded-circle overflow-hidden" style="width:28px;height:28px;background:#fff">
+								@if (myStudent()?.avatarBase64) {
+									<img [src]="myStudent()?.avatarBase64" alt="Avatar" style="width:100%;height:100%;object-fit:cover" />
+								} @else {
+									<span class="d-inline-flex justify-content-center align-items-center w-100 h-100 text-primary fw-bold" style="font-size:0.75rem">{{ (myStudent()?.name || 'S')[0] }}</span>
+								}
+							</span>
+							<span>Student</span>
+						</a>
+						<ul class="dropdown-menu dropdown-menu-end p-3" style="min-width:300px">
+							<li class="mb-2">
+								<label class="form-label small mb-1">Bio</label>
+								<textarea class="form-control form-control-sm" rows="2" [(ngModel)]="myStudent()!.bio" (ngModelChange)="updateStudentProfile({ bio: $event })"></textarea>
+							</li>
+							<li class="mb-2">
+								<label class="form-label small mb-1">Profile photo</label>
+								<input type="file" accept="image/*" class="form-control form-control-sm" (change)="onStudentAvatarSelected($event)" />
+							</li>
+							<li class="mb-2">
+								<label class="form-label small mb-1">Change Password</label>
+								<div class="input-group input-group-sm mb-1"><span class="input-group-text">Old</span><input type="password" class="form-control" [(ngModel)]="changeStudentPw.old" /></div>
+								<div class="input-group input-group-sm mb-1"><span class="input-group-text">New</span><input type="password" class="form-control" [(ngModel)]="changeStudentPw.next" /></div>
+								<div class="input-group input-group-sm mb-2"><span class="input-group-text">Confirm</span><input type="password" class="form-control" [(ngModel)]="changeStudentPw.confirm" /></div>
+								<button class="btn btn-sm btn-outline-light" (click)="submitStudentPassword()">Update Password</button>
+							</li>
+							<li><a class="dropdown-item" routerLink="/student">Open Dashboard</a></li>
+						</ul>
+					</li>
+					}
+					@if (user.role === 'admin') {
+					<li class="nav-item dropdown">
+						<a class="nav-link dropdown-toggle d-flex align-items-center gap-2" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+							<span class="d-inline-block rounded-circle overflow-hidden" style="width:28px;height:28px;background:#fff">
+								@if (myAdmin().avatarBase64) {
+									<img [src]="myAdmin().avatarBase64" alt="Avatar" style="width:100%;height:100%;object-fit:cover" />
+								} @else {
+									<span class="d-inline-flex justify-content-center align-items-center w-100 h-100 text-primary fw-bold" style="font-size:0.75rem">{{ (myAdmin().name || 'A')[0] }}</span>
+								}
+							</span>
+							<span>Internship Office</span>
+						</a>
+						<ul class="dropdown-menu dropdown-menu-end p-3" style="min-width:300px">
+							<li class="mb-2">
+								<label class="form-label small mb-1">Display Name</label>
+								<input class="form-control form-control-sm" [ngModel]="myAdmin().name" (ngModelChange)="updateAdminProfile({ name: $event })" />
+							</li>
+							<li class="mb-2">
+								<label class="form-label small mb-1">Bio</label>
+								<textarea class="form-control form-control-sm" rows="2" [ngModel]="myAdmin().bio" (ngModelChange)="updateAdminProfile({ bio: $event })"></textarea>
+							</li>
+							<li class="mb-2">
+								<label class="form-label small mb-1">Profile photo</label>
+								<input type="file" accept="image/*" class="form-control form-control-sm" (change)="onAdminAvatarSelected($event)" />
+							</li>
+							<li class="mb-2">
+								<label class="form-label small mb-1">Change Password</label>
+								<div class="input-group input-group-sm mb-1"><span class="input-group-text">Old</span><input type="password" class="form-control" [(ngModel)]="changeAdminPw.old" /></div>
+								<div class="input-group input-group-sm mb-1"><span class="input-group-text">New</span><input type="password" class="form-control" [(ngModel)]="changeAdminPw.next" /></div>
+								<div class="input-group input-group-sm mb-2"><span class="input-group-text">Confirm</span><input type="password" class="form-control" [(ngModel)]="changeAdminPw.confirm" /></div>
+								<button class="btn btn-sm btn-outline-light" (click)="submitAdminPassword()">Update Password</button>
+							</li>
+							<li><a class="dropdown-item" routerLink="/admin">Open Dashboard</a></li>
+						</ul>
+					</li>
+					}
+					@if (user.role === 'faculty') {
+					<li class="nav-item dropdown">
+						<a class="nav-link dropdown-toggle d-flex align-items-center gap-2" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+							<span class="d-inline-block rounded-circle overflow-hidden" style="width:28px;height:28px;background:#fff">
+								@if (myFaculty()?.avatarBase64) {
+									<img [src]="myFaculty()?.avatarBase64" alt="Avatar" style="width:100%;height:100%;object-fit:cover" />
+								} @else {
+									<span class="d-inline-flex justify-content-center align-items-center w-100 h-100 text-primary fw-bold" style="font-size:0.75rem">{{ (myFaculty()?.name || 'F')[0] }}</span>
+								}
+							</span>
+							<span>Faculty</span>
+						</a>
+						<ul class="dropdown-menu dropdown-menu-end p-3" style="min-width:300px">
+							<li class="mb-2">
+								<label class="form-label small mb-1">Name</label>
+								<input class="form-control form-control-sm" [ngModel]="myFaculty()?.name" (ngModelChange)="updateFacultyProfile({ name: $event })" />
+								<div class="text-muted small mt-1">{{ myFaculty()?.email }}</div>
+							</li>
+							<li class="mb-2">
+								<label class="form-label small mb-1">Department</label>
+								<input class="form-control form-control-sm" [ngModel]="myFaculty()?.department" (ngModelChange)="updateFacultyProfile({ department: $event })" />
+							</li>
+							<li class="mb-2">
+								<label class="form-label small mb-1">Bio</label>
+								<textarea class="form-control form-control-sm" rows="2" [(ngModel)]="myFaculty()!.bio" (ngModelChange)="updateFacultyProfile({ bio: $event })"></textarea>
+							</li>
+							<li class="mb-2">
+								<label class="form-label small mb-1">Profile photo</label>
+								<input type="file" accept="image/*" class="form-control form-control-sm" (change)="onAvatarSelected($event)" />
+							</li>
+							<li><a class="dropdown-item" routerLink="/faculty">Open Dashboard</a></li>
+						</ul>
+					</li>
+					}
+					@if (user.role === 'site') {
+					<li class="nav-item dropdown">
+						<a class="nav-link dropdown-toggle d-flex align-items-center gap-2" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+							<span class="d-inline-block rounded-circle overflow-hidden" style="width:28px;height:28px;background:#fff">
+								@if (mySite()?.avatarBase64) {
+									<img [src]="mySite()?.avatarBase64" alt="Avatar" style="width:100%;height:100%;object-fit:cover" />
+								} @else {
+									<span class="d-inline-flex justify-content-center align-items-center w-100 h-100 text-primary fw-bold" style="font-size:0.75rem">{{ (mySite()?.name || 'T')[0] }}</span>
+								}
+							</span>
+							<span>Site</span>
+						</a>
+						<ul class="dropdown-menu dropdown-menu-end p-3" style="min-width:300px">
+							<li class="mb-2">
+								<label class="form-label small mb-1">Name</label>
+								<input class="form-control form-control-sm" [ngModel]="mySite()?.name" (ngModelChange)="updateSiteProfile({ name: $event })" />
+							</li>
+							<li class="mb-2">
+								<label class="form-label small mb-1">Bio</label>
+								<textarea class="form-control form-control-sm" rows="2" [(ngModel)]="mySite()!.bio" (ngModelChange)="updateSiteProfile({ bio: $event })"></textarea>
+							</li>
+							<li class="mb-2">
+								<label class="form-label small mb-1">Profile photo</label>
+								<input type="file" accept="image/*" class="form-control form-control-sm" (change)="onSiteAvatarSelected($event)" />
+							</li>
+							<li class="mb-2">
+								<label class="form-label small mb-1">Change Password</label>
+								<div class="input-group input-group-sm mb-1"><span class="input-group-text">Old</span><input type="password" class="form-control" [(ngModel)]="changeSitePw.old" /></div>
+								<div class="input-group input-group-sm mb-1"><span class="input-group-text">New</span><input type="password" class="form-control" [(ngModel)]="changeSitePw.next" /></div>
+								<div class="input-group input-group-sm mb-2"><span class="input-group-text">Confirm</span><input type="password" class="form-control" [(ngModel)]="changeSitePw.confirm" /></div>
+								<button class="btn btn-sm btn-outline-light" (click)="submitSitePassword()">Update Password</button>
+							</li>
+							<li><a class="dropdown-item" routerLink="/site">Open Dashboard</a></li>
+						</ul>
+					</li>
+					}
+					<li class="nav-item">
+						<button class="btn btn-sm btn-light ms-3 d-flex align-items-center gap-1" (click)="logout()">
+							<i class="pi pi-sign-out" aria-hidden="true"></i><span>Logout</span>
+						</button>
+					</li>
+				</ul>
+			} @else {
+				<ul class="navbar-nav ms-auto">
+					<li class="nav-item">
+						<a class="nav-link d-flex align-items-center gap-1" routerLink="/login" routerLinkActive="active">
+							<i class="pi pi-sign-in" aria-hidden="true"></i><span>Student Login</span>
+						</a>
+					</li>
+					<li class="nav-item">
+						<a class="nav-link d-flex align-items-center gap-1" routerLink="/faculty-login" routerLinkActive="active">
+							<i class="pi pi-user" aria-hidden="true"></i><span>Faculty Login</span>
+						</a>
+					</li>
+					<li class="nav-item">
+						<a class="nav-link d-flex align-items-center gap-1" routerLink="/site-login" routerLinkActive="active">
+							<i class="pi pi-users" aria-hidden="true"></i><span>Site Login</span>
+						</a>
+					</li>
+					<li class="nav-item">
+						<a class="nav-link d-flex align-items-center gap-1" routerLink="/signup" routerLinkActive="active">
+							<i class="pi pi-user-plus" aria-hidden="true"></i><span>Signup</span>
+						</a>
+					</li>
+					<!-- Admin login intentionally hidden from normal UI; accessible only via direct route -->
+				</ul>
+			}
 		</div>
 	</div>
  </nav>

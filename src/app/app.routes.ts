@@ -8,7 +8,7 @@ const roleGuard = (role: 'student'|'admin'|'faculty'|'site'): CanMatchFn => () =
 };
 
 export const routes: Routes = [
-    { path: '', pathMatch: 'full', redirectTo: 'login' },
+    { path: '', pathMatch: 'full', loadComponent: () => import('./features/home/home').then(m => m.Home) },
     { path: 'login', loadComponent: () => import('./features/auth/login').then(m => m.Login) },
     { path: 'signup', loadComponent: () => import('./features/auth/signup').then(m => m.Signup) },
     { path: 'admin-login', loadComponent: () => import('./features/auth/admin-login').then(m => m.AdminLogin) },

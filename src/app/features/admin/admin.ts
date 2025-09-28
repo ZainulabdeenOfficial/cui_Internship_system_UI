@@ -42,6 +42,9 @@ export class Admin {
   // password reset buffers
   facultyNewPw: Record<string, string> = {};
   siteNewPw: Record<string, string> = {};
+  // announcements
+  announcement = { title: '', message: '', link: '', pinned: false };
+  announcements = this.store.announcements; // expose to template
 
   approve(id: string) { this.store.approveStudent(id); this.toast.success('Student approved'); }
   viewDetails(id: string) { this.selectedId = id; }
@@ -151,6 +154,21 @@ export class Admin {
   rejectRequest(id: string) {
     const note = prompt('Optional note for rejection:') || undefined;
     this.store.rejectRequest(id, note); this.toast.warning('Request rejected');
+  }
+  // Announcements actions
+  addAnnouncement() {
+    const msg = (this.announcement.message ?? '').trim();
+    if (!msg) { this.toast.warning('Announcement message is required'); return; }
+    this.store.addAnnouncement(msg, this.announcement.title?.trim() || undefined, this.announcement.link?.trim() || undefined, !!this.announcement.pinned);
+    this.announcement = { title: '', message: '', link: '', pinned: false };
+    this.toast.success('Announcement published');
+  }
+  togglePinned(id: string) {
+    const current = this.store.announcements().find(a => a.id === id)?.pinned;
+    this.store.updateAnnouncement(id, { pinned: !current });
+  }
+  removeAnnouncement(id: string) {
+    if (confirm('Remove this announcement?')) { this.store.removeAnnouncement(id); this.toast.warning('Announcement removed'); }
   }
   facultyName(id: string) {
     const f = this.facultyList().find(x => x.id === id);

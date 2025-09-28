@@ -10,7 +10,7 @@
         <div class="col-12">
           <label for="email" class="form-label">Email</label>
           <input id="email" type="email" class="form-control" [(ngModel)]="model.email" name="email" #email="ngModel" required email />
-          <div class="invalid-feedback d-block" *ngIf="(f.submitted || email.touched) && email.invalid">Valid CUI email is required.</div>
+          @if ((f.submitted || email.touched) && email.invalid) {<div class="invalid-feedback d-block">Valid CUI email is required.</div>}
         </div>
         <div class="col-12">
           <label for="password" class="form-label">Password</label>
@@ -20,7 +20,7 @@
               <i class="pi" [ngClass]="showPassword ? 'pi-eye-slash' : 'pi-eye'"></i>
             </button>
           </div>
-          <div class="invalid-feedback d-block" *ngIf="(f.submitted || password.touched) && password.invalid">Password is required (min 6 chars).</div>
+          @if ((f.submitted || password.touched) && password.invalid) {<div class="invalid-feedback d-block">Password is required (min 6 chars).</div>}
         </div>
         <div class="col-12 d-flex justify-content-between align-items-center">
           <div class="form-check">
@@ -31,20 +31,26 @@
         </div>
         <div class="col-12">
           <button class="btn btn-primary w-100 d-inline-flex justify-content-center align-items-center" [disabled]="!f.form.valid || loading">
-            <span class="spinner-border spinner-border-sm me-2" role="status" *ngIf="loading"></span>
+            @if (loading) {<span class="spinner-border spinner-border-sm me-2" role="status"></span>}
             Login
           </button>
         </div>
-        <div class="col-12" *ngIf="cooldownRemaining() > 0">
-          <div class="alert alert-warning py-2">Too many attempts. Please wait {{ cooldownRemaining() }}s.</div>
-        </div>
-        <div class="col-12" *ngIf="challengeActive">
-          <label class="form-label small">Security Check: What is {{ challenge?.a }} + {{ challenge?.b }}?</label>
-          <input type="number" class="form-control form-control-sm" [(ngModel)]="challengeAnswer" name="challenge" />
-        </div>
-        <div class="col-12" *ngIf="error">
-          <div class="alert alert-danger py-2">{{ error }}</div>
-        </div>
+        @if (cooldownRemaining() > 0) {
+          <div class="col-12">
+            <div class="alert alert-warning py-2">Too many attempts. Please wait {{ cooldownRemaining() }}s.</div>
+          </div>
+        }
+        @if (challengeActive) {
+          <div class="col-12">
+            <label class="form-label small">Security Check: What is {{ challenge?.a }} + {{ challenge?.b }}?</label>
+            <input type="number" class="form-control form-control-sm" [(ngModel)]="challengeAnswer" name="challenge" />
+          </div>
+        }
+        @if (error) {
+          <div class="col-12">
+            <div class="alert alert-danger py-2">{{ error }}</div>
+          </div>
+        }
         <div class="col-12 text-center small">
           <span>Don't have an account? <a routerLink="/signup">Sign up</a></span>
         </div>

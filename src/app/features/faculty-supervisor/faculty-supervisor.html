@@ -41,7 +41,8 @@
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let s of filteredStudents()">
+        @for (s of filteredStudents(); track s.id) {
+        <tr>
           <td>{{ s.name }}</td>
           <td>{{ s.email }}</td>
           <td>{{ s.registrationNo || '-' }}</td>
@@ -59,14 +60,15 @@
             <button class="btn btn-sm btn-outline-primary" (click)="selectedId = s.id">Open</button>
           </td>
         </tr>
+        }
       </tbody>
     </table>
   </div>
-  <div *ngIf="selectedId">
-    <div class="row g-3">
+  @if (selectedId) {
       <div class="col-md-6">
         <h5>Approval Forms</h5>
-        <div *ngIf="approvals().length; else noApproval">
+        @if (approvals().length) {
+          @for (a of approvals(); track a.id; let i = $index) {
           <div class="card mb-2" *ngFor="let a of approvals(); let i = index">
             <div class="card-header">Approval #{{ i+1 }} — {{ a.createdAt | date:'short' }}</div>
             <div class="card-body small">
@@ -78,13 +80,12 @@
               <div><strong>Outcomes:</strong> {{ a.outcomes }}</div>
             </div>
           </div>
-        </div>
-        <ng-template #noApproval><div class="text-muted">No approval form submitted yet.</div></ng-template>
-      </div>
+          }
+        } @else { <div class="text-muted">No approval form submitted yet.</div> }
       <div class="col-md-6">
         <h5>Weekly Logs</h5>
         <ul class="list-group">
-          <li class="list-group-item" *ngFor="let l of logs()">Week {{ l.week }} · {{ l.note }} <span class="text-muted">— {{ l.date | date:'short' }}</span></li>
+          @for (l of logs(); track $index) {<li class="list-group-item">Week {{ l.week }} · {{ l.note }} <span class="text-muted">— {{ l.date | date:'short' }}</span></li>}
         </ul>
       </div>
       <div class="col-md-6 mt-3">
@@ -93,7 +94,7 @@
           <table class="table table-sm align-middle">
             <thead><tr><th>Type</th><th>Title</th><th>Date</th><th>Score</th><th>Approved</th><th>Action</th></tr></thead>
             <tbody>
-              <tr *ngFor="let r of reports()">
+              @for (r of reports(); track r.id) {
                 <td>{{ r.type | titlecase }}</td>
                 <td>{{ r.title || '(Untitled)' }}</td>
                 <td>{{ r.date | date:'short' }}</td>
@@ -108,7 +109,7 @@
                     <button class="btn btn-outline-secondary" (click)="toggleReportApproved(r.id, false)">Unapprove</button>
                   </div>
                 </td>
-              </tr>
+              }
             </tbody>
           </table>
         </div>
@@ -119,7 +120,7 @@
           <table class="table table-sm align-middle">
             <thead><tr><th>File</th><th>Type</th><th>Size</th><th>Uploaded</th><th>Mark</th><th>Actions</th></tr></thead>
             <tbody>
-              <tr *ngFor="let a of assignments()">
+              @for (a of assignments(); track a.id) {
                 <td>{{ a.fileName }}</td>
                 <td>{{ a.fileType }}</td>
                 <td>{{ a.fileSize | number }} bytes</td>
@@ -131,36 +132,37 @@
                     <button class="btn btn-outline-primary" (click)="setAssignmentMark(a.id)">Save</button>
                   </div>
                 </td>
-              </tr>
+              }
             </tbody>
           </table>
         </div>
       </div>
       <div class="col-md-6 mt-3">
         <h5>Agreement</h5>
-        <div *ngIf="agreements().length; else noAgreement">
-          <div class="card" *ngFor="let ag of agreements(); let i=index">
+        @if (agreements().length) {
+          @for (ag of agreements(); track ag.id; let i = $index) {
             <div class="card-header">Agreement #{{ i+1 }} — {{ ag.createdAt | date:'short' }}</div>
             <div class="card-body small">
               <div><strong>Student Sign:</strong> {{ ag.studentSignatureName }} on {{ ag.date }}</div>
-              <div><strong>Faculty Sign:</strong> {{ ag.facultySignatureName || '-' }} <span class="text-muted" *ngIf="ag.facultySignedAt">({{ ag.facultySignedAt | date:'short' }})</span></div>
-              <div><strong>Office Sign:</strong> {{ ag.officeSignatureName || '-' }} <span class="text-muted" *ngIf="ag.officeSignedAt">({{ ag.officeSignedAt | date:'short' }})</span></div>
+              <div><strong>Faculty Sign:</strong> {{ ag.facultySignatureName || '-' }} @if (ag.facultySignedAt) {<span class="text-muted">({{ ag.facultySignedAt | date:'short' }})</span>}</div>
+              <div><strong>Office Sign:</strong> {{ ag.officeSignatureName || '-' }} @if (ag.officeSignedAt) {<span class="text-muted">({{ ag.officeSignedAt | date:'short' }})</span>}</div>
             </div>
-          </div>
-        </div>
-        <ng-template #noAgreement><div class="text-muted">No agreement submitted yet.</div></ng-template>
+          }
+        } @else { <div class="text-muted">No agreement submitted yet.</div> }
       </div>
     </div>
-    <div class="row g-3 mt-3" *ngIf="selectedStudent() as ss">
-      <div class="col-md-4"><strong>Assigned Faculty:</strong> {{ facultyProfile()?.name || '-' }}</div>
-  <div class="col-md-4"><strong>Assigned Site:</strong> {{ siteName(ss.siteId) }}</div>
-      <div class="col-md-4"><strong>Company:</strong> {{ companyName(ss.companyId) }}</div>
-    </div>
-  </div>
+    @if (selectedStudent(); as ss) {
+      <div class="row g-3 mt-3">
+        <div class="col-md-4"><strong>Assigned Faculty:</strong> {{ facultyProfile()?.name || '-' }}</div>
+        <div class="col-md-4"><strong>Assigned Site:</strong> {{ siteName(ss.siteId) }}</div>
+        <div class="col-md-4"><strong>Company:</strong> {{ companyName(ss.companyId) }}</div>
+      </div>
+    }
+  }
 
   <hr class="my-4" />
   <h4>My Profile</h4>
-  <div class="row g-3" *ngIf="facultyProfile() as fp">
+  @if (facultyProfile(); as fp) {
     <div class="col-md-4">
       <label class="form-label">Name</label>
       <input class="form-control" [ngModel]="fp.name" (ngModelChange)="updateMyProfile({ name: $event })" />
@@ -173,9 +175,9 @@
       <label class="form-label">Email</label>
       <input class="form-control" [ngModel]="fp.email" (ngModelChange)="updateMyProfile({ email: $event })" />
     </div>
-  </div>
+  }
 
-  <div class="row g-3 mt-3" *ngIf="facultyProfile()">
+  @if (facultyProfile()) {
     <div class="col-md-4">
       <label class="form-label">Old Password</label>
       <input type="password" class="form-control" [(ngModel)]="pw.old" />
@@ -191,5 +193,5 @@
     <div class="col-12">
       <button class="btn btn-outline-primary" (click)="changePassword()">Change Password</button>
     </div>
-  </div>
+  }
 </div>

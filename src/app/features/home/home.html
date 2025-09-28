@@ -1,0 +1,331 @@
+<div class="home">
+  <!-- Hero with carousel and overlay (full-width) -->
+  <section id="hero" class="container-fluid px-0">
+    <div class="hero-wrapper position-relative overflow-hidden" [style.--hero-h.px]="heroHeight">
+      <div id="heroCarousel" class="carousel slide carousel-fade" data-bs-ride="carousel" data-bs-interval="6000">
+        <div class="carousel-indicators">
+          @for (s of slides; track $index) {
+            <button type="button" data-bs-target="#heroCarousel" [attr.data-bs-slide-to]="$index" [class.active]="$index===0" [attr.aria-current]="$index===0? 'true': null" [attr.aria-label]="'Slide ' + ($index+1)">{{ $index+1 }}</button>
+          }
+        </div>
+        <div class="carousel-inner">
+          @for (s of slides; track $index) {
+            <div class="carousel-item" [class.active]="$index===0">
+              <img [src]="s.img" class="d-block w-100 object-cover hero-img" [attr.alt]="s.alt" [attr.loading]="$index===0? 'eager':'lazy'" decoding="async" />
+              <div class="overlay-gradient"></div>
+              <div class="carousel-caption" [ngClass]="s.align">
+                <div class="glass p-3 p-md-4 rounded-3" [class.d-inline-block]="s.align!=='text-start'">
+                  @if ($index === 0) {<h2 class="fw-bold mb-1">{{ s.title }}</h2>} @else {<h3 class="fw-bold mb-1">{{ s.title }}</h3>}
+                  <p class="mb-0 mb-md-1" [class.mb-3]="$index===0">{{ s.desc }}</p>
+                  @if (s.showCtas) {
+                    <div class="d-flex gap-2 flex-wrap">
+                      <a class="btn btn-primary" routerLink="/login">Student Login</a>
+                      <a class="btn btn-outline-light" routerLink="/faculty-login">Faculty Login</a>
+                      <a class="btn btn-outline-light" routerLink="/site-login">Site Login</a>
+                      <a class="btn btn-outline-light" routerLink="/admin-login">Office Login</a>
+                    </div>
+                  }
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+        <button class="carousel-control-prev" type="button" data-bs-target="#heroCarousel" data-bs-slide="prev">
+          <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+          <span class="visually-hidden">Previous</span>
+        </button>
+        <button class="carousel-control-next" type="button" data-bs-target="#heroCarousel" data-bs-slide="next">
+          <span class="carousel-control-next-icon" aria-hidden="true"></span>
+          <span class="visually-hidden">Next</span>
+        </button>
+      </div>
+      <a href="#features" class="scroll-down-indicator" aria-label="Scroll to features"><i class="pi pi-angle-down"></i></a>
+    </div>
+  </section>
+
+  <!-- Sticky smooth scroll nav -->
+  <nav class="subnav sticky-top bg-white border-top border-bottom py-2 small">
+    <div class="container d-flex gap-3 justify-content-center">
+      <a href="#about" class="scroll-link"><i class="pi pi-info-circle me-1"></i> About</a>
+      <a href="#features" class="scroll-link"><i class="pi pi-star me-1"></i> Features</a>
+      <a href="#how" class="scroll-link"><i class="pi pi-list-numbered me-1"></i> How it works</a>
+      <a href="#modes" class="scroll-link"><i class="pi pi-briefcase me-1"></i> Modes</a>
+      <a href="#stats" class="scroll-link"><i class="pi pi-chart-bar me-1"></i> Stats</a>
+      <a href="#announcements" class="scroll-link"><i class="pi pi-megaphone me-1"></i> Announcements</a>
+      <a href="#faq" class="scroll-link"><i class="pi pi-question-circle me-1"></i> FAQ</a>
+      <a href="#contact" class="scroll-link"><i class="pi pi-envelope me-1"></i> Contact</a>
+    </div>
+  </nav>
+
+  <section id="about" class="container py-5">
+    <div class="row align-items-center g-4">
+      <div class="col-md-6">
+        <h3 class="mb-3">About the System</h3>
+        <p>
+          The CUI Internship System accelerates internship management at CUI Sahiwal Campus—bringing together students,
+          faculty, site supervisors, and the Internship Office on one modern platform inspired by the campus portal experience.
+        </p>
+        <ul class="list-unstyled mb-0">
+          <li class="mb-1"><i class="pi pi-check-circle text-success me-2"></i> Student submissions with feedback loops</li>
+          <li class="mb-1"><i class="pi pi-check-circle text-success me-2"></i> Supervisor evaluations and approvals</li>
+          <li class="mb-1"><i class="pi pi-check-circle text-success me-2"></i> Office oversight and compliance</li>
+        </ul>
+      </div>
+      <div class="col-md-6">
+        <div class="about-visual rounded-3 shadow-sm bg-light p-3">
+          <img src="/assets/cui-logo-home.png" alt="CUI Home Logo" class="about-logo" />
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="features" class="container py-5">
+    <h3 class="mb-3">Key Features</h3>
+    <div class="row g-3">
+      <div class="col-md-4">
+        <div class="feature-card card h-100">
+          <div class="card-body">
+            <h5 class="card-title"><i class="pi pi-user me-2 text-primary"></i>Student Portal</h5>
+            <p class="card-text mb-3">Signup/login, proposals, weekly logs, reflective and final reports.</p>
+            <a routerLink="/login" class="btn btn-sm btn-outline-primary">Open</a>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="feature-card card h-100">
+          <div class="card-body">
+            <h5 class="card-title"><i class="pi pi-verified me-2 text-success"></i>Supervisor Evaluation</h5>
+            <p class="card-text mb-3">Per-report scoring and approvals; batch mid/final marking for site supervisors.</p>
+            <div class="d-flex gap-2">
+              <a routerLink="/faculty-login" class="btn btn-sm btn-outline-success">Faculty</a>
+              <a routerLink="/site-login" class="btn btn-sm btn-outline-success">Site</a>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="feature-card card h-100">
+          <div class="card-body">
+            <h5 class="card-title"><i class="pi pi-briefcase me-2 text-secondary"></i>Office Oversight</h5>
+            <p class="card-text mb-3">Full visibility, assignments, requests, and compliance monitoring.</p>
+            <a routerLink="/admin-login" class="btn btn-sm btn-outline-secondary">Open</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="how" class="container py-5">
+    <h3 class="mb-3">How it works</h3>
+    <div class="row g-3">
+      <div class="col-md-3 col-6">
+        <div class="step-card card h-100 text-center">
+          <div class="card-body">
+            <i class="pi pi-user-plus text-primary display-6 d-block mb-2"></i>
+            <div class="fw-semibold">1) Sign up / Login</div>
+            <div class="text-muted small">Students register or sign in with their CUI email.</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3 col-6">
+        <div class="step-card card h-100 text-center">
+          <div class="card-body">
+            <i class="pi pi-file-edit text-success display-6 d-block mb-2"></i>
+            <div class="fw-semibold">2) Submit Proposal</div>
+            <div class="text-muted small">Enter company/site details and internship plan for approval.</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3 col-6">
+        <div class="step-card card h-100 text-center">
+          <div class="card-body">
+            <i class="pi pi-check-circle text-warning display-6 d-block mb-2"></i>
+            <div class="fw-semibold">3) Get Approvals</div>
+            <div class="text-muted small">Faculty, Site Supervisor, and Office review and approve.</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3 col-6">
+        <div class="step-card card h-100 text-center">
+          <div class="card-body">
+            <i class="pi pi-send text-secondary display-6 d-block mb-2"></i>
+            <div class="fw-semibold">4) Logs & Reports</div>
+            <div class="text-muted small">Submit weekly logs, reflective and final reports for marking.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="modes" class="container py-5">
+    <h3 class="mb-3">Internship Modes</h3>
+    <div class="row g-3">
+      <div class="col-md-3 col-6">
+        <div class="mode-card card h-100">
+          <div class="card-body">
+            <div class="d-flex align-items-center mb-2"><i class="pi pi-building text-primary me-2"></i><strong>On-Site</strong></div>
+            <div class="text-muted small">Physical presence at the company with on-ground supervision.</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3 col-6">
+        <div class="mode-card card h-100">
+          <div class="card-body">
+            <div class="d-flex align-items-center mb-2"><i class="pi pi-desktop text-info me-2"></i><strong>Virtual</strong></div>
+            <div class="text-muted small">Remote internship with clear deliverables and tracking.</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3 col-6">
+        <div class="mode-card card h-100">
+          <div class="card-body">
+            <div class="d-flex align-items-center mb-2"><i class="pi pi-briefcase text-success me-2"></i><strong>Fiverr</strong></div>
+            <div class="text-muted small">Freelance-based evaluation using Fiverr order and earnings.</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3 col-6">
+        <div class="mode-card card h-100">
+          <div class="card-body">
+            <div class="d-flex align-items-center mb-2"><i class="pi pi-briefcase text-success me-2"></i><strong>Upwork</strong></div>
+            <div class="text-muted small">Freelance-based evaluation using Upwork contracts and logs.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="stats" class="bg-light py-5 border-top border-bottom">
+        <div class="container">
+      <div class="row g-3 text-center">
+        <div class="col-6 col-md-3">
+          <div class="stat card shadow-sm h-100">
+            <div class="card-body">
+              <div class="display-6 fw-bold text-primary">{{ studentsCount }}</div>
+              <div class="text-muted small">Students</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="stat card shadow-sm h-100">
+            <div class="card-body">
+              <div class="display-6 fw-bold text-success">{{ supervisorsCount }}</div>
+              <div class="text-muted small">Supervisors</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="stat card shadow-sm h-100">
+            <div class="card-body">
+              <div class="display-6 fw-bold text-warning">{{ companiesCount }}</div>
+              <div class="text-muted small">Companies</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="stat card shadow-sm h-100">
+            <div class="card-body">
+              <div class="display-6 fw-bold text-danger">{{ departmentsCount }}</div>
+              <div class="text-muted small">Departments</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="announcements" class="container py-5">
+    <h3 class="mb-3">Announcements</h3>
+  @if (store.announcements(); as anns) {
+      @if (anns.length === 0) {
+        <div class="text-muted">No announcements yet.</div>
+      } @else {
+        <ul class="list-group shadow-sm">
+          @for (a of anns; track a.id) {
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              <div>
+                @if (a.title) { <div class="fw-semibold">{{ a.title }}</div> }
+                <div>{{ a.message }}</div>
+                <div class="small text-muted">{{ a.createdAt | date:'medium' }}</div>
+                @if (a.link) { <a class="small" [href]="a.link" target="_blank" rel="noopener">Open link</a> }
+              </div>
+              <span class="badge rounded-pill" [class.bg-primary]="a.pinned" [class.bg-secondary]="!a.pinned">{{ a.pinned ? 'Pinned' : 'New' }}</span>
+            </li>
+          }
+        </ul>
+      }
+    }
+  </section>
+
+  <section id="faq" class="container py-5">
+    <h3 class="mb-3">FAQ</h3>
+    <div class="accordion" id="faqAcc">
+      <div class="accordion-item">
+        <h2 class="accordion-header" id="q1h">
+          <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#q1" aria-expanded="true" aria-controls="q1">Who can use this system?</button>
+        </h2>
+        <div id="q1" class="accordion-collapse collapse show" aria-labelledby="q1h" data-bs-parent="#faqAcc">
+          <div class="accordion-body small">Students, Faculty Supervisors, Site Supervisors and the Internship Office at CUI Sahiwal Campus.</div>
+        </div>
+      </div>
+      <div class="accordion-item">
+        <h2 class="accordion-header" id="q2h">
+          <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#q2" aria-expanded="false" aria-controls="q2">What files can I upload?</button>
+        </h2>
+        <div id="q2" class="accordion-collapse collapse" aria-labelledby="q2h" data-bs-parent="#faqAcc">
+          <div class="accordion-body small">Common formats like PDF, DOCX, and images (JPG/PNG). Keep file sizes reasonable for smooth review.</div>
+        </div>
+      </div>
+      <div class="accordion-item">
+        <h2 class="accordion-header" id="q3h">
+          <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#q3" aria-expanded="false" aria-controls="q3">How are marks calculated?</button>
+        </h2>
+        <div id="q3" class="accordion-collapse collapse" aria-labelledby="q3h" data-bs-parent="#faqAcc">
+          <div class="accordion-body small">Depends on internship mode: on-site/virtual split among Site, Faculty and Office; freelancing uses Supervisor + Office sub-marks.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="container pb-5">
+    <h3 class="mb-3">Quick Links</h3>
+    <div class="row g-3">
+      <div class="col-6 col-md-3">
+        <a routerLink="/login" class="quick-link card h-100 text-decoration-none">
+          <div class="card-body text-center">
+            <i class="pi pi-user display-6 text-primary d-block mb-2"></i>
+            <div class="fw-semibold">Student</div>
+          </div>
+        </a>
+      </div>
+      <div class="col-6 col-md-3">
+        <a routerLink="/faculty-login" class="quick-link card h-100 text-decoration-none">
+          <div class="card-body text-center">
+            <i class="pi pi-users display-6 text-success d-block mb-2"></i>
+            <div class="fw-semibold">Faculty</div>
+          </div>
+        </a>
+      </div>
+      <div class="col-6 col-md-3">
+        <a routerLink="/site-login" class="quick-link card h-100 text-decoration-none">
+          <div class="card-body text-center">
+            <i class="pi pi-building display-6 text-warning d-block mb-2"></i>
+            <div class="fw-semibold">Site</div>
+          </div>
+        </a>
+      </div>
+      <div class="col-6 col-md-3">
+        <a routerLink="/admin-login" class="quick-link card h-100 text-decoration-none">
+          <div class="card-body text-center">
+            <i class="pi pi-briefcase display-6 text-secondary d-block mb-2"></i>
+            <div class="fw-semibold">Office</div>
+          </div>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <a href="#hero" class="back-to-top btn btn-primary rounded-circle shadow">
+    <i class="pi pi-arrow-up"></i>
+  </a>
+</div>

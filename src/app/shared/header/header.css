@@ -120,10 +120,11 @@
 /* Navbar brand image tweaks for crisp rendering */
 .navbar-brand .brand-logo {
   display: inline-block;
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   border-radius: 6px;
-  object-fit: contain;
+  object-fit: contain; /* show full logo */
   background: #fff;
+  padding: 2px; /* avoid clipping edges */
   box-shadow: 0 0 0 1px rgba(0,0,0,0.06) inset;
 }
