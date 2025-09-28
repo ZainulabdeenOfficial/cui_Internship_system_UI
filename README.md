@@ -1,3 +1,6 @@
+
+![CUI Internship Banner](public/Banner.png)
+
 # CUI Internship Management System
 ## Project Overview
 
