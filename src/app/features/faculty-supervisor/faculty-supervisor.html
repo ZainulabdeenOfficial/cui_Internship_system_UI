@@ -8,17 +8,59 @@
     </ul>
   </div>
   <div class="row g-3 align-items-end mb-3">
-    <div class="col-md-6">
-      <label class="form-label">Select Student</label>
-      <select class="form-select" [(ngModel)]="selectedId" name="sid">
-        <option [ngValue]="null">-- choose --</option>
-        <option *ngFor="let s of myStudents()" [ngValue]="s.id">{{ s.name }} ({{ s.email }})</option>
+    <div class="col-md-4">
+      <label class="form-label">Filter by Mode</label>
+      <select class="form-select" [(ngModel)]="modeFilter" name="mode">
+        <option [ngValue]="'All'">All</option>
+        <option [ngValue]="'OnSite'">OnSite</option>
+        <option [ngValue]="'Virtual'">Virtual</option>
+        <option [ngValue]="'Fiverr'">Fiverr</option>
+        <option [ngValue]="'Upwork'">Upwork</option>
       </select>
     </div>
-    <div class="col-md-3">
-      <label class="form-label">Marks (0-60)</label>
+    <div class="col-md-4">
+      <label class="form-label">Search</label>
+      <input class="form-control" [(ngModel)]="search" name="q" placeholder="Search name/email/registration no" />
+    </div>
+    <div class="col-md-4">
+      <label class="form-label">Faculty Total (0-60)</label>
       <input type="number" min="0" max="60" class="form-control" (ngModelChange)="setMarks($event)" [ngModel]="selectedStudent()?.marks?.faculty ?? ''" />
     </div>
+  </div>
+
+  <div class="table-responsive mb-3">
+    <table class="table table-striped align-middle">
+      <thead>
+        <tr>
+          <th>Student</th>
+          <th>Email</th>
+          <th>Registration No</th>
+          <th>Mode</th>
+          <th>Faculty Marks</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let s of filteredStudents()">
+          <td>{{ s.name }}</td>
+          <td>{{ s.email }}</td>
+          <td>{{ s.registrationNo || '-' }}</td>
+          <td>
+            <span class="badge"
+              [class.text-bg-secondary]="!s.internshipMode"
+              [class.text-bg-info]="s.internshipMode==='Virtual'"
+              [class.text-bg-primary]="s.internshipMode==='OnSite'"
+              [class.text-bg-success]="s.internshipMode==='Fiverr' || s.internshipMode==='Upwork'">
+              {{ s.internshipMode || '—' }}
+            </span>
+          </td>
+          <td>{{ s.marks?.faculty ?? 0 }}</td>
+          <td>
+            <button class="btn btn-sm btn-outline-primary" (click)="selectedId = s.id">Open</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
   </div>
   <div *ngIf="selectedId">
     <div class="row g-3">
@@ -47,9 +89,29 @@
       </div>
       <div class="col-md-6 mt-3">
         <h5>Reports</h5>
-        <ul class="list-group">
-          <li class="list-group-item" *ngFor="let r of reports()">{{ r.type | titlecase }}: {{ r.title }} <span class="text-muted">— {{ r.date | date:'short' }}</span></li>
-        </ul>
+        <div class="table-responsive">
+          <table class="table table-sm align-middle">
+            <thead><tr><th>Type</th><th>Title</th><th>Date</th><th>Score</th><th>Approved</th><th>Action</th></tr></thead>
+            <tbody>
+              <tr *ngFor="let r of reports()">
+                <td>{{ r.type | titlecase }}</td>
+                <td>{{ r.title || '(Untitled)' }}</td>
+                <td>{{ r.date | date:'short' }}</td>
+                <td style="width:120px"><input type="number" class="form-control form-control-sm" [(ngModel)]="reportMarks[r.id]" name="rm{{r.id}}" [placeholder]="r.score != null ? (r.score + '') : '-'" /></td>
+                <td>
+                  <span class="badge" [class.text-bg-secondary]="!r.approved" [class.text-bg-success]="r.approved">{{ r.approved ? 'Approved' : 'Pending' }}</span>
+                </td>
+                <td>
+                  <div class="btn-group btn-group-sm">
+                    <button class="btn btn-outline-primary" (click)="setReportMark(r.id)">Save</button>
+                    <button class="btn btn-outline-success" (click)="toggleReportApproved(r.id, true)">Approve</button>
+                    <button class="btn btn-outline-secondary" (click)="toggleReportApproved(r.id, false)">Unapprove</button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
       <div class="col-md-6 mt-3">
         <h5>Assignments</h5>

@@ -1,5 +1,33 @@
 <div class="container py-4">
   <h2 class="mb-3">Site Supervisor</h2>
+  <div class="card mb-3">
+    <div class="card-header bg-light">Assigned Students</div>
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-striped align-middle">
+          <thead>
+            <tr><th>Name</th><th>Email</th><th>Registration No</th><th>Mid Score</th><th>Final Score</th><th>Action</th></tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let s of myStudents()">
+              <td>{{ s.name }}</td>
+              <td>{{ s.email }}</td>
+              <td>{{ s.registrationNo || '-' }}</td>
+              <td style="width:120px"><input type="number" class="form-control form-control-sm" [(ngModel)]="batchMid[s.id]" name="bmid{{s.id}}" [placeholder]="midScore(s.id) != null ? (midScore(s.id) + '') : 'Mid'" /></td>
+              <td style="width:120px"><input type="number" class="form-control form-control-sm" [(ngModel)]="batchFinal[s.id]" name="bfin{{s.id}}" [placeholder]="finalScore(s.id) != null ? (finalScore(s.id) + '') : 'Final'" /></td>
+              <td>
+                <div class="btn-group btn-group-sm">
+                  <button class="btn btn-outline-primary" (click)="saveBatchRow(s.id)">Save</button>
+                  <button class="btn btn-outline-secondary" (click)="selectedId = s.id">Open</button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <button class="btn btn-sm btn-primary" (click)="saveBatchAll()">Save All</button>
+    </div>
+  </div>
   <div class="row g-3 align-items-end">
     <div class="col-md-6">
       <label class="form-label">Select Student</label>

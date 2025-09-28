@@ -1,6 +1,10 @@
 <div class="container py-5" style="max-width:520px">
-  <h2 class="mb-4">Student Login</h2>
-  <div class="card">
+  <div class="text-center mb-3">
+    <img src="/assets/cui-logo.jpg" alt="CUI" width="56" height="56" style="object-fit:contain;background:#fff;border-radius:6px" />
+    <h2 class="mt-2 mb-0">Student Login</h2>
+    <div class="text-muted">CUI Internship System</div>
+  </div>
+  <div class="card shadow-sm">
     <div class="card-body">
       <form (ngSubmit)="submit()" #f="ngForm" class="row g-3">
         <div class="col-12">
@@ -17,8 +21,12 @@
         <div class="col-12" *ngIf="error">
           <div class="alert alert-danger">{{ error }}</div>
         </div>
-        <div class="col-12 text-center">
-          <a routerLink="/signup">Don't have an account? Sign up</a>
+        <div class="col-12 text-center small">
+          <span>Don't have an account? <a routerLink="/signup">Sign up</a></span>
+        </div>
+        <div class="col-12 text-center small text-muted">
+          <a class="me-2" routerLink="/faculty-login">Faculty Login</a>
+          <a routerLink="/site-login">Site Login</a>
         </div>
       </form>
     </div>

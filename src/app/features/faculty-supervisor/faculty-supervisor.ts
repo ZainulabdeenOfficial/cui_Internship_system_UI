@@ -25,6 +25,20 @@ export class FacultySupervisor {
     const fid = this.myFacultyId();
     return fid ? this.students().filter(s => s.facultyId === fid) : this.students();
   });
+  // UI filters
+  modeFilter: 'All'|'Fiverr'|'Upwork'|'OnSite'|'Virtual' = 'All';
+  search = '';
+  filteredStudents = computed(() => {
+    const s = this.myStudents();
+    const mf = this.modeFilter;
+    const q = this.search.trim().toLowerCase();
+    return s.filter(x => {
+      const mode = x.internshipMode || '';
+      const modeOk = mf === 'All' || mode === mf;
+      const qOk = !q || x.name.toLowerCase().includes(q) || (x.email?.toLowerCase().includes(q)) || (x.registrationNo?.toLowerCase().includes(q));
+      return modeOk && qOk;
+    });
+  });
 
   selectedStudent = computed(() => this.selectedId ? this.students().find(s => s.id === this.selectedId!) : undefined);
   logs() { return this.selectedId ? (this.store.logs()[this.selectedId] ?? []) : []; }
@@ -87,5 +101,19 @@ export class FacultySupervisor {
       document.body.appendChild(link); link.click(); document.body.removeChild(link);
       URL.revokeObjectURL(url);
     } catch {}
+  }
+  // Per-report manage
+  reportMarks: Record<string, number> = {};
+  setReportMark(rid: string) {
+    if (!this.selectedId) return;
+    const v = this.reportMarks[rid];
+    if (v == null || isNaN(v as any)) return;
+    this.store.setReportScore(this.selectedId, rid, Number(v));
+    this.toast.success('Report score saved');
+  }
+  toggleReportApproved(rid: string, approved: boolean) {
+    if (!this.selectedId) return;
+    this.store.setReportApproved(this.selectedId, rid, approved);
+    this.toast.success(approved ? 'Report approved' : 'Report unapproved');
   }
 }

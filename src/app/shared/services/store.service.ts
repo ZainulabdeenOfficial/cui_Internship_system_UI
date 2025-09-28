@@ -1,8 +1,8 @@
 import { Injectable, signal } from '@angular/core';
 
 export type WeeklyLog = { id: string; week: number; note: string; date: string };
-export type Report = { id: string; type: 'proposal'|'progress'|'final'|'mid'|'site-final'|'reflective'; title: string; content: string; date: string; score?: number };
-export type StudentProfile = { id: string; name: string; email: string; registrationNo?: string; password?: string; approved?: boolean; facultyId?: string; siteId?: string; companyId?: string; internshipMode?: 'OnSite'|'Virtual'|'Fiverr'|'Upwork'; marks?: { faculty?: number; admin?: number; site?: number; adminProposal?: number; adminLogs?: number; adminFinal?: number } };
+export type Report = { id: string; type: 'proposal'|'progress'|'final'|'mid'|'site-final'|'reflective'; title: string; content: string; date: string; score?: number; approved?: boolean };
+export type StudentProfile = { id: string; name: string; email: string; registrationNo?: string; password?: string; avatarBase64?: string; bio?: string; approved?: boolean; facultyId?: string; siteId?: string; companyId?: string; internshipMode?: 'OnSite'|'Virtual'|'Fiverr'|'Upwork'; marks?: { faculty?: number; admin?: number; site?: number; adminProposal?: number; adminLogs?: number; adminFinal?: number } };
 export type Role = 'student'|'admin'|'faculty'|'site';
 
 // Additional forms
@@ -78,9 +78,9 @@ export type CompanyRequest = BaseRequest & { type: 'company'; name: string; addr
 export type SiteSupervisorRequest = BaseRequest & { type: 'site'; name: string; email: string; companyId?: string; companyName?: string; createdSiteId?: string; createdCompanyId?: string };
 export type RequestItem = CompanyRequest | SiteSupervisorRequest;
 
-export type FacultySupervisor = { id: string; name: string; email: string; department?: string; password?: string };
+export type FacultySupervisor = { id: string; name: string; email: string; department?: string; password?: string; avatarBase64?: string; bio?: string };
 export type Company = { id: string; name: string; address?: string };
-export type SiteSupervisor = { id: string; name: string; email: string; companyId?: string; password?: string };
+export type SiteSupervisor = { id: string; name: string; email: string; companyId?: string; password?: string; avatarBase64?: string; bio?: string };
 
 // Internship Design Statement (submitted in first week along with initial progress)
 export type DesignStatement = {
@@ -132,6 +132,7 @@ export class StoreService {
   requests = signal<RequestItem[]>(load('requests', []));
   designStatements = signal<Record<string, DesignStatement[]>>(load('designStatements', {}));
   assignments = signal<Record<string, Assignment[]>>(load('assignments', {}));
+  adminProfile = signal<{ username: string; password: string; name?: string; avatarBase64?: string; bio?: string }>(load('adminProfile', { username: 'admin', password: 'admin123', name: 'Internship Office' }));
 
   private persist() {
     save('students', this.students());
@@ -151,6 +152,7 @@ export class StoreService {
     save('requests', this.requests());
     save('designStatements', this.designStatements());
     save('assignments', this.assignments());
+    save('adminProfile', this.adminProfile());
   }
 
   constructor() {
@@ -163,6 +165,10 @@ export class StoreService {
         }
       }
     } catch {}
+  }
+  updateStudent(id: string, changes: Partial<StudentProfile>) {
+    this.students.update(a => a.map(s => s.id === id ? { ...s, ...changes } : s));
+    this.persist();
   }
 
   // Student actions
@@ -284,6 +290,12 @@ export class StoreService {
     this.persist();
     return s;
   }
+  changeStudentPassword(id: string, oldPassword: string, newPassword: string) {
+    const s = this.students().find(x => x.id === id);
+    if (!s) throw new Error('Student not found');
+    if ((s.password ?? '') !== oldPassword) throw new Error('Old password is incorrect');
+    this.updateStudent(id, { password: newPassword });
+  }
   loginAsRole(role: Role) {
     // For demo purposes, allow non-student roles without identities
     this.currentUser.set({ role });
@@ -302,6 +314,18 @@ export class StoreService {
     this.reports.update(m => ({ ...m, [studentId]: [...(m[studentId] ?? []), entry] }));
     this.persist();
     return entry;
+  }
+  setReportScore(studentId: string, reportId: string, score: number) {
+    const list = this.reports()[studentId] ?? [];
+    const updated = list.map(r => r.id === reportId ? { ...r, score } : r);
+    this.reports.update(m => ({ ...m, [studentId]: updated }));
+    this.persist();
+  }
+  setReportApproved(studentId: string, reportId: string, approved: boolean) {
+    const list = this.reports()[studentId] ?? [];
+    const updated = list.map(r => r.id === reportId ? { ...r, approved } : r);
+    this.reports.update(m => ({ ...m, [studentId]: updated }));
+    this.persist();
   }
   submitApproval(studentId: string, form: Omit<ApprovalForm, 'id'|'createdAt'>) {
     const current = this.approvals()[studentId] ?? [];
@@ -466,6 +490,10 @@ export class StoreService {
     this.siteSupervisors.update(a => a.map(s => s.id === id ? { ...s, ...changes } : s));
     this.persist();
   }
+  updateAdminProfile(changes: Partial<{ username: string; password: string; name?: string; avatarBase64?: string; bio?: string }>) {
+    this.adminProfile.update(p => ({ ...p, ...changes }));
+    this.persist();
+  }
 
   // Password updates
   changeFacultyPassword(id: string, oldPassword: string, newPassword: string) {
@@ -479,6 +507,11 @@ export class StoreService {
     if (!s) throw new Error('Site supervisor not found');
     if ((s.password ?? '') !== oldPassword) throw new Error('Old password is incorrect');
     this.updateSiteSupervisor(id, { password: newPassword });
+  }
+  changeAdminPassword(oldPassword: string, newPassword: string) {
+    const p = this.adminProfile();
+    if ((p.password ?? '') !== oldPassword) throw new Error('Old password is incorrect');
+    this.updateAdminProfile({ password: newPassword });
   }
 }
 

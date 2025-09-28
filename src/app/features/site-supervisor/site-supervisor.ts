@@ -24,6 +24,32 @@ export class SiteSupervisor {
     const sid = this.mySiteId();
     return sid ? this.students().filter(s => s.siteId === sid) : this.students();
   });
+  // Batch marking buffers
+  batchMid: Record<string, number> = {};
+  batchFinal: Record<string, number> = {};
+  // Helper to get latest report by type for a student
+  private latestReportOf(studentId: string, type: 'mid'|'site-final') {
+    const list = this.store.reports()[studentId] ?? [];
+    const filtered = list.filter(r => r.type === type);
+    return filtered.length ? filtered[filtered.length - 1] : null;
+  }
+  midReportId(studentId: string) { return this.latestReportOf(studentId, 'mid')?.id || null; }
+  finalReportId(studentId: string) { return this.latestReportOf(studentId, 'site-final')?.id || null; }
+  midScore(studentId: string) { return this.latestReportOf(studentId, 'mid')?.score; }
+  finalScore(studentId: string) { return this.latestReportOf(studentId, 'site-final')?.score; }
+  saveBatchRow(studentId: string) {
+    const midId = this.midReportId(studentId);
+    const finId = this.finalReportId(studentId);
+    const mid = this.batchMid[studentId];
+    const fin = this.batchFinal[studentId];
+    if (midId != null && mid != null && !isNaN(mid as any)) this.store.setReportScore(studentId, midId, Number(mid));
+    if (finId != null && fin != null && !isNaN(fin as any)) this.store.setReportScore(studentId, finId, Number(fin));
+    this.toast.success('Scores saved');
+  }
+  saveBatchAll() {
+    for (const s of this.myStudents()) this.saveBatchRow(s.id);
+    this.toast.success('All scores saved');
+  }
   mid = { title: '', content: '' };
   fin = { title: '', content: '' };
   setSiteMarks(v: number) { if (this.selectedId) { this.store.setSiteMarks(this.selectedId, v); this.toast.success('Site marks updated'); } }
