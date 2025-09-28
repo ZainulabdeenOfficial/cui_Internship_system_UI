@@ -4,18 +4,35 @@
       <h5 class="mb-0">Internship Office Login</h5>
     </div>
     <div class="card-body">
-      <form (ngSubmit)="submit()" #form="ngForm" novalidate>
-        <div class="mb-3">
-          <label class="form-label">Username</label>
-          <input type="text" class="form-control" name="username" [(ngModel)]="model.username" required>
+      <form (ngSubmit)="submit()" #form="ngForm" novalidate class="row g-3">
+        <div class="col-12">
+          <label class="form-label" for="auser">Username</label>
+          <input id="auser" type="text" class="form-control" name="username" [(ngModel)]="model.username" #username="ngModel" required>
           <div class="form-text">Use demo credentials: admin / admin123</div>
+          <div class="invalid-feedback d-block" *ngIf="(form.submitted || username.touched) && username.invalid">Username is required.</div>
         </div>
-        <div class="mb-3">
-          <label class="form-label">Password</label>
-          <input type="password" class="form-control" name="password" [(ngModel)]="model.password" required>
+        <div class="col-12">
+          <label class="form-label" for="apass">Password</label>
+          <div class="input-group">
+            <input id="apass" [type]="showPassword ? 'text' : 'password'" class="form-control" name="password" [(ngModel)]="model.password" #password="ngModel" required minlength="6">
+            <button class="btn btn-outline-secondary" type="button" (click)="showPassword = !showPassword" [attr.aria-pressed]="showPassword">
+              <i class="pi" [ngClass]="showPassword ? 'pi-eye-slash' : 'pi-eye'"></i>
+            </button>
+          </div>
+          <div class="invalid-feedback d-block" *ngIf="(form.submitted || password.touched) && password.invalid">Password is required.</div>
         </div>
         <div *ngIf="error" class="alert alert-danger py-2">{{ error }}</div>
-        <button class="btn btn-primary w-100" [disabled]="form.invalid">Login</button>
+        <div class="col-12">
+          <button class="btn btn-primary w-100 d-inline-flex justify-content-center align-items-center" [disabled]="form.invalid || loading">
+            <span class="spinner-border spinner-border-sm me-2" role="status" *ngIf="loading"></span>
+            Login
+          </button>
+        </div>
+        <div class="col-12 text-center small text-muted">
+          <a class="me-2" routerLink="/login">Student Login</a>
+          <a class="me-2" routerLink="/faculty-login">Faculty Login</a>
+          <a routerLink="/site-login">Site Login</a>
+        </div>
       </form>
     </div>
   </div>

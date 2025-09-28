@@ -16,13 +16,24 @@ export class AdminLogin {
   private router = inject(Router);
   model = { username: '', password: '' };
   error: string | null = null;
-  submit() {
+  showPassword = false;
+  loading = false;
+  private minDelay(ms:number){ return new Promise(res=>setTimeout(res, ms)); }
+  async submit() {
     // Demo authentication: accept username 'admin' and password 'admin123'
-    if (this.model.username === 'admin' && this.model.password === 'admin123') {
-      this.store.loginAsRole('admin');
-      this.router.navigate(['/admin']);
-    } else {
-      this.error = 'Invalid admin credentials';
+    this.error = null;
+    this.loading = true;
+    try {
+      await this.minDelay(500);
+      if (this.model.username === 'admin' && this.model.password === 'admin123') {
+        this.store.loginAsRole('admin');
+        this.router.navigate(['/admin']);
+      } else {
+        this.error = 'Invalid credentials';
+      }
+    } finally {
+      await this.minDelay(200);
+      this.loading = false;
     }
   }
 }

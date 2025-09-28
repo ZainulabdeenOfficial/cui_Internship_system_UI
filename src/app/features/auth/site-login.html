@@ -6,17 +6,41 @@
   </div>
   <div class="card shadow-sm">
     <div class="card-body">
-      <form (ngSubmit)="submit()" #form="ngForm" novalidate>
-        <div class="mb-3">
-          <label class="form-label">Email</label>
-          <input type="email" class="form-control" name="email" [(ngModel)]="model.email" required>
+      <form (ngSubmit)="submit()" #form="ngForm" novalidate class="row g-3">
+        <div class="col-12">
+          <label for="semail" class="form-label">Email</label>
+          <input id="semail" type="email" class="form-control" name="email" [(ngModel)]="model.email" #email="ngModel" required email>
+          <div class="invalid-feedback d-block" *ngIf="(form.submitted || email.touched) && email.invalid">Valid email is required.</div>
         </div>
-        <div class="mb-3">
-          <label class="form-label">Password</label>
-          <input type="password" class="form-control" name="password" [(ngModel)]="model.password" required>
+        <div class="col-12">
+          <label for="spass" class="form-label">Password</label>
+          <div class="input-group">
+            <input id="spass" [type]="showPassword ? 'text' : 'password'" class="form-control" name="password" [(ngModel)]="model.password" #password="ngModel" required minlength="6">
+            <button class="btn btn-outline-secondary" type="button" (click)="showPassword = !showPassword" [attr.aria-pressed]="showPassword">
+              <i class="pi" [ngClass]="showPassword ? 'pi-eye-slash' : 'pi-eye'"></i>
+            </button>
+          </div>
+          <div class="invalid-feedback d-block" *ngIf="(form.submitted || password.touched) && password.invalid">Password is required (min 6 chars).</div>
         </div>
         <div *ngIf="error" class="alert alert-danger py-2">{{ error }}</div>
-        <button class="btn btn-primary w-100" [disabled]="form.invalid">Login</button>
+        <div class="col-12" *ngIf="cooldownRemaining() > 0">
+          <div class="alert alert-warning py-2">Too many attempts. Please wait {{ cooldownRemaining() }}s.</div>
+        </div>
+        <div class="col-12" *ngIf="challengeActive">
+          <label class="form-label small">Security Check: What is {{ challenge?.a }} + {{ challenge?.b }}?</label>
+          <input type="number" class="form-control form-control-sm" [(ngModel)]="challengeAnswer" name="challenge" />
+        </div>
+        <div class="col-12">
+          <button class="btn btn-primary w-100 d-inline-flex justify-content-center align-items-center" [disabled]="form.invalid || loading">
+            <span class="spinner-border spinner-border-sm me-2" role="status" *ngIf="loading"></span>
+            Login
+          </button>
+        </div>
+        <div class="col-12 text-center small text-muted">
+          <a class="me-2" routerLink="/login">Student Login</a>
+          <a class="me-2" routerLink="/faculty-login">Faculty Login</a>
+          <a routerLink="/admin-login">Office Login</a>
+        </div>
       </form>
     </div>
   </div>

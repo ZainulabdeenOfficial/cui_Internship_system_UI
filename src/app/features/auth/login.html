@@ -6,27 +6,52 @@
   </div>
   <div class="card shadow-sm">
     <div class="card-body">
-      <form (ngSubmit)="submit()" #f="ngForm" class="row g-3">
+      <form (ngSubmit)="submit()" #f="ngForm" class="row g-3" novalidate>
         <div class="col-12">
-          <label class="form-label">Email</label>
-          <input type="email" class="form-control" [(ngModel)]="model.email" name="email" required />
+          <label for="email" class="form-label">Email</label>
+          <input id="email" type="email" class="form-control" [(ngModel)]="model.email" name="email" #email="ngModel" required email />
+          <div class="invalid-feedback d-block" *ngIf="(f.submitted || email.touched) && email.invalid">Valid CUI email is required.</div>
         </div>
         <div class="col-12">
-          <label class="form-label">Password</label>
-          <input type="password" class="form-control" [(ngModel)]="model.password" name="password" required />
+          <label for="password" class="form-label">Password</label>
+          <div class="input-group">
+            <input id="password" [type]="showPassword ? 'text' : 'password'" class="form-control" [(ngModel)]="model.password" name="password" #password="ngModel" required minlength="6" />
+            <button class="btn btn-outline-secondary" type="button" (click)="showPassword = !showPassword" [attr.aria-pressed]="showPassword">
+              <i class="pi" [ngClass]="showPassword ? 'pi-eye-slash' : 'pi-eye'"></i>
+            </button>
+          </div>
+          <div class="invalid-feedback d-block" *ngIf="(f.submitted || password.touched) && password.invalid">Password is required (min 6 chars).</div>
+        </div>
+        <div class="col-12 d-flex justify-content-between align-items-center">
+          <div class="form-check">
+            <input id="remember" class="form-check-input" type="checkbox" [(ngModel)]="remember" name="remember" />
+            <label for="remember" class="form-check-label">Remember me</label>
+          </div>
+          <a class="small" href="#">Forgot password?</a>
         </div>
         <div class="col-12">
-          <button class="btn btn-primary w-100" [disabled]="!f.form.valid">Login</button>
+          <button class="btn btn-primary w-100 d-inline-flex justify-content-center align-items-center" [disabled]="!f.form.valid || loading">
+            <span class="spinner-border spinner-border-sm me-2" role="status" *ngIf="loading"></span>
+            Login
+          </button>
+        </div>
+        <div class="col-12" *ngIf="cooldownRemaining() > 0">
+          <div class="alert alert-warning py-2">Too many attempts. Please wait {{ cooldownRemaining() }}s.</div>
+        </div>
+        <div class="col-12" *ngIf="challengeActive">
+          <label class="form-label small">Security Check: What is {{ challenge?.a }} + {{ challenge?.b }}?</label>
+          <input type="number" class="form-control form-control-sm" [(ngModel)]="challengeAnswer" name="challenge" />
         </div>
         <div class="col-12" *ngIf="error">
-          <div class="alert alert-danger">{{ error }}</div>
+          <div class="alert alert-danger py-2">{{ error }}</div>
         </div>
         <div class="col-12 text-center small">
           <span>Don't have an account? <a routerLink="/signup">Sign up</a></span>
         </div>
         <div class="col-12 text-center small text-muted">
           <a class="me-2" routerLink="/faculty-login">Faculty Login</a>
-          <a routerLink="/site-login">Site Login</a>
+          <a class="me-2" routerLink="/site-login">Site Login</a>
+          <a routerLink="/admin-login">Office Login</a>
         </div>
       </form>
     </div>
