@@ -19,10 +19,7 @@
                   <p class="mb-0 mb-md-1" [class.mb-3]="$index===0">{{ s.desc }}</p>
                   @if (s.showCtas) {
                     <div class="d-flex gap-2 flex-wrap">
-                      <a class="btn btn-primary" routerLink="/login">Student Login</a>
-                      <a class="btn btn-outline-light" routerLink="/faculty-login">Faculty Login</a>
-                      <a class="btn btn-outline-light" routerLink="/site-login">Site Login</a>
-                      <a class="btn btn-outline-light" routerLink="/admin-login">Office Login</a>
+                      <a class="btn btn-light" routerLink="/login">Login</a>
                     </div>
                   }
                 </div>
@@ -96,10 +93,7 @@
           <div class="card-body">
             <h5 class="card-title"><i class="pi pi-verified me-2 text-success"></i>Supervisor Evaluation</h5>
             <p class="card-text mb-3">Per-report scoring and approvals; batch mid/final marking for site supervisors.</p>
-            <div class="d-flex gap-2">
-              <a routerLink="/faculty-login" class="btn btn-sm btn-outline-success">Faculty</a>
-              <a routerLink="/site-login" class="btn btn-sm btn-outline-success">Site</a>
-            </div>
+            <a routerLink="/login" class="btn btn-sm btn-outline-success">Login</a>
           </div>
         </div>
       </div>
@@ -108,7 +102,7 @@
           <div class="card-body">
             <h5 class="card-title"><i class="pi pi-briefcase me-2 text-secondary"></i>Office Oversight</h5>
             <p class="card-text mb-3">Full visibility, assignments, requests, and compliance monitoring.</p>
-            <a routerLink="/admin-login" class="btn btn-sm btn-outline-secondary">Open</a>
+            <a routerLink="/login" class="btn btn-sm btn-outline-secondary">Login</a>
           </div>
         </div>
       </div>
@@ -291,7 +285,7 @@
     <h3 class="mb-3">Quick Links</h3>
     <div class="row g-3">
       <div class="col-6 col-md-3">
-        <a routerLink="/login" class="quick-link card h-100 text-decoration-none">
+  <a routerLink="/login" class="quick-link card h-100 text-decoration-none">
           <div class="card-body text-center">
             <i class="pi pi-user display-6 text-primary d-block mb-2"></i>
             <div class="fw-semibold">Student</div>
@@ -299,7 +293,7 @@
         </a>
       </div>
       <div class="col-6 col-md-3">
-        <a routerLink="/faculty-login" class="quick-link card h-100 text-decoration-none">
+  <a routerLink="/login" class="quick-link card h-100 text-decoration-none">
           <div class="card-body text-center">
             <i class="pi pi-users display-6 text-success d-block mb-2"></i>
             <div class="fw-semibold">Faculty</div>
@@ -307,7 +301,7 @@
         </a>
       </div>
       <div class="col-6 col-md-3">
-        <a routerLink="/site-login" class="quick-link card h-100 text-decoration-none">
+  <a routerLink="/login" class="quick-link card h-100 text-decoration-none">
           <div class="card-body text-center">
             <i class="pi pi-building display-6 text-warning d-block mb-2"></i>
             <div class="fw-semibold">Site</div>
@@ -315,7 +309,7 @@
         </a>
       </div>
       <div class="col-6 col-md-3">
-        <a routerLink="/admin-login" class="quick-link card h-100 text-decoration-none">
+  <a routerLink="/login" class="quick-link card h-100 text-decoration-none">
           <div class="card-body text-center">
             <i class="pi pi-briefcase display-6 text-secondary d-block mb-2"></i>
             <div class="fw-semibold">Office</div>

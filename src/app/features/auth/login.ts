@@ -11,6 +11,7 @@ import { StoreService } from '../../shared/services/store.service';
   templateUrl: './login.html',
   styleUrl: './login.css'
 })
+
 export class Login implements OnDestroy {
   private store = inject(StoreService);
   private router = inject(Router);
@@ -26,6 +27,8 @@ export class Login implements OnDestroy {
   private ticker: any;
   challenge: { a: number; b: number } | null = null;
   challengeAnswer = '';
+
+  // no ngOnInit needed
 
   ngOnDestroy(): void { if (this.ticker) clearInterval(this.ticker); }
   private startTicker() {
@@ -55,16 +58,36 @@ export class Login implements OnDestroy {
     this.loading = true;
     try {
       // enforce a minimum response time to reduce timing side-channels
-      const p = this.store.login(this.model.email.trim(), this.model.password);
-      await Promise.allSettled([Promise.resolve(p), this.minDelay(500)]);
-      // simple remember-me persistence of last email
-      if (this.remember) localStorage.setItem('lastStudentEmail', this.model.email.trim());
+      const email = this.model.email.trim();
+      const password = this.model.password;
+      // Try admin -> faculty -> site -> student
+      let navigated = false;
+      const tryLogin = async (fn: () => any, path: string) => {
+        try { const res = await Promise.resolve(fn()); if (!navigated) { navigated = true; this.router.navigate([path]); } return res; } catch { throw 'fail'; }
+      };
+      await Promise.allSettled([
+        (async () => {
+          try {
+            await tryLogin(() => this.store.loginAdmin(email, password), '/admin');
+          } catch {
+            try { await tryLogin(() => this.store.loginFaculty(email, password), '/faculty'); }
+            catch {
+              try { await tryLogin(() => this.store.loginSite(email, password), '/site'); }
+              catch {
+                const s = await tryLogin(() => this.store.login(email, password), '/student');
+                if (this.remember) localStorage.setItem('lastStudentEmail', email);
+                return s;
+              }
+            }
+          }
+        })(),
+        this.minDelay(500)
+      ]);
       // reset counters on success
       this.failedAttempts = 0; this.cooldownUntil = 0; this.challenge = null; this.challengeAnswer = '';
-      this.router.navigate(['/student']);
     } catch (e: any) {
       // generic error to avoid user enumeration
-      this.error = 'Invalid email or password';
+  this.error = 'Invalid email or password';
       this.failedAttempts++;
       if (this.failedAttempts >= 3) {
         if (!this.challenge) this.newChallenge();

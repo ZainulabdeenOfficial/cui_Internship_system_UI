@@ -11,9 +11,7 @@ export const routes: Routes = [
     { path: '', pathMatch: 'full', loadComponent: () => import('./features/home/home').then(m => m.Home) },
     { path: 'login', loadComponent: () => import('./features/auth/login').then(m => m.Login) },
     { path: 'signup', loadComponent: () => import('./features/auth/signup').then(m => m.Signup) },
-    { path: 'admin-login', loadComponent: () => import('./features/auth/admin-login').then(m => m.AdminLogin) },
-    { path: 'faculty-login', loadComponent: () => import('./features/auth/faculty-login').then(m => m.FacultyLogin) },
-    { path: 'site-login', loadComponent: () => import('./features/auth/site-login').then(m => m.SiteLogin) },
+    // Single login page handles all roles via role selector/query param
     { path: 'student', canMatch: [roleGuard('student')], loadComponent: () => import('./features/student/student').then(m => m.Student) },
     { path: 'admin',   canMatch: [roleGuard('admin')],   loadComponent: () => import('./features/admin/admin').then(m => m.Admin) },
     { path: 'faculty', canMatch: [roleGuard('faculty')], loadComponent: () => import('./features/faculty-supervisor/faculty-supervisor').then(m => m.FacultySupervisor) },

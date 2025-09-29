@@ -20,9 +20,7 @@
 					@if (store.currentUser()?.role === 'admin') { <li><a class="link-light text-decoration-none" routerLink="/admin">Internship Office</a></li> }
 					@if (store.currentUser()?.role === 'faculty') { <li><a class="link-light text-decoration-none" routerLink="/faculty">Faculty Supervisor</a></li> }
 					@if (store.currentUser()?.role === 'site') { <li><a class="link-light text-decoration-none" routerLink="/site">Site Supervisor</a></li> }
-					@if (!store.currentUser()) { <li><a class="link-light text-decoration-none" routerLink="/login">Student Login</a></li> }
-					@if (!store.currentUser()) { <li><a class="link-light text-decoration-none" routerLink="/faculty-login">Faculty Login</a></li> }
-					@if (!store.currentUser()) { <li><a class="link-light text-decoration-none" routerLink="/site-login">Site Login</a></li> }
+					@if (!store.currentUser()) { <li><a class="link-light text-decoration-none" routerLink="/login">Login</a></li> }
 					@if (!store.currentUser()) { <li><a class="link-light text-decoration-none" routerLink="/signup">Student Signup</a></li> }
 				</ul>
 			</div>

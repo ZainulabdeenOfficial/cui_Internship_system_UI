@@ -25,17 +25,8 @@ export class Header {
   logout() {
     const role = this.store.currentUser()?.role;
     this.store.logout();
-    if (role === 'student') {
-      this.router.navigate(['/login']);
-    } else if (role === 'faculty') {
-      this.router.navigate(['/faculty-login']);
-    } else if (role === 'site') {
-      this.router.navigate(['/site-login']);
-    } else if (role === 'admin') {
-      this.router.navigate(['/admin-login']);
-    } else {
-      this.router.navigate(['/']);
-    }
+    const qp = role && role !== 'student' ? { role } : {} as any;
+    this.router.navigate(['/login'], { queryParams: qp });
   }
  
   // Faculty profile helpers

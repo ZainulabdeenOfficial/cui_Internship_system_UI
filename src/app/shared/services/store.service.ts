@@ -143,7 +143,9 @@ export class StoreService {
   designStatements = signal<Record<string, DesignStatement[]>>(load('designStatements', {}));
   assignments = signal<Record<string, Assignment[]>>(load('assignments', {}));
   announcements = signal<Announcement[]>(load('announcements', []));
-  adminProfile = signal<{ username: string; password: string; name?: string; avatarBase64?: string; bio?: string }>(load('adminProfile', { username: 'admin', password: 'admin123', name: 'Internship Office' }));
+  adminProfile = signal<{ email?: string; username?: string; password: string; name?: string; avatarBase64?: string; bio?: string }>(
+    load('adminProfile', { email: 'office@cuisahiwal.edu.pk', password: 'admin123', name: 'Internship Office' })
+  );
 
   private persist() {
     save('students', this.students());
@@ -286,6 +288,19 @@ export class StoreService {
     this.currentStudentId.set(null);
     this.persist();
     return s;
+  }
+  // Admin login using adminProfile state (email + password). Supports legacy username for backward compatibility.
+  loginAdmin(email: string, password: string) {
+    const p = this.adminProfile();
+    const emailLower = (email ?? '').toLowerCase();
+    const matchesEmail = (p.email ?? '').toLowerCase() === emailLower;
+    const matchesLegacyUsername = (p.username ?? '') === email; // fallback if profile was previously username-based
+    const ok = (matchesEmail || matchesLegacyUsername) && (p.password ?? '') === password;
+    if (!ok) throw new Error('Invalid admin credentials');
+    this.currentUser.set({ role: 'admin' });
+    this.currentStudentId.set(null);
+    this.persist();
+    return { email: p.email, name: p.name };
   }
   signup(name: string, email: string, password: string, registrationNo: string) {
     const exists = this.students().some(s => s.email.toLowerCase() === email.toLowerCase());
@@ -518,7 +533,7 @@ export class StoreService {
     this.siteSupervisors.update(a => a.map(s => s.id === id ? { ...s, ...changes } : s));
     this.persist();
   }
-  updateAdminProfile(changes: Partial<{ username: string; password: string; name?: string; avatarBase64?: string; bio?: string }>) {
+  updateAdminProfile(changes: Partial<{ email?: string; username?: string; password: string; name?: string; avatarBase64?: string; bio?: string }>) {
     this.adminProfile.update(p => ({ ...p, ...changes }));
     this.persist();
   }
