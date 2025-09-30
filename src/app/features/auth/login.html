@@ -1,20 +1,25 @@
+<div class="login-bg">
 <div class="container py-5" style="max-width:520px">
-  <div class="text-center mb-3">
+  <div class="text-center mb-3 brand-block">
     <img src="/assets/cui-logo.jpg" alt="CUI" width="56" height="56" style="object-fit:contain;background:#fff;border-radius:6px" />
     <h2 class="mt-2 mb-0">Login</h2>
-    <div class="text-muted">CUI Internship System</div>
+    <div class="brand-subtitle">CUI Internship System</div>
   </div>
-  <div class="card shadow-sm">
+  <div class="card login-card shadow-lg border-0">
     <div class="card-body">
       <form (ngSubmit)="submit()" #f="ngForm" class="row g-3" novalidate>
         <div class="col-12">
           <label for="email" class="form-label">Email</label>
-          <input id="email" type="email" class="form-control" [(ngModel)]="model.email" name="email" #email="ngModel" required email />
+          <div class="input-group">
+            <span class="input-group-text"><i class="pi pi-envelope"></i></span>
+            <input id="email" type="email" class="form-control" [(ngModel)]="model.email" name="email" #email="ngModel" required email />
+          </div>
           @if ((f.submitted || email.touched) && email.invalid) {<div class="invalid-feedback d-block">Valid CUI email is required.</div>}
         </div>
         <div class="col-12">
           <label for="password" class="form-label">Password</label>
           <div class="input-group">
+            <span class="input-group-text"><i class="pi pi-lock"></i></span>
             <input id="password" [type]="showPassword ? 'text' : 'password'" class="form-control" [(ngModel)]="model.password" name="password" #password="ngModel" required minlength="6" />
             <button class="btn btn-outline-secondary" type="button" (click)="showPassword = !showPassword" [attr.aria-pressed]="showPassword">
               <i class="pi" [ngClass]="showPassword ? 'pi-eye-slash' : 'pi-eye'"></i>
@@ -27,7 +32,19 @@
             <input id="remember" class="form-check-input" type="checkbox" [(ngModel)]="remember" name="remember" />
             <label for="remember" class="form-check-label">Remember me</label>
           </div>
-          <a class="small" href="#">Forgot password?</a>
+          <a class="small" routerLink="/forgot-password">Forgot password?</a>
+        </div>
+        <!-- Simple custom captcha (local, not external) -->
+        <div class="col-12">
+          <label class="form-label mb-1">Captcha</label>
+          <div class="d-flex align-items-center gap-2 mb-2">
+            <div class="captcha-box flex-grow-1">{{ captchaCode }}</div>
+            <button type="button" class="btn btn-outline-secondary btn-sm" (click)="generateCaptcha()" title="Refresh captcha">
+              <i class="pi pi-refresh"></i>
+            </button>
+          </div>
+          <input type="text" class="form-control" placeholder="Enter the text above" [(ngModel)]="captchaInput" name="captchaInput" required />
+          @if (captchaError) { <div class="text-danger small mt-2">{{ captchaError }}</div> }
         </div>
         <div class="col-12">
           <button class="btn btn-primary w-100 d-inline-flex justify-content-center align-items-center" [disabled]="!f.form.valid || loading">
@@ -57,4 +74,5 @@
       </form>
     </div>
   </div>
+</div>
 </div>

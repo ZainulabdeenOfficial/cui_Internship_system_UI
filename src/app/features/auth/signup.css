@@ -1,1 +1,75 @@
 .card { box-shadow: 0 0.25rem 0.5rem rgba(0,0,0,.05); }
+
+/* Reuse the animated gradient background and typography contrast */
+.login-bg{
+	min-height: 100vh;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: linear-gradient(135deg, #1e3c72, #2a5298, #6a11cb, #2575fc);
+	background-size: 400% 400%;
+	animation: gradientBG 15s ease infinite;
+	padding: 2rem 1rem;
+}
+@keyframes gradientBG {
+	0% { background-position: 0% 50%; }
+	50% { background-position: 100% 50%; }
+	100% { background-position: 0% 50%; }
+}
+@media (prefers-reduced-motion: reduce){ .login-bg{ animation: none; } }
+
+.brand-block h2{ color: #fff; }
+.brand-block .brand-subtitle{ color: rgba(255,255,255,.9); }
+.login-bg .card{ background: #ffffff; }
+
+/* Match login card polish */
+.login-card{
+	border-radius: 16px !important;
+	border: none;
+	box-shadow: 0 1rem 2rem rgba(0,0,0,.12);
+}
+.login-card .form-label{ font-weight: 600; }
+.login-card .input-group-text{
+	background: rgba(13,110,253,.08);
+	color: #0d6efd;
+	border-right: 0;
+}
+.login-card .form-control,
+.login-card .input-group-text,
+.login-card .btn.btn-outline-secondary{
+	border-color: #6b7280; /* darker, more visible neutral */
+	border-width: 2px;
+}
+/* Only remove the left border when inside an input-group to prevent standalone inputs from losing it */
+.login-card .input-group > .form-control{ border-left: 0; }
+.login-card .form-control:focus{
+	border-color: #0d6efd;
+	box-shadow: 0 0 0 .2rem rgba(13,110,253,.25);
+}
+.login-card .input-group{ border-radius: 10px; }
+.login-card .input-group:focus-within{ box-shadow: 0 0 0 .2rem rgba(13,110,253,.25); }
+.login-card .input-group > .input-group-text{ border-radius: 10px 0 0 10px; }
+.login-card .input-group > .form-control{ border-radius: 0; }
+.login-card .input-group > .btn-outline-secondary{ border-radius: 0 10px 10px 0; border-left: 0; }
+.login-card .input-group:focus-within .input-group-text,
+.login-card .input-group:focus-within .form-control,
+.login-card .input-group:focus-within .btn-outline-secondary{ border-color: #0d6efd; }
+
+/* Placeholders and invalid states */
+.login-card .form-control::placeholder{ color: #9aa0a6; opacity: 1; }
+.login-card .form-control.ng-touched.ng-invalid,
+.login-card .input-group:has(.form-control.ng-touched.ng-invalid) .input-group-text,
+.login-card .input-group:has(.form-control.ng-touched.ng-invalid) .btn-outline-secondary{
+	border-color: #dc3545; /* danger */
+}
+
+.login-card .btn-primary{
+	background-image: linear-gradient(135deg, #0d6efd, #5a67ff);
+	border: none;
+}
+.login-card .btn-primary:hover{ filter: brightness(1.05); }
+.login-card .btn-primary:disabled{ opacity: .8; }
+
+.login-card a{ color: #0d6efd; text-decoration: none; }
+.login-card a:hover{ text-decoration: underline; }
+.login-card .alert{ border-radius: 10px; }

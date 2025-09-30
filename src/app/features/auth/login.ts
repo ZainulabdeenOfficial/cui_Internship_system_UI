@@ -27,6 +27,10 @@ export class Login implements OnDestroy {
   private ticker: any;
   challenge: { a: number; b: number } | null = null;
   challengeAnswer = '';
+  // Simple custom captcha state (replaces Google reCAPTCHA)
+  captchaCode = '';
+  captchaInput = '';
+  captchaError: string | null = null;
 
   // no ngOnInit needed
 
@@ -41,8 +45,25 @@ export class Login implements OnDestroy {
   isChallengeCorrect(): boolean { return !!this.challenge && Number(this.challengeAnswer) === (this.challenge.a + this.challenge.b); }
   private minDelay(ms: number) { return new Promise(res => setTimeout(res, ms)); }
 
+  generateCaptcha(length = 6) {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let out = '';
+    for (let i = 0; i < length; i++) out += chars[Math.floor(Math.random() * chars.length)];
+    this.captchaCode = out;
+    this.captchaInput = '';
+  }
+
+  // Always require captcha (can change policy easily)
+  private ensureCaptcha() { if (!this.captchaCode) this.generateCaptcha(); }
+
   async submit() {
     this.error = null;
+    this.captchaError = null;
+    this.ensureCaptcha();
+    if (this.captchaInput.trim().toUpperCase() !== this.captchaCode.toUpperCase()) {
+      this.captchaError = 'Captcha does not match.';
+      return;
+    }
     const now = Date.now();
     if (now < this.cooldownUntil) {
       this.error = `Too many attempts. Please wait ${this.cooldownRemaining()}s and try again.`;
@@ -84,7 +105,7 @@ export class Login implements OnDestroy {
         this.minDelay(500)
       ]);
       // reset counters on success
-      this.failedAttempts = 0; this.cooldownUntil = 0; this.challenge = null; this.challengeAnswer = '';
+      this.failedAttempts = 0; this.cooldownUntil = 0; this.challenge = null; this.challengeAnswer = ''; this.generateCaptcha();
     } catch (e: any) {
       // generic error to avoid user enumeration
   this.error = 'Invalid email or password';
@@ -95,9 +116,15 @@ export class Login implements OnDestroy {
         this.cooldownUntil = Date.now() + backoff * 1000;
         this.startTicker();
       }
+      // Refresh captcha on any failure
+      this.generateCaptcha();
     } finally {
       await this.minDelay(200); // small UX delay for spinner smoothness
       this.loading = false;
     }
+  }
+
+  constructor() {
+    this.generateCaptcha();
   }
 }

@@ -3,7 +3,8 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { StoreService } from '../../shared/services/store.service';
-import { HttpClient } from '@angular/common/http';
+import { AuthService } from '../../shared/services/auth.service';
+import type { StudentRegisterRequest } from '../../shared/models/auth.models';
 
 @Component({
   selector: 'app-signup',
@@ -15,21 +16,60 @@ import { HttpClient } from '@angular/common/http';
 export class Signup {
   private store = inject(StoreService);
   private router = inject(Router);
-  private http = inject(HttpClient);
+  private auth = inject(AuthService);
   model = { name: '', email: '', password: '', registrationNo: '' };
   error: string | null = null;
-  submit() {
-    // Fire-and-forget external registration API; log output to console as requested
-    const payload = { name: this.model.name, email: this.model.email, password: this.model.password, role: 'student' } as const;
-    const url = 'https://ranging-systems-genealogy-quest.trycloudflare.com/api/auth/register';
-    this.http.post(url, payload).subscribe({
-      next: (res) => console.log('Register API response:', res),
-      error: (err) => console.error('Register API error:', err)
-    });
+  get regNoDisplay(): string {
+    const v = (this.model.registrationNo || '').trim();
+    return v;
+  }
+  onRegNoChange(val: string) {
+    if (val == null) return;
+    // Normalize: trim, uppercase, replace underscores with hyphens
+    let v = String(val).toUpperCase().replace(/_/g, '-');
+    // Collapse multiple hyphens to single
+    v = v.replace(/-+/g, '-');
+    // Allow only letters, digits, and hyphen
+    v = v.replace(/[^A-Z0-9-]/g, '');
+    // Remove any spaces (not allowed)
+    v = v.replace(/\s+/g, '');
+    // Attempt to insert hyphens between segments if missing
+    // Target format: FA22-BCS-090 (2 letters season + 2 digits) - (dept 2-4 letters) - (3 digits)
+    const m = v.match(/^([A-Z]{2})(\d{0,2})(?:-)?([A-Z]{0,4})(?:-)?(\d{0,3})$/);
+    if (m) {
+      const part1 = m[1] + (m[2] ?? '');
+      const part2 = m[3] ?? '';
+      const part3 = m[4] ?? '';
+      const segs: string[] = [];
+      if (part1) segs.push(part1);
+      if (part2) segs.push(part2);
+      if (part3) segs.push(part3);
+      v = segs.join('-');
+    }
+    this.model.registrationNo = v;
+  }
+  async submit() {
+    this.error = null;
+    const name = this.model.name.trim();
+    const email = this.model.email.trim();
+    const password = this.model.password.trim();
+    const regNo = this.model.registrationNo.trim();
+    if (!name || !email || !password || !regNo) {
+      this.error = 'All fields are required.';
+      return;
+    }
+    const payload: StudentRegisterRequest = { name, email, password, role: 'student', regNo };
 
-    // Keep local signup to maintain app functionality
+    // Call secure API
+    const res = await this.auth.registerStudent(payload);
+    if (!res.success) {
+      this.error = res.message || 'Registration failed';
+      return;
+    }
+
+    // Local signup to keep existing app state in sync
     try {
-      this.store.signup(this.model.name.trim(), this.model.email.trim(), this.model.password.trim(), this.model.registrationNo.trim());
+      this.store.signup(name, email, password, regNo);
       this.router.navigate(['/student']);
     } catch (e: any) {
       this.error = e?.message ?? 'Signup failed';

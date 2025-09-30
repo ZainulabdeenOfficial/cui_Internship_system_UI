@@ -1,28 +1,49 @@
+<div class="login-bg">
 <div class="container py-5" style="max-width:520px">
-  <div class="text-center mb-3">
+  <div class="text-center mb-3 brand-block">
     <img src="/assets/cui-logo.jpg" alt="CUI" width="56" height="56" style="object-fit:contain;background:#fff;border-radius:6px" />
     <h2 class="mt-2 mb-0">Create Student Account</h2>
-    <div class="text-muted">CUI Internship System</div>
+    <div class="brand-subtitle">CUI Internship System</div>
   </div>
-  <div class="card shadow-sm">
+  <div class="card login-card shadow-lg border-0">
     <div class="card-body">
       <form (ngSubmit)="submit()" #f="ngForm" class="row g-3">
         <div class="col-12">
           <label class="form-label">Name</label>
-          <input class="form-control" [(ngModel)]="model.name" name="name" required />
+          <div class="input-group">
+            <span class="input-group-text"><i class="pi pi-user"></i></span>
+            <input class="form-control" [(ngModel)]="model.name" name="name" required placeholder="Your full name" />
+          </div>
         </div>
         <div class="col-12">
           <label class="form-label">Registration No</label>
-          <input class="form-control" [(ngModel)]="model.registrationNo" name="reg" required placeholder="FA22-BCS-090" />
+          <div class="input-group">
+            <span class="input-group-text"><i class="pi pi-hashtag"></i></span>
+            <input class="form-control" [(ngModel)]="model.registrationNo" (ngModelChange)="onRegNoChange($event)" name="regNo" #regNo="ngModel" required
+                   placeholder="FA22-BCS-090" pattern="^[A-Z]{2}\d{2}-[A-Z]{2,4}-\d{3}$" />
+          </div>
+          @if ((f.submitted || regNo.touched) && regNo.invalid) {
+            <div class="invalid-feedback d-block">Format must be FAyy-DEPT-ROLL (e.g., FA22-BCS-090).</div>
+          }
+          @if (regNoDisplay) {
+            <div class="regno-preview small mt-1">CIIT/<strong>{{ regNoDisplay }}</strong>/SWL</div>
+          }
+          <small class="text-muted d-block">We auto-format your Reg No. Underscores (_) become hyphens (-); spaces are removed.</small>
         </div>
         <div class="col-12">
           <label class="form-label">Email</label>
-          <input type="email" class="form-control" [(ngModel)]="model.email" name="email" required />
+          <div class="input-group">
+            <span class="input-group-text"><i class="pi pi-envelope"></i></span>
+            <input type="email" class="form-control" [(ngModel)]="model.email" name="email" required />
+          </div>
           <small class="text-muted">Use your CUI Sahiwal email (e.g., fa22-bcs-090@students.cuisahiwal.edu.pk or name@sahiwal.comsats.edu.pk)</small>
         </div>
         <div class="col-12">
           <label class="form-label">Password</label>
-          <input type="password" class="form-control" [(ngModel)]="model.password" name="password" required minlength="4" />
+          <div class="input-group">
+            <span class="input-group-text"><i class="pi pi-lock"></i></span>
+            <input type="password" class="form-control" [(ngModel)]="model.password" name="password" required minlength="4" />
+          </div>
         </div>
         <div class="col-12">
           <button class="btn btn-primary w-100" [disabled]="!f.form.valid">Create Account</button>
@@ -36,4 +57,5 @@
       </form>
     </div>
   </div>
+</div>
 </div>

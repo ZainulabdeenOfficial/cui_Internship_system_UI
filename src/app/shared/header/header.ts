@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { StoreService } from '../../shared/services/store.service';
 import { FormsModule } from '@angular/forms';
@@ -11,10 +11,22 @@ import { FormsModule } from '@angular/forms';
   templateUrl: './header.html',
   styleUrl: './header.css'
 })
-export class Header {
-   showMobileMenu = false;
+export class Header implements OnInit, OnDestroy {
+  showMobileMenu = false;
   scrolled = false;
+  private onScroll = () => {
+    this.scrolled = (window.scrollY || document.documentElement.scrollTop || 0) > 8;
+  };
   constructor(public store: StoreService, private router: Router) {}
+
+  ngOnInit(): void {
+    window.addEventListener('scroll', this.onScroll, { passive: true });
+    // initialize state in case page is already scrolled (e.g., deep links)
+    this.onScroll();
+  }
+  ngOnDestroy(): void {
+    window.removeEventListener('scroll', this.onScroll);
+  }
 
   // toggle mobile menu
   toggleMenu() {

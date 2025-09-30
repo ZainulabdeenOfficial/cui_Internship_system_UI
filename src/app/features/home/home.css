@@ -10,10 +10,11 @@ html { scroll-behavior: smooth; }
 .hero-slide{ height: var(--hero-h, 600px); width: 100%; background-size: cover; background-position: center; }
 .kenburns{ animation: kenburns 10s ease-in-out infinite alternate; }
 @keyframes kenburns{ from{ transform: scale(1) translateZ(0); } to{ transform: scale(1.08) translateZ(0); } }
-.glass{ background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.25); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); color: #fff; }
+.glass{ background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.25); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); color: #fff; box-shadow: 0 .25rem .75rem rgba(0,0,0,.2); }
 .carousel-indicators{ gap:.25rem; }
 .carousel-indicators [data-bs-target]{ width: 28px; height: 28px; border-radius: 50%; background: rgba(255,255,255,.2); color:#fff; font-size:.9rem; display:flex; align-items:center; justify-content:center; border:1px solid rgba(255,255,255,.45); text-indent: 0; }
 .carousel-indicators .active{ background: #0d6efd; border-color:#0d6efd; }
+.carousel-indicators [data-bs-target]:focus-visible{ outline: 2px solid #fff; outline-offset: 2px; }
 .subnav{ backdrop-filter: blur(6px); }
 .feature-card:hover{ transform: translateY(-2px); transition: transform .2s ease; }
 .step-card:hover, .mode-card:hover{ transform: translateY(-2px); transition: transform .2s ease; }
@@ -22,6 +23,7 @@ html { scroll-behavior: smooth; }
 .back-to-top{ position: fixed; right: 1rem; bottom: 1rem; width: 44px; height: 44px; display:flex; align-items:center; justify-content:center; }
 .scroll-down-indicator{ position:absolute; left:50%; transform: translateX(-50%); bottom: .75rem; color:#fff; opacity:.85; text-decoration:none; font-size:1.25rem; transition: transform .2s ease, opacity .2s ease; }
 .scroll-down-indicator:hover{ transform: translateX(-50%) translateY(2px); opacity:1; }
+.scroll-down-indicator:focus-visible{ outline: 2px solid #fff; outline-offset: 2px; }
 
 
 /* Caption entrance */
@@ -59,4 +61,11 @@ html { scroll-behavior: smooth; }
 .about-logo{ max-width: 100%; max-height: 280px; width:auto; height:auto; object-fit: contain; }
 @media (min-width: 768px){
 	.about-logo{ max-height: 360px; }
+}
+
+/* Accessibility: respect reduced motion */
+@media (prefers-reduced-motion: reduce){
+	.kenburns{ animation: none !important; }
+	.carousel-item{ transition: none !important; }
+	.carousel{ transition: none !important; }
 }
