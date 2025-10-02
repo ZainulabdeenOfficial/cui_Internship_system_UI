@@ -86,7 +86,7 @@ export class Login implements OnDestroy {
       const email = this.model.email.trim();
       const password = this.model.password;
       // First try backend API login for students
-      const apiRes = await this.auth.login({ email, password }, { timeoutMs: 7000 });
+  const apiRes = await this.auth.login({ email, password }, { timeoutMs: 5000 });
       if (apiRes && apiRes.success) {
         if (apiRes.token) localStorage.setItem('authToken', apiRes.token);
         if (this.remember) localStorage.setItem('lastStudentEmail', email);
@@ -151,7 +151,6 @@ export class Login implements OnDestroy {
       // Refresh captcha on any failure
       this.generateCaptcha();
     } finally {
-      await this.minDelay(200); // small UX delay for spinner smoothness
       this.loading = false;
       if (this.slowTimer) { clearTimeout(this.slowTimer); this.slowTimer = null; }
       this.slow = false;

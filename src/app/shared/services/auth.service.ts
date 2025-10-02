@@ -12,7 +12,7 @@ export class AuthService {
   async registerStudent(input: StudentRegisterRequest, options?: { timeoutMs?: number }): Promise<RegisterResponse> {
     const url = `${this.base}/api/auth/register`;
     try {
-      const res = await firstValueFrom(this.http.post<RegisterResponse>(url, input, { timeout: options?.timeoutMs ?? 8000 }));
+  const res = await firstValueFrom(this.http.post<RegisterResponse>(url, input, { timeout: options?.timeoutMs ?? 5000 }));
       return res ?? { success: true } as RegisterResponse;
     } catch (err: any) {
       const message = err?.error?.message || err?.message || 'Registration failed';
