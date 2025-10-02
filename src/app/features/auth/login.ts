@@ -22,6 +22,8 @@ export class Login implements OnDestroy {
   showPassword = false;
   remember = false;
   loading = false;
+  slow = false;
+  private slowTimer: any;
   failedAttempts = 0;
   cooldownUntil = 0; // epoch ms
   now = Date.now();
@@ -75,16 +77,16 @@ export class Login implements OnDestroy {
         return;
       }
     }
-    this.loading = true;
+  this.loading = true;
+  this.slow = false;
+  if (this.slowTimer) clearTimeout(this.slowTimer);
+  this.slowTimer = setTimeout(() => { this.slow = true; }, 1500);
     try {
       // enforce a minimum response time to reduce timing side-channels
       const email = this.model.email.trim();
       const password = this.model.password;
       // First try backend API login for students
-      const apiRes = await Promise.race([
-        this.auth.login({ email, password }),
-        this.minDelay(500).then(() => null as any)
-      ]);
+      const apiRes = await this.auth.login({ email, password }, { timeoutMs: 7000 });
       if (apiRes && apiRes.success) {
         if (apiRes.token) localStorage.setItem('authToken', apiRes.token);
         if (this.remember) localStorage.setItem('lastStudentEmail', email);
@@ -105,7 +107,7 @@ export class Login implements OnDestroy {
         } catch {}
         this.router.navigate(['/student']);
       } else {
-        // Fallback to local demo roles: admin -> faculty -> site -> student
+        // If API responded with failure (non-timeout), fallback to local roles
         let navigated = false;
         const tryLogin = async (fn: () => any, path: string) => {
           try { const res = await Promise.resolve(fn()); if (!navigated) { navigated = true; this.router.navigate([path]); } return res; } catch { throw 'fail'; }
@@ -132,9 +134,14 @@ export class Login implements OnDestroy {
       // reset counters on success
       this.failedAttempts = 0; this.cooldownUntil = 0; this.challenge = null; this.challengeAnswer = ''; this.generateCaptcha();
     } catch (e: any) {
-      // generic error to avoid user enumeration
-  this.error = 'Invalid email or password';
-      this.failedAttempts++;
+      // Handle timeouts without penalizing attempts
+      if (e && (e.message?.toString().toLowerCase().includes('timeout') || e.code === 'timeout')) {
+        this.error = 'Server took too long to respond. Please try again.';
+      } else {
+        // generic error to avoid user enumeration
+        this.error = 'Invalid email or password';
+        this.failedAttempts++;
+      }
       if (this.failedAttempts >= 3) {
         if (!this.challenge) this.newChallenge();
         const backoff = Math.min(60, Math.pow(2, this.failedAttempts - 2));
@@ -146,6 +153,8 @@ export class Login implements OnDestroy {
     } finally {
       await this.minDelay(200); // small UX delay for spinner smoothness
       this.loading = false;
+      if (this.slowTimer) { clearTimeout(this.slowTimer); this.slowTimer = null; }
+      this.slow = false;
     }
   }
 

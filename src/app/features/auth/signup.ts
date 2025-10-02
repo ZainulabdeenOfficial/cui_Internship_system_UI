@@ -17,6 +17,8 @@ export class Signup {
   constructor(private store: StoreService, private router: Router, private auth: AuthService) {}
   model = { name: '', email: '', password: '', registrationNo: '' };
   error: string | null = null;
+  slow = false;
+  private slowTimer: any;
   get regNoDisplay(): string {
     const v = (this.model.registrationNo || '').trim();
     return v;
@@ -47,6 +49,7 @@ export class Signup {
   }
   async submit() {
     this.error = null;
+    this.slow = false; if (this.slowTimer) clearTimeout(this.slowTimer); this.slowTimer = setTimeout(() => this.slow = true, 1500);
     const name = this.model.name.trim();
     const email = this.model.email.trim();
     const password = this.model.password.trim();
@@ -57,9 +60,11 @@ export class Signup {
     }
     const payload: StudentRegisterRequest = { name, email, password,  regNo };
 
-    const res = await this.auth.registerStudent(payload);
+    const res = await this.auth.registerStudent(payload, { timeoutMs: 8000 });
     if (!res.success) {
       this.error = res.message || 'Registration failed';
+      if (this.slowTimer) { clearTimeout(this.slowTimer); this.slowTimer = null; }
+      this.slow = false;
       return;
     }
 
@@ -70,5 +75,7 @@ export class Signup {
     } catch (e: any) {
       this.error = e?.message ?? 'Signup failed';
     }
+    if (this.slowTimer) { clearTimeout(this.slowTimer); this.slowTimer = null; }
+    this.slow = false;
   }
 }

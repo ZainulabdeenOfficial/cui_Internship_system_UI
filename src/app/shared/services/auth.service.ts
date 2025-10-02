@@ -9,10 +9,10 @@ export class AuthService {
   constructor(private http: HttpClient) {}
   private base = environment.apiBaseUrl.replace(/\/$/, '');
 
-  async registerStudent(input: StudentRegisterRequest): Promise<RegisterResponse> {
+  async registerStudent(input: StudentRegisterRequest, options?: { timeoutMs?: number }): Promise<RegisterResponse> {
     const url = `${this.base}/api/auth/register`;
     try {
-      const res = await firstValueFrom(this.http.post<RegisterResponse>(url, input));
+      const res = await firstValueFrom(this.http.post<RegisterResponse>(url, input, { timeout: options?.timeoutMs ?? 8000 }));
       return res ?? { success: true } as RegisterResponse;
     } catch (err: any) {
       const message = err?.error?.message || err?.message || 'Registration failed';
@@ -20,10 +20,10 @@ export class AuthService {
     }
   }
 
-  async login(input: LoginRequest): Promise<LoginResponse> {
+  async login(input: LoginRequest, options?: { timeoutMs?: number }): Promise<LoginResponse> {
     const url = `${this.base}/api/auth/login`;
     try {
-      const res = await firstValueFrom(this.http.post<LoginResponse>(url, input));
+      const res = await firstValueFrom(this.http.post<LoginResponse>(url, input, { timeout: options?.timeoutMs ?? 7000 }));
       return res ?? { success: true } as LoginResponse;
     } catch (err: any) {
       const message = err?.error?.message || err?.message || 'Login failed';

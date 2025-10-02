@@ -68,6 +68,11 @@
             <div class="alert alert-danger py-2">{{ error }}</div>
           </div>
         }
+        @if (slow && !error) {
+          <div class="col-12">
+            <div class="alert alert-info py-2">Still working… the server is taking longer than usual.</div>
+          </div>
+        }
         <div class="col-12 text-center small">
           <span>New student? <a routerLink="/signup">Create an account</a></span>
         </div>
