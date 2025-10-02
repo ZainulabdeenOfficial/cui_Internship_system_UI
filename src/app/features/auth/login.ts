@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { StoreService } from '../../shared/services/store.service';
+import { AuthService } from '../../shared/services/auth.service';
 
 @Component({
   selector: 'app-login',
@@ -13,7 +14,7 @@ import { StoreService } from '../../shared/services/store.service';
 })
 
 export class Login implements OnDestroy {
-  constructor(private store: StoreService, private router: Router) {
+  constructor(private store: StoreService, private router: Router, private auth: AuthService) {
     this.generateCaptcha();
   }
   model = { email: '', password: '' };
@@ -79,29 +80,55 @@ export class Login implements OnDestroy {
       // enforce a minimum response time to reduce timing side-channels
       const email = this.model.email.trim();
       const password = this.model.password;
-      // Try admin -> faculty -> site -> student
-      let navigated = false;
-      const tryLogin = async (fn: () => any, path: string) => {
-        try { const res = await Promise.resolve(fn()); if (!navigated) { navigated = true; this.router.navigate([path]); } return res; } catch { throw 'fail'; }
-      };
-      await Promise.allSettled([
-        (async () => {
-          try {
-            await tryLogin(() => this.store.loginAdmin(email, password), '/admin');
-          } catch {
-            try { await tryLogin(() => this.store.loginFaculty(email, password), '/faculty'); }
-            catch {
-              try { await tryLogin(() => this.store.loginSite(email, password), '/site'); }
+      // First try backend API login for students
+      const apiRes = await Promise.race([
+        this.auth.login({ email, password }),
+        this.minDelay(500).then(() => null as any)
+      ]);
+      if (apiRes && apiRes.success) {
+        if (apiRes.token) localStorage.setItem('authToken', apiRes.token);
+        if (this.remember) localStorage.setItem('lastStudentEmail', email);
+        // Sync with local store for app state
+        const lower = email.toLowerCase();
+        let s = this.store.students().find(u => u.email.toLowerCase() === lower);
+        if (!s) {
+          const name = (apiRes.user?.name as string) || email.split('@')[0];
+          const regNo = (apiRes.user?.regNo as string) || (apiRes.user?.registrationNo as string) || '';
+          s = this.store.createStudent({ name, email, password, registrationNo: regNo });
+        }
+        this.store.currentStudentId.set(s.id);
+        this.store.currentUser.set({ role: 'student', studentId: s.id });
+        // Persist session keys so refresh keeps session
+        try {
+          localStorage.setItem('currentStudentId', JSON.stringify(s.id));
+          localStorage.setItem('currentUser', JSON.stringify({ role: 'student', studentId: s.id }));
+        } catch {}
+        this.router.navigate(['/student']);
+      } else {
+        // Fallback to local demo roles: admin -> faculty -> site -> student
+        let navigated = false;
+        const tryLogin = async (fn: () => any, path: string) => {
+          try { const res = await Promise.resolve(fn()); if (!navigated) { navigated = true; this.router.navigate([path]); } return res; } catch { throw 'fail'; }
+        };
+        await Promise.allSettled([
+          (async () => {
+            try {
+              await tryLogin(() => this.store.loginAdmin(email, password), '/admin');
+            } catch {
+              try { await tryLogin(() => this.store.loginFaculty(email, password), '/faculty'); }
               catch {
-                const s = await tryLogin(() => this.store.login(email, password), '/student');
-                if (this.remember) localStorage.setItem('lastStudentEmail', email);
-                return s;
+                try { await tryLogin(() => this.store.loginSite(email, password), '/site'); }
+                catch {
+                  const s = await tryLogin(() => this.store.login(email, password), '/student');
+                  if (this.remember) localStorage.setItem('lastStudentEmail', email);
+                  return s;
+                }
               }
             }
-          }
-        })(),
-        this.minDelay(500)
-      ]);
+          })(),
+          this.minDelay(500)
+        ]);
+      }
       // reset counters on success
       this.failedAttempts = 0; this.cooldownUntil = 0; this.challenge = null; this.challengeAnswer = ''; this.generateCaptcha();
     } catch (e: any) {

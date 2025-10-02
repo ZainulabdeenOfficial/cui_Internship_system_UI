@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
-import { StudentRegisterRequest, RegisterResponse } from '../models/auth.models';
+import { StudentRegisterRequest, RegisterResponse, LoginRequest, LoginResponse } from '../models/auth.models';
 import { firstValueFrom } from 'rxjs';
 
 @Injectable({ providedIn: 'root' })
@@ -16,6 +16,17 @@ export class AuthService {
       return res ?? { success: true } as RegisterResponse;
     } catch (err: any) {
       const message = err?.error?.message || err?.message || 'Registration failed';
+      return { success: false, message };
+    }
+  }
+
+  async login(input: LoginRequest): Promise<LoginResponse> {
+    const url = `${this.base}/api/auth/login`;
+    try {
+      const res = await firstValueFrom(this.http.post<LoginResponse>(url, input));
+      return res ?? { success: true } as LoginResponse;
+    } catch (err: any) {
+      const message = err?.error?.message || err?.message || 'Login failed';
       return { success: false, message };
     }
   }
