@@ -2,7 +2,7 @@ export interface StudentRegisterRequest {
   name: string;
   email: string;
   password: string;
-  role: 'student';
+ // role: 'student';
   regNo: string; // registration number
 }
 

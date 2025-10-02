@@ -25,16 +25,15 @@ export class Signup {
   }
   onRegNoChange(val: string) {
     if (val == null) return;
-    // Normalize: trim, uppercase, replace underscores with hyphens
+   
     let v = String(val).toUpperCase().replace(/_/g, '-');
-    // Collapse multiple hyphens to single
+    
     v = v.replace(/-+/g, '-');
-    // Allow only letters, digits, and hyphen
+  
     v = v.replace(/[^A-Z0-9-]/g, '');
-    // Remove any spaces (not allowed)
+   
     v = v.replace(/\s+/g, '');
-    // Attempt to insert hyphens between segments if missing
-    // Target format: FA22-BCS-090 (2 letters season + 2 digits) - (dept 2-4 letters) - (3 digits)
+    
     const m = v.match(/^([A-Z]{2})(\d{0,2})(?:-)?([A-Z]{0,4})(?:-)?(\d{0,3})$/);
     if (m) {
       const part1 = m[1] + (m[2] ?? '');
@@ -58,7 +57,7 @@ export class Signup {
       this.error = 'All fields are required.';
       return;
     }
-    const payload: StudentRegisterRequest = { name, email, password, role: 'student', regNo };
+    const payload: StudentRegisterRequest = { name, email, password,  regNo };
 
     // Call secure API
     const res = await this.auth.registerStudent(payload);
@@ -67,7 +66,7 @@ export class Signup {
       return;
     }
 
-    // Local signup to keep existing app state in sync
+    
     try {
       this.store.signup(name, email, password, regNo);
       this.router.navigate(['/student']);
