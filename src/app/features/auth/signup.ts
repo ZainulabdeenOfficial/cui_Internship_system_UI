@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -14,9 +14,7 @@ import type { StudentRegisterRequest } from '../../shared/models/auth.models';
   styleUrl: './signup.css'
 })
 export class Signup {
-  private store = inject(StoreService);
-  private router = inject(Router);
-  private auth = inject(AuthService);
+  constructor(private store: StoreService, private router: Router, private auth: AuthService) {}
   model = { name: '', email: '', password: '', registrationNo: '' };
   error: string | null = null;
   get regNoDisplay(): string {
@@ -59,7 +57,6 @@ export class Signup {
     }
     const payload: StudentRegisterRequest = { name, email, password,  regNo };
 
-    // Call secure API
     const res = await this.auth.registerStudent(payload);
     if (!res.success) {
       this.error = res.message || 'Registration failed';

@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { StoreService } from '../../shared/services/store.service';
@@ -12,25 +12,24 @@ import { ToastService } from '../../shared/toast/toast.service';
   styleUrl: './admin.css'
 })
 export class Admin {
-  private store = inject(StoreService);
-  private toast = inject(ToastService);
-  students = this.store.students;
-  complaints = this.store.complaints;
-  requests = this.store.requests;
-  approvals = this.store.approvals;
-  logsMap = this.store.logs;
-  reportsMap = this.store.reports;
-  agreementsMap = this.store.agreements;
-  designStatementsMap = this.store.designStatements;
-  assignmentsMap = this.store.assignments;
-  freelanceMap = this.store.freelance;
-  facultyList = this.store.facultySupervisors;
-  companyList = this.store.companies;
-  siteList = this.store.siteSupervisors;
+  constructor(private store: StoreService, private toast: ToastService) {}
+  get students() { return this.store.students; }
+  get complaints() { return this.store.complaints; }
+  get requests() { return this.store.requests; }
+  get approvals() { return this.store.approvals; }
+  get logsMap() { return this.store.logs; }
+  get reportsMap() { return this.store.reports; }
+  get agreementsMap() { return this.store.agreements; }
+  get designStatementsMap() { return this.store.designStatements; }
+  get assignmentsMap() { return this.store.assignments; }
+  get freelanceMap() { return this.store.freelance; }
+  get facultyList() { return this.store.facultySupervisors; }
+  get companyList() { return this.store.companies; }
+  get siteList() { return this.store.siteSupervisors; }
   facultyId = '';
   siteId = '';
   selectedId: string | null = null;
-  officers = this.store.internshipOfficers;
+  get officers() { return this.store.internshipOfficers; }
   officer = { name: '', email: '' };
   responses: Record<string, string> = {};
   // forms for adding supervisors/company
@@ -44,7 +43,7 @@ export class Admin {
   siteNewPw: Record<string, string> = {};
   // announcements
   announcement = { title: '', message: '', link: '', pinned: false };
-  announcements = this.store.announcements; // expose to template
+  get announcements() { return this.store.announcements; }
 
   approve(id: string) { this.store.approveStudent(id); this.toast.success('Student approved'); }
   viewDetails(id: string) { this.selectedId = id; }

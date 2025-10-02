@@ -1,4 +1,4 @@
-import { Component, inject, OnDestroy } from '@angular/core';
+import { Component, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -13,21 +13,20 @@ import { StoreService } from '../../shared/services/store.service';
 })
 
 export class Login implements OnDestroy {
-  private store = inject(StoreService);
-  private router = inject(Router);
+  constructor(private store: StoreService, private router: Router) {
+    this.generateCaptcha();
+  }
   model = { email: '', password: '' };
   error: string | null = null;
   showPassword = false;
   remember = false;
   loading = false;
-  // anti-bruteforce state
   failedAttempts = 0;
   cooldownUntil = 0; // epoch ms
   now = Date.now();
   private ticker: any;
   challenge: { a: number; b: number } | null = null;
   challengeAnswer = '';
-  // Simple custom captcha state (replaces Google reCAPTCHA)
   captchaCode = '';
   captchaInput = '';
   captchaError: string | null = null;
@@ -53,7 +52,6 @@ export class Login implements OnDestroy {
     this.captchaInput = '';
   }
 
-  // Always require captcha (can change policy easily)
   private ensureCaptcha() { if (!this.captchaCode) this.generateCaptcha(); }
 
   async submit() {
@@ -124,7 +122,4 @@ export class Login implements OnDestroy {
     }
   }
 
-  constructor() {
-    this.generateCaptcha();
-  }
 }

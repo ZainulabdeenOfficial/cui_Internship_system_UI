@@ -1,4 +1,4 @@
-import { Component, computed, effect, inject } from '@angular/core';
+import { Component, computed, effect } from '@angular/core';
 import { CommonModule, NgIf, NgFor } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { StoreService } from '../../shared/services/store.service';
@@ -12,19 +12,13 @@ import { ToastService } from '../../shared/toast/toast.service';
   styleUrl: './student.css'
 })
 export class Student {
-  private store = inject(StoreService);
-  private toast = inject(ToastService);
-  students = this.store.students;
-  me = this.store.currentUser;
+  get students() { return this.store.students; }
+  get me() { return this.store.currentUser; }
   selectedId: string | null = null;
   selectedStudent = computed(() => this.selectedId ? this.students().find(s => s.id === this.selectedId!) : undefined);
   myStudentId = computed(() => this.me()?.studentId ?? null);
   isApproved = computed(() => !!this.selectedStudent()?.approved);
-  // Keep selection locked to the logged-in student's own id
-  private lockSelection = effect(() => {
-    const mine = this.myStudentId();
-    if (mine && this.selectedId !== mine) this.selectedId = mine;
-  });
+  private lockSelection: any;
 
   // forms
   newStudent = { name: '', email: '', registrationNo: '' };
@@ -86,14 +80,20 @@ export class Student {
   approvals = computed(() => this.selectedId ? (this.store.approvals()[this.selectedId] ?? []) : []);
   agreements = computed(() => this.selectedId ? (this.store.agreements()[this.selectedId] ?? []) : []);
   freelances = computed(() => this.selectedId ? (this.store.freelance()[this.selectedId] ?? []) : []);
-  facultyList = this.store.facultySupervisors;
-  siteList = this.store.siteSupervisors;
+  get facultyList() { return this.store.facultySupervisors; }
+  get siteList() { return this.store.siteSupervisors; }
   // complaints
   complaint = { category: 'Other' as 'Technical'|'Supervisor'|'Organization'|'Other', message: '' };
   myComplaints = () => {
     if (!this.selectedId) return [] as any[];
     return this.store.complaints().filter(c => c.studentId === this.selectedId);
   };
+  constructor(private store: StoreService, private toast: ToastService) {
+    this.lockSelection = effect(() => {
+      const mine = this.myStudentId();
+      if (mine && this.selectedId !== mine) this.selectedId = mine;
+    });
+  }
 
   meetsFiverr(rec: any) {
     return (rec.gigsCompleted ?? 0) >= 2 || (rec.earningsUSD ?? 0) >= 500;

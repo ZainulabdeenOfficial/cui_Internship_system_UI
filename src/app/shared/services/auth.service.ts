@@ -1,4 +1,4 @@
-import { inject, Injectable } from '@angular/core';
+import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import { StudentRegisterRequest, RegisterResponse } from '../models/auth.models';
@@ -6,7 +6,7 @@ import { firstValueFrom } from 'rxjs';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
-  private http = inject(HttpClient);
+  constructor(private http: HttpClient) {}
   private base = environment.apiBaseUrl.replace(/\/$/, '');
 
   async registerStudent(input: StudentRegisterRequest): Promise<RegisterResponse> {
