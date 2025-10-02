@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { StoreService } from '../../shared/services/store.service';
 import { AuthService } from '../../shared/services/auth.service';
+import { ToastService } from '../../shared/toast/toast.service';
 import type { StudentRegisterRequest } from '../../shared/models/auth.models';
 
 @Component({
@@ -14,7 +15,7 @@ import type { StudentRegisterRequest } from '../../shared/models/auth.models';
   styleUrl: './signup.css'
 })
 export class Signup {
-  constructor(private store: StoreService, private router: Router, private auth: AuthService) {}
+  constructor(private store: StoreService, private router: Router, private auth: AuthService, private toast: ToastService) {}
   model = { name: '', email: '', password: '', registrationNo: '' };
   error: string | null = null;
   slow = false;
@@ -60,7 +61,7 @@ export class Signup {
     }
     const payload: StudentRegisterRequest = { name, email, password,  regNo };
 
-    const res = await this.auth.registerStudent(payload, { timeoutMs: 5000 });
+  const res = await this.auth.registerStudent(payload, { timeoutMs: 4000 });
     if (!res.success) {
       this.error = res.message || 'Registration failed';
       if (this.slowTimer) { clearTimeout(this.slowTimer); this.slowTimer = null; }
@@ -68,29 +69,9 @@ export class Signup {
       return;
     }
 
-    // Immediately login via API to fetch token and sync state
-    const loginRes = await this.auth.login({ email, password }, { timeoutMs: 5000 });
-    if (loginRes && loginRes.success) {
-      if (loginRes.token) localStorage.setItem('authToken', loginRes.token);
-      // Sync with local store for app state (avoid duplicate student creation)
-      const lower = email.toLowerCase();
-      let s = this.store.students().find(u => u.email.toLowerCase() === lower);
-      if (!s) {
-        const nameFromApi = (loginRes.user?.name as string) || name;
-        const regFromApi = (loginRes.user?.regNo as string) || (loginRes.user?.registrationNo as string) || regNo;
-        s = this.store.createStudent({ name: nameFromApi, email, password, registrationNo: regFromApi });
-      }
-      this.store.currentStudentId.set(s.id);
-      this.store.currentUser.set({ role: 'student', studentId: s.id });
-      try {
-        localStorage.setItem('currentStudentId', JSON.stringify(s.id));
-        localStorage.setItem('currentUser', JSON.stringify({ role: 'student', studentId: s.id }));
-      } catch {}
-      this.router.navigate(['/student']);
-    } else {
-      // fallback: navigate to login so user can sign in
-      this.router.navigate(['/login']);
-    }
+  // Redirect to login so the user can sign in after successful registration
+  this.toast.success('Account created. Please login.');
+  this.router.navigate(['/login'], { queryParams: { created: '1' } });
     if (this.slowTimer) { clearTimeout(this.slowTimer); this.slowTimer = null; }
     this.slow = false;
   }

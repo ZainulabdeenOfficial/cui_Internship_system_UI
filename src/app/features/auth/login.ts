@@ -1,8 +1,9 @@
 import { Component, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { Router, RouterLink, ActivatedRoute } from '@angular/router';
 import { StoreService } from '../../shared/services/store.service';
+import { ToastService } from '../../shared/toast/toast.service';
 import { AuthService } from '../../shared/services/auth.service';
 
 @Component({
@@ -14,8 +15,10 @@ import { AuthService } from '../../shared/services/auth.service';
 })
 
 export class Login implements OnDestroy {
-  constructor(private store: StoreService, private router: Router, private auth: AuthService) {
+  constructor(private store: StoreService, private router: Router, private auth: AuthService, private route: ActivatedRoute, private toast: ToastService) {
     this.generateCaptcha();
+    // Warm up the student route chunk in the background to speed up post-login navigation
+    try { import('../../features/student/student'); } catch {}
   }
   model = { email: '', password: '' };
   error: string | null = null;
@@ -33,8 +36,19 @@ export class Login implements OnDestroy {
   captchaCode = '';
   captchaInput = '';
   captchaError: string | null = null;
+  signupMsg = '';
+  apiMessage: string | null = null;
 
-  // no ngOnInit needed
+  // Initialize optional success message if redirected from signup
+  // no ngOnInit lifecycle hook, do initialization inline for simplicity
+  private initFromQueryOnce = (() => {
+    try {
+      this.route.queryParamMap.subscribe(p => {
+        if (p.get('created') === '1') { this.signupMsg = 'Account created. Please login.'; }
+      });
+    } catch {}
+    return true;
+  })();
 
   ngOnDestroy(): void { if (this.ticker) clearInterval(this.ticker); }
   private startTicker() {
@@ -59,6 +73,7 @@ export class Login implements OnDestroy {
 
   async submit() {
     this.error = null;
+    this.apiMessage = null;
     this.captchaError = null;
     this.ensureCaptcha();
     if (this.captchaInput.trim().toUpperCase() !== this.captchaCode.toUpperCase()) {
@@ -85,29 +100,57 @@ export class Login implements OnDestroy {
       // enforce a minimum response time to reduce timing side-channels
       const email = this.model.email.trim();
       const password = this.model.password;
-      // First try backend API login for students
-  const apiRes = await this.auth.login({ email, password }, { timeoutMs: 5000 });
+    // First try backend API login
+  const apiRes = await this.auth.login({ email, password }, { timeoutMs: 4000 });
+  if (apiRes?.message) { this.apiMessage = apiRes.message; this.toast.info(apiRes.message); }
       if (apiRes && apiRes.success) {
         if (apiRes.token) localStorage.setItem('authToken', apiRes.token);
         if (this.remember) localStorage.setItem('lastStudentEmail', email);
-        // Sync with local store for app state
-        const lower = email.toLowerCase();
-        let s = this.store.students().find(u => u.email.toLowerCase() === lower);
-        if (!s) {
-          const name = (apiRes.user?.name as string) || email.split('@')[0];
-          const regNo = (apiRes.user?.regNo as string) || (apiRes.user?.registrationNo as string) || '';
-          s = this.store.createStudent({ name, email, password, registrationNo: regNo });
+        // Determine role from API user if provided; default to student
+        const apiRole = (apiRes.user?.role as string | undefined)?.toLowerCase();
+        if (apiRole === 'admin') {
+          this.store.currentUser.set({ role: 'admin' });
+          this.store.currentStudentId.set(null);
+          this.toast.success('Logged in as Admin');
+          this.router.navigate(['/admin']);
+        } else if (apiRole === 'faculty') {
+          // Try to find existing local faculty by email or create one placeholder
+          const lower = email.toLowerCase();
+          let f = this.store.facultySupervisors().find(u => u.email.toLowerCase() === lower);
+          if (!f) { this.store.addFacultySupervisor(apiRes.user?.name || email.split('@')[0], email, undefined, password); f = this.store.facultySupervisors().find(u => u.email.toLowerCase() === lower)!; }
+          this.store.currentUser.set({ role: 'faculty', facultyId: f.id });
+          this.store.currentStudentId.set(null);
+          this.toast.success('Logged in as Faculty');
+          this.router.navigate(['/faculty']);
+        } else if (apiRole === 'site') {
+          const lower = email.toLowerCase();
+          let ssv = this.store.siteSupervisors().find(u => u.email.toLowerCase() === lower);
+          if (!ssv) { const companyId = undefined; this.store.addSiteSupervisor(apiRes.user?.name || email.split('@')[0], email, companyId, password); ssv = this.store.siteSupervisors().find(u => u.email.toLowerCase() === lower)!; }
+          this.store.currentUser.set({ role: 'site', siteId: ssv.id });
+          this.store.currentStudentId.set(null);
+          this.toast.success('Logged in as Site Supervisor');
+          this.router.navigate(['/site']);
+        } else {
+          // Default student flow
+          const lower = email.toLowerCase();
+          let s = this.store.students().find(u => u.email.toLowerCase() === lower);
+          if (!s) {
+            const name = (apiRes.user?.name as string) || email.split('@')[0];
+            const regNo = (apiRes.user?.regNo as string) || (apiRes.user?.registrationNo as string) || '';
+            s = this.store.createStudent({ name, email, password, registrationNo: regNo });
+          }
+          this.store.currentStudentId.set(s.id);
+          this.store.currentUser.set({ role: 'student', studentId: s.id });
+          try {
+            localStorage.setItem('currentStudentId', JSON.stringify(s.id));
+            localStorage.setItem('currentUser', JSON.stringify({ role: 'student', studentId: s.id }));
+          } catch {}
+          this.toast.success('Logged in as Student');
+          this.router.navigate(['/student']);
         }
-        this.store.currentStudentId.set(s.id);
-        this.store.currentUser.set({ role: 'student', studentId: s.id });
-        // Persist session keys so refresh keeps session
-        try {
-          localStorage.setItem('currentStudentId', JSON.stringify(s.id));
-          localStorage.setItem('currentUser', JSON.stringify({ role: 'student', studentId: s.id }));
-        } catch {}
-        this.router.navigate(['/student']);
       } else {
-        // If API responded with failure (non-timeout), fallback to local roles
+        // If API responded with failure (non-timeout), show server message and fallback to local roles
+        if (apiRes && apiRes.message) { this.error = apiRes.message; this.toast.danger(apiRes.message); }
         let navigated = false;
         const tryLogin = async (fn: () => any, path: string) => {
           try { const res = await Promise.resolve(fn()); if (!navigated) { navigated = true; this.router.navigate([path]); } return res; } catch { throw 'fail'; }
@@ -137,9 +180,11 @@ export class Login implements OnDestroy {
       // Handle timeouts without penalizing attempts
       if (e && (e.message?.toString().toLowerCase().includes('timeout') || e.code === 'timeout')) {
         this.error = 'Server took too long to respond. Please try again.';
+        this.toast.warning(this.error);
       } else {
         // generic error to avoid user enumeration
         this.error = 'Invalid email or password';
+        this.toast.danger(this.error);
         this.failedAttempts++;
       }
       if (this.failedAttempts >= 3) {
