@@ -64,10 +64,12 @@ export class Signup {
   const res = await this.auth.registerStudent(payload, { timeoutMs: 4000 });
     if (!res.success) {
       this.error = res.message || 'Registration failed';
+      try { this.toast.danger(this.error); } catch {}
       if (this.slowTimer) { clearTimeout(this.slowTimer); this.slowTimer = null; }
       this.slow = false;
       return;
     }
+    if (res.message) { try { this.toast.info(res.message); } catch {} }
 
   // Redirect to login so the user can sign in after successful registration
   this.toast.success('Account created. Please login.');

@@ -153,7 +153,18 @@ export class Login implements OnDestroy {
         if (apiRes && apiRes.message) { this.error = apiRes.message; this.toast.danger(apiRes.message); }
         let navigated = false;
         const tryLogin = async (fn: () => any, path: string) => {
-          try { const res = await Promise.resolve(fn()); if (!navigated) { navigated = true; this.router.navigate([path]); } return res; } catch { throw 'fail'; }
+          try {
+            const res = await Promise.resolve(fn());
+            if (!navigated) {
+              navigated = true;
+              if (path === '/admin') this.toast.success('Logged in as Admin (local)');
+              else if (path === '/faculty') this.toast.success('Logged in as Faculty (local)');
+              else if (path === '/site') this.toast.success('Logged in as Site Supervisor (local)');
+              else this.toast.success('Logged in as Student (local)');
+              this.router.navigate([path]);
+            }
+            return res;
+          } catch { throw 'fail'; }
         };
         await Promise.allSettled([
           (async () => {
