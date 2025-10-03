@@ -19,236 +19,92 @@
       <div class="card">
         <div class="card-header bg-light">Responsibilities</div>
         <div class="card-body">
-          <ul class="mb-0">
-            <li>Identify potential host organizations and establish collaborations (MoUs).</li>
-            <li>Arrange internship placements for students based on availability and suitability.</li>
-            <li>Maintain a complete database of all internship records (placements, evaluations, reports).</li>
-            <li>Assign supervisory roles: a faculty supervisor and a site/host supervisor.</li>
-            <li>Organize on-campus internship expos and employer meetups with the Industry Liaison Cell.</li>
-            <li>Process and respond to feedback and complaints from students, faculty, and host supervisors.</li>
-            <li>Support technical infrastructure:
-              <ul>
-                <li>Assist students with Git/GitHub for version control and portfolios.</li>
-                <li>Guide the use of Jira/Trello for project tracking and collaboration.</li>
-              </ul>
-            </li>
-            <li>Collaborate with the Alumni Office to enhance access to opportunities via referrals and networks.</li>
+          <ul class="mb-0 small">
+            <li>Establish host organization collaborations (MoUs).</li>
+            <li>Match students to placements; maintain records.</li>
+            <li>Assign faculty and site supervisors.</li>
+            <li>Manage complaints and feedback loops.</li>
+            <li>Support tooling (Git, tracking, documentation).</li>
           </ul>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- hidden usage to ensure standalone imports are recognized -->
-  <ng-template #__ensureImportsAdmin>
-    {{ ([] | paginate: 1 : 10).length }}
-    <app-paginator [total]="0" [page]="1" [pageSize]="10"></app-paginator>
-  </ng-template>
-
-  <div class="table-responsive" *ngIf="currentTab==='students'">
-    <table class="table table-striped align-middle">
-      <thead>
-        <tr>
-          <th>Name</th><th>Email</th><th>Approved</th><th>Faculty</th><th>Site</th><th>Company</th><th>Office Marks</th><th>Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let s of (students() | paginate: page.students : pageSize)">
-          <td>{{ s.name }}</td>
-          <td>{{ s.email }}</td>
-          <td>
-            <span class="badge" [class.text-bg-success]="s.approved" [class.text-bg-secondary]="!s.approved">{{ s.approved ? 'Yes' : 'No' }}</span>
-          </td>
-          <td>{{ s.facultyId ? facultyName(s.facultyId) : '-' }}</td>
-          <td>{{ siteSupervisorName(s.siteId) }}</td>
-          <td>{{ companyName(s.companyId) }}</td>
-          <td style="min-width:240px">
-            <div class="d-flex gap-2">
-              <input type="number" class="form-control form-control-sm" [ngModel]="s.marks?.adminProposal ?? ''" (ngModelChange)="setAdminSubMarks(s.id, $event, s.marks?.adminLogs || 0, s.marks?.adminFinal || 0)" min="0" max="5" placeholder="Proposal /5" />
-              <input type="number" class="form-control form-control-sm" [ngModel]="s.marks?.adminLogs ?? ''" (ngModelChange)="setAdminSubMarks(s.id, s.marks?.adminProposal || 0, $event, s.marks?.adminFinal || 0)" min="0" max="5" placeholder="Logs /5" />
-              <input type="number" class="form-control form-control-sm" [ngModel]="s.marks?.adminFinal ?? ''" (ngModelChange)="setAdminSubMarks(s.id, s.marks?.adminProposal || 0, s.marks?.adminLogs || 0, $event)" min="0" max="10" placeholder="Final /10" />
-            </div>
-            <small class="text-muted">Auto total: {{ s.marks?.admin ?? 0 }}/20</small>
-          </td>
-          <td style="width:600px">
-            <button class="btn btn-sm btn-outline-success me-2" (click)="approve(s.id)" [disabled]="s.approved">Approve</button>
-            <div class="d-inline-flex gap-2 align-items-center">
-              <select class="form-select form-select-sm" [(ngModel)]="facultyId" style="width:160px">
-                <option [ngValue]="''">Faculty...</option>
-                <option *ngFor="let f of facultyList()" [ngValue]="f.id">{{ f.name }} ({{ f.email }})</option>
-              </select>
-              <select class="form-select form-select-sm" [(ngModel)]="siteId" style="width:160px">
-                <option [ngValue]="''">Site...</option>
-                <option *ngFor="let t of siteList()" [ngValue]="t.id">{{ t.name }} ({{ t.email }})</option>
-              </select>
-              <select class="form-select form-select-sm" [(ngModel)]="companyForStudent[s.id]" style="width:160px">
-                <option [ngValue]="''">Company...</option>
-                <option *ngFor="let c of companyList()" [ngValue]="c.id">{{ c.name }}</option>
-              </select>
-              <button class="btn btn-sm btn-primary" (click)="assign(s.id)">Assign</button>
-              <button class="btn btn-sm btn-outline-primary" (click)="assignCompanyToStudent(s.id)">Set Company</button>
-              <button class="btn btn-sm btn-outline-secondary" (click)="viewDetails(s.id)">Details</button>
-            </div>
-          </td>
-        </tr>
-      </tbody>
-    </table>
-    <app-paginator [total]="students().length" [(page)]="page.students" [pageSize]="pageSize"></app-paginator>
-  </div>
-
-  <!-- Student Details Drawer -->
-  @if (selectedId; as sid) { @if (currentTab==='students') {
-  <div class="card mt-3">
-    <div class="card-header bg-light">Student Details</div>
-    <div class="card-body">
-      <div class="row g-3 mb-2">
-        <div class="col-12"><strong>Student:</strong> {{ studentName(sid) }}</div>
-      </div>
-      <div class="row g-3">
-        <div class="col-12 col-lg-6">
-          <h6>Approval Forms</h6>
-          <ul class="list-group mb-3">
-            @for (a of approvalsOf(sid); track $index; let i = $index) {
-            <li class="list-group-item">
-              <details>
-                <summary class="d-flex flex-wrap gap-2 align-items-baseline">
-                  <span class="fw-semibold">v{{ a.version || (i+1) }}</span>
-                  <span class="text-muted">— {{ a.createdAt | date:'short' }}</span>
-                  <span>• Status: {{ a.status || 'pending' }}</span>
-                  <span class="text-muted">• Company: {{ a.company.name || '-' }}</span>
-                  <span class="text-muted">• {{ a.internship.startDate }} → {{ a.internship.endDate }}</span>
-                </summary>
-                <div class="mt-2">
-                  <div class="row g-2">
-                    <div class="col-12 col-md-6">
-                      <div class="fw-semibold mb-1">Student Info</div>
-                      <div class="small">Name: {{ a.studentInfo.name }}</div>
-                      <div class="small">Program: {{ a.studentInfo.program }} · Semester: {{ a.studentInfo.semester }}</div>
-                      <div class="small text-muted">Student ID: {{ a.studentInfo.studentId }}</div>
-                    </div>
-                    <div class="col-12 col-md-6">
-                      <div class="fw-semibold mb-1">Company</div>
-                      <div class="small">Name: {{ a.company.name }}</div>
-                      <div class="small">Address: {{ a.company.address }}</div>
-                      <div class="small">Supervisor: {{ a.company.supervisorName }} ({{ a.company.supervisorEmail }} · {{ a.company.supervisorPhone }})</div>
-                    </div>
-                  </div>
-                  <hr class="my-2" />
-                  <div class="row g-2">
-                    <div class="col-12 col-md-6">
-                      <div class="fw-semibold mb-1">Internship</div>
-                      <div class="small">Dates: {{ a.internship.startDate }} → {{ a.internship.endDate }}</div>
-                      <div class="small">Hours/Week: {{ a.internship.hoursPerWeek }} · Paid: {{ a.internship.paid }}</div>
-                    </div>
-                    <div class="col-12 col-md-6">
-                      <div class="fw-semibold mb-1">Objectives & Outcomes</div>
-                      <div class="small"><strong>Objectives:</strong> {{ a.objectives }}</div>
-                      <div class="small"><strong>Outcomes:</strong> {{ a.outcomes }}</div>
-                    </div>
-                  </div>
-                  @if (a.officerComment) {
-                  <div class="mt-2 small"><strong>Officer Comment:</strong> <em>{{ a.officerComment }}</em></div>
+  <!-- Unified tab content switcher to ensure isolation -->
+  <ng-container [ngSwitch]="currentTab">
+    <!-- Students Tab Simplified -->
+    <div class="row g-3" *ngSwitchCase="'students'">
+      <div class="col-12">
+        <div class="card">
+          <div class="card-header bg-light">Students</div>
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="table table-striped table-sm mb-0 align-middle">
+                <thead><tr><th>Name</th><th>Email</th><th>Approved</th></tr></thead>
+                <tbody>
+                  @for (s of (students() | paginate: page.students : pageSize); track s.id) {
+                  <tr>
+                    <td>{{ s.name }}</td>
+                    <td>{{ s.email }}</td>
+                    <td><span class="badge" [class.text-bg-success]="s.approved" [class.text-bg-secondary]="!s.approved">{{ s.approved ? 'Yes' : 'No' }}</span></td>
+                  </tr>
                   }
-                  @if (a.resolvedAt) {
-                  <div class="mt-1 small text-muted">Resolved: {{ a.resolvedAt | date:'short' }}</div>
-                  }
-                </div>
-              </details>
-            </li>
-            }
-          </ul>
-
-          <h6>Agreement (latest)</h6>
-          @if (agreementsOf(sid); as agrs) {
-            @if (agrs.length) {
-              <div class="small">
-                <div class="fw-semibold">Declarations</div>
-                <ul class="small mb-2">
-                  <li>Policy Acknowledgement: {{ agrs[agrs.length-1].policyAcknowledgement ? 'Yes' : 'No' }}</li>
-                  <li>Confidentiality Agreement: {{ agrs[agrs.length-1].confidentialityAgreement ? 'Yes' : 'No' }}</li>
-                  <li>Safety Training: {{ agrs[agrs.length-1].safetyTraining ? 'Yes' : 'No' }}</li>
-                </ul>
-                <div class="fw-semibold">Signatures</div>
-                <div>Student: {{ agrs[agrs.length-1].studentSignatureName }} <span class="text-muted">— {{ agrs[agrs.length-1].date }}</span></div>
-                <div>Faculty: {{ agrs[agrs.length-1].facultySignatureName || '-' }} <span class="text-muted">— {{ agrs[agrs.length-1].facultySignedAt | date:'short' }}</span></div>
-                <div>Office: {{ agrs[agrs.length-1].officeSignatureName || '-' }} <span class="text-muted">— {{ agrs[agrs.length-1].officeSignedAt | date:'short' }}</span></div>
-              </div>
-            } @else {
-              <div class="text-muted small">No agreement submitted.</div>
-            }
-          }
-
-          <h6 class="mt-3">Design Statement</h6>
-          @if (designStatementsOf(sid); as dss) {
-            @if (dss.length) {
-              <div class="small">
-                <details>
-                  <summary>
-                    <strong>Organization:</strong> {{ dss[dss.length-1].placement.organization }} ({{ dss[dss.length-1].placement.mode }})
-                    <span class="text-muted">· Functional Area: {{ dss[dss.length-1].placement.functionalArea }}</span>
-                  </summary>
-                  <div class="mt-2">
-                    <div class="fw-semibold">Career Goal</div>
-                    <div class="mb-2">{{ dss[dss.length-1].careerGoal }}</div>
-                    <div class="fw-semibold">Learning Objectives</div>
-                    <div class="mb-2">{{ dss[dss.length-1].learningObjectives }}</div>
-                    <div class="fw-semibold">Placement Overview</div>
-                    <div class="mb-2">{{ dss[dss.length-1].placement.overview || '-' }}</div>
-                    <div class="fw-semibold">Supervisor</div>
-                    <div class="mb-2">{{ dss[dss.length-1].supervisor.name }} — {{ dss[dss.length-1].supervisor.designation }} ({{ dss[dss.length-1].supervisor.email }} · {{ dss[dss.length-1].supervisor.contact }})</div>
-                    <div class="fw-semibold">Scope & Deliverables</div>
-                    <div class="mb-2">{{ dss[dss.length-1].scopeAndDeliverables }}</div>
-                    <div class="fw-semibold">Academic Preparation</div>
-                    <div class="mb-2">{{ dss[dss.length-1].academicPreparation }}</div>
-                    <div class="fw-semibold">Comments</div>
-                    <div class="mb-1">{{ dss[dss.length-1].comments || '-' }}</div>
-                  </div>
-                </details>
-              </div>
-            } @else {
-              <div class="text-muted small">No design statement.</div>
-            }
-          }
-        </div>
-
-        <div class="col-12 col-lg-6">
-          <h6>Reports</h6>
-          <ul class="list-group mb-3">
-            @for (r of reportsOf(sid); track $index) {
-            <li class="list-group-item d-flex justify-content-between align-items-center">
-              <span>{{ r.type | titlecase }} — {{ r.title || '(Untitled)' }} <span class="text-muted">· {{ r.date | date:'short' }}</span></span>
-              @if (r.score != null) {<span class="badge text-bg-secondary">Score: {{ r.score }}</span>}
-            </li>
-            }
-          </ul>
-          <h6>Weekly Logs</h6>
-          <ul class="list-group mb-3">
-            @for (l of logsOf(sid); track $index) {
-            <li class="list-group-item">Week {{ l.week }} · {{ l.note }} <span class="text-muted">— {{ l.date | date:'short' }}</span></li>
-            }
-          </ul>
-          <h6>Assignments</h6>
-          <ul class="list-group mb-3">
-            @for (a of assignmentsOf(sid); track $index) {
-            <li class="list-group-item d-flex justify-content-between align-items-center">
-              <span>{{ a.fileName }} <span class="text-muted">· {{ a.uploadedAt | date:'short' }}</span></span>
-              <button class="btn btn-sm btn-outline-primary" (click)="downloadAssignment(a)">Download</button>
-            </li>
-            }
-          </ul>
-          <h6>Freelance / Mode</h6>
-          <ul class="list-group">
-            @for (f of freelanceOf(sid); track $index) {
-            <li class="list-group-item"><strong>{{ f.platform }}</strong> <span class="text-muted">— {{ f.createdAt | date:'short' }}</span></li>
-            }
-          </ul>
+                </tbody>
+              </table>
+            </div>
+            <div class="p-2">
+              <app-paginator [total]="students().length" [(page)]="page.students" [pageSize]="pageSize"></app-paginator>
+            </div>
+          </div>
         </div>
       </div>
     </div>
-  </div>
-  } }
 
-  <div class="row g-3 mt-4" *ngIf="currentTab==='applications'">
+    <!-- Applications Tab -->
+    <div class="row g-3" *ngSwitchCase="'applications'">
+      <div class="col-12">
+        <div class="card">
+          <div class="card-header bg-light">Applications (Approval Forms)</div>
+          <div class="card-body">
+            <div class="form-check form-switch mb-2">
+              <input class="form-check-input" type="checkbox" id="pendOnly" [(ngModel)]="showPendingOnly">
+              <label class="form-check-label" for="pendOnly">Show only pending</label>
+            </div>
+            <div class="table-responsive">
+              <table class="table table-sm align-middle">
+                <thead><tr><th>Student</th><th>Submitted</th><th>Status</th><th>Comment</th><th>Decision</th></tr></thead>
+                <tbody>
+                  @for (s of students(); track s.id) {
+                  <tr [hidden]="!showInApplications(s.id)">
+                    <td>
+                      <div><strong>{{ s.name }}</strong> <span class="text-muted small">({{ s.email }})</span></div>
+                      @if (latestApproval(s.id); as a) {<div class="small text-muted">v{{ a.version }} — {{ a.company.name || '-' }} — {{ a.internship.startDate }} → {{ a.internship.endDate }}</div>}
+                    </td>
+                    <td>{{ latestApproval(s.id)?.createdAt | date:'short' }}</td>
+                    <td>
+                      <span class="badge" [class.text-bg-secondary]="!latestApproval(s.id)?.status || latestApproval(s.id)?.status==='pending'" [class.text-bg-success]="latestApproval(s.id)?.status==='approved'" [class.text-bg-danger]="latestApproval(s.id)?.status==='rejected'">{{ latestApproval(s.id)?.status || 'pending' }}</span>
+                    </td>
+                    <td><input class="form-control form-control-sm" [(ngModel)]="approvalComment[s.id]" placeholder="Comment" name="ac{{s.id}}" /></td>
+                    <td>
+                      <div class="d-flex gap-2">
+                        <select class="form-select form-select-sm" [(ngModel)]="approvalDecision[s.id]" name="ad{{s.id}}" style="width:120px">
+                          <option [ngValue]="''">Choose…</option>
+                          <option [ngValue]="'approved'">Approve</option>
+                          <option [ngValue]="'rejected'">Reject</option>
+                        </select>
+                        <button class="btn btn-sm btn-outline-primary" (click)="reviewApproval(s.id)">Apply</button>
+                      </div>
+                    </td>
+                  </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
     <div class="col-12">
       <div class="card">
         <div class="card-header bg-light">Applications (Approval Forms)</div>
@@ -306,7 +162,8 @@
     </div>
   </div>
 
-  <div class="row g-3 mt-3" *ngIf="currentTab==='scheme'">
+  <!-- Scheme Tab -->
+  <div class="row g-3 mt-0" *ngSwitchCase="'scheme'">
     <div class="col-12">
       <div class="alert alert-info">
         <div class="fw-semibold">Evaluation Scheme</div>
@@ -318,7 +175,8 @@
     </div>
   </div>
 
-  <div class="row g-3 mt-4" *ngIf="currentTab==='compliance'">
+  <!-- Compliance Tab -->
+  <div class="row g-3 mt-0" *ngSwitchCase="'compliance'">
     <div class="col-12">
       <div class="card">
         <div class="card-header bg-light">Internship Evaluation Committee (20% Weightage)</div>
@@ -334,7 +192,8 @@
   <!-- Weekly Log Compliance moved to Compliance tab to avoid duplication in Students tab -->
 
   <!-- Complaints tab: list student complaints and allow resolution -->
-  <div class="row g-3 mt-4" *ngIf="currentTab==='complaints'">
+  <!-- Complaints Tab -->
+  <div class="row g-3 mt-0" *ngSwitchCase="'complaints'">
     <div class="col-12">
       <div class="card">
         <div class="card-header bg-light">Complaints & Grievances</div>
@@ -403,7 +262,8 @@
   </div>
 
   <!-- Requests tab: faculty-submitted requests for companies or site supervisors -->
-  <div class="row g-3 mt-4" *ngIf="currentTab==='requests'">
+  <!-- Requests Tab -->
+  <div class="row g-3 mt-0" *ngSwitchCase="'requests'">
     <div class="col-12">
       <div class="card">
         <div class="card-header bg-light">Requests from Faculty</div>
@@ -470,7 +330,8 @@
   </div>
 
   <!-- Announcements tab: create and manage announcements -->
-  <div class="row g-3 mt-4" *ngIf="currentTab==='announcements'">
+  <!-- Announcements Tab -->
+  <div class="row g-3 mt-0" *ngSwitchCase="'announcements'">
     <div class="col-12">
       <div class="card">
         <div class="card-header bg-light">Announcements</div>
@@ -534,8 +395,10 @@
 
   <!-- Removed duplicate global Announcements block; announcements now live under the Announcements tab only -->
 
-  <hr class="my-4" *ngIf="currentTab==='officers'"/>
-  <h3 class="mb-3" *ngIf="currentTab==='officers'">Internship Officers</h3>
+  <!-- Officers Tab -->
+  <div class="row g-3 mt-0" *ngSwitchCase="'officers'">
+  <hr class="my-4" />
+  <h3 class="mb-3">Internship Officers</h3>
   <div class="row g-3 align-items-end">
     <div class="col-md-4">
       <label class="form-label">Name</label>
@@ -549,12 +412,12 @@
       <button class="btn btn-primary" (click)="addOfficer()">Add Officer</button>
     </div>
   </div>
-  <ul class="list-group mt-3" *ngIf="currentTab==='officers'">
+  <ul class="list-group mt-3">
     @for (o of officers(); track o.email) {
     <li class="list-group-item d-flex justify-content-between align-items-center">{{ o.name }} <span class="text-muted">{{ o.email }}</span></li>
     }
   </ul>
-  <div class="row g-3 align-items-end mt-4" *ngIf="currentTab==='officers'">
+  <div class="row g-3 align-items-end mt-4">
     <div class="col-12">
       <div class="card">
         <div class="card-header bg-light">Add Internship Officer </div>
@@ -584,8 +447,10 @@
     </div>
   </div>
 
-  <hr class="my-4" *ngIf="currentTab==='faculty'"/>
-  <h3 class="mb-3" *ngIf="currentTab==='faculty'">Faculty Supervisors</h3>
+  <!-- Faculty Tab -->
+  <div class="row g-3 mt-0" *ngSwitchCase="'faculty'">
+  <hr class="my-4" />
+  <h3 class="mb-3">Faculty Supervisors</h3>
   <div class="row g-3 align-items-end">
     <div class="col-md-4">
       <label class="form-label">Name</label>
@@ -607,7 +472,7 @@
       <button class="btn btn-primary" (click)="addFaculty()">Add</button>
     </div>
   </div>
-  <ul class="list-group mt-3" *ngIf="currentTab==='faculty'">
+  <ul class="list-group mt-3">
     @for (f of facultyList(); track f.id) {
     <li class="list-group-item d-flex justify-content-between align-items-center">
       <div class="me-2">
@@ -623,8 +488,10 @@
     }
   </ul>
 
-  <hr class="my-4" *ngIf="currentTab==='companies'"/>
-  <h3 class="mb-3" *ngIf="currentTab==='companies'">Companies & Site Supervisors</h3>
+  <!-- Companies Tab -->
+  <div class="row g-3 mt-0" *ngSwitchCase="'companies'">
+  <hr class="my-4" />
+  <h3 class="mb-3">Companies & Site Supervisors</h3>
   <div class="row g-3 align-items-end">
     <div class="col-md-5">
       <label class="form-label">Company Name</label>
@@ -664,7 +531,7 @@
       <button class="btn btn-primary" (click)="addSite()">Add Site</button>
     </div>
   </div>
-  <div class="table-responsive mt-3" *ngIf="currentTab==='companies'">
+  <div class="table-responsive mt-3">
     <table class="table table-sm">
       <thead><tr><th>Company</th><th>Site Supervisor</th><th>Email</th><th>Password</th><th>Actions</th></tr></thead>
       <tbody>
@@ -686,7 +553,7 @@
       </tbody>
     </table>
   </div>
-  <div class="table-responsive mt-3" *ngIf="currentTab==='companies'">
+  <div class="table-responsive mt-3">
     <table class="table table-sm">
       <thead><tr><th>Company</th><th>Address</th><th>Actions</th></tr></thead>
       <tbody>
@@ -699,5 +566,6 @@
         }
       </tbody>
     </table>
-  </div>
+  </div> <!-- end companies tab -->
+  </ng-container>
 </div>
