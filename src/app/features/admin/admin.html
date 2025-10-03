@@ -569,6 +569,7 @@
     <li class="list-group-item d-flex justify-content-between align-items-center">{{ o.name }} <span class="text-muted">{{ o.email }}</span></li>
     }
   </ul>
+  <div class="text-muted small mt-2" *ngIf="currentTab==='officers'">Note: The Admin role represents the Internship Officer.</div>
 
   <hr class="my-4" *ngIf="currentTab==='faculty'"/>
   <h3 class="mb-3" *ngIf="currentTab==='faculty'">Faculty Supervisors</h3>

@@ -6,6 +6,7 @@ import { ToastService } from '../../shared/toast/toast.service';
 import { ActivatedRoute, Router } from '@angular/router';
 import { PaginatePipe } from '../../shared/pagination/paginate.pipe';
 import { PaginatorComponent } from '../../shared/pagination/paginator';
+// Admin equals Internship Officer in this app; no separate create-admin flow needed
 
 @Component({
   selector: 'app-admin',
