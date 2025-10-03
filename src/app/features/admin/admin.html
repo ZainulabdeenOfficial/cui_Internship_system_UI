@@ -13,7 +13,8 @@
     <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='scheme'" (click)="selectTab('scheme')">Scheme</button></li>
   </ul>
 
-  <div class="row g-3 mb-4">
+  <!-- Responsibilities now only visible in Officers tab -->
+  <div class="row g-3 mb-4" *ngIf="currentTab==='officers'">
     <div class="col-12">
       <div class="card">
         <div class="card-header bg-light">Responsibilities</div>
@@ -330,12 +331,25 @@
     </div>
   </div>
 
-  <div class="row g-3 mt-4" *ngIf="currentTab==='students'">
+  <!-- Weekly Log Compliance moved to Compliance tab to avoid duplication in Students tab -->
+
+  <!-- Complaints tab: list student complaints and allow resolution -->
+  <div class="row g-3 mt-4" *ngIf="currentTab==='complaints'">
     <div class="col-12">
+      <div class="card">
+        <div class="card-header bg-light">Complaints & Grievances</div>
+        <div class="card-body">
+          <p class="text-muted">Respond to student complaints submitted to the Internship Office.</p>
+          <div class="table-responsive">
+            <table class="table table-sm align-middle">
+              <thead><tr><th>Date</th><th>Student</th><th>Category</th><th>Message</th><th>Status</th><th>Response</th><th>Action</th></tr></thead>
+              <tbody>
+                @for (c of complaints(); track c.id) {
+    <div class="col-12 mt-3">
       <div class="card">
         <div class="card-header bg-light">Weekly Log Compliance</div>
         <div class="card-body">
-          <p class="text-muted">Tracks expected vs submitted weekly logs based on the Approval start date.</p>
+          <p class="text-muted">Expected vs submitted weekly logs based on approval start date.</p>
           <div class="table-responsive">
             <table class="table table-sm align-middle">
               <thead>
@@ -361,20 +375,6 @@
         </div>
       </div>
     </div>
-  </div>
-
-  <!-- Complaints tab: list student complaints and allow resolution -->
-  <div class="row g-3 mt-4" *ngIf="currentTab==='complaints'">
-    <div class="col-12">
-      <div class="card">
-        <div class="card-header bg-light">Complaints & Grievances</div>
-        <div class="card-body">
-          <p class="text-muted">Respond to student complaints submitted to the Internship Office.</p>
-          <div class="table-responsive">
-            <table class="table table-sm align-middle">
-              <thead><tr><th>Date</th><th>Student</th><th>Category</th><th>Message</th><th>Status</th><th>Response</th><th>Action</th></tr></thead>
-              <tbody>
-                @for (c of complaints(); track c.id) {
                 <tr>
                   <td>{{ c.createdAt | date:'short' }}</td>
                   <td>{{ studentName(c.studentId) }}</td>
