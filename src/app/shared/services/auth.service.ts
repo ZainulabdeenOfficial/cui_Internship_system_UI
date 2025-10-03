@@ -59,7 +59,8 @@ export class AuthService {
   }
 
   async forgotPassword(email: string): Promise<{ message: string }> {
-    const url = `${this.base}/api/auth/forgot-password`;
+    const absBase = environment.apiBaseUrl.replace(/\/$/, '');
+    const url = `${absBase}/api/auth/forgot-password`;
     return await firstValueFrom(
       this.http.post<{ message: string }>(url, { email }, { headers: new HttpHeaders({ 'Content-Type': 'application/json' }) })
     );
