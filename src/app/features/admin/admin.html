@@ -363,27 +363,8 @@
     </div>
   </div>
 
+  <!-- Complaints tab: list student complaints and allow resolution -->
   <div class="row g-3 mt-4" *ngIf="currentTab==='complaints'">
-    <div class="col-12">
-      <div class="card">
-        <div class="card-header bg-light">Suitable Host Organizations</div>
-        <div class="card-body">
-          <p class="mb-2">Preferred organizations include:</p>
-          <ul>
-            <li>Software houses and IT consulting firms</li>
-            <li>Banks and telecom companies (IT divisions)</li>
-            <li>Startups and tech incubators</li>
-            <li>Government departments with IT infrastructure</li>
-            <li>Academic institutions and research centers</li>
-            <li>NGOs with digital transformation initiatives</li>
-          </ul>
-          <p class="mb-0">Freelancing via Fiverr/Upwork is acceptable for technical gigs only (e.g., Development, Data Science/AI/ML, APIs/Automation, DevOps/Cloud, Cybersecurity, Database, Testing, UI implementation). Non‑technical roles are not permitted.</p>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="row g-3 mt-4" *ngIf="currentTab==='requests'">
     <div class="col-12">
       <div class="card">
         <div class="card-header bg-light">Complaints & Grievances</div>
@@ -421,7 +402,8 @@
     </div>
   </div>
 
-  <div class="row g-3 mt-4" *ngIf="currentTab==='announcements'">
+  <!-- Requests tab: faculty-submitted requests for companies or site supervisors -->
+  <div class="row g-3 mt-4" *ngIf="currentTab==='requests'">
     <div class="col-12">
       <div class="card">
         <div class="card-header bg-light">Requests from Faculty</div>
@@ -487,7 +469,8 @@
     </div>
   </div>
 
-  <div class="row g-3 mt-4">
+  <!-- Announcements tab: create and manage announcements -->
+  <div class="row g-3 mt-4" *ngIf="currentTab==='announcements'">
     <div class="col-12">
       <div class="card">
         <div class="card-header bg-light">Announcements</div>
@@ -549,6 +532,8 @@
     </div>
   </div>
 
+  <!-- Removed duplicate global Announcements block; announcements now live under the Announcements tab only -->
+
   <hr class="my-4" *ngIf="currentTab==='officers'"/>
   <h3 class="mb-3" *ngIf="currentTab==='officers'">Internship Officers</h3>
   <div class="row g-3 align-items-end">
@@ -569,7 +554,35 @@
     <li class="list-group-item d-flex justify-content-between align-items-center">{{ o.name }} <span class="text-muted">{{ o.email }}</span></li>
     }
   </ul>
-  <div class="text-muted small mt-2" *ngIf="currentTab==='officers'">Note: The Admin role represents the Internship Officer.</div>
+  <div class="row g-3 align-items-end mt-4" *ngIf="currentTab==='officers'">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header bg-light">Add Internship Officer </div>
+        <div class="card-body">
+          <div class="row g-3 align-items-end">
+            <div class="col-md-4">
+              <label class="form-label">Name</label>
+              <input class="form-control" [(ngModel)]="adminAccount.name" name="aname" />
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Email</label>
+              <input type="email" class="form-control" [(ngModel)]="adminAccount.email" name="aemail" />
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Password</label>
+              <input type="password" class="form-control" [(ngModel)]="adminAccount.password" name="apass" />
+            </div>
+            <div class="col-md-1 d-grid">
+              <button class="btn btn-outline-primary" [disabled]="creatingAdmin" (click)="createAdminAccount()">
+                {{ creatingAdmin ? 'Adding…' : 'Add' }}
+              </button>
+            </div>
+          </div>
+          
+        </div>
+      </div>
+    </div>
+  </div>
 
   <hr class="my-4" *ngIf="currentTab==='faculty'"/>
   <h3 class="mb-3" *ngIf="currentTab==='faculty'">Faculty Supervisors</h3>

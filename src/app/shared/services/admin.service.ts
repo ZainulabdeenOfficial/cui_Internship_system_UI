@@ -7,13 +7,24 @@ import { CreateAccountRequest, CreateAccountResponse } from '../models/admin/cre
 @Injectable({ providedIn: 'root' })
 export class AdminService {
   constructor(private http: HttpClient) {}
-  // In dev we rely on proxy for /api; in prod use absolute base
-  private base = (environment.production ? environment.apiBaseUrl.replace(/\/$/, '') : '').replace(/\/$/, '');
+  
+  private createUrl = (environment.adminCreateAccountUrl?.trim() || '/api/admin/create-account');
 
   async createAccount(input: CreateAccountRequest): Promise<CreateAccountResponse> {
-    const url = `${this.base}/api/admin/create-account`;
+    const body = {
+      email: (input.email || '').trim(),
+      name: (input.name || '').trim(),
+      password: input.password,
+      role: input.role || 'ADMIN'
+    } as CreateAccountRequest;
+    if (!body.email || !body.name || !body.password) throw new Error('Missing required fields');
+   
+    if (environment.production && this.createUrl.startsWith('http:')) throw new Error('Insecure endpoint');
     return await firstValueFrom(
-      this.http.post<CreateAccountResponse>(url, input, { headers: new HttpHeaders({ 'Content-Type': 'application/json' }) })
+      this.http.post<CreateAccountResponse>(this.createUrl, body, {
+        headers: new HttpHeaders({ 'Content-Type': 'application/json' }),
+        withCredentials: true
+      })
     );
   }
 }

@@ -1,7 +1,7 @@
 import { HttpInterceptorFn } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 
-// Attach Authorization header if token exists for our API base URL
+
 export const authTokenInterceptor: HttpInterceptorFn = (req, next) => {
   try {
     const token = localStorage.getItem('authToken');

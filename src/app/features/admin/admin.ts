@@ -6,7 +6,8 @@ import { ToastService } from '../../shared/toast/toast.service';
 import { ActivatedRoute, Router } from '@angular/router';
 import { PaginatePipe } from '../../shared/pagination/paginate.pipe';
 import { PaginatorComponent } from '../../shared/pagination/paginator';
-// Admin equals Internship Officer in this app; no separate create-admin flow needed
+import { AdminService } from '../../shared/services/admin.service';
+import { CreateAccountRequest } from '../../shared/models/admin/create-account.models';
 
 @Component({
   selector: 'app-admin',
@@ -16,7 +17,7 @@ import { PaginatorComponent } from '../../shared/pagination/paginator';
   styleUrl: './admin.css'
 })
 export class Admin {
-  constructor(private store: StoreService, private toast: ToastService, private route: ActivatedRoute, private router: Router) {
+  constructor(private store: StoreService, private toast: ToastService, private route: ActivatedRoute, private router: Router, private adminApi: AdminService) {
     try {
       this.route.queryParamMap.subscribe(p => {
         const t = (p.get('tab') || '').toLowerCase();
@@ -52,6 +53,9 @@ export class Admin {
   get officers() { return this.store.internshipOfficers; }
   officer = { name: '', email: '' };
   responses: Record<string, string> = {};
+  // create ADMIN account form (absolute API)
+  adminAccount: { name: string; email: string; password: string } = { name: '', email: '', password: '' };
+  creatingAdmin = false;
   // forms for adding supervisors/company
   faculty = { name: '', email: '', department: '', password: '' };
   company = { name: '', address: '' };
@@ -80,6 +84,22 @@ export class Admin {
     this.store.addInternshipOfficer(this.officer.name, this.officer.email);
     this.officer = { name: '', email: '' };
     this.toast.success('Internship Officer added');
+  }
+  async createAdminAccount() {
+    const name = (this.adminAccount.name || '').trim();
+    const email = (this.adminAccount.email || '').trim();
+    const password = (this.adminAccount.password || '').trim();
+    if (!name || !email || !password) { this.toast.warning('Name, email and password are required'); return; }
+    const payload: CreateAccountRequest = { name, email, password, role: 'ADMIN' } as any;
+    try {
+      this.creatingAdmin = true;
+  const res = await this.adminApi.createAccount(payload);
+  this.toast.success(res?.message || 'Internship Officer added');
+      this.adminAccount = { name: '', email: '', password: '' };
+    } catch (err: any) {
+  const msg = err?.error?.message || err?.message || 'Failed to add Internship Officer';
+      this.toast.danger(msg);
+    } finally { this.creatingAdmin = false; }
   }
   addFaculty() {
     const name = this.faculty.name?.trim();
