@@ -192,6 +192,10 @@ erDiagram
 
 ---
 
+## APis Url :
+https://cui-internship-git-dev-talhas-projects-59c8907e.vercel.app/api/docs#/default/post_api_admin_create_account
+
+
 ## License
 
 MIT License (update if restricted).
