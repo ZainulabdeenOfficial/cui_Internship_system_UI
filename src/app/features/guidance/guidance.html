@@ -91,11 +91,10 @@
   </ul>
 
   <div class="mt-4">
-    <ng-container *ngIf="userRole==='student'; else toHome">
+    @if (userRole==='student') {
       <a routerLink="/student" class="btn btn-outline-primary">Back to Student Dashboard</a>
-    </ng-container>
-    <ng-template #toHome>
+    } @else {
       <a routerLink="/" class="btn btn-outline-primary">Return to Home</a>
-    </ng-template>
+    }
   </div>
 </div>

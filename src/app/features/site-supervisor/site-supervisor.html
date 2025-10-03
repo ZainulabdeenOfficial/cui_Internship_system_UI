@@ -7,7 +7,8 @@
     <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='scoring'" (click)="selectTab('scoring')">Scoring</button></li>
     <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='password'" (click)="selectTab('password')">Password</button></li>
   </ul>
-  <div class="card mb-3" *ngIf="currentTab==='students'">
+  @if (currentTab==='students') {
+  <div class="card mb-3">
     <div class="card-header bg-light">Assigned Students</div>
     <div class="card-body">
       <div class="table-responsive">
@@ -16,7 +17,8 @@
             <tr><th>Name</th><th>Email</th><th>Registration No</th><th>Mid Score</th><th>Final Score</th><th>Action</th></tr>
           </thead>
           <tbody>
-            <tr *ngFor="let s of (myStudents() | paginate: page.students : pageSize)">
+            @for (s of (myStudents() | paginate: page.students : pageSize); track s.id) {
+            <tr>
               <td>{{ s.name }}</td>
               <td>{{ s.email }}</td>
               <td>{{ s.registrationNo || '-' }}</td>
@@ -29,6 +31,7 @@
                 </div>
               </td>
             </tr>
+            }
           </tbody>
         </table>
         <app-paginator [total]="myStudents().length" [(page)]="page.students" [pageSize]="pageSize"></app-paginator>
@@ -36,7 +39,9 @@
       <button class="btn btn-sm btn-primary" (click)="saveBatchAll()">Save All</button>
     </div>
   </div>
-  <div class="row g-3 align-items-end" *ngIf="currentTab==='scoring'">
+  }
+  @if (currentTab==='scoring') {
+  <div class="row g-3 align-items-end">
     <div class="col-md-6">
       <label class="form-label">Select Student</label>
       <select class="form-select" [(ngModel)]="selectedId" name="ssid">
@@ -49,12 +54,16 @@
       <input type="number" min="0" max="40" class="form-control" (ngModelChange)="setSiteMarks($event)" [ngModel]="selectedStudent()?.marks?.site ?? ''" />
     </div>
   </div>
-  <div class="row g-3 mt-3" *ngIf="selectedId && currentTab==='details'">
+  }
+  @if (selectedId && currentTab==='details') {
+  <div class="row g-3 mt-3">
     <div class="col-12">
       <div class="alert alert-info">Select a tab to view logs, reports, or scoring for the selected student.</div>
     </div>
   </div>
-  <div class="row g-3 mt-3" *ngIf="selectedId && currentTab==='reports'">
+  }
+  @if (selectedId && currentTab==='reports') {
+  <div class="row g-3 mt-3">
     <div class="col-md-6">
       <h5>Weekly Logs</h5>
       <ul class="list-group">
@@ -68,7 +77,9 @@
       </ul>
     </div>
   </div>
-  <div class="row g-3 mt-3" *ngIf="selectedId && currentTab==='reports'">
+  }
+  @if (selectedId && currentTab==='reports') {
+  <div class="row g-3 mt-3">
     <div class="col-md-6">
       <div class="card">
         <div class="card-header">Mid Report</div>
@@ -98,10 +109,12 @@
       </div>
     </div>
   </div>
+  }
 
-  <hr class="my-4" *ngIf="currentTab==='password'" />
-  <h5 *ngIf="currentTab==='password'">Change Password</h5>
-  <div class="row g-3" *ngIf="currentTab==='password'">
+  @if (currentTab==='password') { <hr class="my-4" /> }
+  @if (currentTab==='password') { <h5>Change Password</h5> }
+  @if (currentTab==='password') {
+  <div class="row g-3">
     <div class="col-md-4">
       <label class="form-label">Old Password</label>
       <input type="password" class="form-control" [(ngModel)]="pw.old" />
@@ -118,6 +131,7 @@
       <button class="btn btn-outline-primary" (click)="changePassword()">Change Password</button>
     </div>
   </div>
+  }
 
   <!-- hidden usage to ensure standalone imports are recognized -->
   <ng-template #__ensureImportsSite>

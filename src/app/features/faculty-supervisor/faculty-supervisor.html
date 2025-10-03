@@ -86,7 +86,8 @@
     </div>
   </div>
 
-  <div class="table-responsive mb-3" *ngIf="currentTab==='students'">
+  @if (currentTab==='students') {
+  <div class="table-responsive mb-3">
     <table class="table table-hover align-middle shadow-sm table-card">
       <thead>
         <tr>
@@ -99,7 +100,8 @@
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let s of (filteredStudents() | paginate: page.students : pageSize)">
+  @for (s of (filteredStudents() | paginate: page.students : pageSize); track s.id) {
+  <tr>
           <td>{{ s.name }}</td>
           <td>{{ s.email }}</td>
           <td>{{ s.registrationNo || '-' }}</td>
@@ -117,10 +119,12 @@
             <button class="btn btn-sm btn-primary" (click)="selectedId = s.id">Open</button>
           </td>
         </tr>
+        }
       </tbody>
     </table>
     <app-paginator [total]="filteredStudents().length" [(page)]="page.students" [pageSize]="pageSize"></app-paginator>
   </div>
+  }
   @if (selectedId) {
     @if (currentTab==='details') {
     <div class="row g-3">
@@ -255,8 +259,8 @@
     }
   }
 
-  <hr class="my-4" *ngIf="currentTab==='profile'" />
-  <h4 *ngIf="currentTab==='profile'">My Profile</h4>
+  @if (currentTab==='profile') { <hr class="my-4" /> }
+  @if (currentTab==='profile') { <h4>My Profile</h4> }
   @if (facultyProfile(); as fp) { @if (currentTab==='profile') {
     <div class="col-md-4">
       <label class="form-label">Name</label>

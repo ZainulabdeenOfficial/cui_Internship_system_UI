@@ -48,12 +48,16 @@
         <div class="col-12">
           <button class="btn btn-primary w-100" [disabled]="!f.form.valid">Create Account</button>
         </div>
-        <div class="col-12" *ngIf="error">
-          <div class="alert alert-danger">{{ error }}</div>
-        </div>
-        <div class="col-12" *ngIf="slow && !error">
-          <div class="alert alert-info py-2">Still working… the server is taking longer than usual.</div>
-        </div>
+        @if (error) {
+          <div class="col-12">
+            <div class="alert alert-danger">{{ error }}</div>
+          </div>
+        }
+        @if (slow && !error) {
+          <div class="col-12">
+            <div class="alert alert-info py-2">Still working… the server is taking longer than usual.</div>
+          </div>
+        }
         <div class="col-12 text-center">
           <span>Already have an account? <a routerLink="/login">Login</a></span>
         </div>

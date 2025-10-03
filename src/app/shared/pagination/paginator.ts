@@ -6,20 +6,24 @@ import { CommonModule } from '@angular/common';
   standalone: true,
   imports: [CommonModule],
   template: `
-  <nav *ngIf="total > pageSize" aria-label="Pagination" class="d-flex align-items-center justify-content-between mt-2">
+  @if (total > pageSize) {
+  <nav aria-label="Pagination" class="d-flex align-items-center justify-content-between mt-2">
     <div class="small text-muted">Showing {{ startIndex + 1 }}–{{ endIndex }} of {{ total }}</div>
     <ul class="pagination mb-0">
       <li class="page-item" [class.disabled]="page <= 1">
         <button class="page-link" (click)="goTo(page-1)" [disabled]="page <= 1">&laquo;</button>
       </li>
-      <li class="page-item" *ngFor="let p of pages" [class.active]="p === page">
+      @for (p of pages; track p) {
+      <li class="page-item" [class.active]="p === page">
         <button class="page-link" (click)="goTo(p)">{{ p }}</button>
       </li>
+      }
       <li class="page-item" [class.disabled]="page >= totalPages">
         <button class="page-link" (click)="goTo(page+1)" [disabled]="page >= totalPages">&raquo;</button>
       </li>
     </ul>
   </nav>
+  }
   `
 })
 export class PaginatorComponent {

@@ -21,7 +21,7 @@
           <button class="btn btn-outline-secondary" [disabled]="!email || loading" type="submit">Resend verification email</button>
         </div>
       </form>
-      <div class="mt-3 small" *ngIf="message">{{ message }}</div>
+  @if (message) { <div class="mt-3 small">{{ message }}</div> }
     </div>
   </div>
 </div>

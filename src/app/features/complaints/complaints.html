@@ -1,11 +1,13 @@
 <div class="container py-4">
   <h2 class="mb-3">Complaints & Grievances</h2>
 
-  <div class="alert alert-info" *ngIf="!isStudent">
-    Please login as a student to submit and view your complaints.
-  </div>
+  @if (!isStudent) {
+    <div class="alert alert-info">
+      Please login as a student to submit and view your complaints.
+    </div>
+  }
 
-  <div *ngIf="isStudent && studentId as sid">
+  @if (isStudent && studentId; as sid) {
     <div class="card mb-3">
       <div class="card-header">Submit a Complaint</div>
       <div class="card-body">
@@ -34,17 +36,19 @@
     <div class="card">
       <div class="card-header">Your Complaints</div>
       <div class="card-body">
-        <ul class="list-group">
-          <li class="list-group-item d-flex justify-content-between align-items-center" *ngFor="let c of myComplaints()">
+        <ul class="list-group list-unstyled">
+          @for (c of myComplaints(); track c.id) {
+          <li class="list-group-item d-flex justify-content-between align-items-center">
             <span>
               <strong>{{ c.category }}</strong> — {{ c.message }}
               <span class="text-muted"> · {{ c.createdAt | date:'short' }}</span>
             </span>
             <span class="badge" [class.text-bg-secondary]="c.status==='open'" [class.text-bg-success]="c.status==='resolved'">{{ c.status }}</span>
           </li>
+          }
         </ul>
-        <div class="text-muted" *ngIf="myComplaints().length===0">No complaints yet.</div>
+        @if (myComplaints().length===0) { <div class="text-muted">No complaints yet.</div> }
       </div>
     </div>
-  </div>
+  }
 </div>
