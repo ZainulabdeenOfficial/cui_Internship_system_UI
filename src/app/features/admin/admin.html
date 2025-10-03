@@ -13,11 +13,10 @@
     <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='scheme'" (click)="selectTab('scheme')">Scheme</button></li>
   </ul>
 
-  <!-- Clean unified tab switcher (rewritten) -->
-  <ng-container [ngSwitch]="currentTab">
-
-    <!-- Students Tab -->
-    <div *ngSwitchCase="'students'" class="row g-3 mt-0">
+  <!-- Clean unified tab switcher using Angular 17+ control flow -->
+  @switch (currentTab) {
+    @case ('students') {
+    <div class="row g-3 mt-0">
       <div class="col-12">
         <div class="card">
           <div class="card-header bg-light">Students</div>
@@ -44,10 +43,9 @@
           </div>
         </div>
       </div>
-    </div>
-
-    <!-- Applications Tab -->
-    <div *ngSwitchCase="'applications'" class="row g-3 mt-0">
+    </div> }
+    @case ('applications') {
+    <div class="row g-3 mt-0">
       <div class="col-12">
         <div class="card">
           <div class="card-header bg-light">Applications (Approval Forms)</div>
@@ -99,10 +97,9 @@
           </div>
         </div>
       </div>
-    </div>
-
-    <!-- Requests Tab -->
-    <div *ngSwitchCase="'requests'" class="row g-3 mt-0">
+    </div> }
+    @case ('requests') {
+    <div class="row g-3 mt-0">
       <div class="col-12">
         <div class="card">
           <div class="card-header bg-light">Requests from Faculty</div>
@@ -150,10 +147,9 @@
           </div>
         </div>
       </div>
-    </div>
-
-    <!-- Announcements Tab -->
-    <div *ngSwitchCase="'announcements'" class="row g-3 mt-0">
+    </div> }
+    @case ('announcements') {
+    <div class="row g-3 mt-0">
       <div class="col-12">
         <div class="card">
           <div class="card-header bg-light">Announcements</div>
@@ -208,10 +204,9 @@
           </div>
         </div>
       </div>
-    </div>
-
-    <!-- Officers Tab -->
-    <div *ngSwitchCase="'officers'" class="row g-3 mt-0">
+    </div> }
+    @case ('officers') {
+    <div class="row g-3 mt-0">
       <div class="col-12">
         <div class="card">
           <div class="card-header bg-light">Internship Officers</div>
@@ -255,10 +250,9 @@
           </div>
         </div>
       </div>
-    </div>
-
-    <!-- Faculty Tab -->
-    <div *ngSwitchCase="'faculty'" class="row g-3 mt-0">
+    </div> }
+    @case ('faculty') {
+    <div class="row g-3 mt-0">
       <div class="col-12">
         <div class="card">
           <div class="card-header bg-light">Faculty Supervisors</div>
@@ -302,10 +296,9 @@
           </div>
         </div>
       </div>
-    </div>
-
-    <!-- Companies Tab -->
-    <div *ngSwitchCase="'companies'" class="row g-3 mt-0">
+    </div> }
+    @case ('companies') {
+    <div class="row g-3 mt-0">
       <div class="col-12">
         <div class="card mb-3">
           <div class="card-header bg-light">Companies & Site Supervisors</div>
@@ -398,10 +391,9 @@
           </div>
         </div>
       </div>
-    </div>
-
-    <!-- Complaints Tab -->
-    <div *ngSwitchCase="'complaints'" class="row g-3 mt-0">
+    </div> }
+    @case ('complaints') {
+    <div class="row g-3 mt-0">
       <div class="col-12">
         <div class="card">
           <div class="card-header bg-light">Complaints & Grievances</div>
@@ -434,10 +426,9 @@
           </div>
         </div>
       </div>
-    </div>
-
-    <!-- Compliance Tab -->
-    <div *ngSwitchCase="'compliance'" class="row g-3 mt-0">
+    </div> }
+    @case ('compliance') {
+    <div class="row g-3 mt-0">
       <div class="col-12">
         <div class="card mb-3">
           <div class="card-header bg-light">Internship Evaluation Committee (20% Weightage)</div>
@@ -471,10 +462,9 @@
           </div>
         </div>
       </div>
-    </div>
-
-    <!-- Scheme Tab -->
-    <div *ngSwitchCase="'scheme'" class="row g-3 mt-0">
+    </div> }
+    @case ('scheme') {
+    <div class="row g-3 mt-0">
       <div class="col-12">
         <div class="alert alert-info">
           <div class="fw-semibold">Evaluation Scheme</div>
@@ -484,7 +474,7 @@
           </ul>
         </div>
       </div>
-    </div>
-
-  </ng-container>
+    </div> }
+    @default { <div class="text-muted small">Select a tab.</div> }
+  }
 </div>
