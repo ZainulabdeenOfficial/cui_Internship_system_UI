@@ -147,41 +147,10 @@ export class Login implements OnDestroy, OnInit {
           this.router.navigate(['/student']);
         }
       } else {
-        // If API responded with failure (non-timeout), show server message and fallback to local roles
-        if (apiRes && apiRes.message) { this.error = apiRes.message; this.toast.danger(apiRes.message); }
-        let navigated = false;
-        const tryLogin = async (fn: () => any, path: string) => {
-          try {
-            const res = await Promise.resolve(fn());
-            if (!navigated) {
-              navigated = true;
-              if (path === '/admin') this.toast.success('Logged in as Admin (local)');
-              else if (path === '/faculty') this.toast.success('Logged in as Faculty (local)');
-              else if (path === '/site') this.toast.success('Logged in as Site Supervisor (local)');
-              else this.toast.success('Logged in as Student (local)');
-              this.router.navigate([path]);
-            }
-            return res;
-          } catch { throw 'fail'; }
-        };
-        await Promise.allSettled([
-          (async () => {
-            try {
-              await tryLogin(() => this.store.loginAdmin(email, password), '/admin');
-            } catch {
-              try { await tryLogin(() => this.store.loginFaculty(email, password), '/faculty'); }
-              catch {
-                try { await tryLogin(() => this.store.loginSite(email, password), '/site'); }
-                catch {
-                  const s = await tryLogin(() => this.store.login(email, password), '/student');
-                  if (this.remember) localStorage.setItem('lastStudentEmail', email);
-                  return s;
-                }
-              }
-            }
-          })(),
-          this.minDelay(500)
-        ]);
+        // API login failed: show error and do not fallback to local logins
+        const msg = apiRes?.message || 'Invalid email or password';
+        this.error = msg; this.toast.danger(msg);
+        return; // stop here on API failure
       }
       // reset counters on success
       this.failedAttempts = 0; this.cooldownUntil = 0; this.challenge = null; this.challengeAnswer = ''; this.generateCaptcha();
