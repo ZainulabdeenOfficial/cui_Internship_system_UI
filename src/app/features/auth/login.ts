@@ -150,6 +150,11 @@ export class Login implements OnDestroy, OnInit {
         // API login failed: show error and do not fallback to local logins
         const msg = apiRes?.message || 'Invalid email or password';
         this.error = msg; this.toast.danger(msg);
+        // If server indicates email not verified, guide user to verify page
+        if (msg.toLowerCase().includes('verify') || msg.toLowerCase().includes('unverified')) {
+          // Pre-fill email via navigation state
+          this.router.navigate(['/verify-email']);
+        }
         return; // stop here on API failure
       }
       // reset counters on success

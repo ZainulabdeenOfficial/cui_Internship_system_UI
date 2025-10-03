@@ -71,9 +71,9 @@ export class Signup {
     }
     if (res.message) { try { this.toast.info(res.message); } catch {} }
 
-  // Redirect to login so the user can sign in after successful registration
-  this.toast.success('Account created. Please login.');
-  this.router.navigate(['/login'], { queryParams: { created: '1' } });
+  // Redirect to verify email so user can complete verification before login
+  this.toast.success('Account created. Please verify your email (we sent a link).');
+  this.router.navigate(['/verify-email']);
     if (this.slowTimer) { clearTimeout(this.slowTimer); this.slowTimer = null; }
     this.slow = false;
   }
