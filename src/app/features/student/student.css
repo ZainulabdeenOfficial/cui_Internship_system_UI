@@ -1,1 +1,9 @@
 .container h2{font-weight:600}
+.section-title{
+	font-weight:600;
+	color:#0d6efd;
+	border-left:4px solid #0d6efd;
+	padding-left:.5rem;
+}
+.card .form-label{font-weight:600}
+.card .form-control:focus{box-shadow:0 0 0 .2rem rgba(13,110,253,.15);border-color:#0d6efd}

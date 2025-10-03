@@ -1,4 +1,4 @@
-import { Component, computed, inject } from '@angular/core';
+import { Component, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { StoreService } from '../../shared/services/store.service';
@@ -12,9 +12,8 @@ import { ToastService } from '../../shared/toast/toast.service';
   styleUrl: './site-supervisor.css'
 })
 export class SiteSupervisor {
-  private store = inject(StoreService);
-  private toast = inject(ToastService);
-  students = this.store.students;
+  constructor(private store: StoreService, private toast: ToastService) {}
+  get students() { return this.store.students; }
   selectedId: string | null = null;
   selectedStudent = computed(() => this.selectedId ? this.students().find(s => s.id === this.selectedId!) : undefined);
   logs() { return this.selectedId ? (this.store.logs()[this.selectedId] ?? []) : []; }
@@ -42,8 +41,8 @@ export class SiteSupervisor {
     const finId = this.finalReportId(studentId);
     const mid = this.batchMid[studentId];
     const fin = this.batchFinal[studentId];
-    if (midId != null && mid != null && !isNaN(mid as any)) this.store.setReportScore(studentId, midId, Number(mid));
-    if (finId != null && fin != null && !isNaN(fin as any)) this.store.setReportScore(studentId, finId, Number(fin));
+  if (midId != null && mid != null && !isNaN(mid as any)) this.store.setReportScore(studentId, midId, Math.max(0, Number(mid)));
+  if (finId != null && fin != null && !isNaN(fin as any)) this.store.setReportScore(studentId, finId, Math.max(0, Number(fin)));
     this.toast.success('Scores saved');
   }
   saveBatchAll() {
@@ -52,7 +51,7 @@ export class SiteSupervisor {
   }
   mid = { title: '', content: '' };
   fin = { title: '', content: '' };
-  setSiteMarks(v: number) { if (this.selectedId) { this.store.setSiteMarks(this.selectedId, v); this.toast.success('Site marks updated'); } }
+  setSiteMarks(v: number) { if (this.selectedId) { this.store.setSiteMarks(this.selectedId, Math.max(0, Number(v))); this.toast.success('Site marks updated'); } }
   submitMid() { if (this.selectedId && this.mid.title) { this.store.submitReport(this.selectedId, { type: 'mid', title: this.mid.title, content: this.mid.content }); this.mid = { title: '', content: '' }; this.toast.success('Mid report submitted'); } }
   submitFinal() { if (this.selectedId && this.fin.title) { this.store.submitReport(this.selectedId, { type: 'site-final', title: this.fin.title, content: this.fin.content }); this.fin = { title: '', content: '' }; this.toast.success('Final report submitted'); } }
   // Change password for logged-in site supervisor

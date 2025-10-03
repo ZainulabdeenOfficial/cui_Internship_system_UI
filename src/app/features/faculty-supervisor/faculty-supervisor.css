@@ -1,1 +1,12 @@
 .container h2{font-weight:600}
+.stat .card-body{display:flex;flex-direction:column;gap:.25rem}
+.stat .stat-label{font-size:.85rem;color:#6b7280}
+.stat .stat-value{font-size:1.5rem;font-weight:700;color:#0d6efd}
+.table-card{border-radius:12px;overflow:hidden}
+.table-card thead th{background:#f8f9fa;font-weight:600}
+.table-card tbody tr:hover{background:#f8fbff}
+.btn-group .btn{min-width:84px}
+.form-label{font-weight:600}
+.form-control:focus{box-shadow:0 0 0 .2rem rgba(13,110,253,.12);border-color:#0d6efd}
+.filter-card{border:1px solid #e9ecef; box-shadow:0 .25rem .75rem rgba(0,0,0,.04)}
+.section-card{border:1px solid #e9ecef; box-shadow:0 .25rem .75rem rgba(0,0,0,.04)}

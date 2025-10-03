@@ -14,40 +14,7 @@
     </div>
   </div>
 
-  <!-- Create Account (quick) -->
-  <div class="card mb-3" *ngIf="!myStudentId()">
-    <div class="card-header">Create Account</div>
-    <div class="card-body">
-      <p class="text-muted">Tip: You can also <a routerLink="/signup">sign up</a> or <a routerLink="/login">login</a> from the header.</p>
-      <form (ngSubmit)="addStudent()" #f="ngForm" class="row g-3">
-        <div class="col-md-4">
-          <label class="form-label">Name</label>
-          <input class="form-control" [(ngModel)]="newStudent.name" name="name" required />
-        </div>
-        <div class="col-md-4">
-          <label class="form-label">Email</label>
-          <input class="form-control" [(ngModel)]="newStudent.email" name="email" required />
-        </div>
-        <div class="col-md-4">
-          <label class="form-label">Registration No (FAyy-PROGRAM-ROLL)</label>
-          <input class="form-control" [(ngModel)]="newStudent.registrationNo" name="reg" required />
-        </div>
-        <div class="col-12">
-          <small class="text-muted">Use your CUI Sahiwal email (e.g., fa22-bcs-090@students.cuisahiwal.edu.pk) and Registration No like FA22-BCS-090</small>
-        </div>
-        <div class="col-md-4 align-self-end">
-          <button class="btn btn-primary" [disabled]="!f.form.valid" type="submit">Create</button>
-        </div>
-      </form>
-      <div class="mt-3">
-        <label class="form-label">Select Current Student</label>
-        <select class="form-select" [(ngModel)]="selectedId" name="selected">
-          <option [ngValue]="null">-- none --</option>
-          <option *ngFor="let s of students()" [ngValue]="s.id">{{ s.name }} ({{ s.email }})</option>
-        </select>
-      </div>
-    </div>
-  </div>
+  
 
   <!-- Internship approval/agreement/design proposal (simplified as progress report) -->
   <div class="card mb-3" *ngIf="selectedId">
@@ -68,47 +35,46 @@
         </ng-container>
       </div>
       <form (ngSubmit)="submitApproval()" #af="ngForm" class="row g-3">
-        <div class="col-12"><h6 class="text-muted">Student Information</h6></div>
+        <div class="col-12"><div class="section-title">Student Information</div></div>
         <div class="col-md-3">
           <label class="form-label">Name</label>
-          <input class="form-control" [(ngModel)]="approval.studentInfo.name" name="sname" required />
+          <input class="form-control" placeholder="e.g., Ali Ahmed" [(ngModel)]="approval.studentInfo.name" name="sname" required />
         </div>
         <div class="col-md-3">
           <label class="form-label">Student ID</label>
-          <input class="form-control" [(ngModel)]="approval.studentInfo.studentId" name="sid" required />
+          <input class="form-control" placeholder="e.g., FA22-BCS-090" [(ngModel)]="approval.studentInfo.studentId" name="sid" required />
         </div>
         <div class="col-md-3">
           <label class="form-label">Program</label>
-          <input class="form-control" [(ngModel)]="approval.studentInfo.program" name="program" required />
+          <input class="form-control" placeholder="e.g., BCS" [(ngModel)]="approval.studentInfo.program" name="program" required />
         </div>
         <div class="col-md-3">
           <label class="form-label">Semester</label>
-          <input class="form-control" [(ngModel)]="approval.studentInfo.semester" name="semester" required />
+          <input class="form-control" placeholder="e.g., 7" [(ngModel)]="approval.studentInfo.semester" name="semester" required />
         </div>
 
-        <div class="col-12"><h6 class="text-muted mt-2">Company Details</h6></div>
+        <div class="col-12"><div class="section-title mt-2">Company Details</div></div>
         <div class="col-md-4">
           <label class="form-label">Company Name</label>
-          <input class="form-control" [(ngModel)]="approval.company.name" name="cname" required />
+          <input class="form-control" placeholder="e.g., ABC Software" [(ngModel)]="approval.company.name" name="cname" required />
         </div>
         <div class="col-md-8">
           <label class="form-label">Address</label>
-          <input class="form-control" [(ngModel)]="approval.company.address" name="caddress" required />
+          <input class="form-control" placeholder="e.g., Main Blvd, Sahiwal" [(ngModel)]="approval.company.address" name="caddress" required />
         </div>
         <div class="col-md-4">
           <label class="form-label">Supervisor Name</label>
-          <input class="form-control" [(ngModel)]="approval.company.supervisorName" name="supname" required />
+          <input class="form-control" placeholder="e.g., Mr. Khan" [(ngModel)]="approval.company.supervisorName" name="supname" required />
         </div>
         <div class="col-md-4">
           <label class="form-label">Supervisor Email</label>
-          <input type="email" class="form-control" [(ngModel)]="approval.company.supervisorEmail" name="supemail" required />
+          <input type="email" class="form-control" placeholder="name@email.com" [(ngModel)]="approval.company.supervisorEmail" name="supemail" required />
         </div>
         <div class="col-md-4">
           <label class="form-label">Supervisor Phone</label>
-          <input class="form-control" [(ngModel)]="approval.company.supervisorPhone" name="supphone" required />
+          <input class="form-control" placeholder="e.g., 0300-0000000" [(ngModel)]="approval.company.supervisorPhone" name="supphone" required />
         </div>
-
-        <div class="col-12"><h6 class="text-muted mt-2">Internship Details</h6></div>
+        <div class="col-12"><div class="section-title mt-2">Internship Details</div></div>
         <div class="col-md-3">
           <label class="form-label">Start Date</label>
           <input type="date" class="form-control" [(ngModel)]="approval.internship.startDate" name="start" required />
@@ -130,11 +96,11 @@
         </div>
         <div class="col-md-6">
           <label class="form-label">Objectives</label>
-          <textarea class="form-control" rows="2" [(ngModel)]="approval.objectives" name="objectives" required></textarea>
+          <textarea class="form-control" rows="2" placeholder="What do you aim to achieve?" [(ngModel)]="approval.objectives" name="objectives" required></textarea>
         </div>
         <div class="col-md-6">
           <label class="form-label">Expected Outcomes</label>
-          <textarea class="form-control" rows="2" [(ngModel)]="approval.outcomes" name="outcomes" required></textarea>
+          <textarea class="form-control" rows="2" placeholder="What outcomes/products are expected?" [(ngModel)]="approval.outcomes" name="outcomes" required></textarea>
         </div>
         <div class="col-12">
           <button class="btn btn-success" [disabled]="!af.form.valid" type="submit">Submit Approval</button>
