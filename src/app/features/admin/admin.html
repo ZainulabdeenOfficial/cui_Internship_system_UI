@@ -1,5 +1,17 @@
 <div class="container py-4">
   <h2 class="mb-3">Internship Office</h2>
+  <ul class="nav nav-tabs mb-3">
+    <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='students'" (click)="selectTab('students')">Students</button></li>
+    <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='applications'" (click)="selectTab('applications')">Applications</button></li>
+    <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='requests'" (click)="selectTab('requests')">Requests</button></li>
+    <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='announcements'" (click)="selectTab('announcements')">Announcements</button></li>
+    <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='officers'" (click)="selectTab('officers')">Officers</button></li>
+    <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='faculty'" (click)="selectTab('faculty')">Faculty</button></li>
+    <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='companies'" (click)="selectTab('companies')">Companies & Site</button></li>
+    <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='compliance'" (click)="selectTab('compliance')">Log Compliance</button></li>
+    <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='complaints'" (click)="selectTab('complaints')">Complaints</button></li>
+    <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='scheme'" (click)="selectTab('scheme')">Scheme</button></li>
+  </ul>
 
   <div class="row g-3 mb-4">
     <div class="col-12">
@@ -26,7 +38,13 @@
     </div>
   </div>
 
-  <div class="table-responsive">
+  <!-- hidden usage to ensure standalone imports are recognized -->
+  <ng-template #__ensureImportsAdmin>
+    {{ ([] | paginate: 1 : 10).length }}
+    <app-paginator [total]="0" [page]="1" [pageSize]="10"></app-paginator>
+  </ng-template>
+
+  <div class="table-responsive" *ngIf="currentTab==='students'">
     <table class="table table-striped align-middle">
       <thead>
         <tr>
@@ -34,8 +52,7 @@
         </tr>
       </thead>
       <tbody>
-        @for (s of students(); track s.id) {
-        <tr>
+        <tr *ngFor="let s of (students() | paginate: page.students : pageSize)">
           <td>{{ s.name }}</td>
           <td>{{ s.email }}</td>
           <td>
@@ -57,21 +74,15 @@
             <div class="d-inline-flex gap-2 align-items-center">
               <select class="form-select form-select-sm" [(ngModel)]="facultyId" style="width:160px">
                 <option [ngValue]="''">Faculty...</option>
-                @for (f of facultyList(); track f.id) {
-                <option [ngValue]="f.id">{{ f.name }} ({{ f.email }})</option>
-                }
+                <option *ngFor="let f of facultyList()" [ngValue]="f.id">{{ f.name }} ({{ f.email }})</option>
               </select>
               <select class="form-select form-select-sm" [(ngModel)]="siteId" style="width:160px">
                 <option [ngValue]="''">Site...</option>
-                @for (t of siteList(); track t.id) {
-                <option [ngValue]="t.id">{{ t.name }} ({{ t.email }})</option>
-                }
+                <option *ngFor="let t of siteList()" [ngValue]="t.id">{{ t.name }} ({{ t.email }})</option>
               </select>
               <select class="form-select form-select-sm" [(ngModel)]="companyForStudent[s.id]" style="width:160px">
                 <option [ngValue]="''">Company...</option>
-                @for (c of companyList(); track c.id) {
-                <option [ngValue]="c.id">{{ c.name }}</option>
-                }
+                <option *ngFor="let c of companyList()" [ngValue]="c.id">{{ c.name }}</option>
               </select>
               <button class="btn btn-sm btn-primary" (click)="assign(s.id)">Assign</button>
               <button class="btn btn-sm btn-outline-primary" (click)="assignCompanyToStudent(s.id)">Set Company</button>
@@ -79,13 +90,13 @@
             </div>
           </td>
         </tr>
-        }
       </tbody>
     </table>
+    <app-paginator [total]="students().length" [(page)]="page.students" [pageSize]="pageSize"></app-paginator>
   </div>
 
   <!-- Student Details Drawer -->
-  @if (selectedId; as sid) {
+  @if (selectedId; as sid) { @if (currentTab==='students') {
   <div class="card mt-3">
     <div class="card-header bg-light">Student Details</div>
     <div class="card-body">
@@ -234,9 +245,9 @@
       </div>
     </div>
   </div>
-  }
+  } }
 
-  <div class="row g-3 mt-4">
+  <div class="row g-3 mt-4" *ngIf="currentTab==='applications'">
     <div class="col-12">
       <div class="card">
         <div class="card-header bg-light">Applications (Approval Forms)</div>
@@ -294,7 +305,7 @@
     </div>
   </div>
 
-  <div class="row g-3 mt-3">
+  <div class="row g-3 mt-3" *ngIf="currentTab==='scheme'">
     <div class="col-12">
       <div class="alert alert-info">
         <div class="fw-semibold">Evaluation Scheme</div>
@@ -306,7 +317,7 @@
     </div>
   </div>
 
-  <div class="row g-3 mt-4">
+  <div class="row g-3 mt-4" *ngIf="currentTab==='compliance'">
     <div class="col-12">
       <div class="card">
         <div class="card-header bg-light">Internship Evaluation Committee (20% Weightage)</div>
@@ -319,7 +330,7 @@
     </div>
   </div>
 
-  <div class="row g-3 mt-4">
+  <div class="row g-3 mt-4" *ngIf="currentTab==='students'">
     <div class="col-12">
       <div class="card">
         <div class="card-header bg-light">Weekly Log Compliance</div>
@@ -352,7 +363,7 @@
     </div>
   </div>
 
-  <div class="row g-3 mt-4">
+  <div class="row g-3 mt-4" *ngIf="currentTab==='complaints'">
     <div class="col-12">
       <div class="card">
         <div class="card-header bg-light">Suitable Host Organizations</div>
@@ -372,7 +383,7 @@
     </div>
   </div>
 
-  <div class="row g-3 mt-4">
+  <div class="row g-3 mt-4" *ngIf="currentTab==='requests'">
     <div class="col-12">
       <div class="card">
         <div class="card-header bg-light">Complaints & Grievances</div>
@@ -410,7 +421,7 @@
     </div>
   </div>
 
-  <div class="row g-3 mt-4">
+  <div class="row g-3 mt-4" *ngIf="currentTab==='announcements'">
     <div class="col-12">
       <div class="card">
         <div class="card-header bg-light">Requests from Faculty</div>
@@ -538,8 +549,8 @@
     </div>
   </div>
 
-  <hr class="my-4" />
-  <h3 class="mb-3">Internship Officers</h3>
+  <hr class="my-4" *ngIf="currentTab==='officers'"/>
+  <h3 class="mb-3" *ngIf="currentTab==='officers'">Internship Officers</h3>
   <div class="row g-3 align-items-end">
     <div class="col-md-4">
       <label class="form-label">Name</label>
@@ -553,14 +564,14 @@
       <button class="btn btn-primary" (click)="addOfficer()">Add Officer</button>
     </div>
   </div>
-  <ul class="list-group mt-3">
+  <ul class="list-group mt-3" *ngIf="currentTab==='officers'">
     @for (o of officers(); track o.email) {
     <li class="list-group-item d-flex justify-content-between align-items-center">{{ o.name }} <span class="text-muted">{{ o.email }}</span></li>
     }
   </ul>
 
-  <hr class="my-4" />
-  <h3 class="mb-3">Faculty Supervisors</h3>
+  <hr class="my-4" *ngIf="currentTab==='faculty'"/>
+  <h3 class="mb-3" *ngIf="currentTab==='faculty'">Faculty Supervisors</h3>
   <div class="row g-3 align-items-end">
     <div class="col-md-4">
       <label class="form-label">Name</label>
@@ -582,7 +593,7 @@
       <button class="btn btn-primary" (click)="addFaculty()">Add</button>
     </div>
   </div>
-  <ul class="list-group mt-3">
+  <ul class="list-group mt-3" *ngIf="currentTab==='faculty'">
     @for (f of facultyList(); track f.id) {
     <li class="list-group-item d-flex justify-content-between align-items-center">
       <div class="me-2">
@@ -598,8 +609,8 @@
     }
   </ul>
 
-  <hr class="my-4" />
-  <h3 class="mb-3">Companies & Site Supervisors</h3>
+  <hr class="my-4" *ngIf="currentTab==='companies'"/>
+  <h3 class="mb-3" *ngIf="currentTab==='companies'">Companies & Site Supervisors</h3>
   <div class="row g-3 align-items-end">
     <div class="col-md-5">
       <label class="form-label">Company Name</label>
@@ -639,7 +650,7 @@
       <button class="btn btn-primary" (click)="addSite()">Add Site</button>
     </div>
   </div>
-  <div class="table-responsive mt-3">
+  <div class="table-responsive mt-3" *ngIf="currentTab==='companies'">
     <table class="table table-sm">
       <thead><tr><th>Company</th><th>Site Supervisor</th><th>Email</th><th>Password</th><th>Actions</th></tr></thead>
       <tbody>
@@ -661,7 +672,7 @@
       </tbody>
     </table>
   </div>
-  <div class="table-responsive mt-3">
+  <div class="table-responsive mt-3" *ngIf="currentTab==='companies'">
     <table class="table table-sm">
       <thead><tr><th>Company</th><th>Address</th><th>Actions</th></tr></thead>
       <tbody>

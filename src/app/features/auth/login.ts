@@ -1,4 +1,4 @@
-import { Component, OnDestroy } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink, ActivatedRoute } from '@angular/router';
@@ -14,9 +14,8 @@ import { AuthService } from '../../shared/services/auth.service';
   styleUrl: './login.css'
 })
 
-export class Login implements OnDestroy {
+export class Login implements OnDestroy, OnInit {
   constructor(private store: StoreService, private router: Router, private auth: AuthService, private route: ActivatedRoute, private toast: ToastService) {
-    this.generateCaptcha();
     // Warm up the student route chunk in the background to speed up post-login navigation
     try { import('../../features/student/student'); } catch {}
   }
@@ -39,16 +38,15 @@ export class Login implements OnDestroy {
   signupMsg = '';
   apiMessage: string | null = null;
 
-  // Initialize optional success message if redirected from signup
-  // no ngOnInit lifecycle hook, do initialization inline for simplicity
-  private initFromQueryOnce = (() => {
+  ngOnInit(): void {
+    // Generate captcha after first change detection tick
+    setTimeout(() => this.generateCaptcha());
     try {
       this.route.queryParamMap.subscribe(p => {
         if (p.get('created') === '1') { this.signupMsg = 'Account created. Please login.'; }
       });
     } catch {}
-    return true;
-  })();
+  }
 
   ngOnDestroy(): void { if (this.ticker) clearInterval(this.ticker); }
   private startTicker() {

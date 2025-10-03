@@ -3,18 +3,36 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { StoreService } from '../../shared/services/store.service';
 import { ToastService } from '../../shared/toast/toast.service';
+import { ActivatedRoute, Router } from '@angular/router';
+import { PaginatePipe } from '../../shared/pagination/paginate.pipe';
+import { PaginatorComponent } from '../../shared/pagination/paginator';
 
 @Component({
   selector: 'app-site-supervisor',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, PaginatePipe, PaginatorComponent],
   templateUrl: './site-supervisor.html',
   styleUrl: './site-supervisor.css'
 })
 export class SiteSupervisor {
-  constructor(private store: StoreService, private toast: ToastService) {}
+  constructor(private store: StoreService, private toast: ToastService, private route: ActivatedRoute, private router: Router) {
+    try {
+      this.route.queryParamMap.subscribe(p => {
+        const t = (p.get('tab') || '').toLowerCase();
+        const allowed = ['students','details','reports','scoring','password'] as const;
+        if ((allowed as readonly string[]).includes(t)) this.currentTab = t as any;
+      });
+    } catch {}
+  }
   get students() { return this.store.students; }
   selectedId: string | null = null;
+  currentTab: 'students'|'details'|'reports'|'scoring'|'password' = 'students';
+  page = { students: 1 };
+  pageSize = 10;
+  selectTab(tab: SiteSupervisor['currentTab']) {
+    this.currentTab = tab;
+    try { this.router.navigate([], { relativeTo: this.route, queryParams: { tab }, queryParamsHandling: 'merge' }); } catch {}
+  }
   selectedStudent = computed(() => this.selectedId ? this.students().find(s => s.id === this.selectedId!) : undefined);
   logs() { return this.selectedId ? (this.store.logs()[this.selectedId] ?? []) : []; }
   reports() { return this.selectedId ? (this.store.reports()[this.selectedId] ?? []) : []; }

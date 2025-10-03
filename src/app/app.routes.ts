@@ -5,6 +5,8 @@ export const routes: Routes = [
     { path: 'login', loadComponent: () => import('./features/auth/login').then(m => m.Login) },
     { path: 'signup', loadComponent: () => import('./features/auth/signup').then(m => m.Signup) },
     { path: 'forgot-password', loadComponent: () => import('./features/auth/forgot-password').then(m => m.ForgotPassword) },
+    { path: 'guidance', loadComponent: () => import('./features/guidance/guidance').then(m => m.Guidance) },
+    { path: 'complaints', loadComponent: () => import('./features/complaints/complaints').then(m => m.Complaints) },
     { path: 'student', loadComponent: () => import('./features/student/student').then(m => m.Student) },
     { path: 'admin',   loadComponent: () => import('./features/admin/admin').then(m => m.Admin) },
     { path: 'faculty', loadComponent: () => import('./features/faculty-supervisor/faculty-supervisor').then(m => m.FacultySupervisor) },

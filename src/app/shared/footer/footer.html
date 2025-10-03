@@ -15,11 +15,49 @@
 			</div>
 			<div class="col-12 col-md-4">
 				<h6 class="mb-2">Quick links</h6>
-				<ul class="list-unstyled small mb-0">
-					@if (store.currentUser()?.role === 'student') { <li><a class="link-light text-decoration-none" routerLink="/student">Student Dashboard</a></li> }
-					@if (store.currentUser()?.role === 'admin') { <li><a class="link-light text-decoration-none" routerLink="/admin">Internship Office</a></li> }
-					@if (store.currentUser()?.role === 'faculty') { <li><a class="link-light text-decoration-none" routerLink="/faculty">Faculty Supervisor</a></li> }
-					@if (store.currentUser()?.role === 'site') { <li><a class="link-light text-decoration-none" routerLink="/site">Site Supervisor</a></li> }
+																<ul class="list-unstyled small mb-0">
+																														@if (store.currentUser()?.role === 'student') {
+																															<div class="mb-2">
+																																<span class="badge" [class.text-bg-success]="studentStatus==='approved'" [class.text-bg-danger]="studentStatus==='rejected'" [class.text-bg-secondary]="studentStatus==='pending'">Status: {{ studentStatus || '-' }}</span>
+																															</div>
+																																@if (studentApproved) {
+																						<li><a class="link-light text-decoration-none" [routerLink]="['/student']" [queryParams]="{ tab: 'evidence' }">Design & Evidence</a></li>
+																						<li><a class="link-light text-decoration-none" [routerLink]="['/student']" [queryParams]="{ tab: 'logs' }">Weekly Logs</a></li>
+																						<li><a class="link-light text-decoration-none" [routerLink]="['/student']" [queryParams]="{ tab: 'reports' }">Reports</a></li>
+																						<li><a class="link-light text-decoration-none" [routerLink]="['/student']" [queryParams]="{ tab: 'assignments' }">Assignments</a></li>
+																						<li><a class="link-light text-decoration-none" routerLink="/complaints">Complaints</a></li>
+																						<li><a class="link-light text-decoration-none" [routerLink]="['/student']" [queryParams]="{ tab: 'marks' }">Marks</a></li>
+																					} @else {
+																																	<li><a class="link-light text-decoration-none" [routerLink]="['/student']" [queryParams]="{ tab: 'evidence' }">Design & Evidence</a></li>
+																																	<li><a class="link-light text-decoration-none" routerLink="/complaints">Complaints</a></li>
+																					}
+																				}
+										@if (store.currentUser()?.role === 'admin') {
+											<li><a class="link-light text-decoration-none" [routerLink]="['/admin']" [queryParams]="{ tab: 'students' }">Students</a></li>
+											<li><a class="link-light text-decoration-none" [routerLink]="['/admin']" [queryParams]="{ tab: 'applications' }">Applications</a></li>
+											<li><a class="link-light text-decoration-none" [routerLink]="['/admin']" [queryParams]="{ tab: 'requests' }">Requests</a></li>
+											<li><a class="link-light text-decoration-none" [routerLink]="['/admin']" [queryParams]="{ tab: 'announcements' }">Announcements</a></li>
+											<li><a class="link-light text-decoration-none" [routerLink]="['/admin']" [queryParams]="{ tab: 'officers' }">Officers</a></li>
+											<li><a class="link-light text-decoration-none" [routerLink]="['/admin']" [queryParams]="{ tab: 'faculty' }">Faculty</a></li>
+											<li><a class="link-light text-decoration-none" [routerLink]="['/admin']" [queryParams]="{ tab: 'companies' }">Companies & Site</a></li>
+											<li><a class="link-light text-decoration-none" [routerLink]="['/admin']" [queryParams]="{ tab: 'compliance' }">Log Compliance</a></li>
+											<li><a class="link-light text-decoration-none" [routerLink]="['/admin']" [queryParams]="{ tab: 'complaints' }">Complaints</a></li>
+										}
+										@if (store.currentUser()?.role === 'faculty') {
+											<li><a class="link-light text-decoration-none" [routerLink]="['/faculty']" [queryParams]="{ tab: 'students' }">Students</a></li>
+											<li><a class="link-light text-decoration-none" [routerLink]="['/faculty']" [queryParams]="{ tab: 'details' }">Details</a></li>
+											<li><a class="link-light text-decoration-none" [routerLink]="['/faculty']" [queryParams]="{ tab: 'reports' }">Reports</a></li>
+											<li><a class="link-light text-decoration-none" [routerLink]="['/faculty']" [queryParams]="{ tab: 'assignments' }">Assignments</a></li>
+											<li><a class="link-light text-decoration-none" [routerLink]="['/faculty']" [queryParams]="{ tab: 'agreements' }">Agreements</a></li>
+											<li><a class="link-light text-decoration-none" [routerLink]="['/faculty']" [queryParams]="{ tab: 'profile' }">Profile</a></li>
+										}
+										@if (store.currentUser()?.role === 'site') {
+											<li><a class="link-light text-decoration-none" [routerLink]="['/site']" [queryParams]="{ tab: 'students' }">Students</a></li>
+											<li><a class="link-light text-decoration-none" [routerLink]="['/site']" [queryParams]="{ tab: 'details' }">Details</a></li>
+											<li><a class="link-light text-decoration-none" [routerLink]="['/site']" [queryParams]="{ tab: 'reports' }">Reports</a></li>
+											<li><a class="link-light text-decoration-none" [routerLink]="['/site']" [queryParams]="{ tab: 'scoring' }">Scoring</a></li>
+											<li><a class="link-light text-decoration-none" [routerLink]="['/site']" [queryParams]="{ tab: 'password' }">Password</a></li>
+										}
 					@if (!store.currentUser()) { <li><a class="link-light text-decoration-none" routerLink="/login">Login</a></li> }
 					@if (!store.currentUser()) { <li><a class="link-light text-decoration-none" routerLink="/signup">Student Signup</a></li> }
 				</ul>

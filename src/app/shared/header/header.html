@@ -23,7 +23,17 @@
 							</span>
 							<span>Student</span>
 						</a>
-						<ul class="dropdown-menu dropdown-menu-end p-3" style="min-width:300px">
+												<ul class="dropdown-menu dropdown-menu-end p-3" style="min-width:300px">
+																					<li class="mb-2">
+																						<span class="small">Status:
+																							<span class="badge"
+																								[class.text-bg-success]="studentStatus==='approved'"
+																								[class.text-bg-secondary]="studentStatus==='pending'"
+																								[class.text-bg-danger]="studentStatus==='rejected'">
+																								{{ studentStatus || '-' }}
+																							</span>
+																						</span>
+																					</li>
 							<li class="mb-2">
 								<label class="form-label small mb-1">Bio</label>
 								<textarea class="form-control form-control-sm" rows="2" [(ngModel)]="myStudent()!.bio" (ngModelChange)="updateStudentProfile({ bio: $event })"></textarea>
@@ -39,7 +49,16 @@
 								<div class="input-group input-group-sm mb-2"><span class="input-group-text">Confirm</span><input type="password" class="form-control" [(ngModel)]="changeStudentPw.confirm" /></div>
 								<button class="btn btn-sm btn-outline-light" (click)="submitStudentPassword()">Update Password</button>
 							</li>
-							<li><a class="dropdown-item" routerLink="/student">Open Dashboard</a></li>
+																					@if (myStudent()?.approved) {
+																						<li><a class="dropdown-item" [routerLink]="['/student']" [queryParams]="{ tab: 'evidence' }">Design & Evidence</a></li>
+																						<li><a class="dropdown-item" [routerLink]="['/student']" [queryParams]="{ tab: 'logs' }">Weekly Logs</a></li>
+																						<li><a class="dropdown-item" [routerLink]="['/student']" [queryParams]="{ tab: 'reports' }">Reports</a></li>
+																						<li><a class="dropdown-item" [routerLink]="['/student']" [queryParams]="{ tab: 'assignments' }">Assignments</a></li>
+																						<li><a class="dropdown-item" [routerLink]="['/student']" [queryParams]="{ tab: 'marks' }">Marks</a></li>
+																					} @else {
+																						<li><a class="dropdown-item" [routerLink]="['/student']" [queryParams]="{ tab: 'evidence' }">Design & Evidence</a></li>
+																					}
+																					<li><a class="dropdown-item" routerLink="/complaints">Complaints</a></li>
 						</ul>
 					</li>
 					}
@@ -75,7 +94,15 @@
 								<div class="input-group input-group-sm mb-2"><span class="input-group-text">Confirm</span><input type="password" class="form-control" [(ngModel)]="changeAdminPw.confirm" /></div>
 								<button class="btn btn-sm btn-outline-light" (click)="submitAdminPassword()">Update Password</button>
 							</li>
-							<li><a class="dropdown-item" routerLink="/admin">Open Dashboard</a></li>
+							<li><a class="dropdown-item" [routerLink]="['/admin']" [queryParams]="{ tab: 'students' }">Students</a></li>
+							<li><a class="dropdown-item" [routerLink]="['/admin']" [queryParams]="{ tab: 'applications' }">Applications</a></li>
+							<li><a class="dropdown-item" [routerLink]="['/admin']" [queryParams]="{ tab: 'requests' }">Requests</a></li>
+							<li><a class="dropdown-item" [routerLink]="['/admin']" [queryParams]="{ tab: 'announcements' }">Announcements</a></li>
+							<li><a class="dropdown-item" [routerLink]="['/admin']" [queryParams]="{ tab: 'officers' }">Officers</a></li>
+							<li><a class="dropdown-item" [routerLink]="['/admin']" [queryParams]="{ tab: 'faculty' }">Faculty</a></li>
+							<li><a class="dropdown-item" [routerLink]="['/admin']" [queryParams]="{ tab: 'companies' }">Companies & Site</a></li>
+							<li><a class="dropdown-item" [routerLink]="['/admin']" [queryParams]="{ tab: 'compliance' }">Log Compliance</a></li>
+							<li><a class="dropdown-item" [routerLink]="['/admin']" [queryParams]="{ tab: 'complaints' }">Complaints</a></li>
 						</ul>
 					</li>
 					}
@@ -109,7 +136,12 @@
 								<label class="form-label small mb-1">Profile photo</label>
 								<input type="file" accept="image/*" class="form-control form-control-sm" (change)="onAvatarSelected($event)" />
 							</li>
-							<li><a class="dropdown-item" routerLink="/faculty">Open Dashboard</a></li>
+							<li><a class="dropdown-item" [routerLink]="['/faculty']" [queryParams]="{ tab: 'students' }">Students</a></li>
+							<li><a class="dropdown-item" [routerLink]="['/faculty']" [queryParams]="{ tab: 'details' }">Details</a></li>
+							<li><a class="dropdown-item" [routerLink]="['/faculty']" [queryParams]="{ tab: 'reports' }">Reports</a></li>
+							<li><a class="dropdown-item" [routerLink]="['/faculty']" [queryParams]="{ tab: 'assignments' }">Assignments</a></li>
+							<li><a class="dropdown-item" [routerLink]="['/faculty']" [queryParams]="{ tab: 'agreements' }">Agreements</a></li>
+							<li><a class="dropdown-item" [routerLink]="['/faculty']" [queryParams]="{ tab: 'profile' }">Profile</a></li>
 						</ul>
 					</li>
 					}
@@ -145,7 +177,11 @@
 								<div class="input-group input-group-sm mb-2"><span class="input-group-text">Confirm</span><input type="password" class="form-control" [(ngModel)]="changeSitePw.confirm" /></div>
 								<button class="btn btn-sm btn-outline-light" (click)="submitSitePassword()">Update Password</button>
 							</li>
-							<li><a class="dropdown-item" routerLink="/site">Open Dashboard</a></li>
+							<li><a class="dropdown-item" [routerLink]="['/site']" [queryParams]="{ tab: 'students' }">Students</a></li>
+							<li><a class="dropdown-item" [routerLink]="['/site']" [queryParams]="{ tab: 'details' }">Details</a></li>
+							<li><a class="dropdown-item" [routerLink]="['/site']" [queryParams]="{ tab: 'reports' }">Reports</a></li>
+							<li><a class="dropdown-item" [routerLink]="['/site']" [queryParams]="{ tab: 'scoring' }">Scoring</a></li>
+							<li><a class="dropdown-item" [routerLink]="['/site']" [queryParams]="{ tab: 'password' }">Password</a></li>
 						</ul>
 					</li>
 					}

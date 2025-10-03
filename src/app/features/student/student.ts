@@ -3,11 +3,14 @@ import { CommonModule, NgIf, NgFor } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { StoreService } from '../../shared/services/store.service';
 import { ToastService } from '../../shared/toast/toast.service';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
+import { PaginatePipe } from '../../shared/pagination/paginate.pipe';
+import { PaginatorComponent } from '../../shared/pagination/paginator';
 
 @Component({
   selector: 'app-student',
   standalone: true,
-  imports: [CommonModule, NgIf, NgFor, FormsModule],
+  imports: [CommonModule, NgIf, NgFor, FormsModule, RouterModule, PaginatePipe, PaginatorComponent],
   templateUrl: './student.html',
   styleUrl: './student.css'
 })
@@ -19,6 +22,11 @@ export class Student {
   myStudentId = computed(() => this.me()?.studentId ?? null);
   isApproved = computed(() => !!this.selectedStudent()?.approved);
   private lockSelection: any;
+  // tabs
+  currentTab: 'overview'|'applications'|'evidence'|'logs'|'reports'|'assignments'|'complaints'|'marks' = 'overview';
+  // pagination state per tab/list
+  page = { logs: 1, reports: 1, assignments: 1, complaints: 1 };
+  pageSize = 10;
 
   // forms
   newStudent = { name: '', email: '', registrationNo: '' };
@@ -88,11 +96,58 @@ export class Student {
     if (!this.selectedId) return [] as any[];
     return this.store.complaints().filter(c => c.studentId === this.selectedId);
   };
-  constructor(private store: StoreService, private toast: ToastService) {
+  constructor(private store: StoreService, private toast: ToastService, private route: ActivatedRoute, private router: Router) {
     this.lockSelection = effect(() => {
       const mine = this.myStudentId();
       if (mine && this.selectedId !== mine) this.selectedId = mine;
     });
+    // Initialize tab from query params
+    try {
+      this.route.queryParamMap.subscribe(p => {
+        const t = (p.get('tab') || '').toLowerCase();
+        const allowed = ['overview','applications','evidence','logs','reports','assignments','complaints','marks'] as const;
+        if ((allowed as readonly string[]).includes(t)) this.currentTab = t as any;
+        // guard: if not approved, restrict to overview/applications/evidence/complaints
+        const isOk = this.isApproved();
+        const visibleWhenPending = new Set(['overview','applications','evidence','complaints']);
+        if (!isOk && !visibleWhenPending.has(this.currentTab)) {
+          this.currentTab = 'applications';
+          try { this.router.navigate([], { relativeTo: this.route, queryParams: { tab: 'applications' }, queryParamsHandling: 'merge' }); } catch {}
+        }
+      });
+    } catch {}
+  }
+
+  private isApprovalComplete(): boolean {
+    const a = this.approval;
+    const required = [
+      a.studentInfo.name,
+      a.studentInfo.studentId,
+      a.studentInfo.program,
+      a.studentInfo.semester,
+      a.company.name,
+      a.company.address,
+      a.company.supervisorName,
+      a.company.supervisorEmail,
+      a.company.supervisorPhone,
+      a.internship.startDate,
+      a.internship.endDate,
+      String(a.internship.hoursPerWeek || '') ,
+      a.objectives,
+      a.outcomes
+    ];
+    const allFilled = required.every(v => !!(v && (''+v).toString().trim().length));
+    if (!allFilled) return false;
+    // basic email/phone sanity checks
+    const emailOk = /.+@.+\..+/.test(a.company.supervisorEmail.trim());
+    const phoneOk = a.company.supervisorPhone.replace(/[^0-9]/g, '').length >= 7;
+    const hoursOk = (a.internship.hoursPerWeek || 0) > 0;
+    return emailOk && phoneOk && hoursOk;
+  }
+  selectTab(tab: Student['currentTab']) {
+    this.currentTab = tab;
+    // Reflect in URL for deep links
+    try { this.router.navigate([], { relativeTo: this.route, queryParams: { tab }, queryParamsHandling: 'merge' }); } catch {}
   }
 
   meetsFiverr(rec: any) {
@@ -180,6 +235,10 @@ export class Student {
   submitApproval() {
     if (!this.selectedId) return;
   if (!this.ensureMine()) return;
+  if (!this.isApprovalComplete()) {
+    this.toast.warning('Please complete all fields in Internship Offer & Approval (student info, company, supervisor, internship, objectives, outcomes) before submitting.');
+    return;
+  }
   this.store.submitApproval(this.selectedId, { ...this.approval });
   this.toast.success('Approval form submitted');
     this.approval = {

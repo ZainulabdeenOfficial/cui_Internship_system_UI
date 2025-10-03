@@ -3,21 +3,39 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { StoreService } from '../../shared/services/store.service';
 import { ToastService } from '../../shared/toast/toast.service';
+import { ActivatedRoute, Router } from '@angular/router';
+import { PaginatePipe } from '../../shared/pagination/paginate.pipe';
+import { PaginatorComponent } from '../../shared/pagination/paginator';
 
 @Component({
   selector: 'app-faculty-supervisor',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, PaginatePipe, PaginatorComponent],
   templateUrl: './faculty-supervisor.html',
   styleUrl: './faculty-supervisor.css'
 })
 export class FacultySupervisor {
-  constructor(private store: StoreService, private toast: ToastService) {}
+  constructor(private store: StoreService, private toast: ToastService, private route: ActivatedRoute, private router: Router) {
+    try {
+      this.route.queryParamMap.subscribe(p => {
+        const t = (p.get('tab') || '').toLowerCase();
+        const allowed = ['students','details','reports','assignments','agreements','profile'] as const;
+        if ((allowed as readonly string[]).includes(t)) this.currentTab = t as any;
+      });
+    } catch {}
+  }
   get students() { return this.store.students; }
   get facultyList() { return this.store.facultySupervisors; }
   get siteList() { return this.store.siteSupervisors; }
   get companyList() { return this.store.companies; }
   selectedId: string | null = null;
+  currentTab: 'students'|'details'|'reports'|'assignments'|'agreements'|'profile' = 'students';
+  page = { students: 1 };
+  pageSize = 10;
+  selectTab(tab: FacultySupervisor['currentTab']) {
+    this.currentTab = tab;
+    try { this.router.navigate([], { relativeTo: this.route, queryParams: { tab }, queryParamsHandling: 'merge' }); } catch {}
+  }
   get me() { return this.store.currentUser; }
   myFacultyId = computed(() => this.me()?.facultyId);
   myStudents = computed(() => {

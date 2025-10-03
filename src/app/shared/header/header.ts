@@ -141,6 +141,18 @@ export class Header implements OnInit, OnDestroy {
       this.changeAdminPw = { old: '', next: '', confirm: '' };
     } catch {}
   }
+
+  // Student approval status helper for template badges
+  get studentStatus(): 'approved'|'pending'|'rejected'|'' {
+    const user = this.store.currentUser();
+    if (!user || user.role !== 'student' || !user.studentId) return '';
+    const st = this.myStudent();
+    if (st?.approved) return 'approved';
+    const list = this.store.approvals()[user.studentId] ?? [];
+    const last = list[list.length - 1];
+    if (last?.status === 'rejected') return 'rejected';
+    return 'pending';
+  }
 }
 
 // small util to convert File->base64

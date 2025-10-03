@@ -1,0 +1,8 @@
+{
+  "/api": {
+    "target": "https://cui-internship-git-dev-talhas-projects-59c8907e.vercel.app",
+    "secure": true,
+    "changeOrigin": true,
+    "logLevel": "info"
+  }
+}

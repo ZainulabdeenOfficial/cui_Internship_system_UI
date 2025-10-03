@@ -3,16 +3,27 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { StoreService } from '../../shared/services/store.service';
 import { ToastService } from '../../shared/toast/toast.service';
+import { ActivatedRoute, Router } from '@angular/router';
+import { PaginatePipe } from '../../shared/pagination/paginate.pipe';
+import { PaginatorComponent } from '../../shared/pagination/paginator';
 
 @Component({
   selector: 'app-admin',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, PaginatePipe, PaginatorComponent],
   templateUrl: './admin.html',
   styleUrl: './admin.css'
 })
 export class Admin {
-  constructor(private store: StoreService, private toast: ToastService) {}
+  constructor(private store: StoreService, private toast: ToastService, private route: ActivatedRoute, private router: Router) {
+    try {
+      this.route.queryParamMap.subscribe(p => {
+        const t = (p.get('tab') || '').toLowerCase();
+        const allowed = ['students','applications','requests','announcements','officers','faculty','companies','compliance','complaints','scheme'] as const;
+        if ((allowed as readonly string[]).includes(t)) this.currentTab = t as any;
+      });
+    } catch {}
+  }
   get students() { return this.store.students; }
   get complaints() { return this.store.complaints; }
   get requests() { return this.store.requests; }
@@ -29,6 +40,14 @@ export class Admin {
   facultyId = '';
   siteId = '';
   selectedId: string | null = null;
+  currentTab: 'students'|'applications'|'requests'|'announcements'|'officers'|'faculty'|'companies'|'compliance'|'complaints'|'scheme' = 'students';
+  // pagination
+  page = { students: 1, requests: 1, complaints: 1, faculty: 1, sites: 1, companies: 1, announcements: 1 };
+  pageSize = 10;
+  selectTab(tab: Admin['currentTab']) {
+    this.currentTab = tab;
+    try { this.router.navigate([], { relativeTo: this.route, queryParams: { tab }, queryParamsHandling: 'merge' }); } catch {}
+  }
   get officers() { return this.store.internshipOfficers; }
   officer = { name: '', email: '' };
   responses: Record<string, string> = {};

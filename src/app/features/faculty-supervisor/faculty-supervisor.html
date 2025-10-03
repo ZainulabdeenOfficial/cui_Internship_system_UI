@@ -1,5 +1,13 @@
 <div class="container py-4">
   <h2 class="mb-3">Faculty Supervisor</h2>
+  <ul class="nav nav-tabs mb-3">
+    <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='students'" (click)="selectTab('students')">Students</button></li>
+    <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='details'" (click)="selectTab('details')">Details</button></li>
+    <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='reports'" (click)="selectTab('reports')">Reports</button></li>
+    <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='assignments'" (click)="selectTab('assignments')">Assignments</button></li>
+    <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='agreements'" (click)="selectTab('agreements')">Agreements</button></li>
+    <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='profile'" (click)="selectTab('profile')">Profile</button></li>
+  </ul>
   <div class="row g-3 mb-3">
     <div class="col-md-3">
       <div class="card stat">
@@ -34,6 +42,12 @@
       </div>
     </div>
   </div>
+
+  <!-- hidden usage to ensure standalone imports are recognized -->
+  <ng-template #__ensureImportsFaculty>
+    {{ ([] | paginate: 1 : 10).length }}
+    <app-paginator [total]="0" [page]="1" [pageSize]="10"></app-paginator>
+  </ng-template>
   <div class="alert alert-info">
     <div class="fw-semibold">Evaluation Scheme</div>
     <ul class="mb-0">
@@ -72,7 +86,7 @@
     </div>
   </div>
 
-  <div class="table-responsive mb-3">
+  <div class="table-responsive mb-3" *ngIf="currentTab==='students'">
     <table class="table table-hover align-middle shadow-sm table-card">
       <thead>
         <tr>
@@ -85,8 +99,7 @@
         </tr>
       </thead>
       <tbody>
-        @for (s of filteredStudents(); track s.id) {
-        <tr>
+        <tr *ngFor="let s of (filteredStudents() | paginate: page.students : pageSize)">
           <td>{{ s.name }}</td>
           <td>{{ s.email }}</td>
           <td>{{ s.registrationNo || '-' }}</td>
@@ -104,13 +117,14 @@
             <button class="btn btn-sm btn-primary" (click)="selectedId = s.id">Open</button>
           </td>
         </tr>
-        }
       </tbody>
     </table>
+    <app-paginator [total]="filteredStudents().length" [(page)]="page.students" [pageSize]="pageSize"></app-paginator>
   </div>
   @if (selectedId) {
+    @if (currentTab==='details') {
     <div class="row g-3">
-      <div class="col-lg-6">
+  <div class="col-lg-6">
         <div class="card section-card">
           <div class="card-header">Approval Forms</div>
           <div class="card-body">
@@ -138,7 +152,7 @@
           </div>
         </div>
       </div>
-      <div class="col-lg-6">
+  <div class="col-lg-6">
         <div class="card section-card">
           <div class="card-header">Weekly Logs</div>
           <div class="card-body">
@@ -148,7 +162,7 @@
           </div>
         </div>
       </div>
-      <div class="col-lg-6">
+  <div class="col-lg-6">
         <div class="card section-card">
           <div class="card-header">Reports</div>
           <div class="card-body">
@@ -180,7 +194,7 @@
           </div>
         </div>
       </div>
-      <div class="col-lg-6">
+  <div class="col-lg-6">
         <div class="card section-card">
           <div class="card-header">Assignments</div>
           <div class="card-body">
@@ -229,18 +243,21 @@
         </div>
       </div>
     </div>
+    }
     @if (selectedStudent(); as ss) {
+      @if (currentTab==='details') {
       <div class="row g-3 mt-3">
         <div class="col-md-4"><strong>Assigned Faculty:</strong> {{ facultyProfile()?.name || '-' }}</div>
         <div class="col-md-4"><strong>Assigned Site:</strong> {{ siteName(ss.siteId) }}</div>
         <div class="col-md-4"><strong>Company:</strong> {{ companyName(ss.companyId) }}</div>
       </div>
+      }
     }
   }
 
-  <hr class="my-4" />
-  <h4>My Profile</h4>
-  @if (facultyProfile(); as fp) {
+  <hr class="my-4" *ngIf="currentTab==='profile'" />
+  <h4 *ngIf="currentTab==='profile'">My Profile</h4>
+  @if (facultyProfile(); as fp) { @if (currentTab==='profile') {
     <div class="col-md-4">
       <label class="form-label">Name</label>
       <input class="form-control" [ngModel]="fp.name" (ngModelChange)="updateMyProfile({ name: $event })" />
@@ -253,9 +270,9 @@
       <label class="form-label">Email</label>
       <input class="form-control" [ngModel]="fp.email" (ngModelChange)="updateMyProfile({ email: $event })" />
     </div>
-  }
+  } }
 
-  @if (facultyProfile()) {
+  @if (facultyProfile()) { @if (currentTab==='profile') {
     <div class="col-md-4">
       <label class="form-label">Old Password</label>
       <input type="password" class="form-control" [(ngModel)]="pw.old" />
@@ -271,5 +288,5 @@
     <div class="col-12">
       <button class="btn btn-outline-primary" (click)="changePassword()">Change Password</button>
     </div>
-  }
+  } }
 </div>

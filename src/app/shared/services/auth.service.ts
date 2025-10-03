@@ -8,10 +8,10 @@ import { timeout } from 'rxjs/operators';
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   constructor(private http: HttpClient) {}
-  private base = environment.apiBaseUrl.replace(/\/$/, '');
+  private base = (environment.production ? environment.apiBaseUrl.replace(/\/$/, '') : '').replace(/\/$/, '');
 
   async registerStudent(input: StudentRegisterRequest, options?: { timeoutMs?: number }): Promise<RegisterResponse> {
-    const url = `${this.base}/api/auth/register`;
+  const url = `${this.base}/api/auth/register`;
     try {
   const res = await firstValueFrom(
     this.http.post<RegisterResponse>(url, input).pipe(timeout(options?.timeoutMs ?? 4000))
@@ -25,7 +25,7 @@ export class AuthService {
   }
 
   async login(input: LoginRequest, options?: { timeoutMs?: number }): Promise<LoginResponse> {
-    const url = `${this.base}/api/auth/login`;
+  const url = `${this.base}/api/auth/login`;
     try {
       const res = await firstValueFrom(
         this.http.post<LoginResponse>(url, input).pipe(timeout(options?.timeoutMs ?? 4000))

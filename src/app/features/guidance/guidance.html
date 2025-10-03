@@ -1,0 +1,101 @@
+<div class="container py-4">
+  <h2 class="mb-3">Internship Guidance</h2>
+  <p class="text-muted">Everything you need to know to complete your internship successfully.</p>
+
+  <h5 class="mt-4">Objectives of the Internship Program</h5>
+  <p>
+    The objectives of the Internship Program are aligned with the department’s commitment to producing industry-ready graduates equipped with both technical expertise and professional competencies. This program serves as a bridge between academic preparation and workplace expectations, offering students the opportunity to apply their classroom learning in real-world scenarios. It also supports the holistic development of students by enhancing their ability to function effectively in dynamic and collaborative environments.
+  </p>
+  <p class="mb-1">Specifically, the Internship Program aims to:</p>
+  <ul>
+    <li>Bridge the gap between academic theory and real-world computing practices.</li>
+    <li>Provide hands-on experience in a student’s area of specialization, such as software development, cyber security &amp; networking, artificial intelligence, or data science.</li>
+    <li>Develop essential workplace competencies, including communication, teamwork, problem-solving, adaptability, and time management.</li>
+    <li>Facilitate career exploration and help students identify potential career paths while building industry networks and professional relationships.</li>
+    <li>Instill professional ethics and responsibility, fostering a mindset of lifelong learning and continuous professional development.</li>
+  </ul>
+
+  <h5 class="mt-4">Eligibility Criteria</h5>
+  <p>
+    Participation in the Internship Program is subject to specific academic and administrative requirements to ensure that students are adequately prepared to undertake professional responsibilities in a real-world setting. These criteria are established to maintain the integrity and effectiveness of the internship experience, ensuring that students possess the foundational knowledge, maturity, and commitment necessary for a successful placement.
+  </p>
+  <p class="mb-1">To be eligible for the internship program, students must:</p>
+  <ul>
+    <li>Have successfully completed at least four semesters of their degree program.</li>
+    <li>Maintain a minimum Cumulative Grade Point Average (CGPA) of 2.0.</li>
+    <li>Not be enrolled in any other courses during the internship period, if the internship is undertaken during the summer semester.</li>
+  </ul>
+
+  <h5 class="mt-4">Internship Duration and Nature</h5>
+  <h6 class="mt-3">Minimum Duration</h6>
+  <ul>
+    <li>6–8 continuous weeks</li>
+  </ul>
+  <h6 class="mt-3">Preferred Timing</h6>
+  <p class="mb-1"><strong>Internship During Regular Semester (Fall/Spring)</strong></p>
+  <ul>
+    <li>Internship registration coincides with semester registration, ensuring that total credit hours, including internship credits, do not exceed the maximum permissible limit per semester.</li>
+    <li>Internship registration occurs in the subsequent semester.</li>
+    <li>Internship timing does not conflict with scheduled courses/class timings.</li>
+    <li>Internship duration includes weekends and holidays.</li>
+  </ul>
+  <p class="mb-1"><strong>Internship During Summer Break</strong></p>
+  <ul>
+    <li>Registration occurs in the subsequent Fall semester, with internship credits not counted toward the maximum credit hours per semester.</li>
+    <li>Internship dates do not conflict with final exams or the start of the new semester.</li>
+    <li>Internship duration includes weekends and holidays.</li>
+  </ul>
+  <h6 class="mt-3">Nature of Internship</h6>
+  <p>
+    Internships may be completed in on-site, virtual, or freelancing (Fiverr/Upwork) formats where appropriate. The mode of internship should be aligned with the host organization’s policies and the student’s circumstances. However, it is essential that the chosen mode is finalized and formally approved prior to the start of the internship.
+  </p>
+  <ul>
+    <li><strong>On-site Internship:</strong> Traditional, location-based internship where the student is required to be physically present at the premises of the host organization.</li>
+    <li><strong>Virtual Internship:</strong> Students work remotely and are not required to be physically present at the organization’s office; coordinated through digital platforms.</li>
+    <li><strong>Freelancing-Based Internship (Fiverr/Upwork):</strong> Internships may be completed through freelancing platforms, provided the nature and scope reflect professional relevance and meet the required standards of learning outcomes, supervision, and reporting as set by the Internship Office.</li>
+  </ul>
+
+  <h5 class="mt-4">Eligible Host Organizations</h5>
+  <ul>
+    <li>Software houses, IT divisions in banks/telecom, startups, and government IT bodies.</li>
+    <li>Academia and research labs working in computing domains.</li>
+    <li>NGOs with significant digital initiatives.</li>
+  </ul>
+
+  <h5 class="mt-3">Freelancing (Fiverr/Upwork)</h5>
+  <ul>
+    <li>Allowed only for technical roles: Development, Data/AI/ML, APIs/Automation, DevOps/Cloud, Cybersecurity, Database, Testing, UI implementation.</li>
+    <li>Non-technical roles (content writing, customer support, data entry) are not permitted.</li>
+    <li>Maintain proper evidence: contracts, chat summaries, deliverables, and client feedback.</li>
+  </ul>
+
+  <h5 class="mt-3">Deliverables & Timelines</h5>
+  <ul>
+    <li>Approval Form and Agreement during the initial phase.</li>
+    <li>Weekly Logs throughout the internship duration.</li>
+    <li>Design Statement in Week 1.</li>
+    <li>Mid and Final Reports as scheduled by supervisors.</li>
+  </ul>
+
+  <h5 class="mt-3">Evaluation Scheme</h5>
+  <ul>
+    <li>On-site/Virtual: Site Supervisor (40) + Faculty Supervisor (40) + Internship Office (20).</li>
+    <li>Freelancing: Supervisor (60) + Internship Office (40).</li>
+  </ul>
+
+  <h5 class="mt-3">Tools & Best Practices</h5>
+  <ul>
+    <li>Use Git/GitHub for version control and maintaining a portfolio.</li>
+    <li>Use Jira/Trello for project tracking and collaboration.</li>
+    <li>Document your work regularly and keep backups.</li>
+  </ul>
+
+  <div class="mt-4">
+    <ng-container *ngIf="userRole==='student'; else toHome">
+      <a routerLink="/student" class="btn btn-outline-primary">Back to Student Dashboard</a>
+    </ng-container>
+    <ng-template #toHome>
+      <a routerLink="/" class="btn btn-outline-primary">Return to Home</a>
+    </ng-template>
+  </div>
+</div>

@@ -1,0 +1,50 @@
+<div class="container py-4">
+  <h2 class="mb-3">Complaints & Grievances</h2>
+
+  <div class="alert alert-info" *ngIf="!isStudent">
+    Please login as a student to submit and view your complaints.
+  </div>
+
+  <div *ngIf="isStudent && studentId as sid">
+    <div class="card mb-3">
+      <div class="card-header">Submit a Complaint</div>
+      <div class="card-body">
+        <form (ngSubmit)="submitComplaint()" #cf="ngForm" class="row g-3">
+          <div class="col-md-3">
+            <label class="form-label">Category</label>
+            <select class="form-select" [(ngModel)]="complaint.category" name="ccat" required>
+              <option [ngValue]="'Technical'">Technical</option>
+              <option [ngValue]="'Supervisor'">Supervisor</option>
+              <option [ngValue]="'Organization'">Organization</option>
+              <option [ngValue]="'Other'">Other</option>
+            </select>
+          </div>
+          <div class="col-md-9">
+            <label class="form-label">Message</label>
+            <input class="form-control" [(ngModel)]="complaint.message" name="cmsg" required />
+          </div>
+          <div class="col-12">
+            <button class="btn btn-outline-danger" [disabled]="!cf.form.valid" type="submit">Submit Complaint</button>
+            <a class="btn btn-link" routerLink="/student" [queryParams]="{ tab: 'overview' }">Back to Student Dashboard</a>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">Your Complaints</div>
+      <div class="card-body">
+        <ul class="list-group">
+          <li class="list-group-item d-flex justify-content-between align-items-center" *ngFor="let c of myComplaints()">
+            <span>
+              <strong>{{ c.category }}</strong> — {{ c.message }}
+              <span class="text-muted"> · {{ c.createdAt | date:'short' }}</span>
+            </span>
+            <span class="badge" [class.text-bg-secondary]="c.status==='open'" [class.text-bg-success]="c.status==='resolved'">{{ c.status }}</span>
+          </li>
+        </ul>
+        <div class="text-muted" *ngIf="myComplaints().length===0">No complaints yet.</div>
+      </div>
+    </div>
+  </div>
+</div>
