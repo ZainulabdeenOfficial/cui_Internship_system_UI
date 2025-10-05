@@ -44,11 +44,21 @@ export class AuthService {
     }
   }
 
-  async sendVerificationEmail(email: string): Promise<SendVerificationEmailResponse> {
+  async sendVerificationEmail(email: string, options?: { timeoutMs?: number }): Promise<SendVerificationEmailResponse> {
     const url = `${this.base}/api/auth/send-verification-email`;
-    return await firstValueFrom(
-      this.http.post<SendVerificationEmailResponse>(url, { email } as SendVerificationEmailRequest, { headers: new HttpHeaders({ 'Content-Type': 'application/json' }) })
-    );
+    try {
+      const res = await firstValueFrom(
+        this.http.post<SendVerificationEmailResponse>(url, { email } as SendVerificationEmailRequest, { headers: new HttpHeaders({ 'Content-Type': 'application/json' }) })
+          .pipe(timeout(options?.timeoutMs ?? 4000))
+      );
+      return res;
+    } catch (err: any) {
+      // Normalize timeout into a user friendly message while allowing UI to proceed optimistically
+      if (err?.name === 'TimeoutError') {
+        return { message: 'Request timed out – please check your inbox. You may retry shortly.' } as SendVerificationEmailResponse;
+      }
+      throw err;
+    }
   }
 
   async verifyEmail(token: string): Promise<VerifyEmailResponse> {

@@ -19,24 +19,33 @@
           <label class="form-label">Registration No</label>
           <div class="input-group">
             <span class="input-group-text"><i class="pi pi-hashtag"></i></span>
-            <input class="form-control" [(ngModel)]="model.registrationNo" (ngModelChange)="onRegNoChange($event)" name="regNo" #regNo="ngModel" required
-                   placeholder="FA22-BCS-090" pattern="^[A-Z]{2}\d{2}-[A-Z]{2,4}-\d{3}$" />
+       <input class="form-control" [(ngModel)]="model.registrationNo" (ngModelChange)="onRegNoChange($event)" (keydown)="filterRegKey($event)" (paste)="onRegPaste($event)" name="regNo" #regNo="ngModel" required
+         [attr.maxlength]="model.registrationNo.length >= 12 ? 12 : 12"
+         placeholder="AA00-BBB-000" pattern="^[A-Z]{2}\d{2}-[A-Z]{3}-\d{3}$" />
           </div>
           @if ((f.submitted || regNo.touched) && regNo.invalid) {
-            <div class="invalid-feedback d-block">Format must be FAyy-DEPT-ROLL (e.g., FA22-BCS-090).</div>
+            <div class="invalid-feedback d-block">Format must be AA00-BBB-000 (example: FA22-BCS-090).</div>
           }
           @if (regNoDisplay) {
             <div class="regno-preview small mt-1">CIIT/<strong>{{ regNoDisplay }}</strong>/SWL</div>
           }
-          <small class="text-muted d-block">We auto-format your Reg No. Underscores (_) become hyphens (-); spaces are removed.</small>
+          <small class="text-muted d-block">Strict pattern. Letters only in AA & BBB. Digits only in 00 & 000. Extra characters are ignored automatically.</small>
         </div>
         <div class="col-12">
-          <label class="form-label">Email</label>
+          <label class="form-label">University Email (auto)</label>
           <div class="input-group">
             <span class="input-group-text"><i class="pi pi-envelope"></i></span>
-            <input type="email" class="form-control" [(ngModel)]="model.email" name="email" required />
+            <input type="email" class="form-control" [value]="model.email" readonly required
+                   placeholder="aa00-bbb-000@students.cuisahiwal.edu.pk"
+                   [class.is-invalid]="f.submitted && !emailMatchesReg" />
           </div>
-          <small class="text-muted">Use your CUI Sahiwal email (e.g., fa22-bcs-090@students.cuisahiwal.edu.pk or name@sahiwal.comsats.edu.pk)</small>
+          @if (f.submitted && !emailMatchesReg) {
+            <div class="invalid-feedback d-block">Enter a complete valid Registration No first.</div>
+          }
+          <small class="text-muted">Auto-generated from Registration No; cannot edit.</small>
+          @if (emailMatchesReg && model.email && emailTaken) {
+            <div class="text-danger small mt-1">Account already exists for this email.</div>
+          }
         </div>
         <div class="col-12">
           <label class="form-label">Password</label>
@@ -46,7 +55,12 @@
           </div>
         </div>
         <div class="col-12">
-          <button class="btn btn-primary w-100" [disabled]="!f.form.valid">Create Account</button>
+          <button class="btn btn-primary w-100 d-inline-flex justify-content-center align-items-center" [disabled]="!f.form.valid || loading">
+            @if (loading) {
+              <span class="btn-dots me-2" aria-hidden="true"><span></span><span></span><span></span></span>
+            }
+            Create Account
+          </button>
         </div>
         @if (error) {
           <div class="col-12">

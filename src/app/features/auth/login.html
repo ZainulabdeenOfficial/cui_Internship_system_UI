@@ -89,5 +89,15 @@
       </form>
     </div>
   </div>
+<!-- end container and background wrappers -->
 </div>
 </div>
+@if (loading) {
+  <div class="blocking-loader-overlay">
+    <div class="text-center">
+      <div class="loader-pulse"></div>
+      <div class="loader-text">Signing in…<br />Please wait</div>
+      @if (slow && !error) { <div class="loader-text" style="font-size:.75rem;opacity:.8">Still processing…</div> }
+    </div>
+  </div>
+}

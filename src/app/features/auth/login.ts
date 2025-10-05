@@ -90,10 +90,11 @@ export class Login implements OnDestroy, OnInit {
         return;
       }
     }
-  this.loading = true;
-  this.slow = false;
-  if (this.slowTimer) clearTimeout(this.slowTimer);
-  this.slowTimer = setTimeout(() => { this.slow = true; }, 1500);
+    // Passed pre-validation; start loader now
+    this.loading = true;
+    this.slow = false;
+    if (this.slowTimer) clearTimeout(this.slowTimer);
+    this.slowTimer = setTimeout(() => { this.slow = true; }, 1500);
     try {
       // enforce a minimum response time to reduce timing side-channels
       const email = this.model.email.trim();
