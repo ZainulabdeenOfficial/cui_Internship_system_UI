@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -12,7 +12,7 @@ import { AuthService } from '../../../shared/services/auth.service';
   // Reuse the shared auth glass / slideshow styles
   styleUrls: ['../login.css']
 })
-export class ResetPassword implements OnInit {
+export class ResetPassword implements OnInit, OnDestroy {
   model = { token: '', password: '', confirm: '' };
   loading = false;
   slow = false;
@@ -27,6 +27,7 @@ export class ResetPassword implements OnInit {
   }
 
   ngOnInit() {
+    document.body.classList.add('auth-light');
     this.route.queryParamMap.subscribe(map => {
       const t = map.get('token');
       this.model.token = t ? t.trim() : '';
@@ -43,6 +44,7 @@ export class ResetPassword implements OnInit {
       }
     });
   }
+  ngOnDestroy(){ document.body.classList.remove('auth-light'); }
 
   get passwordsMatch() { return !!this.model.password && this.model.password === this.model.confirm; }
   get canSubmit() { return this.model.token && this.passwordsMatch && this.model.password.length >= 6; }

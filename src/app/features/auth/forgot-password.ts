@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -11,7 +11,7 @@ import { AuthService } from '../../shared/services/auth.service';
   templateUrl: './forgot-password.html',
   styleUrls: ['../auth/login.css'] // reuse login/signup styles for consistent UI
 })
-export class ForgotPassword {
+export class ForgotPassword implements OnInit, OnDestroy {
   email = '';
   loading = false;
   sent = false;
@@ -19,6 +19,9 @@ export class ForgotPassword {
   message: string | null = null;
 
   constructor(private auth: AuthService) {}
+
+  ngOnInit(){ document.body.classList.add('auth-light'); }
+  ngOnDestroy(){ document.body.classList.remove('auth-light'); }
 
   async submit() {
     if (!this.email) return;
