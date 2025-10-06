@@ -12,6 +12,16 @@
   <link rel="icon" type="image/jpeg" href="/assets/cui-logo.jpg">
   <link rel="apple-touch-icon" href="/assets/cui-logo.jpg">
   <link rel="mask-icon" href="/assets/cui-logo.jpg" color="#5bbad5">
+  <!-- Preload hero slideshow images for faster first meaningful paint -->
+  <!-- 2025-10-06: Mark first slideshow image as high priority to show faster -->
+  <link rel="preload" as="image" href="/assets/1.jpg" fetchpriority="high" />
+  <link rel="preload" as="image" href="/assets/2.jpg" />
+  <link rel="preload" as="image" href="/assets/3.jpg" />
+  <link rel="preload" as="image" href="/assets/4.jpg" />
+  <style>
+    /* Immediate first-paint background (shows before Angular bootstraps & slideshow CSS loads) */
+    body{margin:0;min-height:100vh;background:linear-gradient(rgba(0,0,0,.42),rgba(0,0,0,.42)),url('/assets/1.jpg') center/cover no-repeat fixed;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;}
+  </style>
   <!-- Performance: preconnect/dns-prefetch to API origin to speed up first request -->
   <link rel="preconnect" href="https://cui-internship-git-dev-talhas-projects-59c8907e.vercel.app" crossorigin>
   <link rel="dns-prefetch" href="//cui-internship-git-dev-talhas-projects-59c8907e.vercel.app">

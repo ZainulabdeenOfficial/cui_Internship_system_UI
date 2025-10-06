@@ -9,18 +9,32 @@
 	font-weight: 600;
 }
 
-/* Shared auth visuals (migrated from login.css to cut component size) */
-:root{--overlay-alpha:.55;--overlay-alpha-light:.45;--overlay-alpha-dark:.65;--glass-alpha:.15;--glass-alpha-strong:.20;--text-glow:0 0 6px rgba(255,255,255,.25);} 
+/* ================= AUTH VISUALS (APPROVED) =================
+	Overlay (balanced): rgba(0,0,0,0.55) -> var(--overlay-alpha)
+	Glass (card bg):    rgba(255,255,255,0.15) -> var(--glass-alpha)
+	Stronger glass (0.20) intentionally disabled; reintroduce by adding
+	  :root{ --glass-alpha-strong:.20 } and a .glass-strong class if required.
+	========================================================= */
+/* 2025-10-06 UPDATE: Reduced --glass-alpha from .15 to .10 (make form more transparent)
+	2025-10-06 BACKGROUND OVERLAY OPACITY APPROVED: --overlay-alpha stays at .55 (balanced contrast)
+	Optional (not active): .50 = lighter / more vivid bg, .60 = darker / higher contrast.
+*/
+/* 2025-10-06 VISIBILITY TWEAK: Increased background visibility (overlay .60 -> .50) and smoother slide fades
+	2025-10-06 VISIBILITY ADJUST 2: Lighten more (overlay .50 -> .45) small incremental change */
+:root{--overlay-alpha:.42;--glass-alpha:.10;--text-glow:0 0 6px rgba(255,255,255,.25);} 
 .bg-slides{position:absolute;inset:0;z-index:0;}
-.bg-slides .slide{position:absolute;inset:0;background-size:cover;background-position:center;background-repeat:no-repeat;opacity:0;animation:bgFade 40s ease-in-out infinite;filter:brightness(.72) saturate(1.12);transform:scale(1.04);transition:opacity 1.4s;}
+.bg-slides .slide{position:absolute;inset:0;background-size:cover;background-position:center;background-repeat:no-repeat;opacity:0;animation:bgFade 48s linear infinite;filter:brightness(.9) saturate(1.08);transform:scale(1.032);transition:opacity 2s ease;will-change:opacity;}
 .bg-slides .s1{background-image:url('/assets/1.jpg');animation-delay:0s;}
-.bg-slides .s2{background-image:url('/assets/2.jpg');animation-delay:10s;}
-.bg-slides .s3{background-image:url('/assets/3.jpg');animation-delay:20s;}
-.bg-slides .s4{background-image:url('/assets/4.jpg');animation-delay:30s;}
-@keyframes bgFade{0%{opacity:0;}3%{opacity:1;}22%{opacity:1;}27%{opacity:0;}100%{opacity:0;}}
+.bg-slides .s2{background-image:url('/assets/2.jpg');animation-delay:12s;}
+.bg-slides .s3{background-image:url('/assets/3.jpg');animation-delay:24s;}
+.bg-slides .s4{background-image:url('/assets/4.jpg');animation-delay:36s;}
+/* Smoother, longer cross-fade: ~3s fade in, ~8s display, ~3s fade out, remainder idle before next cycle */
+@keyframes bgFade{0%{opacity:0;}5%{opacity:0;}8%{opacity:1;}30%{opacity:1;}36%{opacity:.6;}40%{opacity:0;}100%{opacity:0;}}
+
+/* Faster first-paint hint: ensure first slide becomes visible ASAP before animation completes initial delay */
+.bg-slides .s1{animation-name:bgFade;}
+.no-js .bg-slides .slide{animation:none;opacity:1;}
 .bg-tint{position:absolute;inset:0;z-index:1;backdrop-filter:blur(3px);background:linear-gradient(rgba(0,0,0,var(--overlay-alpha)),rgba(0,0,0,var(--overlay-alpha))),linear-gradient(135deg,rgba(14,30,54,.78),rgba(23,46,82,.62),rgba(21,50,104,.60));}
-.overlay-light .bg-tint{background:linear-gradient(rgba(0,0,0,var(--overlay-alpha-light)),rgba(0,0,0,var(--overlay-alpha-light))),linear-gradient(135deg,rgba(14,30,54,.65),rgba(23,46,82,.5),rgba(21,50,104,.5));}
-.overlay-dark .bg-tint{background:linear-gradient(rgba(0,0,0,var(--overlay-alpha-dark)),rgba(0,0,0,var(--overlay-alpha-dark))),linear-gradient(135deg,rgba(14,30,54,.85),rgba(23,46,82,.7),rgba(21,50,104,.68));}
 @media (prefers-reduced-motion:reduce){.bg-slides .slide{animation:none;opacity:.75;}}
 @keyframes cardIn{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
 @keyframes pulseDot{0%,80%,100%{transform:scale(.4);opacity:.4;}40%{transform:scale(1);opacity:1;}}

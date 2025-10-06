@@ -12,8 +12,7 @@ import type { StudentRegisterRequest } from '../../shared/models/auth.models';
   standalone: true,
   imports: [CommonModule, FormsModule, RouterLink],
   templateUrl: './signup.html',
-  // Reuse consolidated auth styles to reduce bundle & pass style budget
-  styleUrls: ['./login.css']
+  styleUrl: './signup.css'
 })
 export class Signup {
   constructor(private store: StoreService, private router: Router, private auth: AuthService, private toast: ToastService) {}
