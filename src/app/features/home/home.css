@@ -11,10 +11,6 @@ html { scroll-behavior: smooth; }
 .kenburns{ animation: kenburns 10s ease-in-out infinite alternate; }
 @keyframes kenburns{ from{ transform: scale(1) translateZ(0); } to{ transform: scale(1.08) translateZ(0); } }
 .glass{ background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.25); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); color: #fff; box-shadow: 0 .25rem .75rem rgba(0,0,0,.2); }
-.hero-glass{ max-width: 520px; }
-.carousel-caption.text-start .hero-glass{ text-align: left; }
-.carousel-caption.text-center .hero-glass{ text-align: center; }
-.carousel-caption.text-end .hero-glass{ text-align: right; margin-left:auto; }
 .carousel-indicators{ gap:.25rem; }
 .carousel-indicators [data-bs-target]{ width: 28px; height: 28px; border-radius: 50%; background: rgba(255,255,255,.2); color:#fff; font-size:.9rem; display:flex; align-items:center; justify-content:center; border:1px solid rgba(255,255,255,.45); text-indent: 0; }
 .carousel-indicators .active{ background: #0d6efd; border-color:#0d6efd; }

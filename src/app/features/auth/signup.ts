@@ -168,4 +168,6 @@ export class Signup {
     if (this.slowTimer) { clearTimeout(this.slowTimer); this.slowTimer = null; }
     this.slow = false; this.loading = false;
   }
+  ngOnInit(){ document.body.classList.add('auth-light'); }
+  ngOnDestroy(){ document.body.classList.remove('auth-light'); }
 }

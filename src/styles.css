@@ -21,9 +21,12 @@
 */
 /* 2025-10-06 VISIBILITY TWEAK: Increased background visibility (overlay .60 -> .50) and smoother slide fades
 	2025-10-06 VISIBILITY ADJUST 2: Lighten more (overlay .50 -> .45) small incremental change */
-:root{--overlay-alpha:.42;--glass-alpha:.10;--text-glow:0 0 6px rgba(255,255,255,.25);} 
+/* 2025-10-06 AUTH OVERLAY REVERT: Return to original dark overlay (rgba(0,0,0,0.55)) & glass-alpha .10 for login/signup */
+:root{--overlay-alpha:.55;--glass-alpha:.10;--text-glow:0 0 6px rgba(255,255,255,.25);} 
+.auth-light { --overlay-alpha:0 !important; }
+.auth-light .bg-tint{background:none !important;backdrop-filter:none !important;-webkit-backdrop-filter:none !important;}
 .bg-slides{position:absolute;inset:0;z-index:0;}
-.bg-slides .slide{position:absolute;inset:0;background-size:cover;background-position:center;background-repeat:no-repeat;opacity:0;animation:bgFade 48s linear infinite;filter:brightness(.9) saturate(1.08);transform:scale(1.032);transition:opacity 2s ease;will-change:opacity;}
+.bg-slides .slide{position:absolute;inset:0;background-size:cover;background-position:center;background-repeat:no-repeat;opacity:0;animation:bgFade 48s linear infinite;filter:brightness(.9) saturate(1.1);transform:scale(1.03);transition:opacity 2s ease;will-change:opacity;}
 .bg-slides .s1{background-image:url('/assets/1.jpg');animation-delay:0s;}
 .bg-slides .s2{background-image:url('/assets/2.jpg');animation-delay:12s;}
 .bg-slides .s3{background-image:url('/assets/3.jpg');animation-delay:24s;}
@@ -43,4 +46,8 @@
 .btn-dots span:nth-child(2){animation-delay:.15s;}
 .btn-dots span:nth-child(3){animation-delay:.3s;}
 .captcha-ok{margin-top:.55rem;font-size:.8rem;font-weight:600;display:inline-flex;align-items:center;gap:.4rem;padding:.35rem .6rem;border-radius:.5rem;background:rgba(255,255,255,.85);color:#111;box-shadow:0 1px 3px rgba(0,0,0,.15);border:1px solid rgba(0,0,0,.15);} .captcha-ok .pi{color:#198754;}
+
+/* ============== HOME SOLID MODE (no translucent auth bg) ============== */
+body.home-solid {background:#ffffff !important;background-image:none !important;}
+body.home-solid .bg-slides, body.home-solid .bg-tint {display:none !important;}
 

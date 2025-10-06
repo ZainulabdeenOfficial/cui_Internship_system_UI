@@ -39,6 +39,7 @@ export class Login implements OnDestroy, OnInit {
   apiMessage: string | null = null;
 
   ngOnInit(): void {
+    document.body.classList.add('auth-light');
     // Ensure captcha is generated immediately so it's visible on first paint
     if (!this.captchaCode) this.generateCaptcha();
     try {
@@ -48,7 +49,7 @@ export class Login implements OnDestroy, OnInit {
     } catch {}
   }
 
-  ngOnDestroy(): void { if (this.ticker) clearInterval(this.ticker); }
+  ngOnDestroy(): void { if (this.ticker) clearInterval(this.ticker); document.body.classList.remove('auth-light'); }
   private startTicker() {
     if (this.ticker) clearInterval(this.ticker);
     this.ticker = setInterval(() => { this.now = Date.now(); if (this.cooldownRemaining() === 0) { clearInterval(this.ticker); this.ticker = null; } }, 500);
