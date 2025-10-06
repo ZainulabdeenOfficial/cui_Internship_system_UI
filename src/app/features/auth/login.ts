@@ -39,8 +39,8 @@ export class Login implements OnDestroy, OnInit {
   apiMessage: string | null = null;
 
   ngOnInit(): void {
-    // Generate captcha after first change detection tick
-    setTimeout(() => this.generateCaptcha());
+    // Ensure captcha is generated immediately so it's visible on first paint
+    if (!this.captchaCode) this.generateCaptcha();
     try {
       this.route.queryParamMap.subscribe(p => {
         if (p.get('created') === '1') { this.signupMsg = 'Account created. Please login.'; }

@@ -9,7 +9,8 @@ import { AuthService } from '../../../shared/services/auth.service';
   standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './reset-password.html',
-  styleUrls: ['./reset-password.css']
+  // Reuse the shared auth glass / slideshow styles
+  styleUrls: ['../login.css']
 })
 export class ResetPassword implements OnInit {
   model = { token: '', password: '', confirm: '' };
