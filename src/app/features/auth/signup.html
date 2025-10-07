@@ -31,12 +31,12 @@
          placeholder="AA00-BBB-000" pattern="^[A-Z]{2}\d{2}-[A-Z]{3}-\d{3}$" />
           </div>
           @if ((f.submitted || regNo.touched) && regNo.invalid) {
-            <div class="invalid-feedback d-block">Format must be AA00-BBB-000 (example: FA22-BCS-090).</div>
+            <div class="invalid-feedback d-block">Use pattern AA00-BBB-000. A & B parts letters only, 0 parts digits only (ex: FA22-BCS-090).</div>
           }
           @if (regNoDisplay) {
             <div class="regno-preview small mt-1">CIIT/<strong>{{ regNoDisplay }}</strong>/SWL</div>
           }
-          <small class="text-muted d-block">Strict pattern. Letters only in AA & BBB. Digits only in 00 & 000. Extra characters are ignored automatically.</small>
+          <small class="text-muted d-block">Pattern: AA00-BBB-000. Any invalid character you type is ignored automatically.</small>
         </div>
         <div class="col-12">
           <label class="form-label">University Email (auto)</label>

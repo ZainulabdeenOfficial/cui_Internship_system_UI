@@ -7,3 +7,10 @@
 }
 .card .form-label{font-weight:600}
 .card .form-control:focus{box-shadow:0 0 0 .2rem rgba(13,110,253,.15);border-color:#0d6efd}
+
+/* 2025-10-07 DASHBOARD SOLID MODE (remove any glass/transparency) */
+:host{display:block;min-height:100vh;background:#f5f7fa;}
+.dashboard-root,.student-dashboard{background:transparent;}
+.student-dashboard .card,.card{background:#ffffff !important;border:1px solid #e5e7eb !important;backdrop-filter:none !important;-webkit-backdrop-filter:none !important;box-shadow:0 2px 6px rgba(0,0,0,.05),0 1px 2px rgba(0,0,0,.04);}
+.student-dashboard .card-header{background:#f8f9fa;font-weight:600;border-bottom:1px solid #e5e7eb;}
+.student-dashboard .card:not(:last-child){margin-bottom:1.25rem;}
