@@ -1,5 +1,6 @@
 
-![CUI Internship Banner](public/Banner.png)
+![CUI Internship System Banner](https://github.com/ZainulabdeenOfficial/cui_Internship_system_UI/blob/master/cui%20banner%20updated.png?raw=true)
+
 
 # CUI Internship Management System
 ## Project Overview
