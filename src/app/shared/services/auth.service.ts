@@ -28,17 +28,34 @@ export class AuthService {
   }
 
   async login(input: LoginRequest, options?: { timeoutMs?: number }): Promise<LoginResponse> {
-  const url = `${this.base}/api/auth/login`;
-    try {
+    const url = `${this.base}/api/auth/login`;
+    const to = options?.timeoutMs ?? 4000;
+    const attempt = async (): Promise<LoginResponse> => {
       const res = await firstValueFrom(
-        this.http.post<LoginResponse>(url, input, { headers: new HttpHeaders({ 'Content-Type': 'application/json' }) }).pipe(timeout(options?.timeoutMs ?? 4000))
+        this.http.post<LoginResponse>(url, input, { headers: new HttpHeaders({ 'Content-Type': 'application/json' }) }).pipe(timeout(to))
       );
-      // Normalize API shape -> our app shape
       const anyRes: any = res || {};
-      const token = anyRes.token || anyRes.accessToken;
+      let token = anyRes.token || anyRes.accessToken;
       const user = anyRes.user ?? anyRes.data ?? undefined;
+      // If API omitted token but set success, try refresh once
+      if (!token) {
+        try {
+          const refreshed = await this.refreshAccessToken();
+          token = (refreshed as any)?.token || (refreshed as any)?.accessToken || token;
+        } catch {}
+      }
       return ({ success: true, token, user, message: anyRes.message }) as LoginResponse;
+    };
+    try {
+      return await attempt();
     } catch (err: any) {
+      // Retry once on timeout only
+      const isTimeout = err?.name === 'TimeoutError' || /timeout/i.test(err?.message || '');
+      if (isTimeout) {
+        try { return await attempt(); } catch (e2: any) {
+          return { success: false, message: 'Login timeout. Please try again.' };
+        }
+      }
       const message = err?.error?.message || err?.message || 'Login failed';
       return { success: false, message };
     }
