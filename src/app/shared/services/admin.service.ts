@@ -8,7 +8,11 @@ import { CreateAccountRequest, CreateAccountResponse } from '../models/admin/cre
 export class AdminService {
   constructor(private http: HttpClient) {}
   
-  private createUrl = (environment.adminCreateAccountUrl?.trim() || '/api/admin/create-account');
+  private createUrl = (() => {
+    const path = (environment.adminCreateAccountUrl?.trim() || '/api/admin/create-account');
+    const absBase = environment.apiBaseUrl.replace(/\/$/, '');
+    return path.startsWith('http') ? path : `${absBase}${path.startsWith('/') ? '' : '/'}${path}`;
+  })();
 
   async createAccount(input: CreateAccountRequest): Promise<CreateAccountResponse> {
     const body = {

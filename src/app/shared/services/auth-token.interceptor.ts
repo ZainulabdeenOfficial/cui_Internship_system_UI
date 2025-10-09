@@ -44,13 +44,18 @@ export const authTokenInterceptor: HttpInterceptorFn = (req, next) => {
     if (token) req = req.clone({ setHeaders: { Authorization: `Bearer ${token}` } });
 
     // Ensure JSON headers on write when missing
-    if (isApi) {
+  if (isApi) {
       const method = req.method?.toUpperCase?.() || '';
       const hasBody = method === 'POST' || method === 'PUT' || method === 'PATCH' || method === 'DELETE';
       if (hasBody && !req.headers.has('Content-Type')) {
         req = req.clone({ setHeaders: { 'Content-Type': 'application/json', Accept: 'application/json' } });
       }
-      req = req.clone({ withCredentials: true });
+      // Send cookies only when same origin (API base equals current origin);
+      // many cross-origin vercel APIs respond 405/4xx to credentialed requests
+      try {
+        const sameOrigin = API_BASE.startsWith(location.origin);
+        if (sameOrigin) req = req.clone({ withCredentials: true });
+      } catch {}
     }
   } catch {}
   return next(req);
