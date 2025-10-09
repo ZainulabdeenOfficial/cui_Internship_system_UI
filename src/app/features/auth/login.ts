@@ -105,18 +105,18 @@ export class Login implements OnDestroy, OnInit {
   if (apiRes?.message) { this.apiMessage = apiRes.message; this.toast.info(apiRes.message); }
       if (apiRes && apiRes.success) {
         // Persist initial token if present
-        if (apiRes.token) localStorage.setItem('authToken', apiRes.token);
+        if (apiRes.token) { sessionStorage.setItem('authToken', apiRes.token); }
         else {
           // Attempt to fetch a fresh token (regenerate) if missing
           try {
             const refreshed = await this.auth.refreshAccessToken();
             const rt = (refreshed as any)?.token || (refreshed as any)?.accessToken;
-            if (rt) localStorage.setItem('authToken', rt);
+            if (rt) sessionStorage.setItem('authToken', rt);
           } catch {}
         }
         if (this.remember) localStorage.setItem('lastStudentEmail', email);
         // Determine role from API user if provided; default to student
-        const apiRole = (apiRes.user?.role as string | undefined)?.toLowerCase();
+  const apiRole = (apiRes.role || apiRes.user?.role || '').toLowerCase();
         // Role-based redirect handling consolidated
         if (apiRole === 'admin') {
           this.store.currentUser.set({ role: 'admin' });
@@ -159,7 +159,7 @@ export class Login implements OnDestroy, OnInit {
           this.router.navigate(['/student']);
         }
         // Basic audit log (local only) - could be sent to backend later
-        try { localStorage.setItem('lastLoginMeta', JSON.stringify({ ts: Date.now(), email, role: apiRole || 'student' })); } catch {}
+  try { sessionStorage.setItem('lastLoginMeta', JSON.stringify({ ts: Date.now(), email, role: apiRole || 'student' })); } catch {}
       } else {
         // API login failed: show error and do not fallback to local logins
         const msg = apiRes?.message || 'Invalid email or password';

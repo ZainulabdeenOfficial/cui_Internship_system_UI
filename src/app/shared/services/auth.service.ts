@@ -35,8 +35,9 @@ export class AuthService {
         this.http.post<LoginResponse>(url, input, { headers: new HttpHeaders({ 'Content-Type': 'application/json' }) }).pipe(timeout(to))
       );
       const anyRes: any = res || {};
-      let token = anyRes.token || anyRes.accessToken;
-      const user = anyRes.user ?? anyRes.data ?? undefined;
+        let token = anyRes.token || anyRes.accessToken;
+        const user = anyRes.user ?? anyRes.data ?? undefined;
+        const role = (user?.role || anyRes.role || '').toString();
       // If API omitted token but set success, try refresh once
       if (!token) {
         try {
@@ -44,7 +45,7 @@ export class AuthService {
           token = (refreshed as any)?.token || (refreshed as any)?.accessToken || token;
         } catch {}
       }
-      return ({ success: true, token, user, message: anyRes.message }) as LoginResponse;
+        return ({ success: true, token, accessToken: anyRes.accessToken, user, role, message: anyRes.message }) as LoginResponse;
     };
     try {
       return await attempt();
@@ -102,8 +103,14 @@ export class AuthService {
   }
 
   async refreshAccessToken(): Promise<RefreshTokenResponse> {
-    const url = `${this.base}/api/auth/refresh-token`;
-    return await firstValueFrom(this.http.get<RefreshTokenResponse>(url));
+    const absBase = environment.apiBaseUrl.replace(/\/$/, '');
+    const url = `${absBase}/api/auth/refresh-toke`;
+    const res = await firstValueFrom(this.http.get<RefreshTokenResponse>(url));
+    try {
+      const tok = (res as any)?.accessToken || (res as any)?.token;
+      if (tok) sessionStorage.setItem('authToken', tok);
+    } catch {}
+    return res;
   }
 
   async generatePassword(): Promise<GeneratePasswordResponse> {
