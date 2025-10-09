@@ -158,26 +158,28 @@
           <div class="card-header bg-light">Announcements</div>
           <div class="card-body">
             <div class="row g-2 align-items-end">
-              <div class="col-md-3">
+              <div class="col-12 col-sm-6 col-md-3">
                 <label class="form-label">Title (optional)</label>
                 <input class="form-control" [(ngModel)]="announcement.title" name="atitle" />
               </div>
-              <div class="col-md-5">
+              <div class="col-12 col-sm-6 col-md-5">
                 <label class="form-label">Message</label>
                 <input class="form-control" [(ngModel)]="announcement.message" name="amsg" placeholder="e.g., Weekly log window extended till Friday" />
               </div>
-              <div class="col-md-3">
+              <div class="col-12 col-sm-6 col-md-3">
                 <label class="form-label">Link (optional)</label>
                 <input class="form-control" [(ngModel)]="announcement.link" name="alink" placeholder="https://..." />
               </div>
-              <div class="col-md-1">
+              <div class="col-12 col-sm-6 col-md-1">
                 <div class="form-check mt-4">
                   <input class="form-check-input" type="checkbox" [(ngModel)]="announcement.pinned" name="apinned" id="apinned">
                   <label class="form-check-label" for="apinned">Pin</label>
                 </div>
               </div>
-              <div class="col-12 col-md-2 mt-2 mt-md-0">
-                <button class="btn btn-primary w-100" (click)="addAnnouncement()">Publish</button>
+            </div>
+            <div class="row mt-2">
+              <div class="col-12 text-end">
+                <button class="btn btn-primary" (click)="addAnnouncement()">Publish</button>
               </div>
             </div>
             @if (announcements(); as anns) {
@@ -216,15 +218,15 @@
           <div class="card-header bg-light">Internship Officers</div>
           <div class="card-body">
             <div class="row g-3 align-items-end">
-              <div class="col-md-4">
+              <div class="col-12 col-sm-6 col-md-4">
                 <label class="form-label">Name</label>
                 <input class="form-control" [(ngModel)]="officer.name" name="oname" />
               </div>
-              <div class="col-md-4">
+              <div class="col-12 col-sm-6 col-md-4">
                 <label class="form-label">Email</label>
                 <input type="email" class="form-control" [(ngModel)]="officer.email" name="oemail" />
               </div>
-              <div class="col-md-4 d-grid">
+              <div class="col-12 col-sm-6 col-md-4 d-grid">
                 <button class="btn btn-primary" (click)="addOfficer()">Add Officer</button>
               </div>
             </div>
@@ -235,19 +237,19 @@
             </ul>
             <hr>
             <div class="row g-3 align-items-end">
-              <div class="col-md-4">
+              <div class="col-12 col-sm-6 col-md-4">
                 <label class="form-label">Officer Name</label>
                 <input class="form-control" [(ngModel)]="adminAccount.name" name="aname" />
               </div>
-              <div class="col-md-4">
+              <div class="col-12 col-sm-6 col-md-4">
                 <label class="form-label">Officer Email</label>
                 <input type="email" class="form-control" [(ngModel)]="adminAccount.email" name="aemail" />
               </div>
-              <div class="col-md-3">
+              <div class="col-12 col-sm-6 col-md-3">
                 <label class="form-label">Password</label>
                 <input type="password" class="form-control" [(ngModel)]="adminAccount.password" name="apass" />
               </div>
-              <div class="col-md-1 d-grid">
+              <div class="col-12 col-sm-6 col-md-1 d-grid">
                 <button class="btn btn-outline-primary" [disabled]="creatingAdmin" (click)="createAdminAccount()">{{ creatingAdmin ? 'Adding…' : 'Add' }}</button>
               </div>
             </div>
@@ -262,38 +264,42 @@
         <div class="card">
           <div class="card-header bg-light">Faculty Supervisors</div>
           <div class="card-body">
-            <div class="row g-3 align-items-end">
-              <div class="col-md-3">
+            <div class="row g-2 g-md-3 align-items-end">
+              <div class="col-12 col-sm-6 col-md-3">
                 <label class="form-label">Name</label>
                 <input class="form-control" [(ngModel)]="faculty.name" name="fname" />
               </div>
-              <div class="col-md-3">
+              <div class="col-12 col-sm-6 col-md-3">
                 <label class="form-label">Email</label>
                 <input type="email" class="form-control" [(ngModel)]="faculty.email" name="femail" />
               </div>
-              <div class="col-md-3">
+              <div class="col-12 col-sm-6 col-md-3">
                 <label class="form-label">Department</label>
                 <input class="form-control" [(ngModel)]="faculty.department" name="fdept" />
               </div>
-              <div class="col-md-2">
+              <div class="col-12 col-sm-6 col-md-2">
                 <label class="form-label">Password</label>
                 <input type="password" class="form-control" [(ngModel)]="faculty.password" name="fpass" />
               </div>
-              <div class="col-md-1 d-grid">
+              <div class="col-12 col-sm-6 col-md-1 d-grid">
                 <button class="btn btn-primary" (click)="addFaculty()">Add</button>
               </div>
             </div>
             <ul class="list-group mt-3">
               @for (f of facultyList(); track f.id) {
-              <li class="list-group-item d-flex justify-content-between align-items-center">
-                <div class="me-2">
-                  <div>{{ f.name }} — <span class="text-muted">{{ f.email }}</span></div>
-                  <div class="small text-muted">Password: {{ f.password ? 'set' : 'not set' }}</div>
-                </div>
-                <div class="d-flex gap-2 align-items-center">
-                  <input class="form-control form-control-sm" style="width:160px" placeholder="New password" [(ngModel)]="facultyNewPw[f.id]" name="fpw{{f.id}}" />
-                  <button class="btn btn-sm btn-outline-secondary" (click)="setFacultyPassword(f.id)">Set Password</button>
-                  <button class="btn btn-sm btn-outline-danger" (click)="removeFaculty(f.id)">Remove</button>
+              <li class="list-group-item">
+                <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2">
+                  <div class="me-0 me-sm-2 text-break">
+                    <div>{{ f.name }} — <span class="text-muted">{{ f.email }}</span></div>
+                    <div class="small text-muted">Password: {{ f.password ? 'set' : 'not set' }}</div>
+                  </div>
+                  <div class="d-flex flex-wrap gap-2 w-100 w-auto">
+                    <input class="form-control form-control-sm flex-grow-1 flex-sm-grow-0" style="min-width:160px" placeholder="New password" [(ngModel)]="facultyNewPw[f.id]" name="fpw{{f.id}}" />
+                    <div class="btn-group btn-group-sm flex-shrink-0">
+                      <button class="btn btn-outline-secondary" (click)="setFacultyPassword(f.id)">Set Password</button>
+                      <button class="btn btn-outline-danger" (click)="removeFaculty(f.id)">Remove</button>
+                    </div>
+                  </div>
                 </div>
               </li>
               }
@@ -310,39 +316,39 @@
           <div class="card-header bg-light">Companies & Site Supervisors</div>
           <div class="card-body">
             <div class="row g-3 align-items-end">
-              <div class="col-md-4">
+              <div class="col-12 col-sm-6 col-md-4">
                 <label class="form-label">Company Name</label>
                 <input class="form-control" [(ngModel)]="company.name" name="cname2" />
               </div>
-              <div class="col-md-5">
+              <div class="col-12 col-sm-6 col-md-5">
                 <label class="form-label">Address</label>
                 <input class="form-control" [(ngModel)]="company.address" name="caddr2" />
               </div>
-              <div class="col-md-3 d-grid">
+              <div class="col-12 col-sm-6 col-md-3 d-grid">
                 <button class="btn btn-primary" (click)="addCompany()">Add Company</button>
               </div>
             </div>
             <div class="row g-3 align-items-end mt-2">
-              <div class="col-md-3">
+              <div class="col-12 col-sm-6 col-md-3">
                 <label class="form-label">Site Supervisor</label>
                 <input class="form-control" [(ngModel)]="site.name" name="sname2" />
               </div>
-              <div class="col-md-3">
+              <div class="col-12 col-sm-6 col-md-3">
                 <label class="form-label">Email</label>
                 <input type="email" class="form-control" [(ngModel)]="site.email" name="semail2" />
               </div>
-              <div class="col-md-3">
+              <div class="col-12 col-sm-6 col-md-3">
                 <label class="form-label">Company</label>
                 <select class="form-select" [(ngModel)]="site.companyId" name="scid2">
                   <option [ngValue]="''">Select company...</option>
                   @for (c of companyList(); track c.id) { <option [ngValue]="c.id">{{ c.name }}</option> }
                 </select>
               </div>
-              <div class="col-md-2">
+              <div class="col-12 col-sm-6 col-md-2">
                 <label class="form-label">Password</label>
                 <input type="password" class="form-control" [(ngModel)]="site.password" name="spass2" />
               </div>
-              <div class="col-md-1 d-grid">
+              <div class="col-12 col-sm-6 col-md-1 d-grid">
                 <button class="btn btn-primary" (click)="addSite()">Add Site</button>
               </div>
             </div>
@@ -363,10 +369,12 @@
                     <td>{{ t.email }}</td>
                     <td class="small text-muted">{{ t.password ? 'set' : 'not set' }}</td>
                     <td>
-                      <div class="d-flex gap-2 align-items-center">
-                        <input class="form-control form-control-sm" style="width:140px" placeholder="New password" [(ngModel)]="siteNewPw[t.id]" name="spw{{t.id}}" />
-                        <button class="btn btn-sm btn-outline-secondary" (click)="setSitePassword(t.id)">Set</button>
-                        <button class="btn btn-sm btn-outline-danger" (click)="removeSite(t.id)">Remove</button>
+                      <div class="d-flex flex-wrap gap-2 align-items-center">
+                        <input class="form-control form-control-sm flex-grow-1 flex-sm-grow-0" style="min-width:140px" placeholder="New password" [(ngModel)]="siteNewPw[t.id]" name="spw{{t.id}}" />
+                        <div class="btn-group btn-group-sm">
+                          <button class="btn btn-outline-secondary" (click)="setSitePassword(t.id)">Set</button>
+                          <button class="btn btn-outline-danger" (click)="removeSite(t.id)">Remove</button>
+                        </div>
                       </div>
                     </td>
                   </tr>

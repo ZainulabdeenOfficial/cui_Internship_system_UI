@@ -50,4 +50,3 @@
 /* ============== HOME SOLID MODE (no translucent auth bg) ============== */
 body.home-solid {background:#ffffff !important;background-image:none !important;}
 body.home-solid .bg-slides, body.home-solid .bg-tint {display:none !important;}
-
