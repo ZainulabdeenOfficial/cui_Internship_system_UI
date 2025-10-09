@@ -1,4 +1,5 @@
-import { ApplicationConfig, provideBrowserGlobalErrorListeners, provideZonelessChangeDetection } from '@angular/core';
+import { ApplicationConfig, APP_INITIALIZER, provideBrowserGlobalErrorListeners, provideZonelessChangeDetection } from '@angular/core';
+import { TokenRefreshService } from './shared/services/token-refresh.service';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { provideRouter } from '@angular/router';
 
@@ -11,6 +12,12 @@ export const appConfig: ApplicationConfig = {
     provideBrowserGlobalErrorListeners(),
     provideZonelessChangeDetection(),
     provideRouter(routes),
-    provideHttpClient(withInterceptors([jsonInterceptor, authTokenInterceptor]))
+    provideHttpClient(withInterceptors([jsonInterceptor, authTokenInterceptor])),
+    {
+      provide: APP_INITIALIZER,
+      useFactory: (svc: TokenRefreshService) => () => svc.init(),
+      deps: [TokenRefreshService],
+      multi: true
+    }
   ]
 };

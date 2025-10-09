@@ -105,7 +105,8 @@ export class Login implements OnDestroy, OnInit {
   if (apiRes?.message) { this.apiMessage = apiRes.message; this.toast.info(apiRes.message); }
       if (apiRes && apiRes.success) {
         // Persist initial token if present
-        if (apiRes.token) { sessionStorage.setItem('authToken', apiRes.token); }
+  if (apiRes.token) { sessionStorage.setItem('authToken', apiRes.token); }
+  if (apiRes.accessToken) { sessionStorage.setItem('accessToken', apiRes.accessToken); sessionStorage.setItem('authToken', apiRes.accessToken); }
         else {
           // Attempt to fetch a fresh token (regenerate) if missing
           try {
