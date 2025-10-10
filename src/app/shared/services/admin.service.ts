@@ -4,10 +4,11 @@ import { environment } from '../../../environments/environment';
 import { firstValueFrom } from 'rxjs';
 import { CreateAccountRequest, CreateAccountResponse } from '../models/admin/create-account.models';
 type Decoded = { exp?: number };
+import { AuthService } from './auth.service';
 
 @Injectable({ providedIn: 'root' })
 export class AdminService {
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient, private auth: AuthService) {}
   
   private createUrl = (() => {
     const path = (environment.adminCreateAccountUrl?.trim() || '/api/admin/create-account');
@@ -39,7 +40,7 @@ export class AdminService {
           || localStorage.getItem('accessToken');
       } catch { return null; }
     };
-    // Preflight: if token exists but expired (>30s grace), surface a clear error so caller/interceptor can refresh
+    // Preflight: if token exists but expired (>30s grace), attempt refresh before calling API
     try {
       const t = getToken();
       if (t) {
@@ -49,7 +50,7 @@ export class AdminService {
           const payload = JSON.parse(payloadJson) as Decoded;
           const exp = payload?.exp;
           if (exp && (Date.now() / 1000 > exp - 30)) {
-            throw new Error('Access token expired; please refresh before creating account');
+            await this.auth.refreshAccessToken();
           }
         }
       }

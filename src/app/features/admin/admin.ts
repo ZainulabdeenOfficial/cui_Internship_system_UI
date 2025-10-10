@@ -114,7 +114,8 @@ export class Admin {
     } catch (err: any) {
       const status = err?.status ?? 0;
       const networkMsg = status === 0 ? 'Network/CORS error while contacting API. Retrying via proxy failed.' : null;
-      const msg = networkMsg || err?.error?.message || err?.message || 'Failed to add Internship Officer';
+      const unauthorized = status === 401 ? 'Unauthorized: Your session may be expired or your account lacks ADMIN permission. Try re‑logging in to refresh tokens, then retry. If it persists, verify your role on the backend.' : null;
+      const msg = unauthorized || networkMsg || err?.error?.message || err?.message || 'Failed to add Internship Officer';
       this.toast.danger(msg);
     } finally { this.creatingAdmin = false; }
   }
