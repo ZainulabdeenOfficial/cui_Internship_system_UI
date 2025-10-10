@@ -5,7 +5,7 @@ import { AuthService } from './auth.service';
 export class TokenRefreshService {
   private timer: any = null;
   private lastTokenHash = '';
-  private readonly skewMs = 60_000; // refresh 60s before expiry
+  private readonly skewMs = 120_000; // refresh 2 minutes before expiry for safety
   private watcher: any = null;
 
   constructor(private auth: AuthService) {}
@@ -17,7 +17,8 @@ export class TokenRefreshService {
       return sessionStorage.getItem('authToken')
         || sessionStorage.getItem('accessToken')
         || sessionStorage.getItem('token')
-        || localStorage.getItem('authToken');
+        || localStorage.getItem('authToken')
+        || localStorage.getItem('accessToken');
     } catch { return null; }
   }
 
@@ -42,7 +43,7 @@ export class TokenRefreshService {
   start() {
     // watch token changes periodically and reschedule
     if (this.watcher) clearInterval(this.watcher);
-    this.watcher = setInterval(() => this.ensureSchedule(), 20_000);
+  this.watcher = setInterval(() => this.ensureSchedule(), 10_000);
     this.ensureSchedule();
   }
 
