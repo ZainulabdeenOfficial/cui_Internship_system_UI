@@ -1,4 +1,4 @@
-<div class="container py-4">
+<div class="container py-4 complaints-page">
   <h2 class="mb-3">Complaints & Grievances</h2>
 
   @if (!isStudent) {
@@ -8,7 +8,7 @@
   }
 
   @if (isStudent && studentId; as sid) {
-    <div class="card mb-3">
+    <div class="card mb-3 bg-white shadow-sm">
       <div class="card-header">Submit a Complaint</div>
       <div class="card-body">
         <form (ngSubmit)="submitComplaint()" #cf="ngForm" class="row g-3">
@@ -26,14 +26,14 @@
             <input class="form-control" [(ngModel)]="complaint.message" name="cmsg" required />
           </div>
           <div class="col-12">
-            <button class="btn btn-outline-danger" [disabled]="!cf.form.valid" type="submit">Submit Complaint</button>
+            <button class="btn btn-primary" [disabled]="!cf.form.valid" type="submit">Submit Complaint</button>
             <a class="btn btn-link" routerLink="/student" [queryParams]="{ tab: 'overview' }">Back to Student Dashboard</a>
           </div>
         </form>
       </div>
     </div>
 
-    <div class="card">
+    <div class="card bg-white shadow-sm">
       <div class="card-header">Your Complaints</div>
       <div class="card-body">
         <ul class="list-group list-unstyled">

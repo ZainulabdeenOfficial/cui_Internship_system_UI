@@ -25,7 +25,7 @@ export class Student {
   // tabs
   currentTab: 'overview'|'applications'|'evidence'|'logs'|'reports'|'assignments'|'complaints'|'marks' = 'overview';
   // pagination state per tab/list
-  page = { logs: 1, reports: 1, assignments: 1, complaints: 1 };
+  page = { logs: 1, reports: 1, assignments: 1, complaints: 1, freel: 1 };
   pageSize = 10;
 
   // forms
@@ -223,6 +223,7 @@ export class Student {
   submitFreelance() {
     if (!this.selectedId) return;
   if (!this.ensureMine()) return;
+  if (!this.evidenceValid()) { this.toast.warning('Please provide required evidence details before saving.'); return; }
   this.store.submitFreelance(this.selectedId, { ...this.freel });
   this.toast.success('Evidence saved');
     this.freel = {
@@ -230,6 +231,24 @@ export class Student {
       avgRating: 0, clientFeedback: '', approvalEvidence: '', contractSummary: '', workSummary: '',
       mentorName: '', mentorContact: '', technologies: '', logbook: ''
     };
+  }
+  evidenceValid(): boolean {
+    const f = this.freel;
+    // Common sanity: numeric fields should be >= 0
+    const earn = Number(f.earningsUSD || 0);
+    const gigs = Number(f.gigsCompleted || 0);
+    const props = Number(f.proposalsApplied || 0);
+    const hasText = [f.clientFeedback, f.approvalEvidence, f.contractSummary, f.workSummary, f.technologies, f.logbook]
+      .some(v => !!(v && String(v).trim().length));
+    if (f.platform === 'Fiverr') {
+      // require at least some activity: gigs or earnings or meaningful text
+      return gigs > 0 || earn > 0 || hasText;
+    }
+    if (f.platform === 'Upwork') {
+      return props > 0 || earn > 0 || hasText;
+    }
+    // OnSite / Virtual: require at least a work summary or any meaningful text
+    return !!(f.workSummary && f.workSummary.trim().length) || hasText;
   }
 
   submitApproval() {

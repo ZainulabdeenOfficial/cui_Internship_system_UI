@@ -4,7 +4,7 @@
     <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='students'" (click)="selectTab('students')">Students</button></li>
     <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='details'" (click)="selectTab('details')">Details</button></li>
     <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='reports'" (click)="selectTab('reports')">Reports</button></li>
-    <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='scoring'" (click)="selectTab('scoring')">Scoring</button></li>
+  <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='profile'" (click)="selectTab('profile')">Profile</button></li>
     <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='password'" (click)="selectTab('password')">Password</button></li>
   </ul>
   @if (currentTab==='students') {
@@ -40,7 +40,7 @@
     </div>
   </div>
   }
-  @if (currentTab==='scoring') {
+  @if (currentTab==='details') {
   <div class="row g-3 align-items-end">
     <div class="col-md-6">
       <label class="form-label">Select Student</label>
@@ -128,7 +128,29 @@
       <input type="password" class="form-control" [(ngModel)]="pw.confirm" />
     </div>
     <div class="col-12">
-      <button class="btn btn-outline-primary" (click)="changePassword()">Change Password</button>
+      <button class="btn btn-primary" (click)="changePassword()">Change Password</button>
+    </div>
+  </div>
+  }
+
+  @if (currentTab==='profile') { <hr class="my-4" /> }
+  @if (currentTab==='profile') { <h5>My Profile</h5> }
+  @if (currentTab==='profile') {
+  <div class="row g-3">
+    <div class="col-md-4">
+      <label class="form-label">Name</label>
+      <input class="form-control" [(ngModel)]="draft.name" (ngModelChange)="0" />
+    </div>
+    <div class="col-md-8">
+      <label class="form-label">Bio</label>
+      <textarea class="form-control" rows="2" [(ngModel)]="draft.bio"></textarea>
+    </div>
+    <div class="col-md-6">
+      <label class="form-label">Profile photo</label>
+      <input type="file" accept="image/*" class="form-control" (change)="onAvatarSelected($event)"/>
+    </div>
+    <div class="col-12 text-end">
+      <button class="btn btn-primary" (click)="saveProfile()">Save</button>
     </div>
   </div>
   }

@@ -19,14 +19,14 @@ export class SiteSupervisor {
     try {
       this.route.queryParamMap.subscribe(p => {
         const t = (p.get('tab') || '').toLowerCase();
-        const allowed = ['students','details','reports','scoring','password'] as const;
+        const allowed = ['students','details','reports','profile','password'] as const;
         if ((allowed as readonly string[]).includes(t)) this.currentTab = t as any;
       });
     } catch {}
   }
   get students() { return this.store.students; }
   selectedId: string | null = null;
-  currentTab: 'students'|'details'|'reports'|'scoring'|'password' = 'students';
+  currentTab: 'students'|'details'|'reports'|'profile'|'password' = 'students';
   page = { students: 1 };
   pageSize = 10;
   selectTab(tab: SiteSupervisor['currentTab']) {
@@ -87,4 +87,42 @@ export class SiteSupervisor {
       this.toast.danger(e?.message || 'Unable to change password');
     }
   }
+
+  // Profile editing (Site) with draft + save and avatar upload
+  siteProfile() {
+    const id = this.mySiteId();
+    if (!id) return undefined;
+    return this.store.siteSupervisors().find(s => s.id === id);
+  }
+  draft = { name: '', bio: '' };
+  initDraftFromProfile() {
+    const p = this.siteProfile();
+    this.draft = { name: p?.name || '', bio: p?.bio || '' };
+  }
+  saveProfile() {
+    const id = this.mySiteId();
+    if (!id) return;
+    this.store.updateSiteSupervisor(id, { name: this.draft.name, bio: this.draft.bio });
+    this.toast.success('Profile saved');
+  }
+  async onAvatarSelected(evt: Event) {
+    const input = evt.target as HTMLInputElement;
+    const file = input?.files?.[0];
+    if (!file) return;
+    const base64 = await fileToBase64(file);
+    const id = this.mySiteId(); if (!id) return;
+    this.store.updateSiteSupervisor(id, { avatarBase64: base64 });
+    this.toast.success('Profile photo updated');
+    input.value = '';
+  }
+}
+
+// small util to convert File->base64 (scoped to this feature)
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
 }
