@@ -105,7 +105,7 @@ export class Admin {
     const email = (this.adminAccount.email || '').trim();
     const password = (this.adminAccount.password || '').trim();
     if (!name || !email || !password) { this.toast.warning('Name, email and password are required'); return; }
-  const payload: CreateAccountRequest = { name, email, password, role: 'OFFICER' } as any;
+  const payload: CreateAccountRequest = { name, email, password, role: 'ADMIN' } as any;
     try {
       this.creatingAdmin = true;
   const res = await this.adminApi.createAccount(payload);
