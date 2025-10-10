@@ -35,15 +35,18 @@ function getSessionToken(): string | null {
 }
 
 function normalizePath(req: HttpRequest<any>): string {
-  const raw = req.url.startsWith('http') ? req.url.replace(API_BASE, '') : req.url;
+  // Strip protocol and host for any absolute URL to get just the path
+  const withoutOrigin = req.url.replace(/^https?:\/\/[^/]+/i, '');
+  // Also strip configured API_BASE if it's an absolute backend URL
+  const raw = withoutOrigin.replace(API_BASE, '');
   return raw.split('?')[0];
 }
 
 export const authTokenInterceptor: HttpInterceptorFn = (req, next) => {
   const auth = inject(AuthService);
   try {
-    const isApi = req.url.startsWith('/api') || req.url.startsWith(API_BASE);
     const path = normalizePath(req);
+    const isApi = path.startsWith('/api');
     const needsAuth = isApi && NEEDS_BEARER.some(r => r.test(path)) && !PUBLIC_AUTH.some(r => r.test(path));
 
     const token = needsAuth ? getSessionToken() : null;
@@ -62,8 +65,8 @@ export const authTokenInterceptor: HttpInterceptorFn = (req, next) => {
   return next(req).pipe(
     catchError(err => {
       try {
-        const isApi = req.url.startsWith('/api') || req.url.startsWith(API_BASE);
         const path = normalizePath(req);
+        const isApi = path.startsWith('/api');
         const isRefresh = /\/api\/auth\/refresh-token$/.test(path);
         const isLogin = /\/api\/auth\/login$/.test(path);
         const eligible = isApi && !isRefresh && !isLogin && err?.status === 401;

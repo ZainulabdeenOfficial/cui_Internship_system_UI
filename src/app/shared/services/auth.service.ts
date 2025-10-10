@@ -119,9 +119,15 @@ export class AuthService {
       try { if (!environment.production) console.warn('[Auth] No refreshToken found; skipping refresh'); } catch {}
       throw new Error('No refresh token found');
     }
-    const res = await firstValueFrom(
-      this.http.post<RefreshTokenResponse>(url, { refreshToken }, { headers: new HttpHeaders({ 'Content-Type': 'application/json' }) })
-    );
+    const post = (u: string) => this.http.post<RefreshTokenResponse>(u, { refreshToken }, { headers: new HttpHeaders({ 'Content-Type': 'application/json' }) });
+    let res: RefreshTokenResponse;
+    try {
+      res = await firstValueFrom(post(url));
+    } catch (err: any) {
+      // Fallback: try same-origin path to use Vercel rewrites
+      const rel = '/api/auth/refresh-token';
+      res = await firstValueFrom(post(rel));
+    }
     try {
       const tok = (res as any)?.accessToken || (res as any)?.token;
       const rtk = (res as any)?.refreshToken;

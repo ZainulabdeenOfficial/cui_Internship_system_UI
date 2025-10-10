@@ -30,8 +30,8 @@ export class AdminService {
     try {
       return await firstValueFrom(post(this.createUrl));
     } catch (err: any) {
-      // Fallback: if blocked by CORS/network (status 0), retry via same-origin proxy path to use Vercel rewrites
-      if (err && (err.status === 0 || err?.name === 'HttpErrorResponse')) {
+      // Fallback: only on true network/CORS error (status 0). Do NOT fallback on 401/403/etc.
+      if (err && err.status === 0) {
         const rel = (environment.adminCreateAccountUrl?.trim() || '/api/admin/create-account');
         return await firstValueFrom(post(rel));
       }
