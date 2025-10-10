@@ -103,7 +103,7 @@ export class Login implements OnDestroy, OnInit {
     // First try backend API login
   const apiRes = await this.auth.login({ email, password }, { timeoutMs: 4000 });
   if (apiRes?.message) { this.apiMessage = apiRes.message; this.toast.info(apiRes.message); }
-      if (apiRes && apiRes.success) {
+  if (apiRes && apiRes.success) {
         // Persist initial token if present
   if (apiRes.token) { sessionStorage.setItem('authToken', apiRes.token); }
   if (apiRes.accessToken) { sessionStorage.setItem('accessToken', apiRes.accessToken); sessionStorage.setItem('authToken', apiRes.accessToken); }
@@ -116,12 +116,18 @@ export class Login implements OnDestroy, OnInit {
           } catch {}
         }
         if (this.remember) localStorage.setItem('lastStudentEmail', email);
-        // Determine role from API user if provided; default to student
+        // Determine role from API user if provided; do NOT default silently
   const apiRole = (apiRes.role || apiRes.user?.role || '').toLowerCase();
+        if (!apiRole) {
+          const msg = 'User not found or role not assigned';
+          this.error = msg; this.toast.danger(msg);
+          return;
+        }
         // Role-based redirect handling consolidated
         if (apiRole === 'admin') {
           this.store.currentUser.set({ role: 'admin' });
           this.store.currentStudentId.set(null);
+          try { localStorage.setItem('currentUser', JSON.stringify({ role: 'admin' })); localStorage.setItem('currentStudentId', JSON.stringify(null)); } catch {}
           this.toast.success('Logged in as Admin');
           this.router.navigate(['/admin']);
         } else if (apiRole === 'faculty') {
@@ -131,6 +137,7 @@ export class Login implements OnDestroy, OnInit {
           if (!f) { this.store.addFacultySupervisor(apiRes.user?.name || email.split('@')[0], email, undefined, password); f = this.store.facultySupervisors().find(u => u.email.toLowerCase() === lower)!; }
           this.store.currentUser.set({ role: 'faculty', facultyId: f.id });
           this.store.currentStudentId.set(null);
+          try { localStorage.setItem('currentUser', JSON.stringify({ role: 'faculty', facultyId: f.id })); localStorage.setItem('currentStudentId', JSON.stringify(null)); } catch {}
           this.toast.success('Logged in as Faculty');
           this.router.navigate(['/faculty']);
         } else if (apiRole === 'site') {
@@ -139,15 +146,23 @@ export class Login implements OnDestroy, OnInit {
           if (!ssv) { const companyId = undefined; this.store.addSiteSupervisor(apiRes.user?.name || email.split('@')[0], email, companyId, password); ssv = this.store.siteSupervisors().find(u => u.email.toLowerCase() === lower)!; }
           this.store.currentUser.set({ role: 'site', siteId: ssv.id });
           this.store.currentStudentId.set(null);
+          try { localStorage.setItem('currentUser', JSON.stringify({ role: 'site', siteId: ssv.id })); localStorage.setItem('currentStudentId', JSON.stringify(null)); } catch {}
           this.toast.success('Logged in as Site Supervisor');
           this.router.navigate(['/site']);
-        } else {
-          // Default student flow
+        } else if (apiRole === 'student') {
+          // Student flow
           const lower = email.toLowerCase();
           let s = this.store.students().find(u => u.email.toLowerCase() === lower);
           if (!s) {
             const name = (apiRes.user?.name as string) || email.split('@')[0];
             const regNo = (apiRes.user?.regNo as string) || (apiRes.user?.registrationNo as string) || '';
+            // If no local student exists, guide user instead of silently creating
+            if (!name && !regNo) {
+              const msg = 'User not found. Please sign up to continue.';
+              this.error = msg; this.toast.danger(msg);
+              this.router.navigate(['/signup']);
+              return;
+            }
             s = this.store.createStudent({ name, email, password, registrationNo: regNo });
           }
           this.store.currentStudentId.set(s.id);
@@ -158,6 +173,10 @@ export class Login implements OnDestroy, OnInit {
           } catch {}
           this.toast.success('Logged in as Student');
           this.router.navigate(['/student']);
+        } else {
+          const msg = 'User role is invalid. Contact support.';
+          this.error = msg; this.toast.danger(msg);
+          return;
         }
         // Basic audit log (local only) - could be sent to backend later
   try { sessionStorage.setItem('lastLoginMeta', JSON.stringify({ ts: Date.now(), email, role: apiRole || 'student' })); } catch {}

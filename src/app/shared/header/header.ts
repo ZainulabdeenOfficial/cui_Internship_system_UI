@@ -14,6 +14,11 @@ import { FormsModule } from '@angular/forms';
 export class Header implements OnInit, OnDestroy {
   showMobileMenu = false;
   scrolled = false;
+  // Draft models for Save-based editing instead of instant update-on-type
+  studentDraft: { bio?: string } = {};
+  facultyDraft: { name?: string; department?: string; bio?: string } = {};
+  siteDraft: { name?: string; bio?: string } = {};
+  adminDraft: { name?: string; bio?: string } = {};
   private onScroll = () => {
     this.scrolled = (window.scrollY || document.documentElement.scrollTop || 0) > 8;
   };
@@ -23,6 +28,8 @@ export class Header implements OnInit, OnDestroy {
     window.addEventListener('scroll', this.onScroll, { passive: true });
     // initialize state in case page is already scrolled (e.g., deep links)
     this.onScroll();
+    // initialize drafts from current profiles
+    this.refreshDrafts();
   }
   ngOnDestroy(): void {
     window.removeEventListener('scroll', this.onScroll);
@@ -31,6 +38,7 @@ export class Header implements OnInit, OnDestroy {
   // toggle mobile menu
   toggleMenu() {
     this.showMobileMenu = !this.showMobileMenu;
+    if (this.showMobileMenu) this.refreshDrafts();
   }
 
   // logout and redirect to role-specific login screen
@@ -47,11 +55,22 @@ export class Header implements OnInit, OnDestroy {
     if (!id) return undefined;
     return this.store.facultySupervisors().find(f => f.id === id);
   }
+  private refreshDrafts() {
+    const st = this.myStudent();
+    this.studentDraft = { bio: st?.bio };
+    const f = this.myFaculty();
+    this.facultyDraft = { name: f?.name, department: f?.department, bio: f?.bio };
+    const si = this.mySite();
+    this.siteDraft = { name: si?.name, bio: si?.bio };
+    const ad = this.myAdmin();
+    this.adminDraft = { name: ad?.name, bio: ad?.bio };
+  }
   updateFacultyProfile(changes: any) {
     const id = this.store.currentUser()?.facultyId;
     if (!id) return;
     this.store.updateFacultySupervisor(id, changes);
   }
+  saveFacultyProfile() { this.updateFacultyProfile(this.facultyDraft); }
   async onAvatarSelected(evt: Event) {
     const input = evt.target as HTMLInputElement;
     const file = input?.files?.[0];
@@ -73,6 +92,7 @@ export class Header implements OnInit, OnDestroy {
     if (!id) return;
     this.store.updateStudent(id, changes);
   }
+  saveStudentProfile() { this.updateStudentProfile(this.studentDraft); }
   async onStudentAvatarSelected(evt: Event) {
     const input = evt.target as HTMLInputElement;
     const file = input?.files?.[0];
@@ -103,6 +123,7 @@ export class Header implements OnInit, OnDestroy {
     if (!id) return;
     this.store.updateSiteSupervisor(id, changes);
   }
+  saveSiteProfile() { this.updateSiteProfile(this.siteDraft); }
   async onSiteAvatarSelected(evt: Event) {
     const input = evt.target as HTMLInputElement;
     const file = input?.files?.[0];
@@ -125,6 +146,7 @@ export class Header implements OnInit, OnDestroy {
   // Admin profile helpers
   myAdmin() { return this.store.adminProfile(); }
   updateAdminProfile(changes: any) { this.store.updateAdminProfile(changes); }
+  saveAdminProfile() { this.updateAdminProfile(this.adminDraft); }
   async onAdminAvatarSelected(evt: Event) {
     const input = evt.target as HTMLInputElement;
     const file = input?.files?.[0];
