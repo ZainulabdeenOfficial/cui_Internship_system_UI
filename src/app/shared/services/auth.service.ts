@@ -41,7 +41,7 @@ export class AuthService {
         // Save tokens if present
         try {
           const atk = anyRes.accessToken || anyRes.token;
-          const rtk = anyRes.refreshToken;
+          const rtk = anyRes.refreshToken || anyRes?.data?.refreshToken || anyRes?.user?.refreshToken;
           if (atk) sessionStorage.setItem('authToken', atk);
           if (atk) sessionStorage.setItem('accessToken', atk);
           if (rtk) localStorage.setItem('refreshToken', rtk);
@@ -115,6 +115,10 @@ export class AuthService {
     const url = `${absBase}/api/auth/refresh-token`;
     let refreshToken: string | null = null;
     try { refreshToken = localStorage.getItem('refreshToken'); } catch {}
+    if (!refreshToken) {
+      try { if (!environment.production) console.warn('[Auth] No refreshToken found; skipping refresh'); } catch {}
+      throw new Error('No refresh token found');
+    }
     const res = await firstValueFrom(
       this.http.post<RefreshTokenResponse>(url, { refreshToken }, { headers: new HttpHeaders({ 'Content-Type': 'application/json' }) })
     );
