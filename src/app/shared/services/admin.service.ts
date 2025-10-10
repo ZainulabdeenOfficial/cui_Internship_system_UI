@@ -12,6 +12,11 @@ export class AdminService {
   private createUrl = (() => {
     const path = (environment.adminCreateAccountUrl?.trim() || '/api/admin/create-account');
     const absBase = environment.apiBaseUrl.replace(/\/$/, '');
+    // In production on Vercel, prefer same-origin relative path so vercel.json rewrites proxy to backend (no CORS)
+    if (environment.production) {
+      return path.startsWith('http') ? path : (path || '/api/admin/create-account');
+    }
+    // In development, compose absolute backend URL
     return path.startsWith('http') ? path : `${absBase}${path.startsWith('/') ? '' : '/'}${path}`;
   })();
 
