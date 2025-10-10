@@ -38,6 +38,14 @@ export class AuthService {
         let token = anyRes.token || anyRes.accessToken;
         const user = anyRes.user ?? anyRes.data ?? undefined;
         const role = (user?.role || anyRes.role || '').toString();
+        // Save tokens if present
+        try {
+          const atk = anyRes.accessToken || anyRes.token;
+          const rtk = anyRes.refreshToken;
+          if (atk) sessionStorage.setItem('authToken', atk);
+          if (atk) sessionStorage.setItem('accessToken', atk);
+          if (rtk) localStorage.setItem('refreshToken', rtk);
+        } catch {}
       // If API omitted token but set success, try refresh once
       if (!token) {
         try {
@@ -105,10 +113,16 @@ export class AuthService {
   async refreshAccessToken(): Promise<RefreshTokenResponse> {
     const absBase = environment.apiBaseUrl.replace(/\/$/, '');
     const url = `${absBase}/api/auth/refresh-token`;
-    const res = await firstValueFrom(this.http.get<RefreshTokenResponse>(url));
+    let refreshToken: string | null = null;
+    try { refreshToken = localStorage.getItem('refreshToken'); } catch {}
+    const res = await firstValueFrom(
+      this.http.post<RefreshTokenResponse>(url, { refreshToken }, { headers: new HttpHeaders({ 'Content-Type': 'application/json' }) })
+    );
     try {
       const tok = (res as any)?.accessToken || (res as any)?.token;
-      if (tok) sessionStorage.setItem('authToken', tok);
+      const rtk = (res as any)?.refreshToken;
+      if (tok) { sessionStorage.setItem('authToken', tok); sessionStorage.setItem('accessToken', tok); }
+      if (rtk) { localStorage.setItem('refreshToken', rtk); }
     } catch {}
     return res;
   }

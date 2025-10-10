@@ -18,7 +18,8 @@ const PUBLIC_AUTH: RouteRule[] = [
   /^\/api\/auth\/register$/,
   /^\/api\/auth\/verify-email$/,
   /^\/api\/auth\/forgot-password$/,
-  /^\/api\/auth\/reset-password$/
+  /^\/api\/auth\/reset-password$/,
+  /^\/api\/auth\/refresh-token$/
 ];
 
 function getSessionToken(): string | null {
