@@ -26,8 +26,7 @@ export class AdminService {
     if (environment.production && this.createUrl.startsWith('http:')) throw new Error('Insecure endpoint');
     return await firstValueFrom(
       this.http.post<CreateAccountResponse>(this.createUrl, body, {
-        headers: new HttpHeaders({ 'Content-Type': 'application/json' }),
-        withCredentials: true
+        headers: new HttpHeaders({ 'Content-Type': 'application/json' })
       })
     );
   }

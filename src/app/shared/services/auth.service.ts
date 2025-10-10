@@ -104,7 +104,7 @@ export class AuthService {
 
   async refreshAccessToken(): Promise<RefreshTokenResponse> {
     const absBase = environment.apiBaseUrl.replace(/\/$/, '');
-    const url = `${absBase}/api/auth/refresh-toke`;
+    const url = `${absBase}/api/auth/refresh-token`;
     const res = await firstValueFrom(this.http.get<RefreshTokenResponse>(url));
     try {
       const tok = (res as any)?.accessToken || (res as any)?.token;
@@ -114,7 +114,7 @@ export class AuthService {
   }
 
   async generatePassword(): Promise<GeneratePasswordResponse> {
-    const url = `${this.base}/api/auth/generate-passowrd`;
+    const url = `${this.base}/api/auth/generate-password`;
     return await firstValueFrom(this.http.get<GeneratePasswordResponse>(url));
   }
 }

@@ -6,11 +6,12 @@ type RouteRule = RegExp;
 const API_BASE = environment.apiBaseUrl.replace(/\/$/, '');
 const NEEDS_BEARER: RouteRule[] = [
   /^\/api\/admin\//,
+  /^\/api\/admin\/create-account$/,
   /^\/api\/student\//,
   /^\/api\/faculty\//,
   /^\/api\/site\//,
   /^\/api\/secure\//,
-  /^\/api\/auth\/refresh-toke$/
+  /^\/api\/auth\/refresh-token$/
 ];
 const PUBLIC_AUTH: RouteRule[] = [
   /^\/api\/auth\/login$/,
@@ -50,12 +51,7 @@ export const authTokenInterceptor: HttpInterceptorFn = (req, next) => {
       if (hasBody && !req.headers.has('Content-Type')) {
         req = req.clone({ setHeaders: { 'Content-Type': 'application/json', Accept: 'application/json' } });
       }
-      // Send cookies only when same origin (API base equals current origin);
-      // many cross-origin vercel APIs respond 405/4xx to credentialed requests
-      try {
-        const sameOrigin = API_BASE.startsWith(location.origin);
-        if (sameOrigin) req = req.clone({ withCredentials: true });
-      } catch {}
+      // Avoid cross-origin cookies (most vercel endpoints reject). Use bearer token only.
     }
   } catch {}
   return next(req);
