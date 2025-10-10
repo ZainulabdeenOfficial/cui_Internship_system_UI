@@ -1,4 +1,7 @@
 import { HttpInterceptorFn, HttpRequest } from '@angular/common/http';
+import { inject } from '@angular/core';
+import { AuthService } from './auth.service';
+import { catchError, from, switchMap, throwError } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
 type RouteRule = RegExp;
@@ -37,6 +40,7 @@ function normalizePath(req: HttpRequest<any>): string {
 }
 
 export const authTokenInterceptor: HttpInterceptorFn = (req, next) => {
+  const auth = inject(AuthService);
   try {
     const isApi = req.url.startsWith('/api') || req.url.startsWith(API_BASE);
     const path = normalizePath(req);
@@ -55,5 +59,30 @@ export const authTokenInterceptor: HttpInterceptorFn = (req, next) => {
       // Avoid cross-origin cookies (most vercel endpoints reject). Use bearer token only.
     }
   } catch {}
-  return next(req);
+  return next(req).pipe(
+    catchError(err => {
+      try {
+        const isApi = req.url.startsWith('/api') || req.url.startsWith(API_BASE);
+        const path = normalizePath(req);
+        const isRefresh = /\/api\/auth\/refresh-token$/.test(path);
+        const isLogin = /\/api\/auth\/login$/.test(path);
+        const eligible = isApi && !isRefresh && !isLogin && err?.status === 401;
+        if (!eligible) return throwError(() => err);
+        // Attempt a single refresh then retry the original request with updated token
+        return from(auth.refreshAccessToken()).pipe(
+          switchMap(() => {
+            const token = getSessionToken();
+            const needsAuth = NEEDS_BEARER.some(r => r.test(path)) && !PUBLIC_AUTH.some(r => r.test(path));
+            const retried = (token && needsAuth)
+              ? req.clone({ setHeaders: { Authorization: `Bearer ${token}` } })
+              : req;
+            return next(retried);
+          }),
+          catchError(() => throwError(() => err))
+        );
+      } catch {
+        return throwError(() => err);
+      }
+    })
+  );
 };
