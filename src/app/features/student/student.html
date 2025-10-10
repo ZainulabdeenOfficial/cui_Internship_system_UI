@@ -250,7 +250,15 @@
   <div class="card mb-3" *ngIf="selectedId">
     <div class="card-header">Internship Evidence (Fiverr/Upwork/On-site/Virtual)</div>
     <div class="card-body">
-  <form (ngSubmit)="submitFreelance()" #ff="ngForm" class="row g-3">
+      <div *ngIf="!canSubmitFreelance()" class="alert alert-info mb-3">
+        Evidence submitted on
+        <strong>{{ lastFreelance()?.createdAt | date:'medium' }}</strong> — status:
+        <span class="badge" [class.text-bg-secondary]="lastFreelance()?.status==='pending'" [class.text-bg-success]="lastFreelance()?.status==='approved'" [class.text-bg-danger]="lastFreelance()?.status==='rejected'">
+          {{ lastFreelance()?.status || 'pending' }}
+        </span>.
+        Please wait for Internship Office review.
+      </div>
+      <form (ngSubmit)="submitFreelance()" #ff="ngForm" class="row g-3" *ngIf="canSubmitFreelance()">
         <div class="col-md-3">
           <label class="form-label">Mode/Platform</label>
           <select class="form-select" [(ngModel)]="freel.platform" name="platform">
@@ -319,6 +327,9 @@
           <button class="btn btn-primary" [disabled]="!evidenceValid()" type="submit">Save Evidence</button>
         </div>
       </form>
+      <div class="mt-3" *ngIf="lastFreelance()?.status==='rejected'">
+        <div class="alert alert-warning">Your previous evidence was rejected. Please update your details and submit again.</div>
+      </div>
       <div class="mt-3">
         <h6>Submitted Evidence</h6>
         <ul class="list-group">

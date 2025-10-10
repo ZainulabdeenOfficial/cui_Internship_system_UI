@@ -88,6 +88,15 @@ export class Student {
   approvals = computed(() => this.selectedId ? (this.store.approvals()[this.selectedId] ?? []) : []);
   agreements = computed(() => this.selectedId ? (this.store.agreements()[this.selectedId] ?? []) : []);
   freelances = computed(() => this.selectedId ? (this.store.freelance()[this.selectedId] ?? []) : []);
+  lastFreelance = computed(() => {
+    const list = this.freelances();
+    return list.length ? list[list.length - 1] : undefined;
+  });
+  canSubmitFreelance = computed(() => {
+    const last = this.lastFreelance();
+    if (!last) return true; // first submission allowed
+    return last.status === 'rejected'; // only allow resubmit on rejection
+  });
   get facultyList() { return this.store.facultySupervisors; }
   get siteList() { return this.store.siteSupervisors; }
   // complaints
@@ -223,6 +232,7 @@ export class Student {
   submitFreelance() {
     if (!this.selectedId) return;
   if (!this.ensureMine()) return;
+  if (!this.canSubmitFreelance()) { this.toast.warning('Evidence already submitted. Please wait for Internship Office review.'); return; }
   if (!this.evidenceValid()) { this.toast.warning('Please provide required evidence details before saving.'); return; }
   this.store.submitFreelance(this.selectedId, { ...this.freel });
   this.toast.success('Evidence saved');
