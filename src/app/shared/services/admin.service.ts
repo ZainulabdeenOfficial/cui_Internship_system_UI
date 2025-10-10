@@ -24,10 +24,18 @@ export class AdminService {
     if (!body.email || !body.name || !body.password) throw new Error('Missing required fields');
    
     if (environment.production && this.createUrl.startsWith('http:')) throw new Error('Insecure endpoint');
-    return await firstValueFrom(
-      this.http.post<CreateAccountResponse>(this.createUrl, body, {
-        headers: new HttpHeaders({ 'Content-Type': 'application/json' })
-      })
-    );
+    const post = (url: string) => this.http.post<CreateAccountResponse>(url, body, {
+      headers: new HttpHeaders({ 'Content-Type': 'application/json' })
+    });
+    try {
+      return await firstValueFrom(post(this.createUrl));
+    } catch (err: any) {
+      // Fallback: if blocked by CORS/network (status 0), retry via same-origin proxy path to use Vercel rewrites
+      if (err && (err.status === 0 || err?.name === 'HttpErrorResponse')) {
+        const rel = (environment.adminCreateAccountUrl?.trim() || '/api/admin/create-account');
+        return await firstValueFrom(post(rel));
+      }
+      throw err;
+    }
   }
 }

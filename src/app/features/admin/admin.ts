@@ -112,7 +112,9 @@ export class Admin {
   this.toast.success(res?.message || 'Internship Officer added');
       this.adminAccount = { name: '', email: '', password: '' };
     } catch (err: any) {
-  const msg = err?.error?.message || err?.message || 'Failed to add Internship Officer';
+      const status = err?.status ?? 0;
+      const networkMsg = status === 0 ? 'Network/CORS error while contacting API. Retrying via proxy failed.' : null;
+      const msg = networkMsg || err?.error?.message || err?.message || 'Failed to add Internship Officer';
       this.toast.danger(msg);
     } finally { this.creatingAdmin = false; }
   }
