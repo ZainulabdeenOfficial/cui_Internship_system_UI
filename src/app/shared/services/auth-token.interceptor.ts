@@ -30,7 +30,8 @@ function getSessionToken(): string | null {
     return sessionStorage.getItem('authToken')
       || sessionStorage.getItem('accessToken')
       || sessionStorage.getItem('token')
-      || localStorage.getItem('authToken');
+      || localStorage.getItem('authToken')
+      || localStorage.getItem('accessToken');
   } catch { return null; }
 }
 
