@@ -69,6 +69,8 @@ export type FreelanceRecord = {
   logbook?: string;
   createdAt: string;
   status?: 'pending'|'approved'|'rejected';
+  officerComment?: string;
+  resolvedAt?: string;
 };
 
 export type Complaint = {
@@ -444,9 +446,10 @@ export class StoreService {
     this.persist();
     return entry;
   }
-  reviewFreelance(studentId: string, recordId: string, decision: 'approved'|'rejected') {
+  reviewFreelance(studentId: string, recordId: string, decision: 'approved'|'rejected', officerComment?: string) {
     const list = this.freelance()[studentId] ?? [];
-    const updated = list.map(r => r.id === recordId ? { ...r, status: decision } : r);
+    const now = new Date().toISOString();
+    const updated = list.map(r => r.id === recordId ? { ...r, status: decision, officerComment, resolvedAt: now } : r);
     this.freelance.update(m => ({ ...m, [studentId]: updated }));
     this.persist();
   }

@@ -127,7 +127,7 @@
 						<ul class="dropdown-menu dropdown-menu-end p-3" style="min-width:300px">
 							<li class="mb-2">
 								<label class="form-label small mb-1">Name</label>
-																<input class="form-control form-control-sm" [(ngModel)]="facultyDraft.name" />
+								<input class="form-control form-control-sm" [(ngModel)]="facultyDraft.name" />
 								<div class="text-muted small mt-1">{{ myFaculty()?.email }}</div>
 							</li>
 							<li class="mb-2">
@@ -144,6 +144,13 @@
 							<li class="mb-2">
 								<label class="form-label small mb-1">Profile photo</label>
 								<input type="file" accept="image/*" class="form-control form-control-sm" (change)="onAvatarSelected($event)" />
+							</li>
+							<li class="mb-2">
+								<label class="form-label small mb-1">Change Password</label>
+								<div class="input-group input-group-sm mb-1"><span class="input-group-text">Old</span><input type="password" class="form-control" [(ngModel)]="changeFacultyPw.old" /></div>
+								<div class="input-group input-group-sm mb-1"><span class="input-group-text">New</span><input type="password" class="form-control" [(ngModel)]="changeFacultyPw.next" /></div>
+								<div class="input-group input-group-sm mb-2"><span class="input-group-text">Confirm</span><input type="password" class="form-control" [(ngModel)]="changeFacultyPw.confirm" /></div>
+								<button class="btn btn-sm btn-primary btn-pw" (click)="submitFacultyPassword()">Update Password</button>
 							</li>
 							<li><a class="dropdown-item" [routerLink]="['/faculty']" [queryParams]="{ tab: 'students' }">Students</a></li>
 							<li><a class="dropdown-item" [routerLink]="['/faculty']" [queryParams]="{ tab: 'details' }">Details</a></li>
@@ -173,7 +180,7 @@
 							</li>
 							<li class="mb-2">
 								<label class="form-label small mb-1">Bio</label>
-																<textarea class="form-control form-control-sm" rows="2" [(ngModel)]="siteDraft.bio"></textarea>
+								<textarea class="form-control form-control-sm" rows="2" [(ngModel)]="siteDraft.bio"></textarea>
 								<div class="text-end mt-2">
 																	<button class="btn btn-sm btn-primary btn-save" (click)="saveSiteProfile()">Save</button>
 								</div>
@@ -181,6 +188,9 @@
 							<li class="mb-2">
 								<label class="form-label small mb-1">Profile photo</label>
 								<input type="file" accept="image/*" class="form-control form-control-sm" (change)="onSiteAvatarSelected($event)" />
+							</li>
+							<li class="mb-2">
+								<div class="text-muted small">{{ mySite()?.email }}</div>
 							</li>
 							<li class="mb-2">
 								<label class="form-label small mb-1">Change Password</label>

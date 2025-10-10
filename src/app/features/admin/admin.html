@@ -11,6 +11,7 @@
     <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='compliance'" (click)="selectTab('compliance')">Log Compliance</button></li>
     <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='complaints'" (click)="selectTab('complaints')">Complaints</button></li>
     <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='scheme'" (click)="selectTab('scheme')">Scheme</button></li>
+    <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='evidence'" (click)="selectTab('evidence')">Evidence</button></li>
   </ul>
 
   <!-- Clean unified tab switcher using Angular 17+ control flow -->
@@ -44,6 +45,85 @@
         </div>
       </div>
   </div>
+  }
+  @case ('evidence') {
+    <div class="row g-3 mt-0">
+      <div class="col-12">
+        <div class="card">
+          <div class="card-header bg-light">Evidence Review (Fiverr / Upwork / On-site / Virtual)</div>
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="table table-sm mb-0 align-middle">
+                <thead>
+                  <tr>
+                    <th>Student</th>
+                    <th>Platform</th>
+                    <th>Summary</th>
+                    <th>Status</th>
+                    <th>Comment</th>
+                    <th>Decision</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (s of students(); track s.id) {
+                  <tr>
+                    <td>
+                      <div><strong>{{ s.name }}</strong> <span class="text-muted small">({{ s.email }})</span></div>
+                      <div class="small text-muted">Faculty: {{ facultyName(s.facultyId) }} | Site: {{ siteSupervisorName(s.siteId) }}</div>
+                    </td>
+                    <td>{{ latestEvidence(s.id)?.platform || '-' }}</td>
+                    <td style="max-width:420px">
+                      @if (latestEvidence(s.id); as e) {
+                        <div class="small">
+                          @if (e.platform==='Fiverr') {
+                            <div>Gigs: {{ e.gigsCompleted || 0 }} | Earnings: ${{ e.earningsUSD || 0 }} | Rating: {{ e.avgRating || '-' }}</div>
+                          } @else if (e.platform==='Upwork') {
+                            <div>Proposals: {{ e.proposalsApplied || 0 }} | Earnings: ${{ e.earningsUSD || 0 }}</div>
+                          } @else {
+                            <div>{{ e.workSummary || '—' }}</div>
+                          }
+                          <div class="text-muted">{{ e.contractSummary || e.approvalEvidence || e.clientFeedback || e.technologies || e.logbook || '—' }}</div>
+                        </div>
+                      } @else {
+                        <span class="text-muted">—</span>
+                      }
+                    </td>
+                    <td>
+                      <span class="badge"
+                        [class.text-bg-secondary]="!latestEvidence(s.id)?.status || latestEvidence(s.id)?.status==='pending'"
+                        [class.text-bg-success]="latestEvidence(s.id)?.status==='approved'"
+                        [class.text-bg-danger]="latestEvidence(s.id)?.status==='rejected'">
+                        {{ latestEvidence(s.id)?.status || 'pending' }}
+                      </span>
+                      @if (latestEvidence(s.id)?.resolvedAt) {
+                        <div class="small text-muted">{{ latestEvidence(s.id)?.resolvedAt | date:'short' }}</div>
+                      }
+                    </td>
+                    <td style="min-width:200px">
+                      <input class="form-control form-control-sm" [disabled]="!latestEvidence(s.id)" [(ngModel)]="evidenceComment[latestEvidence(s.id)?.id || '']" [name]="'ec' + (latestEvidence(s.id)?.id || '')" placeholder="Comment (optional)" />
+                      @if (latestEvidence(s.id)?.officerComment) {
+                        <div class="small text-muted mt-1">Last: {{ latestEvidence(s.id)?.officerComment }}</div>
+                      }
+                    </td>
+                    <td>
+                      <div class="d-flex gap-2">
+                        <select class="form-select form-select-sm" style="width:120px" [disabled]="!latestEvidence(s.id) || latestEvidence(s.id)?.status==='approved'" [(ngModel)]="evidenceDecision[latestEvidence(s.id)?.id || '']" [name]="'ed' + (latestEvidence(s.id)?.id || '')">
+                          <option [ngValue]="''">Choose…</option>
+                          <option [ngValue]="'approved'">Approve</option>
+                          <option [ngValue]="'rejected'">Reject</option>
+                        </select>
+                        <button class="btn btn-sm btn-outline-primary" [disabled]="!latestEvidence(s.id)" (click)="reviewEvidence(s.id)">Apply</button>
+                      </div>
+                    </td>
+                  </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   }
   @case ('applications') {
     <div class="row g-3 mt-0">

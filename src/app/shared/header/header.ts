@@ -71,6 +71,16 @@ export class Header implements OnInit, OnDestroy {
     this.store.updateFacultySupervisor(id, changes);
   }
   saveFacultyProfile() { this.updateFacultyProfile(this.facultyDraft); }
+  changeFacultyPw = { old: '', next: '', confirm: '' };
+  submitFacultyPassword() {
+    try {
+      if (this.changeFacultyPw.next !== this.changeFacultyPw.confirm) throw new Error('Passwords do not match');
+      const id = this.store.currentUser()?.facultyId;
+      if (!id) return;
+      this.store.changeFacultyPassword(id, this.changeFacultyPw.old, this.changeFacultyPw.next);
+      this.changeFacultyPw = { old: '', next: '', confirm: '' };
+    } catch {}
+  }
   async onAvatarSelected(evt: Event) {
     const input = evt.target as HTMLInputElement;
     const file = input?.files?.[0];

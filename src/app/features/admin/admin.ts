@@ -21,7 +21,7 @@ export class Admin {
     try {
       this.route.queryParamMap.subscribe(p => {
         const t = (p.get('tab') || '').toLowerCase();
-        const allowed = ['students','applications','requests','announcements','officers','faculty','companies','compliance','complaints','scheme'] as const;
+        const allowed = ['students','applications','requests','announcements','officers','faculty','companies','compliance','complaints','scheme','evidence'] as const;
         if ((allowed as readonly string[]).includes(t)) this.currentTab = t as any;
       });
     } catch {}
@@ -42,7 +42,7 @@ export class Admin {
   facultyId = '';
   siteId = '';
   selectedId: string | null = null;
-  currentTab: 'students'|'applications'|'requests'|'announcements'|'officers'|'faculty'|'companies'|'compliance'|'complaints'|'scheme' = 'students';
+  currentTab: 'students'|'applications'|'requests'|'announcements'|'officers'|'faculty'|'companies'|'compliance'|'complaints'|'scheme'|'evidence' = 'students';
   // pagination
   page = { students: 1, requests: 1, complaints: 1, faculty: 1, sites: 1, companies: 1, announcements: 1 };
   pageSize = 10;
@@ -68,6 +68,21 @@ export class Admin {
   // announcements
   announcement = { title: '', message: '', link: '', pinned: false };
   get announcements() { return this.store.announcements; }
+  // Evidence review state
+  evidenceDecision: Record<string, 'approved'|'rejected'|''> = {};
+  evidenceComment: Record<string, string> = {};
+  latestEvidence(id: string) { const list = this.store.freelance()[id] ?? []; return list.length ? list[list.length - 1] : null; }
+  reviewEvidence(id: string) {
+    const rec = this.latestEvidence(id);
+    if (!rec) return;
+    const decision = this.evidenceDecision[rec.id];
+    if (!decision) return;
+    const comment = (this.evidenceComment[rec.id] ?? '').trim() || undefined;
+    this.store.reviewFreelance(id, rec.id, decision, comment);
+    delete this.evidenceDecision[rec.id];
+    delete this.evidenceComment[rec.id];
+    this.toast.success(`Evidence ${decision}`);
+  }
 
   approve(id: string) { this.store.approveStudent(id); this.toast.success('Student approved'); }
   viewDetails(id: string) { this.selectedId = id; }
@@ -209,7 +224,7 @@ export class Admin {
   removeAnnouncement(id: string) {
     if (confirm('Remove this announcement?')) { this.store.removeAnnouncement(id); this.toast.warning('Announcement removed'); }
   }
-  facultyName(id: string) {
+  facultyName(id?: string) {
     const f = this.facultyList().find(x => x.id === id);
     return f ? `${f.name} (${f.email})` : id;
   }
@@ -226,6 +241,7 @@ export class Admin {
   designStatementsOf(id: string) { return this.designStatementsMap()[id] ?? []; }
   assignmentsOf(id: string) { return this.assignmentsMap()[id] ?? []; }
   freelanceOf(id: string) { return this.freelanceMap()[id] ?? []; }
+  latestAgreement(id: string) { const list = this.agreementsOf(id) ?? []; return list.length ? list[list.length - 1] : null; }
   requestPrimary(r: import('../../shared/services/store.service').RequestItem) {
     if (r.type === 'company') return r.name;
     // site

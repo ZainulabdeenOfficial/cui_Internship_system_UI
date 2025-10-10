@@ -97,6 +97,8 @@ export class Student {
     if (!last) return true; // first submission allowed
     return last.status === 'rejected'; // only allow resubmit on rejection
   });
+  private hasSubmittedApproval(): boolean { return (this.approvals() ?? []).length > 0; }
+  private hasSubmittedAgreement(): boolean { return (this.agreements() ?? []).length > 0; }
   get facultyList() { return this.store.facultySupervisors; }
   get siteList() { return this.store.siteSupervisors; }
   // complaints
@@ -232,6 +234,11 @@ export class Student {
   submitFreelance() {
     if (!this.selectedId) return;
   if (!this.ensureMine()) return;
+  // Gate by prerequisite forms
+  if (!this.hasSubmittedApproval() || !this.hasSubmittedAgreement()) {
+    this.toast.warning('Submit Internship Offer & Approval and the Agreement form before adding Evidence.');
+    return;
+  }
   if (!this.canSubmitFreelance()) { this.toast.warning('Evidence already submitted. Please wait for Internship Office review.'); return; }
   if (!this.evidenceValid()) { this.toast.warning('Please provide required evidence details before saving.'); return; }
   this.store.submitFreelance(this.selectedId, { ...this.freel });
