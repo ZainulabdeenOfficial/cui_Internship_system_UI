@@ -1,30 +1,32 @@
-import { Component, computed, effect, inject } from '@angular/core';
+import { Component, computed, effect } from '@angular/core';
 import { CommonModule, NgIf, NgFor } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { StoreService } from '../../shared/services/store.service';
 import { ToastService } from '../../shared/toast/toast.service';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
+import { PaginatePipe } from '../../shared/pagination/paginate.pipe';
+import { PaginatorComponent } from '../../shared/pagination/paginator';
 
 @Component({
   selector: 'app-student',
   standalone: true,
-  imports: [CommonModule, NgIf, NgFor, FormsModule],
+  imports: [CommonModule, NgIf, NgFor, FormsModule, RouterModule, PaginatePipe, PaginatorComponent],
   templateUrl: './student.html',
   styleUrl: './student.css'
 })
 export class Student {
-  private store = inject(StoreService);
-  private toast = inject(ToastService);
-  students = this.store.students;
-  me = this.store.currentUser;
+  get students() { return this.store.students; }
+  get me() { return this.store.currentUser; }
   selectedId: string | null = null;
   selectedStudent = computed(() => this.selectedId ? this.students().find(s => s.id === this.selectedId!) : undefined);
   myStudentId = computed(() => this.me()?.studentId ?? null);
   isApproved = computed(() => !!this.selectedStudent()?.approved);
-  // Keep selection locked to the logged-in student's own id
-  private lockSelection = effect(() => {
-    const mine = this.myStudentId();
-    if (mine && this.selectedId !== mine) this.selectedId = mine;
-  });
+  private lockSelection: any;
+  // tabs
+  currentTab: 'overview'|'applications'|'evidence'|'logs'|'reports'|'assignments'|'complaints'|'marks' = 'overview';
+  // pagination state per tab/list
+  page = { logs: 1, reports: 1, assignments: 1, complaints: 1, freel: 1 };
+  pageSize = 10;
 
   // forms
   newStudent = { name: '', email: '', registrationNo: '' };
@@ -86,14 +88,78 @@ export class Student {
   approvals = computed(() => this.selectedId ? (this.store.approvals()[this.selectedId] ?? []) : []);
   agreements = computed(() => this.selectedId ? (this.store.agreements()[this.selectedId] ?? []) : []);
   freelances = computed(() => this.selectedId ? (this.store.freelance()[this.selectedId] ?? []) : []);
-  facultyList = this.store.facultySupervisors;
-  siteList = this.store.siteSupervisors;
+  lastFreelance = computed(() => {
+    const list = this.freelances();
+    return list.length ? list[list.length - 1] : undefined;
+  });
+  canSubmitFreelance = computed(() => {
+    const last = this.lastFreelance();
+    if (!last) return true; // first submission allowed
+    return last.status === 'rejected'; // only allow resubmit on rejection
+  });
+  private hasSubmittedApproval(): boolean { return (this.approvals() ?? []).length > 0; }
+  private hasSubmittedAgreement(): boolean { return (this.agreements() ?? []).length > 0; }
+  get facultyList() { return this.store.facultySupervisors; }
+  get siteList() { return this.store.siteSupervisors; }
   // complaints
   complaint = { category: 'Other' as 'Technical'|'Supervisor'|'Organization'|'Other', message: '' };
   myComplaints = () => {
     if (!this.selectedId) return [] as any[];
     return this.store.complaints().filter(c => c.studentId === this.selectedId);
   };
+  constructor(private store: StoreService, private toast: ToastService, private route: ActivatedRoute, private router: Router) {
+    this.lockSelection = effect(() => {
+      const mine = this.myStudentId();
+      if (mine && this.selectedId !== mine) this.selectedId = mine;
+    });
+    // Initialize tab from query params
+    try {
+      this.route.queryParamMap.subscribe(p => {
+        const t = (p.get('tab') || '').toLowerCase();
+        const allowed = ['overview','applications','evidence','logs','reports','assignments','complaints','marks'] as const;
+        if ((allowed as readonly string[]).includes(t)) this.currentTab = t as any;
+        // guard: if not approved, restrict to overview/applications/evidence/complaints
+        const isOk = this.isApproved();
+        const visibleWhenPending = new Set(['overview','applications','evidence','complaints']);
+        if (!isOk && !visibleWhenPending.has(this.currentTab)) {
+          this.currentTab = 'applications';
+          try { this.router.navigate([], { relativeTo: this.route, queryParams: { tab: 'applications' }, queryParamsHandling: 'merge' }); } catch {}
+        }
+      });
+    } catch {}
+  }
+
+  private isApprovalComplete(): boolean {
+    const a = this.approval;
+    const required = [
+      a.studentInfo.name,
+      a.studentInfo.studentId,
+      a.studentInfo.program,
+      a.studentInfo.semester,
+      a.company.name,
+      a.company.address,
+      a.company.supervisorName,
+      a.company.supervisorEmail,
+      a.company.supervisorPhone,
+      a.internship.startDate,
+      a.internship.endDate,
+      String(a.internship.hoursPerWeek || '') ,
+      a.objectives,
+      a.outcomes
+    ];
+    const allFilled = required.every(v => !!(v && (''+v).toString().trim().length));
+    if (!allFilled) return false;
+    // basic email/phone sanity checks
+    const emailOk = /.+@.+\..+/.test(a.company.supervisorEmail.trim());
+    const phoneOk = a.company.supervisorPhone.replace(/[^0-9]/g, '').length >= 7;
+    const hoursOk = (a.internship.hoursPerWeek || 0) > 0;
+    return emailOk && phoneOk && hoursOk;
+  }
+  selectTab(tab: Student['currentTab']) {
+    this.currentTab = tab;
+    // Reflect in URL for deep links
+    try { this.router.navigate([], { relativeTo: this.route, queryParams: { tab }, queryParamsHandling: 'merge' }); } catch {}
+  }
 
   meetsFiverr(rec: any) {
     return (rec.gigsCompleted ?? 0) >= 2 || (rec.earningsUSD ?? 0) >= 500;
@@ -168,6 +234,13 @@ export class Student {
   submitFreelance() {
     if (!this.selectedId) return;
   if (!this.ensureMine()) return;
+  // Gate by prerequisite forms
+  if (!this.hasSubmittedApproval() || !this.hasSubmittedAgreement()) {
+    this.toast.warning('Submit Internship Offer & Approval and the Agreement form before adding Evidence.');
+    return;
+  }
+  if (!this.canSubmitFreelance()) { this.toast.warning('Evidence already submitted. Please wait for Internship Office review.'); return; }
+  if (!this.evidenceValid()) { this.toast.warning('Please provide required evidence details before saving.'); return; }
   this.store.submitFreelance(this.selectedId, { ...this.freel });
   this.toast.success('Evidence saved');
     this.freel = {
@@ -176,10 +249,32 @@ export class Student {
       mentorName: '', mentorContact: '', technologies: '', logbook: ''
     };
   }
+  evidenceValid(): boolean {
+    const f = this.freel;
+    // Common sanity: numeric fields should be >= 0
+    const earn = Number(f.earningsUSD || 0);
+    const gigs = Number(f.gigsCompleted || 0);
+    const props = Number(f.proposalsApplied || 0);
+    const hasText = [f.clientFeedback, f.approvalEvidence, f.contractSummary, f.workSummary, f.technologies, f.logbook]
+      .some(v => !!(v && String(v).trim().length));
+    if (f.platform === 'Fiverr') {
+      // require at least some activity: gigs or earnings or meaningful text
+      return gigs > 0 || earn > 0 || hasText;
+    }
+    if (f.platform === 'Upwork') {
+      return props > 0 || earn > 0 || hasText;
+    }
+    // OnSite / Virtual: require at least a work summary or any meaningful text
+    return !!(f.workSummary && f.workSummary.trim().length) || hasText;
+  }
 
   submitApproval() {
     if (!this.selectedId) return;
   if (!this.ensureMine()) return;
+  if (!this.isApprovalComplete()) {
+    this.toast.warning('Please complete all fields in Internship Offer & Approval (student info, company, supervisor, internship, objectives, outcomes) before submitting.');
+    return;
+  }
   this.store.submitApproval(this.selectedId, { ...this.approval });
   this.toast.success('Approval form submitted');
     this.approval = {

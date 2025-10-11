@@ -50,3 +50,16 @@
 .navbar .rounded-circle {
   box-shadow: 0 0 0 1px rgba(0,0,0,.05) inset;
 }
+
+/* Save button polish */
+.btn-save { min-width: 80px; box-shadow: 0 .25rem .5rem rgba(13,110,253,.25); }
+
+/* Password button with subtle attention animation */
+.btn-pw {
+  position: relative;
+  transition: transform .15s ease, box-shadow .2s ease, border-color .2s ease;
+}
+.btn-pw:hover { transform: translateY(-1px); box-shadow: 0 .4rem .8rem rgba(13,110,253,.3); }
+.btn-pw:active { transform: translateY(0); }
+@keyframes glowPulse { 0% { box-shadow: 0 0 0 0 rgba(13,110,253,.0);} 50% { box-shadow: 0 0 0 3px rgba(13,110,253,.22);} 100% { box-shadow: 0 0 0 0 rgba(13,110,253,.0);} }
+.btn-pw { animation: glowPulse 2.4s ease-in-out 1; }

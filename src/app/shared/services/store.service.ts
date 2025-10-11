@@ -68,6 +68,9 @@ export type FreelanceRecord = {
   technologies?: string;
   logbook?: string;
   createdAt: string;
+  status?: 'pending'|'approved'|'rejected';
+  officerComment?: string;
+  resolvedAt?: string;
 };
 
 export type Complaint = {
@@ -436,12 +439,19 @@ export class StoreService {
     return entry;
   }
   submitFreelance(studentId: string, rec: Omit<FreelanceRecord, 'id'|'createdAt'>) {
-    const entry: FreelanceRecord = { id: crypto.randomUUID(), createdAt: new Date().toISOString(), ...rec };
+    const entry: FreelanceRecord = { id: crypto.randomUUID(), createdAt: new Date().toISOString(), status: 'pending', ...rec };
     this.freelance.update(m => ({ ...m, [studentId]: [...(m[studentId] ?? []), entry] }));
     // set student's internship mode based on entry
     this.students.update(a => a.map(s => s.id === studentId ? { ...s, internshipMode: entry.platform } : s));
     this.persist();
     return entry;
+  }
+  reviewFreelance(studentId: string, recordId: string, decision: 'approved'|'rejected', officerComment?: string) {
+    const list = this.freelance()[studentId] ?? [];
+    const now = new Date().toISOString();
+    const updated = list.map(r => r.id === recordId ? { ...r, status: decision, officerComment, resolvedAt: now } : r);
+    this.freelance.update(m => ({ ...m, [studentId]: updated }));
+    this.persist();
   }
   submitDesignStatement(studentId: string, ds: Omit<DesignStatement, 'id'|'createdAt'>) {
     const entry: DesignStatement = { id: crypto.randomUUID(), createdAt: new Date().toISOString(), ...ds };

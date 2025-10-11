@@ -1,21 +1,38 @@
-import { Component, computed, inject } from '@angular/core';
+import { Component, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { StoreService } from '../../shared/services/store.service';
 import { ToastService } from '../../shared/toast/toast.service';
+import { ActivatedRoute, Router } from '@angular/router';
+import { PaginatePipe } from '../../shared/pagination/paginate.pipe';
+import { PaginatorComponent } from '../../shared/pagination/paginator';
 
 @Component({
   selector: 'app-site-supervisor',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, PaginatePipe, PaginatorComponent],
   templateUrl: './site-supervisor.html',
   styleUrl: './site-supervisor.css'
 })
 export class SiteSupervisor {
-  private store = inject(StoreService);
-  private toast = inject(ToastService);
-  students = this.store.students;
+  constructor(private store: StoreService, private toast: ToastService, private route: ActivatedRoute, private router: Router) {
+    try {
+      this.route.queryParamMap.subscribe(p => {
+        const t = (p.get('tab') || '').toLowerCase();
+        const allowed = ['students','details','reports','profile','password'] as const;
+        if ((allowed as readonly string[]).includes(t)) this.currentTab = t as any;
+      });
+    } catch {}
+  }
+  get students() { return this.store.students; }
   selectedId: string | null = null;
+  currentTab: 'students'|'details'|'reports'|'profile'|'password' = 'students';
+  page = { students: 1 };
+  pageSize = 10;
+  selectTab(tab: SiteSupervisor['currentTab']) {
+    this.currentTab = tab;
+    try { this.router.navigate([], { relativeTo: this.route, queryParams: { tab }, queryParamsHandling: 'merge' }); } catch {}
+  }
   selectedStudent = computed(() => this.selectedId ? this.students().find(s => s.id === this.selectedId!) : undefined);
   logs() { return this.selectedId ? (this.store.logs()[this.selectedId] ?? []) : []; }
   reports() { return this.selectedId ? (this.store.reports()[this.selectedId] ?? []) : []; }
@@ -42,8 +59,8 @@ export class SiteSupervisor {
     const finId = this.finalReportId(studentId);
     const mid = this.batchMid[studentId];
     const fin = this.batchFinal[studentId];
-    if (midId != null && mid != null && !isNaN(mid as any)) this.store.setReportScore(studentId, midId, Number(mid));
-    if (finId != null && fin != null && !isNaN(fin as any)) this.store.setReportScore(studentId, finId, Number(fin));
+  if (midId != null && mid != null && !isNaN(mid as any)) this.store.setReportScore(studentId, midId, Math.max(0, Number(mid)));
+  if (finId != null && fin != null && !isNaN(fin as any)) this.store.setReportScore(studentId, finId, Math.max(0, Number(fin)));
     this.toast.success('Scores saved');
   }
   saveBatchAll() {
@@ -52,7 +69,7 @@ export class SiteSupervisor {
   }
   mid = { title: '', content: '' };
   fin = { title: '', content: '' };
-  setSiteMarks(v: number) { if (this.selectedId) { this.store.setSiteMarks(this.selectedId, v); this.toast.success('Site marks updated'); } }
+  setSiteMarks(v: number) { if (this.selectedId) { this.store.setSiteMarks(this.selectedId, Math.max(0, Number(v))); this.toast.success('Site marks updated'); } }
   submitMid() { if (this.selectedId && this.mid.title) { this.store.submitReport(this.selectedId, { type: 'mid', title: this.mid.title, content: this.mid.content }); this.mid = { title: '', content: '' }; this.toast.success('Mid report submitted'); } }
   submitFinal() { if (this.selectedId && this.fin.title) { this.store.submitReport(this.selectedId, { type: 'site-final', title: this.fin.title, content: this.fin.content }); this.fin = { title: '', content: '' }; this.toast.success('Final report submitted'); } }
   // Change password for logged-in site supervisor
@@ -70,4 +87,42 @@ export class SiteSupervisor {
       this.toast.danger(e?.message || 'Unable to change password');
     }
   }
+
+  // Profile editing (Site) with draft + save and avatar upload
+  siteProfile() {
+    const id = this.mySiteId();
+    if (!id) return undefined;
+    return this.store.siteSupervisors().find(s => s.id === id);
+  }
+  draft = { name: '', bio: '' };
+  initDraftFromProfile() {
+    const p = this.siteProfile();
+    this.draft = { name: p?.name || '', bio: p?.bio || '' };
+  }
+  saveProfile() {
+    const id = this.mySiteId();
+    if (!id) return;
+    this.store.updateSiteSupervisor(id, { name: this.draft.name, bio: this.draft.bio });
+    this.toast.success('Profile saved');
+  }
+  async onAvatarSelected(evt: Event) {
+    const input = evt.target as HTMLInputElement;
+    const file = input?.files?.[0];
+    if (!file) return;
+    const base64 = await fileToBase64(file);
+    const id = this.mySiteId(); if (!id) return;
+    this.store.updateSiteSupervisor(id, { avatarBase64: base64 });
+    this.toast.success('Profile photo updated');
+    input.value = '';
+  }
+}
+
+// small util to convert File->base64 (scoped to this feature)
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
 }

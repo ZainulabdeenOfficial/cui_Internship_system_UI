@@ -1,38 +1,61 @@
-import { Component, inject } from '@angular/core';
+import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { StoreService } from '../../shared/services/store.service';
 import { ToastService } from '../../shared/toast/toast.service';
+import { ActivatedRoute, Router } from '@angular/router';
+import { PaginatePipe } from '../../shared/pagination/paginate.pipe';
+import { PaginatorComponent } from '../../shared/pagination/paginator';
+import { AdminService } from '../../shared/services/admin.service';
+import { CreateAccountRequest } from '../../shared/models/admin/create-account.models';
 
 @Component({
   selector: 'app-admin',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, PaginatePipe, PaginatorComponent],
   templateUrl: './admin.html',
   styleUrl: './admin.css'
 })
 export class Admin {
-  private store = inject(StoreService);
-  private toast = inject(ToastService);
-  students = this.store.students;
-  complaints = this.store.complaints;
-  requests = this.store.requests;
-  approvals = this.store.approvals;
-  logsMap = this.store.logs;
-  reportsMap = this.store.reports;
-  agreementsMap = this.store.agreements;
-  designStatementsMap = this.store.designStatements;
-  assignmentsMap = this.store.assignments;
-  freelanceMap = this.store.freelance;
-  facultyList = this.store.facultySupervisors;
-  companyList = this.store.companies;
-  siteList = this.store.siteSupervisors;
+  constructor(private store: StoreService, private toast: ToastService, private route: ActivatedRoute, private router: Router, private adminApi: AdminService) {
+    try {
+      this.route.queryParamMap.subscribe(p => {
+        const t = (p.get('tab') || '').toLowerCase();
+        const allowed = ['students','applications','requests','announcements','officers','faculty','companies','compliance','complaints','scheme','evidence'] as const;
+        if ((allowed as readonly string[]).includes(t)) this.currentTab = t as any;
+      });
+    } catch {}
+  }
+  get students() { return this.store.students; }
+  get complaints() { return this.store.complaints; }
+  get requests() { return this.store.requests; }
+  get approvals() { return this.store.approvals; }
+  get logsMap() { return this.store.logs; }
+  get reportsMap() { return this.store.reports; }
+  get agreementsMap() { return this.store.agreements; }
+  get designStatementsMap() { return this.store.designStatements; }
+  get assignmentsMap() { return this.store.assignments; }
+  get freelanceMap() { return this.store.freelance; }
+  get facultyList() { return this.store.facultySupervisors; }
+  get companyList() { return this.store.companies; }
+  get siteList() { return this.store.siteSupervisors; }
   facultyId = '';
   siteId = '';
   selectedId: string | null = null;
-  officers = this.store.internshipOfficers;
+  currentTab: 'students'|'applications'|'requests'|'announcements'|'officers'|'faculty'|'companies'|'compliance'|'complaints'|'scheme'|'evidence' = 'students';
+  // pagination
+  page = { students: 1, requests: 1, complaints: 1, faculty: 1, sites: 1, companies: 1, announcements: 1 };
+  pageSize = 10;
+  selectTab(tab: Admin['currentTab']) {
+    this.currentTab = tab;
+    try { this.router.navigate([], { relativeTo: this.route, queryParams: { tab }, queryParamsHandling: 'merge' }); } catch {}
+  }
+  get officers() { return this.store.internshipOfficers; }
   officer = { name: '', email: '' };
   responses: Record<string, string> = {};
+  // create ADMIN account form (absolute API)
+  adminAccount: { name: string; email: string; password: string } = { name: '', email: '', password: '' };
+  creatingAdmin = false;
   // forms for adding supervisors/company
   faculty = { name: '', email: '', department: '', password: '' };
   company = { name: '', address: '' };
@@ -44,7 +67,22 @@ export class Admin {
   siteNewPw: Record<string, string> = {};
   // announcements
   announcement = { title: '', message: '', link: '', pinned: false };
-  announcements = this.store.announcements; // expose to template
+  get announcements() { return this.store.announcements; }
+  // Evidence review state
+  evidenceDecision: Record<string, 'approved'|'rejected'|''> = {};
+  evidenceComment: Record<string, string> = {};
+  latestEvidence(id: string) { const list = this.store.freelance()[id] ?? []; return list.length ? list[list.length - 1] : null; }
+  reviewEvidence(id: string) {
+    const rec = this.latestEvidence(id);
+    if (!rec) return;
+    const decision = this.evidenceDecision[rec.id];
+    if (!decision) return;
+    const comment = (this.evidenceComment[rec.id] ?? '').trim() || undefined;
+    this.store.reviewFreelance(id, rec.id, decision, comment);
+    delete this.evidenceDecision[rec.id];
+    delete this.evidenceComment[rec.id];
+    this.toast.success(`Evidence ${decision}`);
+  }
 
   approve(id: string) { this.store.approveStudent(id); this.toast.success('Student approved'); }
   viewDetails(id: string) { this.selectedId = id; }
@@ -61,6 +99,26 @@ export class Admin {
     this.store.addInternshipOfficer(this.officer.name, this.officer.email);
     this.officer = { name: '', email: '' };
     this.toast.success('Internship Officer added');
+  }
+  async createAdminAccount() {
+    const name = (this.adminAccount.name || '').trim();
+    const email = (this.adminAccount.email || '').trim();
+    const password = (this.adminAccount.password || '').trim();
+    if (!name || !email || !password) { this.toast.warning('Name, email and password are required'); return; }
+  const payload: CreateAccountRequest = { name, email, password, role: 'ADMIN' } as any;
+    try {
+      this.creatingAdmin = true;
+  const res = await this.adminApi.createAccount(payload);
+  this.toast.success(res?.message || 'Internship Officer added');
+      this.adminAccount = { name: '', email: '', password: '' };
+    } catch (err: any) {
+      const status = err?.status ?? 0;
+      const networkMsg = status === 0 ? 'Network/CORS error while contacting API. Retrying via proxy failed.' : null;
+  const unauthorized = status === 401 ? 'Unauthorized: Your session may be expired or your account lacks ADMIN permission. Try re‑logging in to refresh tokens, then retry. If it persists, verify your role on the backend.' : null;
+  const backendDetail = err?.error?.details || err?.error?.error || err?.error?.reason;
+  const msg = unauthorized || networkMsg || backendDetail || err?.error?.message || err?.message || 'Failed to add Internship Officer';
+      this.toast.danger(msg);
+    } finally { this.creatingAdmin = false; }
   }
   addFaculty() {
     const name = this.faculty.name?.trim();
@@ -170,7 +228,7 @@ export class Admin {
   removeAnnouncement(id: string) {
     if (confirm('Remove this announcement?')) { this.store.removeAnnouncement(id); this.toast.warning('Announcement removed'); }
   }
-  facultyName(id: string) {
+  facultyName(id?: string) {
     const f = this.facultyList().find(x => x.id === id);
     return f ? `${f.name} (${f.email})` : id;
   }
@@ -187,6 +245,7 @@ export class Admin {
   designStatementsOf(id: string) { return this.designStatementsMap()[id] ?? []; }
   assignmentsOf(id: string) { return this.assignmentsMap()[id] ?? []; }
   freelanceOf(id: string) { return this.freelanceMap()[id] ?? []; }
+  latestAgreement(id: string) { const list = this.agreementsOf(id) ?? []; return list.length ? list[list.length - 1] : null; }
   requestPrimary(r: import('../../shared/services/store.service').RequestItem) {
     if (r.type === 'company') return r.name;
     // site
