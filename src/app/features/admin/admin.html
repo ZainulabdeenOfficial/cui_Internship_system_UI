@@ -261,7 +261,7 @@
         <div class="card">
           <div class="card-header bg-light">Internship Officers</div>
           <div class="card-body">
-            <div class="row mt-3">
+            <div class="row mt-1">
               <div class="col-12 col-md-6 ms-auto">
                 <input class="form-control" placeholder="Search officers..." [(ngModel)]="search.officers" name="osearch" />
               </div>
@@ -305,7 +305,7 @@
             <div class="row g-3 align-items-end">
               <div class="col-12 col-sm-6 col-md-4">
                 <label class="form-label">Officer Name</label>
-                <input class="form-control" [(ngModel)]="adminAccount.name" name="aname" />
+                <input class="form-control" [(ngModel)]="adminAccount.name" name="aname" (blur)="onAdminOfficerNameBlur()" />
               </div>
               <div class="col-12 col-sm-6 col-md-4">
                 <label class="form-label">Officer Email</label>
@@ -363,8 +363,8 @@
               <table class="table table-sm align-middle">
                 <thead><tr><th>Name</th><th>Email</th><th>Department</th><th>Password</th><th>Actions</th></tr></thead>
                 <tbody>
-                  @for (f of (facultyList() | paginate: page.faculty : pageSize); track f.id) {
-                  <tr [hidden]="(search.faculty && !(f.name + ' ' + f.email).toLowerCase().includes(search.faculty.toLowerCase())) || (filter.facultyDept && (f.department||'').toLowerCase().indexOf(filter.facultyDept.toLowerCase())===-1)">
+                  @for (f of (filteredFaculty() | paginate: page.faculty : pageSize); track f.id) {
+                  <tr>
                     <td>{{ f.name }}</td>
                     <td>{{ f.email }}</td>
                     <td>{{ f.department || '-' }}</td>

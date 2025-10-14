@@ -217,6 +217,14 @@ export class Admin {
       this.toast.danger(msg);
     } finally { this.creatingAdmin = false; }
   }
+  onAdminOfficerNameBlur() {
+    const name = (this.adminAccount.name || '').trim();
+    const email = (this.adminAccount.email || '').trim();
+    if (!email && name) {
+      const taken = new Set(this.allEmails());
+      this.adminAccount.email = this.suggestEmail(name, this.uniDomain, taken);
+    }
+  }
   async addFaculty() {
     const name = this.faculty.name?.trim() || '';
     const email = this.faculty.email?.trim() || '';
@@ -403,6 +411,23 @@ export class Admin {
     if (!id) return '-';
     const s = this.siteList().find(x => x.id === id);
     return s?.name ?? '-';
+  }
+  // Filtered views
+  filteredFaculty() {
+    const list = this.facultyList() || [];
+    const q = (this.search.faculty || '').trim().toLowerCase();
+    const dept = (this.filter.facultyDept || '').trim().toLowerCase();
+    return list.filter(f => {
+      if (q) {
+        const hay = ((f.name || '') + ' ' + (f.email || '')).toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      if (dept) {
+        const d = (f.department || '').toLowerCase();
+        if (!d.includes(dept)) return false;
+      }
+      return true;
+    });
   }
   // Per-student data getters
   approvalsOf(id: string) { return this.approvals()[id] ?? []; }
