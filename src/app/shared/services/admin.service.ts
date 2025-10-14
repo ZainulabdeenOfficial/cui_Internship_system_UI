@@ -70,4 +70,23 @@ export class AdminService {
       throw err;
     }
   }
+
+  async addCompany(payload: { name: string; email: string; phone: string; address: string; website: string; industry: string; description: string }): Promise<{ message?: string; id?: string }> {
+    const path = (environment as any).adminAddCompanyUrl?.trim() || '/api/admin/add-compan';
+    const url = environment.production ? (path.startsWith('http') ? path : path) : `${environment.apiBaseUrl.replace(/\/$/, '')}${path.startsWith('/') ? '' : '/'}${path}`;
+    const token = (() => { try { return sessionStorage.getItem('accessToken') || sessionStorage.getItem('authToken') || localStorage.getItem('accessToken') || localStorage.getItem('authToken'); } catch { return null; } })();
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    const body = {
+      name: (payload.name || '').trim(),
+      email: (payload.email || '').trim(),
+      phone: (payload.phone || '').trim(),
+      address: (payload.address || '').trim(),
+      website: (payload.website || '').trim(),
+      industry: (payload.industry || '').trim(),
+      description: (payload.description || '').trim()
+    };
+    if (!body.name || !body.email) throw new Error('Name and email are required');
+    return await firstValueFrom(this.http.post<{ message?: string; id?: string }>(url, body, { headers: new HttpHeaders(headers) }));
+  }
 }

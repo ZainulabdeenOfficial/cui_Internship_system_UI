@@ -21,7 +21,7 @@ export class Admin {
     try {
       this.route.queryParamMap.subscribe(p => {
         const t = (p.get('tab') || '').toLowerCase();
-        const allowed = ['students','applications','requests','announcements','officers','faculty','companies','compliance','complaints','scheme','evidence'] as const;
+        const allowed = ['students','applications','requests','announcements','officers','faculty','companies','sites','compliance','complaints','scheme','evidence'] as const;
         if ((allowed as readonly string[]).includes(t)) this.currentTab = t as any;
       });
     } catch {}
@@ -42,7 +42,7 @@ export class Admin {
   facultyId = '';
   siteId = '';
   selectedId: string | null = null;
-  currentTab: 'students'|'applications'|'requests'|'announcements'|'officers'|'faculty'|'companies'|'compliance'|'complaints'|'scheme'|'evidence' = 'students';
+  currentTab: 'students'|'applications'|'requests'|'announcements'|'officers'|'faculty'|'companies'|'sites'|'compliance'|'complaints'|'scheme'|'evidence' = 'students';
   // pagination
   page = { students: 1, requests: 1, complaints: 1, faculty: 1, sites: 1, companies: 1, announcements: 1 };
   pageSize = 10;
@@ -58,7 +58,7 @@ export class Admin {
   creatingAdmin = false;
   // forms for adding supervisors/company
   faculty = { name: '', email: '', department: '', password: '' };
-  company = { name: '', address: '' };
+  company = { name: '', email: '', phone: '', address: '', website: '', industry: '', description: '' };
   site = { name: '', email: '', companyId: '', password: '' };
   // assign company
   companyForStudent: Record<string, string> = {};
@@ -84,6 +84,39 @@ export class Admin {
     this.toast.success(`Evidence ${decision}`);
   }
 
+  private uniDomain = '@cuisahiwal.edu.pk';
+  private allEmails(): string[] {
+    const set = new Set<string>();
+    try {
+      (this.students() || []).forEach(s => s.email && set.add(s.email.toLowerCase()));
+      (this.facultyList() || []).forEach(f => f.email && set.add(f.email.toLowerCase()));
+      (this.siteList() || []).forEach(s => s.email && set.add(s.email.toLowerCase()));
+      (this.officers() || []).forEach(o => o.email && set.add(o.email.toLowerCase()));
+    } catch {}
+    return Array.from(set);
+  }
+  private isUniEmailRequired(role: 'ADMIN'|'FACULTY'|'SITE'): boolean { return role === 'ADMIN' || role === 'FACULTY'; }
+  private isEmailAllowedForRole(email: string, role: 'ADMIN'|'FACULTY'|'SITE'): boolean {
+    if (!this.isUniEmailRequired(role)) return true;
+    return (email || '').toLowerCase().endsWith(this.uniDomain);
+  }
+  private makeBaseLocalPart(name: string): string {
+    const base = (name || '').toLowerCase().replace(/[^a-z0-9\s.]+/g, '').trim().replace(/\s+/g, '.');
+    return base || 'user';
+  }
+  private suggestEmail(name: string, domain: string, taken: Set<string>): string {
+    const base = this.makeBaseLocalPart(name);
+    let candidate = `${base}${domain}`;
+    if (!taken.has(candidate)) return candidate;
+    for (let i = 1; i <= 99; i++) {
+      candidate = `${base}${i}${domain}`;
+      if (!taken.has(candidate)) return candidate;
+    }
+    // Fallback random
+    const rnd = Math.floor(Math.random() * 9000) + 1000;
+    return `${base}${rnd}${domain}`;
+  }
+
   approve(id: string) { this.store.approveStudent(id); this.toast.success('Student approved'); }
   viewDetails(id: string) { this.selectedId = id; }
   assign(id: string) {
@@ -105,11 +138,22 @@ export class Admin {
     const email = (this.adminAccount.email || '').trim();
     const password = (this.adminAccount.password || '').trim();
     if (!name || !email || !password) { this.toast.warning('Name, email and password are required'); return; }
-  const payload: CreateAccountRequest = { name, email, password, role: 'ADMIN' } as any;
+    // Validate domain for ADMIN
+    if (!this.isEmailAllowedForRole(email, 'ADMIN')) {
+      const taken = new Set(this.allEmails());
+      const suggestion = this.suggestEmail(name, this.uniDomain, taken);
+      this.toast.warning(`Officer email must end with ${this.uniDomain}. Suggestion: ${suggestion}`);
+      return;
+    }
+    // Duplicate email
+    if (this.allEmails().includes(email.toLowerCase())) { this.toast.warning('Email already exists. Try a different one.'); return; }
+    const payload: CreateAccountRequest = { name, email, password, role: 'ADMIN' } as any;
     try {
       this.creatingAdmin = true;
   const res = await this.adminApi.createAccount(payload);
   this.toast.success(res?.message || 'Internship Officer added');
+      // reflect in local list
+      this.store.addInternshipOfficer(name, email);
       this.adminAccount = { name: '', email: '', password: '' };
     } catch (err: any) {
       const status = err?.status ?? 0;
@@ -120,34 +164,67 @@ export class Admin {
       this.toast.danger(msg);
     } finally { this.creatingAdmin = false; }
   }
-  addFaculty() {
-    const name = this.faculty.name?.trim();
-    const email = this.faculty.email?.trim();
-    const dept = this.faculty.department?.trim();
-    const pass = this.faculty.password?.trim();
+  async addFaculty() {
+    const name = this.faculty.name?.trim() || '';
+    const email = this.faculty.email?.trim() || '';
+    const dept = this.faculty.department?.trim() || '';
+    const pass = this.faculty.password?.trim() || '';
     if (!name || !email) { this.toast.warning('Name and email are required'); return; }
     if (!pass) { this.toast.warning('Set a temporary password for the faculty supervisor'); return; }
-    this.store.addFacultySupervisor(name, email, dept, pass);
-    this.faculty = { name: '', email: '', department: '', password: '' };
-    this.toast.success('Faculty Supervisor added');
+    if (!this.isEmailAllowedForRole(email, 'FACULTY')) {
+      const taken = new Set(this.allEmails());
+      const suggestion = this.suggestEmail(name, this.uniDomain, taken);
+      this.toast.warning(`Faculty email must end with ${this.uniDomain}. Suggestion: ${suggestion}`);
+      return;
+    }
+    if (this.allEmails().includes(email.toLowerCase())) { this.toast.warning('Email already exists. Try a different one.'); return; }
+    try {
+      await this.adminApi.createAccount({ name, email, password: pass, role: 'FACULTY' } as any);
+      this.store.addFacultySupervisor(name, email, dept, pass);
+      this.faculty = { name: '', email: '', department: '', password: '' };
+      this.toast.success('Faculty Supervisor added');
+    } catch (err: any) {
+      const msg = err?.error?.message || err?.message || 'Failed to add faculty supervisor';
+      this.toast.danger(msg);
+    }
   }
-  addCompany() {
-    if (!this.company.name) return;
-    const cid = this.store.addCompany(this.company.name, this.company.address);
-    if (this.site.companyId === '') this.site.companyId = cid;
-    this.company = { name: '', address: '' };
-    this.toast.success('Company added');
+  async addCompany() {
+    const { name, email, phone, address, website, industry, description } = this.company;
+    if (!name?.trim()) { this.toast.warning('Company name is required'); return; }
+    if (!email?.trim()) { this.toast.warning('Company email is required'); return; }
+    // Duplicate validation by name (case-insensitive)
+    const exists = (this.companyList() || []).some(c => (c.name || '').trim().toLowerCase() === name.trim().toLowerCase());
+    if (exists) { this.toast.warning('This company is already listed'); return; }
+    try {
+      const res = await this.adminApi.addCompany({ name, email, phone, address, website, industry, description });
+      // Also update local store for immediate UI feedback
+      const cid = this.store.addCompany(name, address);
+      if (this.site.companyId === '') this.site.companyId = cid;
+      this.company = { name: '', email: '', phone: '', address: '', website: '', industry: '', description: '' };
+      this.toast.success(res?.message || 'Company added');
+    } catch (err: any) {
+      const msg = err?.error?.message || err?.message || 'Failed to add company';
+      this.toast.danger(msg);
+    }
   }
-  addSite() {
-    const name = this.site.name?.trim();
-    const email = this.site.email?.trim();
-    const cid = this.site.companyId?.trim();
-    const pass = this.site.password?.trim();
+  async addSite() {
+    const name = this.site.name?.trim() || '';
+    const email = this.site.email?.trim() || '';
+    const cid = this.site.companyId?.trim() || '';
+    const pass = this.site.password?.trim() || '';
     if (!name || !email) { this.toast.warning('Name and email are required'); return; }
     if (!pass) { this.toast.warning('Set a temporary password for the site supervisor'); return; }
-    this.store.addSiteSupervisor(name, email, cid || undefined, pass);
-    this.site = { name: '', email: '', companyId: '', password: '' };
-    this.toast.success('Site Supervisor added');
+    // No domain restriction for site; still check duplicates
+    if (this.allEmails().includes(email.toLowerCase())) { this.toast.warning('Email already exists. Try a different one.'); return; }
+    try {
+      await this.adminApi.createAccount({ name, email, password: pass, role: 'SITE' } as any);
+      this.store.addSiteSupervisor(name, email, cid || undefined, pass);
+      this.site = { name: '', email: '', companyId: '', password: '' };
+      this.toast.success('Site Supervisor added');
+    } catch (err: any) {
+      const msg = err?.error?.message || err?.message || 'Failed to add site supervisor';
+      this.toast.danger(msg);
+    }
   }
   companyName(id?: string) {
     if (!id) return '-';

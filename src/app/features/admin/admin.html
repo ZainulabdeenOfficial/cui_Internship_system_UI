@@ -7,7 +7,8 @@
     <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='announcements'" (click)="selectTab('announcements')">Announcements</button></li>
     <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='officers'" (click)="selectTab('officers')">Officers</button></li>
     <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='faculty'" (click)="selectTab('faculty')">Faculty</button></li>
-    <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='companies'" (click)="selectTab('companies')">Companies & Site</button></li>
+  <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='companies'" (click)="selectTab('companies')">Companies</button></li>
+  <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='sites'" (click)="selectTab('sites')">Site Supervisors</button></li>
     <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='compliance'" (click)="selectTab('compliance')">Log Compliance</button></li>
     <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='complaints'" (click)="selectTab('complaints')">Complaints</button></li>
     <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='scheme'" (click)="selectTab('scheme')">Scheme</button></li>
@@ -169,57 +170,6 @@
                         </select>
                         <button class="btn btn-sm btn-outline-primary" (click)="reviewApproval(s.id)">Apply</button>
                       </div>
-                    </td>
-                  </tr>
-                  }
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </div>
-  </div>
-  }
-  @case ('requests') {
-    <div class="row g-3 mt-0">
-      <div class="col-12">
-        <div class="card">
-          <div class="card-header bg-light">Requests from Faculty</div>
-          <div class="card-body">
-            <p class="text-muted">Review requests to add Companies or Site Supervisors submitted by faculty supervisors.</p>
-            <div class="table-responsive">
-              <table class="table table-sm align-middle">
-                <thead><tr><th>When</th><th>Type</th><th>Details</th><th>Requested By</th><th>Status</th><th>Action</th></tr></thead>
-                <tbody>
-                  @for (r of requests(); track r.id) {
-                  <tr>
-                    <td>{{ r.createdAt | date:'short' }}</td>
-                    <td>
-                      <span class="badge" [class.text-bg-primary]="r.type==='company'" [class.text-bg-info]="r.type==='site'">{{ r.type | titlecase }}</span>
-                    </td>
-                    <td>
-                      @if (r.type==='company') {
-                        <div><strong>{{ r.name }}</strong></div>
-                        <div class="text-muted small">{{ r.address || '-' }}</div>
-                      } @else {
-                        <div><strong>{{ requestPrimary(r) }}</strong></div>
-                        <div class="text-muted small">{{ requestSecondary(r) }}</div>
-                      }
-                    </td>
-                    <td>{{ facultyName(r.requestedByFacultyId) }}</td>
-                    <td>
-                      <span class="badge" [class.text-bg-secondary]="r.status==='pending'" [class.text-bg-success]="r.status==='approved'" [class.text-bg-danger]="r.status==='rejected'">{{ r.status }}</span>
-                      @if (r.resolvedAt) { <div class="small text-muted">{{ r.resolvedAt | date:'short' }}</div> }
-                    </td>
-                    <td>
-                      @if (r.status==='pending') {
-                        <div class="d-flex gap-2">
-                          <button class="btn btn-sm btn-outline-success" (click)="approveRequest(r.id)">Approve</button>
-                          <button class="btn btn-sm btn-outline-danger" (click)="rejectRequest(r.id)">Reject</button>
-                        </div>
-                      } @else {
-                        <div class="small text-muted">—</div>
-                      }
                     </td>
                   </tr>
                   }
@@ -400,11 +350,35 @@
                 <label class="form-label">Company Name</label>
                 <input class="form-control" [(ngModel)]="company.name" name="cname2" />
               </div>
-              <div class="col-12 col-sm-6 col-md-5">
+              <div class="col-12 col-sm-6 col-md-4">
                 <label class="form-label">Address</label>
                 <input class="form-control" [(ngModel)]="company.address" name="caddr2" />
               </div>
-              <div class="col-12 col-sm-6 col-md-3 d-grid">
+              <div class="col-12 col-sm-6 col-md-4">
+                <label class="form-label">Email</label>
+                <input type="email" class="form-control" [(ngModel)]="company.email" name="cemail2" />
+              </div>
+              <div class="col-12 col-sm-6 col-md-4">
+                <label class="form-label">Phone</label>
+                <input class="form-control" [(ngModel)]="company.phone" name="cphone2" />
+              </div>
+            </div>
+            <div class="row g-3 align-items-end mt-2">
+              <div class="col-12 col-sm-6 col-md-4">
+                <label class="form-label">Website</label>
+                <input class="form-control" [(ngModel)]="company.website" name="cweb2" placeholder="https://..." />
+              </div>
+              <div class="col-12 col-sm-6 col-md-4">
+                <label class="form-label">Industry</label>
+                <input class="form-control" [(ngModel)]="company.industry" name="cind2" />
+              </div>
+              <div class="col-12 col-md-4">
+                <label class="form-label">Description</label>
+                <input class="form-control" [(ngModel)]="company.description" name="cdesc2" />
+              </div>
+            </div>
+            <div class="row g-3 align-items-end mt-2">
+              <div class="col-12 col-md-3 d-grid ms-auto">
                 <button class="btn btn-primary" (click)="addCompany()">Add Company</button>
               </div>
             </div>
