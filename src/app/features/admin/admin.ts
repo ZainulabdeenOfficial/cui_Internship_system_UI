@@ -40,8 +40,8 @@ export class Admin {
   get companyList() { return this.store.companies; }
   get siteList() { return this.store.siteSupervisors; }
   // search/filter inputs
-  search = { officers: '', faculty: '', companies: '', sites: '' };
-  filter = { facultyDept: '', industry: '' };
+  search = { officers: '', faculty: '', companies: '', sites: '', students: '' };
+  filter = { facultyDept: '', industry: '', siteCompanyId: '', studentsApproved: 'all' as 'all'|'yes'|'no' };
   facultyId = '';
   siteId = '';
   selectedId: string | null = null;
@@ -55,6 +55,8 @@ export class Admin {
   }
   get officers() { return this.store.internshipOfficers; }
   officer = { name: '', email: '' };
+  editingOfficerId: string | null = null;
+  officerEdit: { name?: string; email?: string } = {};
   responses: Record<string, string> = {};
   // create ADMIN account form (absolute API)
   adminAccount: { name: string; email: string; password: string } = { name: '', email: '', password: '' };
@@ -138,6 +140,43 @@ export class Admin {
     this.store.addInternshipOfficer(this.officer.name, this.officer.email);
     this.officer = { name: '', email: '' };
     this.toast.success('Internship Officer added');
+  }
+  startEditOfficer(id: string) {
+    const o = this.officers().find(x => x.id === id);
+    if (!o) return;
+    this.editingOfficerId = id;
+    this.officerEdit = { name: o.name, email: o.email };
+  }
+  cancelEditOfficer() {
+    this.editingOfficerId = null;
+    this.officerEdit = {};
+  }
+  saveOfficerEdit() {
+    if (!this.editingOfficerId) return;
+    const current = this.officers().find(x => x.id === this.editingOfficerId);
+    if (!current) { this.cancelEditOfficer(); return; }
+    const name = (this.officerEdit.name || '').trim();
+    const email = (this.officerEdit.email || '').trim();
+    if (!name || !email) { this.toast.warning('Name and email are required'); return; }
+    // Enforce domain for officers (ADMIN policy)
+    if (!this.isEmailAllowedForRole(email, 'ADMIN')) {
+      this.toast.warning(`Officer email must end with ${this.uniDomain}`);
+      return;
+    }
+    // Duplicate check excluding current officer's existing email
+    const lower = email.toLowerCase();
+    const taken = new Set(this.allEmails());
+    taken.delete((current.email || '').toLowerCase());
+    if (taken.has(lower)) { this.toast.warning('Email already exists. Try a different one.'); return; }
+    this.store.updateInternshipOfficer(this.editingOfficerId, { name, email });
+    this.cancelEditOfficer();
+    this.toast.success('Officer updated');
+  }
+  removeOfficer(id: string) {
+    if (!confirm('Remove this internship officer?')) return;
+    this.store.removeInternshipOfficer(id);
+    if (this.editingOfficerId === id) this.cancelEditOfficer();
+    this.toast.warning('Officer removed');
   }
   onOfficerNameBlur() {
     const name = (this.officer.name || '').trim();
@@ -261,6 +300,9 @@ export class Admin {
     const cid = this.site.companyId?.trim() || '';
     const pass = this.site.password?.trim() || '';
     if (!name || !email) { this.toast.warning('Name and email are required'); return; }
+    if (!cid) { this.toast.warning('Select a company for the site supervisor'); return; }
+    const emailOk = /^(?=.{3,100}@)[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(email);
+    if (!emailOk) { this.toast.warning('Enter a valid email address'); return; }
     if (!pass) { this.toast.warning('Set a temporary password for the site supervisor'); return; }
     // No domain restriction for site; still check duplicates
     if (this.allEmails().includes(email.toLowerCase())) { this.toast.warning('Email already exists. Try a different one.'); return; }

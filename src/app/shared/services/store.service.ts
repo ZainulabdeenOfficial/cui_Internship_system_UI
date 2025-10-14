@@ -217,6 +217,14 @@ export class StoreService {
     this.internshipOfficers.update(a => [...a, { id, name, email }]);
     this.persist();
   }
+  updateInternshipOfficer(id: string, changes: Partial<{ name: string; email: string }>) {
+    this.internshipOfficers.update(a => a.map(o => o.id === id ? { ...o, ...changes } : o));
+    this.persist();
+  }
+  removeInternshipOfficer(id: string) {
+    this.internshipOfficers.update(a => a.filter(o => o.id !== id));
+    this.persist();
+  }
   addFacultySupervisor(name: string, email: string, department?: string, password?: string) {
     const id = crypto.randomUUID();
     this.facultySupervisors.update(a => [...a, { id, name, email, department, password }]);
