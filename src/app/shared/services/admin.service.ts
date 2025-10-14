@@ -22,11 +22,13 @@ export class AdminService {
   })();
 
   async createAccount(input: CreateAccountRequest): Promise<CreateAccountResponse> {
+    const normalizedRole = ((input.role as any) || 'ADMIN').toString().toUpperCase();
+    const apiRole = normalizedRole === 'FACULTY' ? 'FACULT' : (normalizedRole === 'SITE' ? 'USER' : normalizedRole);
     const body = {
       email: (input.email || '').trim(),
       name: (input.name || '').trim(),
       password: input.password,
-      role: input.role || 'ADMIN'
+      role: apiRole
     } as CreateAccountRequest;
     if (!body.email || !body.name || !body.password) throw new Error('Missing required fields');
    
