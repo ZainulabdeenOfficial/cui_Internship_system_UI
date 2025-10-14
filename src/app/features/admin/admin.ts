@@ -109,8 +109,9 @@ export class Admin {
     return (email || '').toLowerCase().endsWith(this.uniDomain);
   }
   private makeBaseLocalPart(name: string): string {
-    const base = (name || '').toLowerCase().replace(/[^a-z0-9\s.]+/g, '').trim().replace(/\s+/g, '.');
-    return base || 'user';
+  // Remove all spaces for email local part, replace with nothing
+  const base = (name || '').toLowerCase().replace(/[^a-z0-9.]+/g, '').replace(/\s+/g, '');
+  return base || 'user';
   }
   private suggestEmail(name: string, domain: string, taken: Set<string>): string {
     const base = this.makeBaseLocalPart(name);
