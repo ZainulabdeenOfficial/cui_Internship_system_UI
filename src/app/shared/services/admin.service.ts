@@ -72,7 +72,7 @@ export class AdminService {
   }
 
   async addCompany(payload: { name: string; email: string; phone: string; address: string; website: string; industry: string; description: string }): Promise<{ message?: string; id?: string }> {
-    const path = (environment as any).adminAddCompanyUrl?.trim() || '/api/admin/add-compan';
+    const path = (environment as any).adminAddCompanyUrl?.trim() || '/api/admin/add-company';
     const url = environment.production ? (path.startsWith('http') ? path : path) : `${environment.apiBaseUrl.replace(/\/$/, '')}${path.startsWith('/') ? '' : '/'}${path}`;
     const token = (() => { try { return sessionStorage.getItem('accessToken') || sessionStorage.getItem('authToken') || localStorage.getItem('accessToken') || localStorage.getItem('authToken'); } catch { return null; } })();
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
