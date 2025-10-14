@@ -207,6 +207,7 @@ export class Admin {
     }
   }
   adminOfficerEmailSuggestions: string[] = [];
+  adminOfficerSuggestIndex = -1;
   async createAdminAccount() {
     const name = (this.adminAccount.name || '').trim();
     const email = (this.adminAccount.email || '').trim();
@@ -223,6 +224,7 @@ export class Admin {
     if (this.allEmails().includes(email.toLowerCase())) {
       const taken = new Set(this.allEmails());
       this.adminOfficerEmailSuggestions = this.suggestEmailOptions(name, this.uniDomain, taken, 4, email);
+      this.adminOfficerSuggestIndex = this.adminOfficerEmailSuggestions.length ? 0 : -1;
       this.toast.warning('Email already exists. Choose a suggestion below or edit the email.');
       return;
     }
@@ -259,8 +261,13 @@ export class Admin {
     this.adminAccount.email = e;
     // if collides, refresh suggestions
     const taken = new Set(this.allEmails());
-    if (taken.has(e.toLowerCase())) this.adminOfficerEmailSuggestions = this.suggestEmailOptions(this.adminAccount.name, this.uniDomain, taken, 4, e);
-    else this.adminOfficerEmailSuggestions = [];
+    if (taken.has(e.toLowerCase())) {
+      this.adminOfficerEmailSuggestions = this.suggestEmailOptions(this.adminAccount.name, this.uniDomain, taken, 4, e);
+      this.adminOfficerSuggestIndex = this.adminOfficerEmailSuggestions.length ? 0 : -1;
+    } else {
+      this.adminOfficerEmailSuggestions = [];
+      this.adminOfficerSuggestIndex = -1;
+    }
   }
   async addFaculty() {
     const name = this.faculty.name?.trim() || '';
@@ -278,6 +285,7 @@ export class Admin {
     if (this.allEmails().includes(email.toLowerCase())) {
       const taken = new Set(this.allEmails());
       this.facultyEmailSuggestions = this.suggestEmailOptions(name, this.uniDomain, taken, 4, email);
+      this.facultySuggestIndex = this.facultyEmailSuggestions.length ? 0 : -1;
       this.toast.warning('Email already exists. Choose a suggestion below or edit the email.');
       return;
     }
@@ -305,10 +313,73 @@ export class Admin {
     const e = this.ensureDomain(this.faculty.email, this.uniDomain);
     this.faculty.email = e;
     const taken = new Set(this.allEmails());
-    if (taken.has(e.toLowerCase())) this.facultyEmailSuggestions = this.suggestEmailOptions(this.faculty.name, this.uniDomain, taken, 4, e);
-    else this.facultyEmailSuggestions = [];
+    if (taken.has(e.toLowerCase())) {
+      this.facultyEmailSuggestions = this.suggestEmailOptions(this.faculty.name, this.uniDomain, taken, 4, e);
+      this.facultySuggestIndex = this.facultyEmailSuggestions.length ? 0 : -1;
+    } else {
+      this.facultyEmailSuggestions = [];
+      this.facultySuggestIndex = -1;
+    }
   }
   facultyEmailSuggestions: string[] = [];
+  facultySuggestIndex = -1;
+
+  // Suggestion helpers (Gmail-like keyboard navigation)
+  onAdminOfficerEmailKeydown(ev: KeyboardEvent) {
+    if (!this.adminOfficerEmailSuggestions.length) return;
+    const len = this.adminOfficerEmailSuggestions.length;
+    if (ev.key === 'ArrowDown') {
+      ev.preventDefault();
+      this.adminOfficerSuggestIndex = (this.adminOfficerSuggestIndex + 1 + len) % len;
+    } else if (ev.key === 'ArrowUp') {
+      ev.preventDefault();
+      this.adminOfficerSuggestIndex = (this.adminOfficerSuggestIndex - 1 + len) % len;
+    } else if (ev.key === 'Enter') {
+      if (this.adminOfficerSuggestIndex >= 0) {
+        ev.preventDefault();
+        this.selectAdminOfficerSuggestion(this.adminOfficerSuggestIndex);
+      }
+    } else if (ev.key === 'Escape') {
+      ev.preventDefault();
+      this.adminOfficerEmailSuggestions = [];
+      this.adminOfficerSuggestIndex = -1;
+    }
+  }
+  selectAdminOfficerSuggestion(i: number) {
+    const s = this.adminOfficerEmailSuggestions[i];
+    if (!s) return;
+    this.adminAccount.email = s;
+    this.adminOfficerEmailSuggestions = [];
+    this.adminOfficerSuggestIndex = -1;
+  }
+
+  onFacultyEmailKeydown(ev: KeyboardEvent) {
+    if (!this.facultyEmailSuggestions.length) return;
+    const len = this.facultyEmailSuggestions.length;
+    if (ev.key === 'ArrowDown') {
+      ev.preventDefault();
+      this.facultySuggestIndex = (this.facultySuggestIndex + 1 + len) % len;
+    } else if (ev.key === 'ArrowUp') {
+      ev.preventDefault();
+      this.facultySuggestIndex = (this.facultySuggestIndex - 1 + len) % len;
+    } else if (ev.key === 'Enter') {
+      if (this.facultySuggestIndex >= 0) {
+        ev.preventDefault();
+        this.selectFacultySuggestion(this.facultySuggestIndex);
+      }
+    } else if (ev.key === 'Escape') {
+      ev.preventDefault();
+      this.facultyEmailSuggestions = [];
+      this.facultySuggestIndex = -1;
+    }
+  }
+  selectFacultySuggestion(i: number) {
+    const s = this.facultyEmailSuggestions[i];
+    if (!s) return;
+    this.faculty.email = s;
+    this.facultyEmailSuggestions = [];
+    this.facultySuggestIndex = -1;
+  }
   async addCompany() {
     const { name, email, phone, address, website, industry, description } = this.company;
     if (!name?.trim()) { this.toast.warning('Company name is required'); return; }
