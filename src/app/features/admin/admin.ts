@@ -246,11 +246,13 @@ export class Admin {
   onAdminOfficerNameBlur() {
     const name = (this.adminAccount.name || '').trim();
     const email = (this.adminAccount.email || '').trim();
-    const taken = new Set(this.allEmails());
     if (!email && name) {
+      const taken = new Set(this.allEmails());
+      // Prefill a reasonable email if left empty, but do not show suggestion list here
       this.adminAccount.email = this.suggestEmail(name, this.uniDomain, taken);
     }
-    this.adminOfficerEmailSuggestions = this.suggestEmailOptions(name, this.uniDomain, taken, 4, this.adminAccount.email);
+    // Only show suggestions when a duplicate is detected (handled in email blur or submit)
+    this.adminOfficerEmailSuggestions = [];
   }
   onAdminOfficerEmailBlur() {
     const e = this.ensureDomain(this.adminAccount.email, this.uniDomain);
