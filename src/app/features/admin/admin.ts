@@ -144,6 +144,15 @@ export class Admin {
     if (!e) return e;
     return e.includes('@') ? e : `${e}${domain}`;
   }
+  private emailExists(email: string): boolean {
+    const lower = (email || '').toLowerCase();
+    return this.allEmails().includes(lower);
+  }
+  private normalizedForCheck(email: string): string {
+    // For existence check, if no '@', assume uni domain but do not change the input field
+    const e = (email || '').trim();
+    return e.includes('@') ? e : `${e}${this.uniDomain}`;
+  }
 
   approve(id: string) { this.store.approveStudent(id); this.toast.success('Student approved'); }
   viewDetails(id: string) { this.selectedId = id; }
@@ -269,6 +278,22 @@ export class Admin {
       this.adminOfficerSuggestIndex = -1;
     }
   }
+  private adminOfficerEmailDebounceId: any;
+  onAdminOfficerEmailInput() {
+    if (this.adminOfficerEmailDebounceId) clearTimeout(this.adminOfficerEmailDebounceId);
+    this.adminOfficerEmailDebounceId = setTimeout(() => {
+      const candidate = this.normalizedForCheck(this.adminAccount.email);
+      if (!candidate) { this.adminOfficerEmailSuggestions = []; this.adminOfficerSuggestIndex = -1; return; }
+      if (this.emailExists(candidate)) {
+        const taken = new Set(this.allEmails());
+        this.adminOfficerEmailSuggestions = this.suggestEmailOptions(this.adminAccount.name, this.uniDomain, taken, 4, candidate);
+        this.adminOfficerSuggestIndex = this.adminOfficerEmailSuggestions.length ? 0 : -1;
+      } else {
+        this.adminOfficerEmailSuggestions = [];
+        this.adminOfficerSuggestIndex = -1;
+      }
+    }, 250);
+  }
   async addFaculty() {
     const name = this.faculty.name?.trim() || '';
     const email = this.faculty.email?.trim() || '';
@@ -320,6 +345,22 @@ export class Admin {
       this.facultyEmailSuggestions = [];
       this.facultySuggestIndex = -1;
     }
+  }
+  private facultyEmailDebounceId: any;
+  onFacultyEmailInput() {
+    if (this.facultyEmailDebounceId) clearTimeout(this.facultyEmailDebounceId);
+    this.facultyEmailDebounceId = setTimeout(() => {
+      const candidate = this.normalizedForCheck(this.faculty.email);
+      if (!candidate) { this.facultyEmailSuggestions = []; this.facultySuggestIndex = -1; return; }
+      if (this.emailExists(candidate)) {
+        const taken = new Set(this.allEmails());
+        this.facultyEmailSuggestions = this.suggestEmailOptions(this.faculty.name, this.uniDomain, taken, 4, candidate);
+        this.facultySuggestIndex = this.facultyEmailSuggestions.length ? 0 : -1;
+      } else {
+        this.facultyEmailSuggestions = [];
+        this.facultySuggestIndex = -1;
+      }
+    }, 250);
   }
   facultyEmailSuggestions: string[] = [];
   facultySuggestIndex = -1;
