@@ -320,7 +320,10 @@ export class Admin {
       this.site = { name: '', email: '', companyId: '', password: '' };
       this.toast.success('Site Supervisor added');
     } catch (err: any) {
-      const msg = err?.error?.message || err?.message || 'Failed to add site supervisor';
+      const status = err?.status ?? 0;
+      const unauthorized = status === 401 ? 'Unauthorized (401): Your session may be expired. Please log in again as ADMIN and retry.' : null;
+      const backendDetail = err?.error?.details || err?.error?.error || err?.error?.reason;
+      const msg = unauthorized || backendDetail || err?.error?.message || err?.message || 'Failed to add site supervisor';
       this.toast.danger(msg);
     }
   }

@@ -40,6 +40,12 @@ export class AdminService {
           || localStorage.getItem('accessToken');
       } catch { return null; }
     };
+    // If no token, attempt a refresh using stored refreshToken
+    try {
+      if (!getToken()) {
+        await this.auth.refreshAccessToken();
+      }
+    } catch {}
     // Preflight: if token exists but expired (>30s grace), attempt refresh before calling API
     try {
       const t = getToken();
@@ -59,7 +65,7 @@ export class AdminService {
     }
     const post = (url: string) => {
       const token = getToken();
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      const headers: Record<string, string> = { 'Content-Type': 'application/json', Accept: 'application/json' };
       if (token) headers['Authorization'] = `Bearer ${token}`;
       return this.http.post<CreateAccountResponse>(url, body, { headers: new HttpHeaders(headers) });
     };

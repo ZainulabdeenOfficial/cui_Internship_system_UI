@@ -261,6 +261,29 @@
         <div class="card">
           <div class="card-header bg-light">Internship Officers</div>
           <div class="card-body">
+            <!-- Add Officer (ADMIN create-account) first -->
+            <div class="row g-3 align-items-end">
+              <div class="col-12 col-sm-6 col-md-4">
+                <label class="form-label">Officer Name</label>
+                <input class="form-control" [(ngModel)]="adminAccount.name" name="aname" (blur)="onAdminOfficerNameBlur()" />
+              </div>
+              <div class="col-12 col-sm-6 col-md-4">
+                <label class="form-label">Officer Email</label>
+                <input type="email" class="form-control" [(ngModel)]="adminAccount.email" name="aemail" />
+              </div>
+              <div class="col-12 col-sm-6 col-md-3">
+                <label class="form-label">Password</label>
+                <input type="password" class="form-control" [(ngModel)]="adminAccount.password" name="apass" />
+              </div>
+              <div class="col-12 col-sm-6 col-md-1 d-grid">
+                <button class="btn btn-outline-primary" [disabled]="creatingAdmin" (click)="createAdminAccount()">{{ creatingAdmin ? 'Adding…' : 'Add' }}</button>
+              </div>
+            </div>
+            <div class="text-muted small mt-1">Role: ADMIN</div>
+
+            <hr>
+
+            <!-- Officers list after add form -->
             <div class="row mt-1">
               <div class="col-12 col-md-6 ms-auto">
                 <input class="form-control" placeholder="Search officers..." [(ngModel)]="search.officers" name="osearch" />
@@ -300,24 +323,6 @@
             </div>
             <div class="p-2">
               <app-paginator [total]="officers().length" [(page)]="page.officers" [pageSize]="pageSize"></app-paginator>
-            </div>
-            <hr>
-            <div class="row g-3 align-items-end">
-              <div class="col-12 col-sm-6 col-md-4">
-                <label class="form-label">Officer Name</label>
-                <input class="form-control" [(ngModel)]="adminAccount.name" name="aname" (blur)="onAdminOfficerNameBlur()" />
-              </div>
-              <div class="col-12 col-sm-6 col-md-4">
-                <label class="form-label">Officer Email</label>
-                <input type="email" class="form-control" [(ngModel)]="adminAccount.email" name="aemail" />
-              </div>
-              <div class="col-12 col-sm-6 col-md-3">
-                <label class="form-label">Password</label>
-                <input type="password" class="form-control" [(ngModel)]="adminAccount.password" name="apass" />
-              </div>
-              <div class="col-12 col-sm-6 col-md-1 d-grid">
-                <button class="btn btn-outline-primary" [disabled]="creatingAdmin" (click)="createAdminAccount()">{{ creatingAdmin ? 'Adding…' : 'Add' }}</button>
-              </div>
             </div>
           </div>
         </div>
@@ -537,6 +542,7 @@
                 <button class="btn btn-primary" (click)="addSite()">Add</button>
               </div>
             </div>
+            <div class="text-muted small mt-1">Role: SITE</div>
           </div>
         </div>
         <div class="card">
