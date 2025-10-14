@@ -124,6 +124,26 @@ export class Admin {
     const rnd = Math.floor(Math.random() * 9000) + 1000;
     return `${base}${rnd}${domain}`;
   }
+  private suggestEmailOptions(name: string, domain: string, taken: Set<string>, count = 4, exclude?: string): string[] {
+    const base = this.makeBaseLocalPart(name);
+    const opts: string[] = [];
+    const push = (v: string) => {
+      const lower = (v || '').toLowerCase();
+      if (!taken.has(lower) && (!exclude || lower !== exclude.toLowerCase()) && !opts.includes(v)) opts.push(v);
+    };
+    push(`${base}${domain}`);
+    for (let i = 1; opts.length < count && i < 200; i++) push(`${base}${i}${domain}`);
+    while (opts.length < count) {
+      const rnd = Math.floor(Math.random() * 9000) + 1000;
+      push(`${base}${rnd}${domain}`);
+    }
+    return opts;
+  }
+  private ensureDomain(email: string, domain: string): string {
+    const e = (email || '').trim();
+    if (!e) return e;
+    return e.includes('@') ? e : `${e}${domain}`;
+  }
 
   approve(id: string) { this.store.approveStudent(id); this.toast.success('Student approved'); }
   viewDetails(id: string) { this.selectedId = id; }
@@ -186,6 +206,7 @@ export class Admin {
       this.officer.email = this.suggestEmail(name, this.uniDomain, taken);
     }
   }
+  adminOfficerEmailSuggestions: string[] = [];
   async createAdminAccount() {
     const name = (this.adminAccount.name || '').trim();
     const email = (this.adminAccount.email || '').trim();
@@ -199,7 +220,12 @@ export class Admin {
       return;
     }
     // Duplicate email
-    if (this.allEmails().includes(email.toLowerCase())) { this.toast.warning('Email already exists. Try a different one.'); return; }
+    if (this.allEmails().includes(email.toLowerCase())) {
+      const taken = new Set(this.allEmails());
+      this.adminOfficerEmailSuggestions = this.suggestEmailOptions(name, this.uniDomain, taken, 4, email);
+      this.toast.warning('Email already exists. Choose a suggestion below or edit the email.');
+      return;
+    }
     const payload: CreateAccountRequest = { name, email, password, role: 'ADMIN' } as any;
     try {
       this.creatingAdmin = true;
@@ -208,7 +234,7 @@ export class Admin {
       // reflect in local list
       this.store.addInternshipOfficer(name, email);
       this.adminAccount = { name: '', email: '', password: '' };
-    } catch (err: any) {
+  } catch (err: any) {
       const status = err?.status ?? 0;
       const networkMsg = status === 0 ? 'Network/CORS error while contacting API. Retrying via proxy failed.' : null;
   const unauthorized = status === 401 ? 'Unauthorized: Your session may be expired or your account lacks ADMIN permission. Try re‑logging in to refresh tokens, then retry. If it persists, verify your role on the backend.' : null;
@@ -220,10 +246,19 @@ export class Admin {
   onAdminOfficerNameBlur() {
     const name = (this.adminAccount.name || '').trim();
     const email = (this.adminAccount.email || '').trim();
+    const taken = new Set(this.allEmails());
     if (!email && name) {
-      const taken = new Set(this.allEmails());
       this.adminAccount.email = this.suggestEmail(name, this.uniDomain, taken);
     }
+    this.adminOfficerEmailSuggestions = this.suggestEmailOptions(name, this.uniDomain, taken, 4, this.adminAccount.email);
+  }
+  onAdminOfficerEmailBlur() {
+    const e = this.ensureDomain(this.adminAccount.email, this.uniDomain);
+    this.adminAccount.email = e;
+    // if collides, refresh suggestions
+    const taken = new Set(this.allEmails());
+    if (taken.has(e.toLowerCase())) this.adminOfficerEmailSuggestions = this.suggestEmailOptions(this.adminAccount.name, this.uniDomain, taken, 4, e);
+    else this.adminOfficerEmailSuggestions = [];
   }
   async addFaculty() {
     const name = this.faculty.name?.trim() || '';
@@ -238,7 +273,12 @@ export class Admin {
       this.toast.warning(`Faculty email must end with ${this.uniDomain}. Suggestion: ${suggestion}`);
       return;
     }
-    if (this.allEmails().includes(email.toLowerCase())) { this.toast.warning('Email already exists. Try a different one.'); return; }
+    if (this.allEmails().includes(email.toLowerCase())) {
+      const taken = new Set(this.allEmails());
+      this.facultyEmailSuggestions = this.suggestEmailOptions(name, this.uniDomain, taken, 4, email);
+      this.toast.warning('Email already exists. Choose a suggestion below or edit the email.');
+      return;
+    }
     try {
       await this.adminApi.createAccount({ name, email, password: pass, role: 'FACULTY' } as any);
       this.store.addFacultySupervisor(name, email, dept, pass);
@@ -256,7 +296,17 @@ export class Admin {
       const taken = new Set(this.allEmails());
       this.faculty.email = this.suggestEmail(name, this.uniDomain, taken);
     }
+    const taken2 = new Set(this.allEmails());
+    this.facultyEmailSuggestions = this.suggestEmailOptions(name, this.uniDomain, taken2, 4, this.faculty.email);
   }
+  onFacultyEmailBlur() {
+    const e = this.ensureDomain(this.faculty.email, this.uniDomain);
+    this.faculty.email = e;
+    const taken = new Set(this.allEmails());
+    if (taken.has(e.toLowerCase())) this.facultyEmailSuggestions = this.suggestEmailOptions(this.faculty.name, this.uniDomain, taken, 4, e);
+    else this.facultyEmailSuggestions = [];
+  }
+  facultyEmailSuggestions: string[] = [];
   async addCompany() {
     const { name, email, phone, address, website, industry, description } = this.company;
     if (!name?.trim()) { this.toast.warning('Company name is required'); return; }
