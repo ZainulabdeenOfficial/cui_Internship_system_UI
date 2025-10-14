@@ -298,8 +298,8 @@ export class Admin {
       const taken = new Set(this.allEmails());
       this.faculty.email = this.suggestEmail(name, this.uniDomain, taken);
     }
-    const taken2 = new Set(this.allEmails());
-    this.facultyEmailSuggestions = this.suggestEmailOptions(name, this.uniDomain, taken2, 4, this.faculty.email);
+    // Do not show suggestions here; only when a duplicate is detected
+    this.facultyEmailSuggestions = [];
   }
   onFacultyEmailBlur() {
     const e = this.ensureDomain(this.faculty.email, this.uniDomain);

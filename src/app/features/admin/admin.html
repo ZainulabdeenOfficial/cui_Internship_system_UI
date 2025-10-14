@@ -271,10 +271,13 @@
                 <label class="form-label">Officer Email</label>
                 <input type="email" class="form-control" [(ngModel)]="adminAccount.email" name="aemail" (blur)="onAdminOfficerEmailBlur()" />
                 @if (adminOfficerEmailSuggestions.length) {
-                  <div class="small mt-1">Suggestions:
-                    @for (em of adminOfficerEmailSuggestions; track em) {
-                      <button type="button" class="btn btn-link btn-sm p-0 me-2 align-baseline" (click)="adminAccount.email=em; adminOfficerEmailSuggestions=[]">{{ em }}</button>
-                    }
+                  <div class="mt-2 p-2 border rounded bg-light-subtle">
+                    <div class="small text-muted mb-1">Suggested available emails</div>
+                    <div class="d-flex flex-wrap gap-2">
+                      @for (em of adminOfficerEmailSuggestions; track em) {
+                        <button type="button" class="btn btn-outline-secondary btn-sm" (click)="adminAccount.email=em; adminOfficerEmailSuggestions=[]">{{ em }}</button>
+                      }
+                    </div>
                   </div>
                 }
               </div>
@@ -351,10 +354,13 @@
                 <label class="form-label">Email</label>
                 <input type="email" class="form-control" [(ngModel)]="faculty.email" name="femail" (blur)="onFacultyEmailBlur()" />
                 @if (facultyEmailSuggestions.length) {
-                  <div class="small mt-1">Suggestions:
-                    @for (em of facultyEmailSuggestions; track em) {
-                      <button type="button" class="btn btn-link btn-sm p-0 me-2 align-baseline" (click)="faculty.email=em; facultyEmailSuggestions=[]">{{ em }}</button>
-                    }
+                  <div class="mt-2 p-2 border rounded bg-light-subtle">
+                    <div class="small text-muted mb-1">Suggested available emails</div>
+                    <div class="d-flex flex-wrap gap-2">
+                      @for (em of facultyEmailSuggestions; track em) {
+                        <button type="button" class="btn btn-outline-secondary btn-sm" (click)="faculty.email=em; facultyEmailSuggestions=[]">{{ em }}</button>
+                      }
+                    </div>
                   </div>
                 }
               </div>
