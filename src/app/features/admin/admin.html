@@ -7,8 +7,8 @@
     <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='announcements'" (click)="selectTab('announcements')">Announcements</button></li>
     <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='officers'" (click)="selectTab('officers')">Officers</button></li>
     <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='faculty'" (click)="selectTab('faculty')">Faculty</button></li>
-  <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='companies'" (click)="selectTab('companies')">Companies</button></li>
-  <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='sites'" (click)="selectTab('sites')">Site Supervisors</button></li>
+    <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='companies'" (click)="selectTab('companies')">Companies</button></li>
+    <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='sites'" (click)="selectTab('sites')">Site Supervisors</button></li>
     <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='compliance'" (click)="selectTab('compliance')">Log Compliance</button></li>
     <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='complaints'" (click)="selectTab('complaints')">Complaints</button></li>
     <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='scheme'" (click)="selectTab('scheme')">Scheme</button></li>
@@ -250,7 +250,7 @@
             <div class="row g-3 align-items-end">
               <div class="col-12 col-sm-6 col-md-4">
                 <label class="form-label">Name</label>
-                <input class="form-control" [(ngModel)]="officer.name" name="oname" />
+                <input class="form-control" [(ngModel)]="officer.name" name="oname" (blur)="onOfficerNameBlur()" />
               </div>
               <div class="col-12 col-sm-6 col-md-4">
                 <label class="form-label">Email</label>
@@ -260,11 +260,27 @@
                 <button class="btn btn-primary" (click)="addOfficer()">Add Officer</button>
               </div>
             </div>
-            <ul class="list-group mt-3">
-              @for (o of officers(); track o.email) {
-              <li class="list-group-item d-flex justify-content-between align-items-center">{{ o.name }} <span class="text-muted">{{ o.email }}</span></li>
-              }
-            </ul>
+            <div class="row mt-3">
+              <div class="col-12 col-md-6 ms-auto">
+                <input class="form-control" placeholder="Search officers..." [(ngModel)]="search.officers" name="osearch" />
+              </div>
+            </div>
+            <div class="table-responsive mt-2">
+              <table class="table table-sm align-middle">
+                <thead><tr><th>Name</th><th>Email</th></tr></thead>
+                <tbody>
+                  @for (o of (officers() | paginate: page.officers : pageSize); track o.id) {
+                  <tr [hidden]="search.officers && !(o.name + ' ' + o.email).toLowerCase().includes(search.officers.toLowerCase())">
+                    <td>{{ o.name }}</td>
+                    <td>{{ o.email }}</td>
+                  </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+            <div class="p-2">
+              <app-paginator [total]="officers().length" [(page)]="page.officers" [pageSize]="pageSize"></app-paginator>
+            </div>
             <hr>
             <div class="row g-3 align-items-end">
               <div class="col-12 col-sm-6 col-md-4">
@@ -297,7 +313,7 @@
             <div class="row g-2 g-md-3 align-items-end">
               <div class="col-12 col-sm-6 col-md-3">
                 <label class="form-label">Name</label>
-                <input class="form-control" [(ngModel)]="faculty.name" name="fname" />
+                <input class="form-control" [(ngModel)]="faculty.name" name="fname" (blur)="onFacultyNameBlur()" />
               </div>
               <div class="col-12 col-sm-6 col-md-3">
                 <label class="form-label">Email</label>
@@ -315,25 +331,41 @@
                 <button class="btn btn-primary" (click)="addFaculty()">Add</button>
               </div>
             </div>
-            <ul class="list-group mt-3">
-              @for (f of facultyList(); track f.id) {
-              <li class="list-group-item">
-                <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2">
-                  <div class="me-0 me-sm-2 text-break">
-                    <div>{{ f.name }} — <span class="text-muted">{{ f.email }}</span></div>
-                    <div class="small text-muted">Password: {{ f.password ? 'set' : 'not set' }}</div>
-                  </div>
-                  <div class="d-flex flex-wrap gap-2 w-100 w-auto">
-                    <input class="form-control form-control-sm flex-grow-1 flex-sm-grow-0" style="min-width:160px" placeholder="New password" [(ngModel)]="facultyNewPw[f.id]" name="fpw{{f.id}}" />
-                    <div class="btn-group btn-group-sm flex-shrink-0">
-                      <button class="btn btn-outline-secondary" (click)="setFacultyPassword(f.id)">Set Password</button>
-                      <button class="btn btn-outline-danger" (click)="removeFaculty(f.id)">Remove</button>
-                    </div>
-                  </div>
-                </div>
-              </li>
-              }
-            </ul>
+            <div class="row mt-3 g-2 align-items-end">
+              <div class="col-12 col-md-6">
+                <input class="form-control" placeholder="Search faculty..." [(ngModel)]="search.faculty" name="fsearch" />
+              </div>
+              <div class="col-12 col-md-3">
+                <input class="form-control" placeholder="Filter by department" [(ngModel)]="filter.facultyDept" name="fdeptf" />
+              </div>
+            </div>
+            <div class="table-responsive mt-2">
+              <table class="table table-sm align-middle">
+                <thead><tr><th>Name</th><th>Email</th><th>Department</th><th>Password</th><th>Actions</th></tr></thead>
+                <tbody>
+                  @for (f of (facultyList() | paginate: page.faculty : pageSize); track f.id) {
+                  <tr [hidden]="(search.faculty && !(f.name + ' ' + f.email).toLowerCase().includes(search.faculty.toLowerCase())) || (filter.facultyDept && (f.department||'').toLowerCase().indexOf(filter.facultyDept.toLowerCase())===-1)">
+                    <td>{{ f.name }}</td>
+                    <td>{{ f.email }}</td>
+                    <td>{{ f.department || '-' }}</td>
+                    <td class="small text-muted">{{ f.password ? 'set' : 'not set' }}</td>
+                    <td>
+                      <div class="d-flex flex-wrap gap-2 align-items-center">
+                        <input class="form-control form-control-sm" style="min-width:160px" placeholder="New password" [(ngModel)]="facultyNewPw[f.id]" name="fpw{{f.id}}" />
+                        <div class="btn-group btn-group-sm">
+                          <button class="btn btn-outline-secondary" (click)="setFacultyPassword(f.id)">Set</button>
+                          <button class="btn btn-outline-danger" (click)="removeFaculty(f.id)">Remove</button>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+            <div class="p-2">
+              <app-paginator [total]="facultyList().length" [(page)]="page.faculty" [pageSize]="pageSize"></app-paginator>
+            </div>
           </div>
         </div>
       </div>
@@ -409,15 +441,124 @@
           </div>
         </div>
 
+        <div class="card">
+          <div class="card-header bg-light">Companies</div>
+          <div class="card-body p-0">
+            <div class="p-2">
+              <div class="row g-2 align-items-end">
+                <div class="col-12 col-md-6 ms-auto">
+                  <input class="form-control" placeholder="Search companies..." [(ngModel)]="search.companies" name="csearch" />
+                </div>
+                <div class="col-12 col-md-3">
+                  <input class="form-control" placeholder="Filter by industry" [(ngModel)]="filter.industry" name="cindustryf" />
+                </div>
+              </div>
+            </div>
+            <div class="table-responsive">
+              <table class="table table-sm mb-0 align-middle">
+                <thead><tr><th>Name</th><th>Address</th><th>Email</th><th>Website</th><th>Description</th><th>Actions</th></tr></thead>
+                <tbody>
+                  @for (c of (companyList() | paginate: page.companies : pageSize); track c.id) {
+                  <tr [hidden]="(search.companies && !(c.name + ' ' + (c.address||'') + ' ' + (c.email||'') + ' ' + (c.website||'')).toLowerCase().includes(search.companies.toLowerCase())) || (filter.industry && (c.industry||'').toLowerCase().indexOf(filter.industry.toLowerCase())===-1)">
+                    <td>
+                      @if (editingCompanyId===c.id) {
+                        <input class="form-control form-control-sm" [(ngModel)]="companyEdit.name" name="ecname{{c.id}}" />
+                      } @else { {{ c.name }} }
+                    </td>
+                    <td>
+                      @if (editingCompanyId===c.id) {
+                        <input class="form-control form-control-sm" [(ngModel)]="companyEdit.address" name="ecaddr{{c.id}}" />
+                      } @else { {{ c.address || '-' }} }
+                    </td>
+                    <td>
+                      @if (editingCompanyId===c.id) {
+                        <input class="form-control form-control-sm" [(ngModel)]="companyEdit.email" name="ecemail{{c.id}}" />
+                      } @else { {{ c.email || '-' }} }
+                    </td>
+                    <td>
+                      @if (editingCompanyId===c.id) {
+                        <input class="form-control form-control-sm" [(ngModel)]="companyEdit.website" name="ecweb{{c.id}}" />
+                      } @else {
+                        @if (c.website) { <a [href]="c.website" target="_blank" rel="noopener">{{ c.website }}</a> } @else { <span class="text-muted">—</span> }
+                      }
+                    </td>
+                    <td style="max-width:260px">
+                      @if (editingCompanyId===c.id) {
+                        <input class="form-control form-control-sm" [(ngModel)]="companyEdit.description" name="ecdesc{{c.id}}" />
+                      } @else { {{ c.description || '-' }} }
+                    </td>
+                    <td>
+                      <div class="btn-group btn-group-sm">
+                        @if (editingCompanyId===c.id) {
+                          <button class="btn btn-outline-success" (click)="saveCompanyEdit()">Save</button>
+                          <button class="btn btn-outline-secondary" (click)="cancelEditCompany()">Cancel</button>
+                        } @else {
+                          <button class="btn btn-outline-secondary" (click)="startEditCompany(c.id)">Edit</button>
+                          <button class="btn btn-outline-danger" (click)="removeCompany(c.id)">Remove</button>
+                        }
+                      </div>
+                    </td>
+                  </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+            <div class="p-2">
+              <app-paginator [total]="companyList().length" [(page)]="page.companies" [pageSize]="pageSize"></app-paginator>
+            </div>
+          </div>
+        </div>
+      </div>
+  </div>
+  }
+  @case ('sites') {
+    <div class="row g-3 mt-0">
+      <div class="col-12">
         <div class="card mb-3">
+          <div class="card-header bg-light">Add Site Supervisor</div>
+          <div class="card-body">
+            <div class="row g-3 align-items-end">
+              <div class="col-12 col-sm-6 col-md-3">
+                <label class="form-label">Name</label>
+                <input class="form-control" [(ngModel)]="site.name" name="sname2" />
+              </div>
+              <div class="col-12 col-sm-6 col-md-3">
+                <label class="form-label">Email</label>
+                <input type="email" class="form-control" [(ngModel)]="site.email" name="semail2" />
+              </div>
+              <div class="col-12 col-sm-6 col-md-3">
+                <label class="form-label">Company</label>
+                <select class="form-select" [(ngModel)]="site.companyId" name="scid2">
+                  <option [ngValue]="''">Select company...</option>
+                  @for (c of companyList(); track c.id) { <option [ngValue]="c.id">{{ c.name }}</option> }
+                </select>
+              </div>
+              <div class="col-12 col-sm-6 col-md-2">
+                <label class="form-label">Password</label>
+                <input type="password" class="form-control" [(ngModel)]="site.password" name="spass2" />
+              </div>
+              <div class="col-12 col-sm-6 col-md-1 d-grid">
+                <button class="btn btn-primary" (click)="addSite()">Add</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
           <div class="card-header bg-light">Site Supervisors</div>
           <div class="card-body p-0">
+            <div class="p-2">
+              <div class="row g-2">
+                <div class="col-12 col-md-6 ms-auto">
+                  <input class="form-control" placeholder="Search sites..." [(ngModel)]="search.sites" name="ssearch" />
+                </div>
+              </div>
+            </div>
             <div class="table-responsive">
               <table class="table table-sm mb-0 align-middle">
                 <thead><tr><th>Company</th><th>Name</th><th>Email</th><th>Password</th><th>Actions</th></tr></thead>
                 <tbody>
-                  @for (t of siteList(); track t.id) {
-                  <tr>
+                  @for (t of (siteList() | paginate: page.sites : pageSize); track t.id) {
+                  <tr [hidden]="search.sites && !(t.name + ' ' + t.email + ' ' + companyName(t.companyId)).toLowerCase().includes(search.sites.toLowerCase())">
                     <td>{{ companyName(t.companyId) }}</td>
                     <td>{{ t.name }}</td>
                     <td>{{ t.email }}</td>
@@ -436,30 +577,13 @@
                 </tbody>
               </table>
             </div>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="card-header bg-light">Companies</div>
-          <div class="card-body p-0">
-            <div class="table-responsive">
-              <table class="table table-sm mb-0 align-middle">
-                <thead><tr><th>Name</th><th>Address</th><th>Actions</th></tr></thead>
-                <tbody>
-                  @for (c of companyList(); track c.id) {
-                  <tr>
-                    <td>{{ c.name }}</td>
-                    <td>{{ c.address || '-' }}</td>
-                    <td><button class="btn btn-sm btn-outline-danger" (click)="removeCompany(c.id)">Remove</button></td>
-                  </tr>
-                  }
-                </tbody>
-              </table>
+            <div class="p-2">
+              <app-paginator [total]="siteList().length" [(page)]="page.sites" [pageSize]="pageSize"></app-paginator>
             </div>
           </div>
         </div>
       </div>
-  </div>
+    </div>
   }
   @case ('complaints') {
     <div class="row g-3 mt-0">

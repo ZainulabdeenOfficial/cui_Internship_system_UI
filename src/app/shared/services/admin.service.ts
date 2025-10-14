@@ -89,4 +89,24 @@ export class AdminService {
     if (!body.name || !body.email) throw new Error('Name and email are required');
     return await firstValueFrom(this.http.post<{ message?: string; id?: string }>(url, body, { headers: new HttpHeaders(headers) }));
   }
+
+  async updateCompany(payload: { id?: string; name: string; email?: string; phone?: string; address?: string; website?: string; industry?: string; description?: string }): Promise<{ message?: string }> {
+    const path = (environment as any).adminUpdateCompanyUrl?.trim() || '/api/admin/update-company';
+    const url = environment.production ? (path.startsWith('http') ? path : path) : `${environment.apiBaseUrl.replace(/\/$/, '')}${path.startsWith('/') ? '' : '/'}${path}`;
+    const token = (() => { try { return sessionStorage.getItem('accessToken') || sessionStorage.getItem('authToken') || localStorage.getItem('accessToken') || localStorage.getItem('authToken'); } catch { return null; } })();
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    const body = {
+      id: payload.id,
+      name: (payload.name || '').trim(),
+      email: (payload.email || '').trim() || undefined,
+      phone: (payload.phone || '').trim() || undefined,
+      address: (payload.address || '').trim() || undefined,
+      website: (payload.website || '').trim() || undefined,
+      industry: (payload.industry || '').trim() || undefined,
+      description: (payload.description || '').trim() || undefined
+    };
+    if (!body.name) throw new Error('Company name is required');
+    return await firstValueFrom(this.http.post<{ message?: string }>(url, body, { headers: new HttpHeaders(headers) }));
+  }
 }

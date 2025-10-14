@@ -92,7 +92,7 @@ export type SiteSupervisorRequest = BaseRequest & { type: 'site'; name: string; 
 export type RequestItem = CompanyRequest | SiteSupervisorRequest;
 
 export type FacultySupervisor = { id: string; name: string; email: string; department?: string; password?: string; avatarBase64?: string; bio?: string };
-export type Company = { id: string; name: string; address?: string };
+export type Company = { id: string; name: string; address?: string; email?: string; phone?: string; website?: string; industry?: string; description?: string; remoteId?: string };
 export type SiteSupervisor = { id: string; name: string; email: string; companyId?: string; password?: string; avatarBase64?: string; bio?: string };
 
 // Internship Design Statement (submitted in first week along with initial progress)
@@ -222,9 +222,9 @@ export class StoreService {
     this.facultySupervisors.update(a => [...a, { id, name, email, department, password }]);
     this.persist();
   }
-  addCompany(name: string, address?: string) {
+  addCompany(name: string, address?: string, extras?: { email?: string; phone?: string; website?: string; industry?: string; description?: string; remoteId?: string }) {
     const id = crypto.randomUUID();
-    this.companies.update(a => [...a, { id, name, address }]);
+    this.companies.update(a => [...a, { id, name, address, ...(extras || {}) }]);
     this.persist();
     return id;
   }
