@@ -149,4 +149,21 @@ export class AdminService {
     }
     throw lastErr || new Error('Failed to fetch companies');
   }
+
+  async getAssignableSiteSupervisors(params: { companyId?: string; unassigned?: boolean }): Promise<Array<{ id: string; name: string; email?: string; companyId?: string }>> {
+    // Endpoint sample: /api/admin/assign-supervisor?companyId=1&unassigned=true
+    const base = environment.apiBaseUrl.replace(/\/$/, '');
+    const path = '/api/admin/assign-supervisor';
+    const q: string[] = [];
+    if (params.companyId) q.push(`companyId=${encodeURIComponent(params.companyId)}`);
+    if (typeof params.unassigned === 'boolean') q.push(`unassigned=${params.unassigned}`);
+    const qs = q.length ? `?${q.join('&')}` : '';
+    const url = environment.production ? `${path}${qs}` : `${base}${path}${qs}`;
+    const token = (() => { try { return sessionStorage.getItem('accessToken') || sessionStorage.getItem('authToken') || localStorage.getItem('accessToken') || localStorage.getItem('authToken'); } catch { return null; } })();
+    const headers: Record<string, string> = { Accept: 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    const res = await firstValueFrom(this.http.get<any>(url, { headers: new HttpHeaders(headers) }));
+    const list: any[] = Array.isArray(res) ? res : (Array.isArray(res?.data) ? res.data : (Array.isArray(res?.items) ? res.items : []));
+    return list.map((x: any) => ({ id: (x.id ?? x._id ?? x.siteId ?? '').toString(), name: x.name ?? x.fullName ?? '', email: x.email, companyId: (x.companyId ?? '').toString() })).filter(x => !!x.id);
+  }
 }

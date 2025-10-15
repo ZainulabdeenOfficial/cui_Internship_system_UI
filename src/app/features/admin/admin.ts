@@ -43,9 +43,12 @@ export class Admin {
   private companiesCache: Array<import('../../shared/services/store.service').Company & { remoteId?: string }> = [];
   get companyList() { return () => this.companiesCache; }
   get siteList() { return this.store.siteSupervisors; }
+  // Server-driven site supervisors list for assignment/filters
+  sitesCache: Array<{ id: string; name: string; email?: string; companyId?: string }> = [];
   // search/filter inputs
   search = { officers: '', faculty: '', companies: '', sites: '', students: '' };
   filter = { facultyDept: '', industry: '', siteCompanyId: '', studentsApproved: 'all' as 'all'|'yes'|'no' };
+  unassignedOnly = false;
   facultyId = '';
   siteId = '';
   selectedId: string | null = null;
@@ -57,7 +60,10 @@ export class Admin {
     this.currentTab = tab;
     try { this.router.navigate([], { relativeTo: this.route, queryParams: { tab }, queryParamsHandling: 'merge' }); } catch {}
     // Lazy-load companies when Companies tab opens
-    if (tab === 'companies' || tab === 'sites') this.refreshCompanies();
+    if (tab === 'companies' || tab === 'sites') {
+      this.refreshCompanies();
+      this.refreshSites();
+    }
   }
   get officers() { return this.store.internshipOfficers; }
   officer = { name: '', email: '' };
@@ -106,6 +112,16 @@ export class Admin {
       }));
     } catch (err: any) {
       const msg = err?.error?.message || err?.message || 'Failed to load companies from server';
+      this.toast.danger(msg);
+    }
+  }
+
+  async refreshSites() {
+    try {
+      const list = await this.adminApi.getAssignableSiteSupervisors({ companyId: this.filter.siteCompanyId || undefined, unassigned: this.unassignedOnly });
+      this.sitesCache = list;
+    } catch (err: any) {
+      const msg = err?.error?.message || err?.message || 'Failed to load site supervisors from server';
       this.toast.danger(msg);
     }
   }

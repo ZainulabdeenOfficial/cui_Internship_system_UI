@@ -572,10 +572,14 @@
                   <input class="form-control" placeholder="Search sites..." [(ngModel)]="search.sites" name="ssearch" />
                 </div>
                 <div class="col-12 col-md-3">
-                  <select class="form-select" [(ngModel)]="filter.siteCompanyId" name="scombf">
+                  <select class="form-select" [(ngModel)]="filter.siteCompanyId" (ngModelChange)="refreshSites()" name="scombf">
                     <option [ngValue]="''">All companies</option>
                     @for (c of companyList(); track c.id) { <option [ngValue]="c.id">{{ c.name }}</option> }
                   </select>
+                </div>
+                <div class="col-12 col-md-3 form-check ms-auto" style="user-select:none">
+                  <input id="unassignedOnly" class="form-check-input" type="checkbox" [(ngModel)]="unassignedOnly" (change)="refreshSites()" name="sunassigned" />
+                  <label class="form-check-label ms-2" for="unassignedOnly">Unassigned only</label>
                 </div>
               </div>
             </div>
@@ -583,12 +587,12 @@
               <table class="table table-sm mb-0 align-middle">
                 <thead><tr><th>Company</th><th>Name</th><th>Email</th><th>Password</th><th>Actions</th></tr></thead>
                 <tbody>
-                  @for (t of (siteList() | paginate: page.sites : pageSize); track t.id) {
+                  @for (t of (sitesCache | paginate: page.sites : pageSize); track t.id) {
                   <tr [hidden]="(search.sites && !(t.name + ' ' + t.email + ' ' + companyName(t.companyId)).toLowerCase().includes(search.sites.toLowerCase())) || (filter.siteCompanyId && t.companyId !== filter.siteCompanyId)">
                     <td>{{ companyName(t.companyId) }}</td>
                     <td>{{ t.name }}</td>
                     <td>{{ t.email }}</td>
-                    <td class="small text-muted">{{ t.password ? 'set' : 'not set' }}</td>
+                    <td class="small text-muted">—</td>
                     <td>
                       <div class="d-flex flex-wrap gap-2 align-items-center">
                         <input class="form-control form-control-sm flex-grow-1 flex-sm-grow-0" style="min-width:140px" placeholder="New password" [(ngModel)]="siteNewPw[t.id]" name="spw{{t.id}}" />
@@ -604,7 +608,7 @@
               </table>
             </div>
             <div class="p-2">
-              <app-paginator [total]="siteList().length" [(page)]="page.sites" [pageSize]="pageSize"></app-paginator>
+              <app-paginator [total]="sitesCache.length" [(page)]="page.sites" [pageSize]="pageSize"></app-paginator>
             </div>
           </div>
         </div>
