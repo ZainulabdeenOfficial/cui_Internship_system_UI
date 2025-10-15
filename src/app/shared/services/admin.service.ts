@@ -9,6 +9,46 @@ import { AuthService } from './auth.service';
 @Injectable({ providedIn: 'root' })
 export class AdminService {
   constructor(private http: HttpClient, private auth: AuthService) {}
+  private getTokenFromStorage(): string | null {
+    try {
+      return sessionStorage.getItem('authToken')
+        || sessionStorage.getItem('accessToken')
+        || sessionStorage.getItem('token')
+        || localStorage.getItem('authToken')
+        || localStorage.getItem('accessToken');
+    } catch { return null; }
+  }
+  private async ensureFreshToken(): Promise<string | null> {
+    const get = () => this.getTokenFromStorage();
+    let token = get();
+    // If missing, try refresh
+    if (!token) {
+      try { await this.auth.refreshAccessToken(); token = get(); } catch {}
+    }
+    // If present but expiring in <=30s, refresh
+    try {
+      if (token) {
+        const parts = token.split('.');
+        if (parts.length === 3) {
+          const payloadJson = atob(parts[1].replace(/-/g, '+').replace(/_/g, '/'));
+          const payload = JSON.parse(payloadJson) as { exp?: number };
+          const exp = payload?.exp;
+          if (exp && (Date.now() / 1000 > exp - 30)) {
+            await this.auth.refreshAccessToken();
+            token = get();
+          }
+        }
+      }
+    } catch {}
+    return token || null;
+  }
+  private async authHeaders(json = false): Promise<HttpHeaders> {
+    const token = await this.ensureFreshToken();
+    const base: Record<string, string> = { Accept: 'application/json' };
+    if (json) base['Content-Type'] = 'application/json';
+    if (token) base['Authorization'] = `Bearer ${token}`;
+    return new HttpHeaders(base);
+  }
   
   private createUrl = (() => {
     const path = (environment.adminCreateAccountUrl?.trim() || '/api/admin/create-account');
@@ -82,9 +122,7 @@ export class AdminService {
   async addCompany(payload: { name: string; email: string; phone: string; address: string; website: string; industry: string; description: string }): Promise<{ message?: string; id?: string }> {
     const path = (environment as any).adminAddCompanyUrl?.trim() || '/api/admin/add-company';
     const url = environment.production ? (path.startsWith('http') ? path : path) : `${environment.apiBaseUrl.replace(/\/$/, '')}${path.startsWith('/') ? '' : '/'}${path}`;
-    const token = (() => { try { return sessionStorage.getItem('accessToken') || sessionStorage.getItem('authToken') || localStorage.getItem('accessToken') || localStorage.getItem('authToken'); } catch { return null; } })();
-    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-    if (token) headers['Authorization'] = `Bearer ${token}`;
+    const headers = await this.authHeaders(true);
     const body = {
       name: (payload.name || '').trim(),
       email: (payload.email || '').trim(),
@@ -95,15 +133,13 @@ export class AdminService {
       description: (payload.description || '').trim()
     };
     if (!body.name || !body.email) throw new Error('Name and email are required');
-    return await firstValueFrom(this.http.post<{ message?: string; id?: string }>(url, body, { headers: new HttpHeaders(headers) }));
+    return await firstValueFrom(this.http.post<{ message?: string; id?: string }>(url, body, { headers }));
   }
 
   async updateCompany(payload: { id?: string; name: string; email?: string; phone?: string; address?: string; website?: string; industry?: string; description?: string }): Promise<{ message?: string }> {
     const path = (environment as any).adminUpdateCompanyUrl?.trim() || '/api/admin/update-company';
     const url = environment.production ? (path.startsWith('http') ? path : path) : `${environment.apiBaseUrl.replace(/\/$/, '')}${path.startsWith('/') ? '' : '/'}${path}`;
-    const token = (() => { try { return sessionStorage.getItem('accessToken') || sessionStorage.getItem('authToken') || localStorage.getItem('accessToken') || localStorage.getItem('authToken'); } catch { return null; } })();
-    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-    if (token) headers['Authorization'] = `Bearer ${token}`;
+    const headers = await this.authHeaders(true);
     const body = {
       id: payload.id,
       name: (payload.name || '').trim(),
@@ -115,39 +151,43 @@ export class AdminService {
       description: (payload.description || '').trim() || undefined
     };
     if (!body.name) throw new Error('Company name is required');
-    return await firstValueFrom(this.http.post<{ message?: string }>(url, body, { headers: new HttpHeaders(headers) }));
+    return await firstValueFrom(this.http.post<{ message?: string }>(url, body, { headers }));
   }
 
   async getCompanies(): Promise<Array<{ id: string; name: string; email?: string; phone?: string; address?: string; website?: string; industry?: string; description?: string }>> {
-    // Prefer an admin-scoped list endpoint; fallback to a generic one if needed
     const base = environment.apiBaseUrl.replace(/\/$/, '');
-    const candidates = ['/api/admin/companies', '/api/companies', '/api/admin/list-companies'];
-    const token = (() => { try { return sessionStorage.getItem('accessToken') || sessionStorage.getItem('authToken') || localStorage.getItem('accessToken') || localStorage.getItem('authToken'); } catch { return null; } })();
-    const headers: Record<string, string> = { Accept: 'application/json' };
-    if (token) headers['Authorization'] = `Bearer ${token}`;
-    const tryGet = async (path: string) => {
+    const post = async (path: string) => {
       const url = environment.production ? (path.startsWith('http') ? path : path) : `${base}${path.startsWith('/') ? '' : '/'}${path}`;
-      return await firstValueFrom(this.http.get<any>(url, { headers: new HttpHeaders(headers) }));
+      return await firstValueFrom(this.http.post<any>(url, '', { headers: await this.authHeaders() }));
     };
+    const get = async (path: string) => {
+      const url = environment.production ? (path.startsWith('http') ? path : path) : `${base}${path.startsWith('/') ? '' : '/'}${path}`;
+      return await firstValueFrom(this.http.get<any>(url, { headers: await this.authHeaders() }));
+    };
+    let res: any;
     let lastErr: any;
-    for (const p of candidates) {
-      try {
-        const res = await tryGet(p);
-        // Normalize to expected shape array
-        const list: any[] = Array.isArray(res) ? res : (Array.isArray(res?.data) ? res.data : (Array.isArray(res?.items) ? res.items : []));
-        return list.map((x: any) => ({
-          id: (x.id ?? x._id ?? x.companyId ?? x.remoteId ?? '').toString(),
-          name: x.name ?? x.companyName ?? '',
-          email: x.email,
-          phone: x.phone,
-          address: x.address,
-          website: x.website,
-          industry: x.industry,
-          description: x.description
-        })).filter(c => !!c.id && !!c.name);
-      } catch (err) { lastErr = err; }
+    // 1) Preferred: POST /api/admin/company-supervisors (returns companies with supervisorCount)
+    try { res = await post('/api/admin/company-supervisors'); } catch (e) { lastErr = e; }
+    if (!res) {
+      // 2) Fallback: GET /api/admin/companies
+      try { res = await get('/api/admin/companies'); } catch (e) { lastErr = e; }
     }
-    throw lastErr || new Error('Failed to fetch companies');
+    if (!res) {
+      // 3) Fallback: GET /api/companies (if public)
+      try { res = await get('/api/companies'); } catch (e) { lastErr = e; }
+    }
+    if (!res) throw lastErr || new Error('Failed to fetch companies');
+    const list: any[] = Array.isArray(res?.companies) ? res.companies : (Array.isArray(res) ? res : (Array.isArray(res?.data) ? res.data : (Array.isArray(res?.items) ? res.items : [])));
+    return list.map((x: any) => ({
+      id: (x.id ?? x._id ?? x.companyId ?? x.remoteId ?? '').toString(),
+      name: x.name ?? x.companyName ?? '',
+      email: x.email,
+      phone: x.phone,
+      address: x.address,
+      website: x.website,
+      industry: x.industry,
+      description: x.description
+    })).filter(c => !!c.id && !!c.name);
   }
 
   async getAssignableSiteSupervisors(params: { companyId?: string; unassigned?: boolean }): Promise<Array<{ id: string; name: string; email?: string; companyId?: string }>> {
@@ -159,10 +199,7 @@ export class AdminService {
     if (typeof params.unassigned === 'boolean') q.push(`unassigned=${params.unassigned}`);
     const qs = q.length ? `?${q.join('&')}` : '';
     const url = environment.production ? `${path}${qs}` : `${base}${path}${qs}`;
-    const token = (() => { try { return sessionStorage.getItem('accessToken') || sessionStorage.getItem('authToken') || localStorage.getItem('accessToken') || localStorage.getItem('authToken'); } catch { return null; } })();
-    const headers: Record<string, string> = { Accept: 'application/json' };
-    if (token) headers['Authorization'] = `Bearer ${token}`;
-    const res = await firstValueFrom(this.http.get<any>(url, { headers: new HttpHeaders(headers) }));
+  const res = await firstValueFrom(this.http.get<any>(url, { headers: await this.authHeaders() }));
     const list: any[] = Array.isArray(res)
       ? res
       : (Array.isArray(res?.supervisors) ? res.supervisors : (Array.isArray(res?.data) ? res.data : (Array.isArray(res?.items) ? res.items : [])));
@@ -178,10 +215,7 @@ export class AdminService {
     if (params.status) q.push(`status=${encodeURIComponent(params.status)}`);
     const qs = q.length ? `?${q.join('&')}` : '';
     const url = environment.production ? `${path}${qs}` : `${base}${path}${qs}`;
-    const token = (() => { try { return sessionStorage.getItem('accessToken') || sessionStorage.getItem('authToken') || localStorage.getItem('accessToken') || localStorage.getItem('authToken'); } catch { return null; } })();
-    const headers: Record<string, string> = { Accept: 'application/json' };
-    if (token) headers['Authorization'] = `Bearer ${token}`;
-    const res = await firstValueFrom(this.http.get<any>(url, { headers: new HttpHeaders(headers) }));
+  const res = await firstValueFrom(this.http.get<any>(url, { headers: await this.authHeaders() }));
     const items: any[] = Array.isArray(res) ? res : (Array.isArray(res?.data) ? res.data : (Array.isArray(res?.items) ? res.items : []));
     const total: number | undefined = (typeof res?.total === 'number') ? res.total : (typeof res?.count === 'number' ? res.count : undefined);
     const mapped = items.map((x: any) => ({
@@ -198,16 +232,14 @@ export class AdminService {
 
   async reviewCompanyRequest(input: { requestId: string; decision: 'APPROVED'|'REJECTED'; notes?: string }): Promise<{ message?: string }>{
     const base = environment.apiBaseUrl.replace(/\/$/, '');
-    const token = (() => { try { return sessionStorage.getItem('accessToken') || sessionStorage.getItem('authToken') || localStorage.getItem('accessToken') || localStorage.getItem('authToken'); } catch { return null; } })();
-    const headers: Record<string, string> = { 'Content-Type': 'application/json', Accept: 'application/json' };
-    if (token) headers['Authorization'] = `Bearer ${token}`;
+  const headers = await this.authHeaders(true);
     // Try primary endpoint: POST /api/admin/review-company
     const postJson = async (path: string, body: any) => {
       const url = environment.production ? (path.startsWith('http') ? path : path) : `${base}${path.startsWith('/') ? '' : '/'}${path}`;
-      return await firstValueFrom(this.http.post<any>(url, body, { headers: new HttpHeaders(headers) }));
+  return await firstValueFrom(this.http.post<any>(url, body, { headers }));
     };
     try {
-      const res = await postJson('/api/admin/review-company', { requestId: input.requestId, action: input.decision, notes: input.notes });
+  const res = await postJson('/api/admin/review-company', { requestId: input.requestId, action: input.decision, notes: input.notes });
       return res;
     } catch (errPrimary) {
       // Fallback split endpoints: /approve or /reject
@@ -225,21 +257,16 @@ export class AdminService {
     const base = environment.apiBaseUrl.replace(/\/$/, '');
     const path = '/api/admin/assign-supervisor';
     const url = environment.production ? path : `${base}${path}`;
-    const token = (() => { try { return sessionStorage.getItem('accessToken') || sessionStorage.getItem('authToken') || localStorage.getItem('accessToken') || localStorage.getItem('authToken'); } catch { return null; } })();
-    const headers: Record<string, string> = { 'Content-Type': 'application/json', Accept: 'application/json' };
-    if (token) headers['Authorization'] = `Bearer ${token}`;
+  const headers = await this.authHeaders(true);
     const body = { siteSupervisorId: String(payload.siteSupervisorId), companyId: String(payload.companyId) };
-    return await firstValueFrom(this.http.post<any>(url, body, { headers: new HttpHeaders(headers) }));
+  return await firstValueFrom(this.http.post<any>(url, body, { headers }));
   }
 
   async getCompanySupervisors(companyId: string): Promise<{ company: any; supervisors: any[]; totalSupervisors?: number }> {
     const base = environment.apiBaseUrl.replace(/\/$/, '');
     const path = `/api/admin/company-supervisors?companyId=${encodeURIComponent(companyId)}`;
     const url = environment.production ? path : `${base}${path}`;
-    const token = (() => { try { return sessionStorage.getItem('accessToken') || sessionStorage.getItem('authToken') || localStorage.getItem('accessToken') || localStorage.getItem('authToken'); } catch { return null; } })();
-    const headers: Record<string, string> = { Accept: 'application/json' };
-    if (token) headers['Authorization'] = `Bearer ${token}`;
-    const res = await firstValueFrom(this.http.get<any>(url, { headers: new HttpHeaders(headers) }));
+  const res = await firstValueFrom(this.http.get<any>(url, { headers: await this.authHeaders() }));
     const company = res?.company ?? {};
     const supervisors = Array.isArray(res?.company?.supervisors) ? res.company.supervisors : (Array.isArray(res?.supervisors) ? res.supervisors : []);
     return { company, supervisors, totalSupervisors: res?.totalSupervisors };
@@ -249,10 +276,7 @@ export class AdminService {
     const base = environment.apiBaseUrl.replace(/\/$/, '');
     const path = '/api/admin/company-supervisors';
     const url = environment.production ? path : `${base}${path}`;
-    const token = (() => { try { return sessionStorage.getItem('accessToken') || sessionStorage.getItem('authToken') || localStorage.getItem('accessToken') || localStorage.getItem('authToken'); } catch { return null; } })();
-    const headers: Record<string, string> = { Accept: 'application/json' };
-    if (token) headers['Authorization'] = `Bearer ${token}`;
-    const res = await firstValueFrom(this.http.post<any>(url, '', { headers: new HttpHeaders(headers) }));
+  const res = await firstValueFrom(this.http.post<any>(url, '', { headers: await this.authHeaders() }));
     const companies: any[] = Array.isArray(res?.companies) ? res.companies : (Array.isArray(res) ? res : []);
     return companies;
   }

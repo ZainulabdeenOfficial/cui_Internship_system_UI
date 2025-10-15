@@ -43,6 +43,7 @@ function normalizePath(req: HttpRequest<any>): string {
   return raw.split('?')[0];
 }
 
+let isRefreshingGlobally = false;
 export const authTokenInterceptor: HttpInterceptorFn = (req, next) => {
   const auth = inject(AuthService);
   try {
@@ -73,6 +74,12 @@ export const authTokenInterceptor: HttpInterceptorFn = (req, next) => {
         const eligible = isApi && !isRefresh && !isLogin && err?.status === 401;
         if (!eligible) return throwError(() => err);
         // Attempt a single refresh then retry the original request with updated token
+        if (isRefreshingGlobally) {
+          // If another request is already refreshing and we still got 401, logout
+          auth.logout({ redirect: true }).catch(() => {});
+          return throwError(() => err);
+        }
+        isRefreshingGlobally = true;
         return from(auth.refreshAccessToken()).pipe(
           switchMap(() => {
             const token = getSessionToken();
@@ -82,10 +89,16 @@ export const authTokenInterceptor: HttpInterceptorFn = (req, next) => {
               : req;
             return next(retried);
           }),
-          catchError(() => throwError(() => err))
+          catchError(() => {
+            // refresh failed, logout and bubble error
+            auth.logout({ redirect: true }).catch(() => {});
+            return throwError(() => err);
+          })
         );
       } catch {
         return throwError(() => err);
+      } finally {
+        isRefreshingGlobally = false;
       }
     })
   );

@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { Router } from '@angular/router';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import { StudentRegisterRequest, RegisterResponse, LoginRequest, LoginResponse, SendVerificationEmailRequest, SendVerificationEmailResponse, RefreshTokenResponse } from '../models/auth.models';
@@ -10,7 +11,7 @@ import { timeout } from 'rxjs/operators';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient, private router: Router) {}
   private base = (environment.production ? environment.apiBaseUrl.replace(/\/$/, '') : '').replace(/\/$/, '');
 
   async registerStudent(input: StudentRegisterRequest, options?: { timeoutMs?: number }): Promise<RegisterResponse> {
@@ -140,5 +141,26 @@ export class AuthService {
   async generatePassword(): Promise<GeneratePasswordResponse> {
     const url = `${this.base}/api/auth/generate-password`;
     return await firstValueFrom(this.http.get<GeneratePasswordResponse>(url));
+  }
+
+  clearTokens() {
+    try {
+      sessionStorage.removeItem('authToken');
+      sessionStorage.removeItem('accessToken');
+      sessionStorage.removeItem('token');
+    } catch {}
+    try { localStorage.removeItem('refreshToken'); } catch {}
+  }
+
+  async logout(options?: { redirect?: boolean; returnTo?: string }) {
+    this.clearTokens();
+    const doRedirect = options?.redirect !== false;
+    if (!doRedirect) return;
+    const returnUrl = options?.returnTo || (typeof window !== 'undefined' ? (window.location.pathname + window.location.search) : undefined);
+    try {
+      await this.router.navigate(['/login'], { queryParams: returnUrl ? { returnUrl } : undefined });
+    } catch {
+      try { if (typeof window !== 'undefined') window.location.href = '/login' + (returnUrl ? (`?returnUrl=${encodeURIComponent(returnUrl)}`) : ''); } catch {}
+    }
   }
 }
