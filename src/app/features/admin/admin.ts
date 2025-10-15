@@ -25,6 +25,8 @@ export class Admin {
         if ((allowed as readonly string[]).includes(t)) this.currentTab = t as any;
       });
     } catch {}
+    // Preload companies once for cross-tab usage (site supervisor dropdowns etc.)
+    this.refreshCompanies();
   }
   get students() { return this.store.students; }
   get complaints() { return this.store.complaints; }
@@ -37,7 +39,9 @@ export class Admin {
   get assignmentsMap() { return this.store.assignments; }
   get freelanceMap() { return this.store.freelance; }
   get facultyList() { return this.store.facultySupervisors; }
-  get companyList() { return this.store.companies; }
+  // Companies: source of truth from backend; keep a local cache for display
+  private companiesCache: Array<import('../../shared/services/store.service').Company & { remoteId?: string }> = [];
+  get companyList() { return () => this.companiesCache; }
   get siteList() { return this.store.siteSupervisors; }
   // search/filter inputs
   search = { officers: '', faculty: '', companies: '', sites: '', students: '' };
@@ -52,6 +56,8 @@ export class Admin {
   selectTab(tab: Admin['currentTab']) {
     this.currentTab = tab;
     try { this.router.navigate([], { relativeTo: this.route, queryParams: { tab }, queryParamsHandling: 'merge' }); } catch {}
+    // Lazy-load companies when Companies tab opens
+    if (tab === 'companies' || tab === 'sites') this.refreshCompanies();
   }
   get officers() { return this.store.internshipOfficers; }
   officer = { name: '', email: '' };
@@ -90,6 +96,18 @@ export class Admin {
     delete this.evidenceDecision[rec.id];
     delete this.evidenceComment[rec.id];
     this.toast.success(`Evidence ${decision}`);
+  }
+  async refreshCompanies() {
+    try {
+      const list = await this.adminApi.getCompanies();
+      // Normalize to UI company shape; keep remoteId for edit mapping
+      this.companiesCache = list.map(x => ({
+        id: x.id, name: x.name, address: x.address, email: x.email, website: x.website, description: x.description, industry: x.industry, phone: x.phone, remoteId: x.id
+      }));
+    } catch (err: any) {
+      const msg = err?.error?.message || err?.message || 'Failed to load companies from server';
+      this.toast.danger(msg);
+    }
   }
 
   private uniDomain = '@cuisahiwal.edu.pk';
@@ -427,13 +445,14 @@ export class Admin {
     if (!name?.trim()) { this.toast.warning('Company name is required'); return; }
     if (!email?.trim()) { this.toast.warning('Company email is required'); return; }
     // Duplicate validation by name (case-insensitive)
-    const exists = (this.companyList() || []).some(c => (c.name || '').trim().toLowerCase() === name.trim().toLowerCase());
+  const exists = (this.companyList() || []).some(c => (c.name || '').trim().toLowerCase() === name.trim().toLowerCase());
     if (exists) { this.toast.warning('This company is already listed'); return; }
     try {
-  const res = await this.adminApi.addCompany({ name, email, phone, address, website, industry, description });
-      // Also update local store for immediate UI feedback
-  const cid = this.store.addCompany(name, address, { email, phone, website, industry, description, remoteId: res?.id });
-      if (this.site.companyId === '') this.site.companyId = cid;
+    const res = await this.adminApi.addCompany({ name, email, phone, address, website, industry, description });
+    // Refresh from server instead of adding locally
+    await this.refreshCompanies();
+    // Preselect last created if present
+    if (this.site.companyId === '' && res?.id) this.site.companyId = res.id;
       this.company = { name: '', email: '', phone: '', address: '', website: '', industry: '', description: '' };
       this.toast.success(res?.message || 'Company added');
     } catch (err: any) {
@@ -453,17 +472,16 @@ export class Admin {
   }
   async saveCompanyEdit() {
     if (!this.editingCompanyId) return;
-    const local = this.companyList().find(x => x.id === this.editingCompanyId);
+  const local = this.companyList().find(x => x.id === this.editingCompanyId);
     if (!local) { this.cancelEditCompany(); return; }
     const changes = this.companyEdit;
     const name = (changes.name || local.name || '').trim();
     if (!name) { this.toast.warning('Company name is required'); return; }
     try {
-      // Attempt backend update if we have remoteId or name present
-      await this.adminApi.updateCompany({ id: local.remoteId, name, email: changes.email, phone: changes.phone, address: changes.address, website: changes.website, industry: changes.industry, description: changes.description });
+      // Update on backend, then refresh list
+      await this.adminApi.updateCompany({ id: (local as any).remoteId || local.id, name, email: changes.email, phone: changes.phone, address: changes.address, website: changes.website, industry: changes.industry, description: changes.description });
+      await this.refreshCompanies();
     } catch {}
-    // Always update local store
-    this.store.updateCompany(local.id, { ...changes, name });
     this.cancelEditCompany();
     this.toast.success('Company updated');
   }

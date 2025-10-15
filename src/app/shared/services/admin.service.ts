@@ -117,4 +117,36 @@ export class AdminService {
     if (!body.name) throw new Error('Company name is required');
     return await firstValueFrom(this.http.post<{ message?: string }>(url, body, { headers: new HttpHeaders(headers) }));
   }
+
+  async getCompanies(): Promise<Array<{ id: string; name: string; email?: string; phone?: string; address?: string; website?: string; industry?: string; description?: string }>> {
+    // Prefer an admin-scoped list endpoint; fallback to a generic one if needed
+    const base = environment.apiBaseUrl.replace(/\/$/, '');
+    const candidates = ['/api/admin/companies', '/api/companies', '/api/admin/list-companies'];
+    const token = (() => { try { return sessionStorage.getItem('accessToken') || sessionStorage.getItem('authToken') || localStorage.getItem('accessToken') || localStorage.getItem('authToken'); } catch { return null; } })();
+    const headers: Record<string, string> = { Accept: 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    const tryGet = async (path: string) => {
+      const url = environment.production ? (path.startsWith('http') ? path : path) : `${base}${path.startsWith('/') ? '' : '/'}${path}`;
+      return await firstValueFrom(this.http.get<any>(url, { headers: new HttpHeaders(headers) }));
+    };
+    let lastErr: any;
+    for (const p of candidates) {
+      try {
+        const res = await tryGet(p);
+        // Normalize to expected shape array
+        const list: any[] = Array.isArray(res) ? res : (Array.isArray(res?.data) ? res.data : (Array.isArray(res?.items) ? res.items : []));
+        return list.map((x: any) => ({
+          id: (x.id ?? x._id ?? x.companyId ?? x.remoteId ?? '').toString(),
+          name: x.name ?? x.companyName ?? '',
+          email: x.email,
+          phone: x.phone,
+          address: x.address,
+          website: x.website,
+          industry: x.industry,
+          description: x.description
+        })).filter(c => !!c.id && !!c.name);
+      } catch (err) { lastErr = err; }
+    }
+    throw lastErr || new Error('Failed to fetch companies');
+  }
 }
