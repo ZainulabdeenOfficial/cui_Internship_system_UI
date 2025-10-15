@@ -166,17 +166,26 @@ export class AdminService {
     };
     let res: any;
     let lastErr: any;
-    // 1) Preferred: POST /api/admin/company-supervisors (returns companies with supervisorCount)
-    try { res = await post('/api/admin/company-supervisors'); } catch (e) { lastErr = e; }
-    if (!res) {
-      // 2) Fallback: GET /api/admin/companies
-      try { res = await get('/api/admin/companies'); } catch (e) { lastErr = e; }
+    const attempts: Array<{ method: 'GET'|'POST'; path: string }> = [
+      { method: 'POST', path: '/api/admin/company-supervisors' },
+      { method: 'GET',  path: '/api/admin/companies' },
+      { method: 'GET',  path: '/api/admin/list-companies' },
+      { method: 'GET',  path: '/api/companies' }
+    ];
+    for (const a of attempts) {
+      try {
+        res = a.method === 'POST' ? await post(a.path) : await get(a.path);
+        if (res) break;
+      } catch (e: any) {
+        lastErr = e;
+        // Continue trying others; if final error is 404, we'll return [] below
+      }
     }
     if (!res) {
-      // 3) Fallback: GET /api/companies (if public)
-      try { res = await get('/api/companies'); } catch (e) { lastErr = e; }
+      const status = lastErr?.status ?? lastErr?.error?.status;
+      if (status === 404) return [];
+      throw lastErr || new Error('Failed to fetch companies');
     }
-    if (!res) throw lastErr || new Error('Failed to fetch companies');
     const list: any[] = Array.isArray(res?.companies) ? res.companies : (Array.isArray(res) ? res : (Array.isArray(res?.data) ? res.data : (Array.isArray(res?.items) ? res.items : [])));
     return list.map((x: any) => ({
       id: (x.id ?? x._id ?? x.companyId ?? x.remoteId ?? '').toString(),
