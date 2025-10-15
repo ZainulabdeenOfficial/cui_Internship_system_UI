@@ -199,9 +199,15 @@ export class Login implements OnDestroy, OnInit {
         this.error = 'Server took too long to respond. Please try again.';
         this.toast.warning(this.error);
       } else {
-        // generic error to avoid user enumeration
-        this.error = 'Invalid email or password';
-        this.toast.danger(this.error);
+        // Surface server message if it's a 5xx, otherwise generic to avoid user enumeration
+        const status = e?.status ?? e?.error?.status ?? 0;
+        const serverMsg = e?.error?.message || e?.error?.error || e?.message;
+        if (status >= 500) {
+          this.error = serverMsg || 'Server error. Please try again later.';
+        } else {
+          this.error = 'Invalid email or password';
+        }
+  this.toast.danger(this.error || 'Login failed');
         this.failedAttempts++;
       }
       if (this.failedAttempts >= 3) {

@@ -12,14 +12,33 @@ import { timeout } from 'rxjs/operators';
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   constructor(private http: HttpClient, private router: Router) {}
-  private base = (environment.production ? environment.apiBaseUrl.replace(/\/$/, '') : '').replace(/\/$/, '');
+  private absBase = environment.apiBaseUrl.replace(/\/$/, '');
+  private rel(path: string) { return path.startsWith('/') ? path : `/${path}`; }
+  private async postJson<T>(path: string, body: any, opts?: { timeoutMs?: number }) {
+    const urlRel = this.rel(path);
+    const req$ = this.http.post<T>(urlRel, body, { headers: new HttpHeaders({ 'Content-Type': 'application/json', Accept: 'application/json' }) });
+    try { return await firstValueFrom(opts?.timeoutMs ? req$.pipe(timeout(opts.timeoutMs)) : req$); }
+    catch (err) {
+      // Fallback to absolute base if relative fails due to environment misconfig
+      const abs = `${this.absBase}${urlRel}`;
+      const req2$ = this.http.post<T>(abs, body, { headers: new HttpHeaders({ 'Content-Type': 'application/json', Accept: 'application/json' }) });
+      return await firstValueFrom(opts?.timeoutMs ? req2$.pipe(timeout(opts.timeoutMs)) : req2$);
+    }
+  }
+  private async getJson<T>(path: string, opts?: { timeoutMs?: number }) {
+    const urlRel = this.rel(path);
+    const req$ = this.http.get<T>(urlRel, { headers: new HttpHeaders({ Accept: 'application/json' }) });
+    try { return await firstValueFrom(opts?.timeoutMs ? req$.pipe(timeout(opts.timeoutMs)) : req$); }
+    catch (err) {
+      const abs = `${this.absBase}${urlRel}`;
+      const req2$ = this.http.get<T>(abs, { headers: new HttpHeaders({ Accept: 'application/json' }) });
+      return await firstValueFrom(opts?.timeoutMs ? req2$.pipe(timeout(opts.timeoutMs)) : req2$);
+    }
+  }
 
   async registerStudent(input: StudentRegisterRequest, options?: { timeoutMs?: number }): Promise<RegisterResponse> {
-    const url = `${this.base}/api/auth/register`;
     try {
-  const res = await firstValueFrom(
-    this.http.post<RegisterResponse>(url, input, { headers: new HttpHeaders({ 'Content-Type': 'application/json' }) }).pipe(timeout(options?.timeoutMs ?? 4000))
-  );
+  const res = await this.postJson<RegisterResponse>('/api/auth/register', input, { timeoutMs: options?.timeoutMs ?? 4000 });
       // If API returns 200, consider it success even if it lacks a 'success' flag
       return ({ success: true, ...(res as any) }) as RegisterResponse;
     } catch (err: any) {
@@ -29,12 +48,9 @@ export class AuthService {
   }
 
   async login(input: LoginRequest, options?: { timeoutMs?: number }): Promise<LoginResponse> {
-    const url = `${this.base}/api/auth/login`;
     const to = options?.timeoutMs ?? 4000;
     const attempt = async (): Promise<LoginResponse> => {
-      const res = await firstValueFrom(
-        this.http.post<LoginResponse>(url, input, { headers: new HttpHeaders({ 'Content-Type': 'application/json' }) }).pipe(timeout(to))
-      );
+      const res = await this.postJson<LoginResponse>('/api/auth/login', input, { timeoutMs: to });
       const anyRes: any = res || {};
         let token = anyRes.token || anyRes.accessToken;
         const user = anyRes.user ?? anyRes.data ?? undefined;
@@ -72,12 +88,8 @@ export class AuthService {
   }
 
   async sendVerificationEmail(email: string, options?: { timeoutMs?: number }): Promise<SendVerificationEmailResponse> {
-    const url = `${this.base}/api/auth/send-verification-email`;
     try {
-      const res = await firstValueFrom(
-        this.http.post<SendVerificationEmailResponse>(url, { email } as SendVerificationEmailRequest, { headers: new HttpHeaders({ 'Content-Type': 'application/json' }) })
-          .pipe(timeout(options?.timeoutMs ?? 4000))
-      );
+      const res = await this.postJson<SendVerificationEmailResponse>('/api/auth/send-verification-email', { email } as SendVerificationEmailRequest, { timeoutMs: options?.timeoutMs ?? 4000 });
       return res;
     } catch (err: any) {
       // Normalize timeout into a user friendly message while allowing UI to proceed optimistically
@@ -89,31 +101,20 @@ export class AuthService {
   }
 
   async verifyEmail(token: string): Promise<VerifyEmailResponse> {
-    const url = `${this.base}/api/auth/verify-email`;
-    return await firstValueFrom(
-      this.http.post<VerifyEmailResponse>(url, { token } as VerifyEmailRequest, { headers: new HttpHeaders({ 'Content-Type': 'application/json' }) })
-    );
+    return await this.postJson<VerifyEmailResponse>('/api/auth/verify-email', { token } as VerifyEmailRequest);
   }
 
   async forgotPassword(email: string): Promise<{ message: string }> {
-    const absBase = environment.apiBaseUrl.replace(/\/$/, '');
-    const url = `${absBase}/api/auth/forgot-password`;
-    return await firstValueFrom(
-      this.http.post<{ message: string }>(url, { email }, { headers: new HttpHeaders({ 'Content-Type': 'application/json' }) })
-    );
+    return await this.postJson<{ message: string }>('/api/auth/forgot-password', { email });
   }
 
   async resetPassword(token: string, password: string): Promise<ResetPasswordResponse> {
-    const url = `${this.base}/api/auth/reset-password`;
     const body: ResetPasswordRequest = { token, password };
-    return await firstValueFrom(
-      this.http.post<ResetPasswordResponse>(url, body, { headers: new HttpHeaders({ 'Content-Type': 'application/json' }) })
-    );
+    return await this.postJson<ResetPasswordResponse>('/api/auth/reset-password', body);
   }
 
   async refreshAccessToken(): Promise<RefreshTokenResponse> {
-    const absBase = environment.apiBaseUrl.replace(/\/$/, '');
-    const url = `${absBase}/api/auth/refresh-token`;
+    const rel = '/api/auth/refresh-token';
     let refreshToken: string | null = null;
     try { refreshToken = localStorage.getItem('refreshToken'); } catch {}
     if (!refreshToken) {
@@ -123,11 +124,11 @@ export class AuthService {
     const post = (u: string) => this.http.post<RefreshTokenResponse>(u, { refreshToken }, { headers: new HttpHeaders({ 'Content-Type': 'application/json' }) });
     let res: RefreshTokenResponse;
     try {
-      res = await firstValueFrom(post(url));
-    } catch (err: any) {
-      // Fallback: try same-origin path to use Vercel rewrites
-      const rel = '/api/auth/refresh-token';
+      // Prefer same-origin (rewrites/proxy) then fallback to absolute
       res = await firstValueFrom(post(rel));
+    } catch (err: any) {
+      const absUrl = `${this.absBase}${rel}`;
+      res = await firstValueFrom(post(absUrl));
     }
     try {
       const tok = (res as any)?.accessToken || (res as any)?.token;
@@ -139,8 +140,7 @@ export class AuthService {
   }
 
   async generatePassword(): Promise<GeneratePasswordResponse> {
-    const url = `${this.base}/api/auth/generate-password`;
-    return await firstValueFrom(this.http.get<GeneratePasswordResponse>(url));
+    return await this.getJson<GeneratePasswordResponse>('/api/auth/generate-password');
   }
 
   clearTokens() {
