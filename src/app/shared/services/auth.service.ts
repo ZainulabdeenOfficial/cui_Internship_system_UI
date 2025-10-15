@@ -18,7 +18,10 @@ export class AuthService {
     const urlRel = this.rel(path);
     const req$ = this.http.post<T>(urlRel, body, { headers: new HttpHeaders({ 'Content-Type': 'application/json', Accept: 'application/json' }) });
     try { return await firstValueFrom(opts?.timeoutMs ? req$.pipe(timeout(opts.timeoutMs)) : req$); }
-    catch (err) {
+    catch (err: any) {
+      // Only fallback on network/CORS-like errors (status 0). For 4xx/5xx, bubble up as-is.
+      const status = err?.status ?? err?.error?.status ?? 0;
+      if (status && status !== 0) throw err;
       // Fallback to absolute base if relative fails due to environment misconfig
       const abs = `${this.absBase}${urlRel}`;
       const req2$ = this.http.post<T>(abs, body, { headers: new HttpHeaders({ 'Content-Type': 'application/json', Accept: 'application/json' }) });
@@ -29,7 +32,9 @@ export class AuthService {
     const urlRel = this.rel(path);
     const req$ = this.http.get<T>(urlRel, { headers: new HttpHeaders({ Accept: 'application/json' }) });
     try { return await firstValueFrom(opts?.timeoutMs ? req$.pipe(timeout(opts.timeoutMs)) : req$); }
-    catch (err) {
+    catch (err: any) {
+      const status = err?.status ?? err?.error?.status ?? 0;
+      if (status && status !== 0) throw err;
       const abs = `${this.absBase}${urlRel}`;
       const req2$ = this.http.get<T>(abs, { headers: new HttpHeaders({ Accept: 'application/json' }) });
       return await firstValueFrom(opts?.timeoutMs ? req2$.pipe(timeout(opts.timeoutMs)) : req2$);
