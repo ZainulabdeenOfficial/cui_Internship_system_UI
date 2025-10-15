@@ -1,5 +1,53 @@
 <div class="container py-4">
   <h2 class="mb-3">Faculty Supervisor</h2>
+  <ul class="nav nav-tabs mb-3">
+    <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='students'" (click)="selectTab('students')">Students</button></li>
+    <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='details'" (click)="selectTab('details')">Details</button></li>
+    <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='reports'" (click)="selectTab('reports')">Reports</button></li>
+    <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='assignments'" (click)="selectTab('assignments')">Assignments</button></li>
+    <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='agreements'" (click)="selectTab('agreements')">Agreements</button></li>
+    <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='profile'" (click)="selectTab('profile')">Profile</button></li>
+  </ul>
+  <div class="row g-3 mb-3">
+    <div class="col-md-3">
+      <div class="card stat">
+        <div class="card-body">
+          <div class="stat-label">My Students</div>
+          <div class="stat-value">{{ filteredStudents().length }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card stat">
+        <div class="card-body">
+          <div class="stat-label">Pending Approvals</div>
+          <div class="stat-value">{{ countPending() }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card stat">
+        <div class="card-body">
+          <div class="stat-label">On-site/Virtual</div>
+          <div class="stat-value">{{ countOnsiteVirtual() }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card stat">
+        <div class="card-body">
+          <div class="stat-label">Fiverr/Upwork</div>
+          <div class="stat-value">{{ countFiverrUpwork() }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- hidden usage to ensure standalone imports are recognized -->
+  <ng-template #__ensureImportsFaculty>
+    {{ ([] | paginate: 1 : 10).length }}
+    <app-paginator [total]="0" [page]="1" [pageSize]="10"></app-paginator>
+  </ng-template>
   <div class="alert alert-info">
     <div class="fw-semibold">Evaluation Scheme</div>
     <ul class="mb-0">
@@ -7,29 +55,40 @@
       <li><strong>Freelancing:</strong> Supervisor (60) + Internship Office (40). Office sub-marks are 5 (Proposal) + 5 (Logs) + 10 (Final Report).</li>
     </ul>
   </div>
-  <div class="row g-3 align-items-end mb-3">
-    <div class="col-md-4">
-      <label class="form-label">Filter by Mode</label>
-      <select class="form-select" [(ngModel)]="modeFilter" name="mode">
-        <option [ngValue]="'All'">All</option>
-        <option [ngValue]="'OnSite'">OnSite</option>
-        <option [ngValue]="'Virtual'">Virtual</option>
-        <option [ngValue]="'Fiverr'">Fiverr</option>
-        <option [ngValue]="'Upwork'">Upwork</option>
-      </select>
-    </div>
-    <div class="col-md-4">
-      <label class="form-label">Search</label>
-      <input class="form-control" [(ngModel)]="search" name="q" placeholder="Search name/email/registration no" />
-    </div>
-    <div class="col-md-4">
-      <label class="form-label">Faculty Total (0-60)</label>
-      <input type="number" min="0" max="60" class="form-control" (ngModelChange)="setMarks($event)" [ngModel]="selectedStudent()?.marks?.faculty ?? ''" />
+  <div class="card filter-card mb-3">
+    <div class="card-body">
+      <div class="row g-3 align-items-end">
+        <div class="col-md-4">
+          <label class="form-label">Filter by Mode</label>
+          <select class="form-select" [(ngModel)]="modeFilter" name="mode">
+            <option [ngValue]="'All'">All</option>
+            <option [ngValue]="'OnSite'">On-site</option>
+            <option [ngValue]="'Virtual'">Virtual</option>
+            <option [ngValue]="'Fiverr'">Fiverr</option>
+            <option [ngValue]="'Upwork'">Upwork</option>
+          </select>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Search</label>
+          <div class="input-group">
+            <span class="input-group-text"><i class="pi pi-search"></i></span>
+            <input class="form-control" [(ngModel)]="search" name="q" placeholder="Search name, email or reg no" />
+          </div>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Faculty Total (0-60)</label>
+          <div class="input-group">
+            <span class="input-group-text"><i class="pi pi-chart-line"></i></span>
+            <input type="number" min="0" max="60" class="form-control" (ngModelChange)="setMarks($event)" [ngModel]="selectedStudent()?.marks?.faculty ?? ''" />
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
+  @if (currentTab==='students') {
   <div class="table-responsive mb-3">
-    <table class="table table-striped align-middle">
+    <table class="table table-hover align-middle shadow-sm table-card">
       <thead>
         <tr>
           <th>Student</th>
@@ -41,8 +100,8 @@
         </tr>
       </thead>
       <tbody>
-        @for (s of filteredStudents(); track s.id) {
-        <tr>
+  @for (s of (filteredStudents() | paginate: page.students : pageSize); track s.id) {
+  <tr>
           <td>{{ s.name }}</td>
           <td>{{ s.email }}</td>
           <td>{{ s.registrationNo || '-' }}</td>
@@ -57,20 +116,32 @@
           </td>
           <td>{{ s.marks?.faculty ?? 0 }}</td>
           <td>
-            <button class="btn btn-sm btn-outline-primary" (click)="selectedId = s.id">Open</button>
+            <button class="btn btn-sm btn-primary" (click)="selectedId = s.id">Open</button>
           </td>
         </tr>
         }
       </tbody>
     </table>
+    <app-paginator [total]="filteredStudents().length" [(page)]="page.students" [pageSize]="pageSize"></app-paginator>
   </div>
+  }
   @if (selectedId) {
-      <div class="col-md-6">
-        <h5>Approval Forms</h5>
+    @if (currentTab==='details') {
+    <div class="row g-3">
+  <div class="col-lg-6">
+        <div class="card section-card">
+          <div class="card-header">Approval Forms</div>
+          <div class="card-body">
         @if (approvals().length) {
           @for (a of approvals(); track a.id; let i = $index) {
-          <div class="card mb-2" *ngFor="let a of approvals(); let i = index">
-            <div class="card-header">Approval #{{ i+1 }} — {{ a.createdAt | date:'short' }}</div>
+          <div class="card mb-2 shadow-sm">
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <span>Approval #{{ i+1 }} — {{ a.createdAt | date:'short' }}</span>
+              <span class="badge"
+                [class.text-bg-secondary]="!a.status || a.status==='pending'"
+                [class.text-bg-success]="a.status==='approved'"
+                [class.text-bg-danger]="a.status==='rejected'">{{ a.status || 'pending' }}</span>
+            </div>
             <div class="card-body small">
               <div><strong>Student:</strong> {{ a.studentInfo.name }} ({{ a.studentInfo.studentId }}) — {{ a.studentInfo.program }}, {{ a.studentInfo.semester }}</div>
               <div><strong>Company:</strong> {{ a.company.name }} — {{ a.company.address }}</div>
@@ -82,87 +153,115 @@
           </div>
           }
         } @else { <div class="text-muted">No approval form submitted yet.</div> }
-      <div class="col-md-6">
-        <h5>Weekly Logs</h5>
-        <ul class="list-group">
-          @for (l of logs(); track $index) {<li class="list-group-item">Week {{ l.week }} · {{ l.note }} <span class="text-muted">— {{ l.date | date:'short' }}</span></li>}
-        </ul>
+          </div>
+        </div>
       </div>
-      <div class="col-md-6 mt-3">
-        <h5>Reports</h5>
-        <div class="table-responsive">
-          <table class="table table-sm align-middle">
+  <div class="col-lg-6">
+        <div class="card section-card">
+          <div class="card-header">Weekly Logs</div>
+          <div class="card-body">
+            <ul class="list-group">
+              @for (l of logs(); track $index) {<li class="list-group-item">Week {{ l.week }} · {{ l.note }} <span class="text-muted">— {{ l.date | date:'short' }}</span></li>}
+            </ul>
+          </div>
+        </div>
+      </div>
+  <div class="col-lg-6">
+        <div class="card section-card">
+          <div class="card-header">Reports</div>
+          <div class="card-body">
+            <div class="table-responsive">
+              <table class="table table-sm align-middle table-card">
             <thead><tr><th>Type</th><th>Title</th><th>Date</th><th>Score</th><th>Approved</th><th>Action</th></tr></thead>
             <tbody>
               @for (r of reports(); track r.id) {
-                <td>{{ r.type | titlecase }}</td>
-                <td>{{ r.title || '(Untitled)' }}</td>
-                <td>{{ r.date | date:'short' }}</td>
-                <td style="width:120px"><input type="number" class="form-control form-control-sm" [(ngModel)]="reportMarks[r.id]" name="rm{{r.id}}" [placeholder]="r.score != null ? (r.score + '') : '-'" /></td>
-                <td>
-                  <span class="badge" [class.text-bg-secondary]="!r.approved" [class.text-bg-success]="r.approved">{{ r.approved ? 'Approved' : 'Pending' }}</span>
-                </td>
-                <td>
-                  <div class="btn-group btn-group-sm">
-                    <button class="btn btn-outline-primary" (click)="setReportMark(r.id)">Save</button>
-                    <button class="btn btn-outline-success" (click)="toggleReportApproved(r.id, true)">Approve</button>
-                    <button class="btn btn-outline-secondary" (click)="toggleReportApproved(r.id, false)">Unapprove</button>
-                  </div>
-                </td>
+                <tr>
+                  <td>{{ r.type | titlecase }}</td>
+                  <td>{{ r.title || '(Untitled)' }}</td>
+                  <td>{{ r.date | date:'short' }}</td>
+                  <td style="width:120px"><input type="number" min="0" class="form-control form-control-sm" [(ngModel)]="reportMarks[r.id]" name="rm{{r.id}}" [placeholder]="r.score != null ? (r.score + '') : '-'" /></td>
+                  <td>
+                    <span class="badge" [class.text-bg-secondary]="!r.approved" [class.text-bg-success]="r.approved">{{ r.approved ? 'Approved' : 'Pending' }}</span>
+                  </td>
+                  <td>
+                    <div class="btn-group btn-group-sm">
+                      <button class="btn btn-primary" (click)="setReportMark(r.id)">Save</button>
+                      <button class="btn btn-success" (click)="toggleReportApproved(r.id, true)">Approve</button>
+                      <button class="btn btn-secondary" (click)="toggleReportApproved(r.id, false)">Unapprove</button>
+                    </div>
+                  </td>
+                </tr>
               }
             </tbody>
-          </table>
+              </table>
+            </div>
+          </div>
         </div>
       </div>
-      <div class="col-md-6 mt-3">
-        <h5>Assignments</h5>
-        <div class="table-responsive">
-          <table class="table table-sm align-middle">
+  <div class="col-lg-6">
+        <div class="card section-card">
+          <div class="card-header">Assignments</div>
+          <div class="card-body">
+            <div class="table-responsive">
+              <table class="table table-sm align-middle table-card">
             <thead><tr><th>File</th><th>Type</th><th>Size</th><th>Uploaded</th><th>Mark</th><th>Actions</th></tr></thead>
             <tbody>
               @for (a of assignments(); track a.id) {
-                <td>{{ a.fileName }}</td>
-                <td>{{ a.fileType }}</td>
-                <td>{{ a.fileSize | number }} bytes</td>
-                <td>{{ a.uploadedAt | date:'short' }}</td>
-                <td style="width:130px"><input type="number" class="form-control form-control-sm" [(ngModel)]="assignMarks[a.id]" name="am{{a.id}}" [placeholder]="a.facultyMark != null ? (a.facultyMark + '') : '-'" /></td>
-                <td>
-                  <div class="btn-group btn-group-sm">
-                    <button class="btn btn-outline-secondary" (click)="downloadAssignment(a)">Download</button>
-                    <button class="btn btn-outline-primary" (click)="setAssignmentMark(a.id)">Save</button>
-                  </div>
-                </td>
+                <tr>
+                  <td>{{ a.fileName }}</td>
+                  <td>{{ a.fileType }}</td>
+                  <td>{{ a.fileSize | number }} bytes</td>
+                  <td>{{ a.uploadedAt | date:'short' }}</td>
+                  <td style="width:130px"><input type="number" min="0" class="form-control form-control-sm" [(ngModel)]="assignMarks[a.id]" name="am{{a.id}}" [placeholder]="a.facultyMark != null ? (a.facultyMark + '') : '-'" /></td>
+                  <td>
+                    <div class="btn-group btn-group-sm">
+                      <button class="btn btn-secondary" (click)="downloadAssignment(a)">Download</button>
+                      <button class="btn btn-primary" (click)="setAssignmentMark(a.id)">Save</button>
+                    </div>
+                  </td>
+                </tr>
               }
             </tbody>
-          </table>
+              </table>
+            </div>
+          </div>
         </div>
       </div>
-      <div class="col-md-6 mt-3">
-        <h5>Agreement</h5>
-        @if (agreements().length) {
-          @for (ag of agreements(); track ag.id; let i = $index) {
-            <div class="card-header">Agreement #{{ i+1 }} — {{ ag.createdAt | date:'short' }}</div>
-            <div class="card-body small">
-              <div><strong>Student Sign:</strong> {{ ag.studentSignatureName }} on {{ ag.date }}</div>
-              <div><strong>Faculty Sign:</strong> {{ ag.facultySignatureName || '-' }} @if (ag.facultySignedAt) {<span class="text-muted">({{ ag.facultySignedAt | date:'short' }})</span>}</div>
-              <div><strong>Office Sign:</strong> {{ ag.officeSignatureName || '-' }} @if (ag.officeSignedAt) {<span class="text-muted">({{ ag.officeSignedAt | date:'short' }})</span>}</div>
-            </div>
-          }
-        } @else { <div class="text-muted">No agreement submitted yet.</div> }
+      <div class="col-lg-6">
+        <div class="card section-card">
+          <div class="card-header">Agreement</div>
+          <div class="card-body">
+            @if (agreements().length) {
+              @for (ag of agreements(); track ag.id; let i = $index) {
+                <div class="card mb-2">
+                  <div class="card-header">Agreement #{{ i+1 }} — {{ ag.createdAt | date:'short' }}</div>
+                  <div class="card-body small">
+                    <div><strong>Student Sign:</strong> {{ ag.studentSignatureName }} on {{ ag.date }}</div>
+                    <div><strong>Faculty Sign:</strong> {{ ag.facultySignatureName || '-' }} @if (ag.facultySignedAt) {<span class="text-muted">({{ ag.facultySignedAt | date:'short' }})</span>}</div>
+                    <div><strong>Office Sign:</strong> {{ ag.officeSignatureName || '-' }} @if (ag.officeSignedAt) {<span class="text-muted">({{ ag.officeSignedAt | date:'short' }})</span>}</div>
+                  </div>
+                </div>
+              }
+            } @else { <div class="text-muted">No agreement submitted yet.</div> }
+          </div>
+        </div>
       </div>
     </div>
+    }
     @if (selectedStudent(); as ss) {
+      @if (currentTab==='details') {
       <div class="row g-3 mt-3">
         <div class="col-md-4"><strong>Assigned Faculty:</strong> {{ facultyProfile()?.name || '-' }}</div>
         <div class="col-md-4"><strong>Assigned Site:</strong> {{ siteName(ss.siteId) }}</div>
         <div class="col-md-4"><strong>Company:</strong> {{ companyName(ss.companyId) }}</div>
       </div>
+      }
     }
   }
 
-  <hr class="my-4" />
-  <h4>My Profile</h4>
-  @if (facultyProfile(); as fp) {
+  @if (currentTab==='profile') { <hr class="my-4" /> }
+  @if (currentTab==='profile') { <h4>My Profile</h4> }
+  @if (facultyProfile(); as fp) { @if (currentTab==='profile') {
     <div class="col-md-4">
       <label class="form-label">Name</label>
       <input class="form-control" [ngModel]="fp.name" (ngModelChange)="updateMyProfile({ name: $event })" />
@@ -175,9 +274,9 @@
       <label class="form-label">Email</label>
       <input class="form-control" [ngModel]="fp.email" (ngModelChange)="updateMyProfile({ email: $event })" />
     </div>
-  }
+  } }
 
-  @if (facultyProfile()) {
+  @if (facultyProfile()) { @if (currentTab==='profile') {
     <div class="col-md-4">
       <label class="form-label">Old Password</label>
       <input type="password" class="form-control" [(ngModel)]="pw.old" />
@@ -193,5 +292,5 @@
     <div class="col-12">
       <button class="btn btn-outline-primary" (click)="changePassword()">Change Password</button>
     </div>
-  }
+  } }
 </div>

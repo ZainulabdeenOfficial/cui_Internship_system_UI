@@ -1,4 +1,4 @@
-import { Component, computed, inject } from '@angular/core';
+import { Component, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ToastService } from './toast.service';
 
@@ -10,7 +10,7 @@ import { ToastService } from './toast.service';
   styleUrl: './toasts.css'
 })
 export class ToastsContainer {
-  toastSvc = inject(ToastService);
+  constructor(public toastSvc: ToastService) {}
   items = computed(() => this.toastSvc.toasts());
   remove(id: string) { this.toastSvc.remove(id); }
 }

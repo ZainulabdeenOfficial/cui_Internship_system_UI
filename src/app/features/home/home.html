@@ -12,10 +12,10 @@
           @for (s of slides; track $index) {
             <div class="carousel-item" [class.active]="$index===0">
               <img [src]="s.img" class="d-block w-100 object-cover hero-img" [attr.alt]="s.alt" [attr.loading]="$index===0? 'eager':'lazy'" decoding="async" />
-              <div class="overlay-gradient"></div>
+              <div class="overlay-gradient" aria-hidden="true"></div>
               <div class="carousel-caption" [ngClass]="s.align">
-                <div class="glass p-3 p-md-4 rounded-3" [class.d-inline-block]="s.align!=='text-start'">
-                  @if ($index === 0) {<h2 class="fw-bold mb-1">{{ s.title }}</h2>} @else {<h3 class="fw-bold mb-1">{{ s.title }}</h3>}
+                <div class="glass hero-glass p-3 p-md-4 rounded-3 d-inline-block">
+                  @if ($index === 0) {<h2 class="fw-bold mb-1 text-white">{{ s.title }}</h2>} @else {<h3 class="fw-bold mb-1">{{ s.title }}</h3>}
                   <p class="mb-0 mb-md-1" [class.mb-3]="$index===0">{{ s.desc }}</p>
                   @if (s.showCtas) {
                     <div class="d-flex gap-2 flex-wrap">
@@ -91,7 +91,7 @@
       <div class="col-md-4">
         <div class="feature-card card h-100">
           <div class="card-body">
-            <h5 class="card-title"><i class="pi pi-verified me-2 text-success"></i>Supervisor Evaluation</h5>
+            <h5 class="card-title"><i class="pi pi-verified me-2 text-success" style="text-align: left;"></i>Supervisor Evaluation</h5>
             <p class="card-text mb-3">Per-report scoring and approvals; batch mid/final marking for site supervisors.</p>
             <a routerLink="/login" class="btn btn-sm btn-outline-success">Login</a>
           </div>

@@ -1,42 +1,79 @@
-import { Component, inject } from '@angular/core';
+import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { StoreService } from '../../shared/services/store.service';
 import { ToastService } from '../../shared/toast/toast.service';
+import { ActivatedRoute, Router } from '@angular/router';
+import { PaginatePipe } from '../../shared/pagination/paginate.pipe';
+import { PaginatorComponent } from '../../shared/pagination/paginator';
+import { AdminService } from '../../shared/services/admin.service';
+import { CreateAccountRequest } from '../../shared/models/admin/create-account.models';
 
 @Component({
   selector: 'app-admin',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, PaginatePipe, PaginatorComponent],
   templateUrl: './admin.html',
   styleUrl: './admin.css'
 })
 export class Admin {
-  private store = inject(StoreService);
-  private toast = inject(ToastService);
-  students = this.store.students;
-  complaints = this.store.complaints;
-  requests = this.store.requests;
-  approvals = this.store.approvals;
-  logsMap = this.store.logs;
-  reportsMap = this.store.reports;
-  agreementsMap = this.store.agreements;
-  designStatementsMap = this.store.designStatements;
-  assignmentsMap = this.store.assignments;
-  freelanceMap = this.store.freelance;
-  facultyList = this.store.facultySupervisors;
-  companyList = this.store.companies;
-  siteList = this.store.siteSupervisors;
+  constructor(private store: StoreService, private toast: ToastService, private route: ActivatedRoute, private router: Router, private adminApi: AdminService) {
+    try {
+      this.route.queryParamMap.subscribe(p => {
+        const t = (p.get('tab') || '').toLowerCase();
+        const allowed = ['students','applications','requests','announcements','officers','faculty','companies','sites','compliance','complaints','scheme','evidence'] as const;
+        if ((allowed as readonly string[]).includes(t)) this.currentTab = t as any;
+      });
+    } catch {}
+    // Preload companies once for cross-tab usage (site supervisor dropdowns etc.)
+    this.refreshCompanies();
+  }
+  get students() { return this.store.students; }
+  get complaints() { return this.store.complaints; }
+  get requests() { return this.store.requests; }
+  get approvals() { return this.store.approvals; }
+  get logsMap() { return this.store.logs; }
+  get reportsMap() { return this.store.reports; }
+  get agreementsMap() { return this.store.agreements; }
+  get designStatementsMap() { return this.store.designStatements; }
+  get assignmentsMap() { return this.store.assignments; }
+  get freelanceMap() { return this.store.freelance; }
+  get facultyList() { return this.store.facultySupervisors; }
+  // Companies: source of truth from backend; keep a local cache for display
+  private companiesCache: Array<import('../../shared/services/store.service').Company & { remoteId?: string }> = [];
+  get companyList() { return () => this.companiesCache; }
+  get siteList() { return this.store.siteSupervisors; }
+  // search/filter inputs
+  search = { officers: '', faculty: '', companies: '', sites: '', students: '' };
+  filter = { facultyDept: '', industry: '', siteCompanyId: '', studentsApproved: 'all' as 'all'|'yes'|'no' };
   facultyId = '';
   siteId = '';
   selectedId: string | null = null;
-  officers = this.store.internshipOfficers;
+  currentTab: 'students'|'applications'|'requests'|'announcements'|'officers'|'faculty'|'companies'|'sites'|'compliance'|'complaints'|'scheme'|'evidence' = 'students';
+  // pagination
+  page = { students: 1, requests: 1, complaints: 1, faculty: 1, sites: 1, companies: 1, announcements: 1, officers: 1 };
+  pageSize = 10;
+  selectTab(tab: Admin['currentTab']) {
+    this.currentTab = tab;
+    try { this.router.navigate([], { relativeTo: this.route, queryParams: { tab }, queryParamsHandling: 'merge' }); } catch {}
+    // Lazy-load companies when Companies tab opens
+    if (tab === 'companies' || tab === 'sites') this.refreshCompanies();
+  }
+  get officers() { return this.store.internshipOfficers; }
   officer = { name: '', email: '' };
+  editingOfficerId: string | null = null;
+  officerEdit: { name?: string; email?: string } = {};
   responses: Record<string, string> = {};
+  // create ADMIN account form (absolute API)
+  adminAccount: { name: string; email: string; password: string } = { name: '', email: '', password: '' };
+  creatingAdmin = false;
   // forms for adding supervisors/company
   faculty = { name: '', email: '', department: '', password: '' };
-  company = { name: '', address: '' };
+  company = { name: '', email: '', phone: '', address: '', website: '', industry: '', description: '' };
   site = { name: '', email: '', companyId: '', password: '' };
+  // inline company edit buffers
+  editingCompanyId: string | null = null;
+  companyEdit: Partial<import('../../shared/services/store.service').Company> = {};
   // assign company
   companyForStudent: Record<string, string> = {};
   // password reset buffers
@@ -44,7 +81,97 @@ export class Admin {
   siteNewPw: Record<string, string> = {};
   // announcements
   announcement = { title: '', message: '', link: '', pinned: false };
-  announcements = this.store.announcements; // expose to template
+  get announcements() { return this.store.announcements; }
+  // Evidence review state
+  evidenceDecision: Record<string, 'approved'|'rejected'|''> = {};
+  evidenceComment: Record<string, string> = {};
+  latestEvidence(id: string) { const list = this.store.freelance()[id] ?? []; return list.length ? list[list.length - 1] : null; }
+  reviewEvidence(id: string) {
+    const rec = this.latestEvidence(id);
+    if (!rec) return;
+    const decision = this.evidenceDecision[rec.id];
+    if (!decision) return;
+    const comment = (this.evidenceComment[rec.id] ?? '').trim() || undefined;
+    this.store.reviewFreelance(id, rec.id, decision, comment);
+    delete this.evidenceDecision[rec.id];
+    delete this.evidenceComment[rec.id];
+    this.toast.success(`Evidence ${decision}`);
+  }
+  async refreshCompanies() {
+    try {
+      const list = await this.adminApi.getCompanies();
+      // Normalize to UI company shape; keep remoteId for edit mapping
+      this.companiesCache = list.map(x => ({
+        id: x.id, name: x.name, address: x.address, email: x.email, website: x.website, description: x.description, industry: x.industry, phone: x.phone, remoteId: x.id
+      }));
+    } catch (err: any) {
+      const msg = err?.error?.message || err?.message || 'Failed to load companies from server';
+      this.toast.danger(msg);
+    }
+  }
+
+  private uniDomain = '@cuisahiwal.edu.pk';
+  private allEmails(): string[] {
+    const set = new Set<string>();
+    try {
+      (this.students() || []).forEach(s => s.email && set.add(s.email.toLowerCase()));
+      (this.facultyList() || []).forEach(f => f.email && set.add(f.email.toLowerCase()));
+      (this.siteList() || []).forEach(s => s.email && set.add(s.email.toLowerCase()));
+      (this.officers() || []).forEach(o => o.email && set.add(o.email.toLowerCase()));
+    } catch {}
+    return Array.from(set);
+  }
+  private isUniEmailRequired(role: 'ADMIN'|'FACULTY'|'SITE'): boolean { return role === 'ADMIN' || role === 'FACULTY'; }
+  private isEmailAllowedForRole(email: string, role: 'ADMIN'|'FACULTY'|'SITE'): boolean {
+    if (!this.isUniEmailRequired(role)) return true;
+    return (email || '').toLowerCase().endsWith(this.uniDomain);
+  }
+  private makeBaseLocalPart(name: string): string {
+  // Remove all spaces for email local part, replace with nothing
+  const base = (name || '').toLowerCase().replace(/[^a-z0-9.]+/g, '').replace(/\s+/g, '');
+  return base || 'user';
+  }
+  private suggestEmail(name: string, domain: string, taken: Set<string>): string {
+    const base = this.makeBaseLocalPart(name);
+    let candidate = `${base}${domain}`;
+    if (!taken.has(candidate)) return candidate;
+    for (let i = 1; i <= 99; i++) {
+      candidate = `${base}${i}${domain}`;
+      if (!taken.has(candidate)) return candidate;
+    }
+    // Fallback random
+    const rnd = Math.floor(Math.random() * 9000) + 1000;
+    return `${base}${rnd}${domain}`;
+  }
+  private suggestEmailOptions(name: string, domain: string, taken: Set<string>, count = 4, exclude?: string): string[] {
+    const base = this.makeBaseLocalPart(name);
+    const opts: string[] = [];
+    const push = (v: string) => {
+      const lower = (v || '').toLowerCase();
+      if (!taken.has(lower) && (!exclude || lower !== exclude.toLowerCase()) && !opts.includes(v)) opts.push(v);
+    };
+    push(`${base}${domain}`);
+    for (let i = 1; opts.length < count && i < 200; i++) push(`${base}${i}${domain}`);
+    while (opts.length < count) {
+      const rnd = Math.floor(Math.random() * 9000) + 1000;
+      push(`${base}${rnd}${domain}`);
+    }
+    return opts;
+  }
+  private ensureDomain(email: string, domain: string): string {
+    const e = (email || '').trim();
+    if (!e) return e;
+    return e.includes('@') ? e : `${e}${domain}`;
+  }
+  private emailExists(email: string): boolean {
+    const lower = (email || '').toLowerCase();
+    return this.allEmails().includes(lower);
+  }
+  private normalizedForCheck(email: string): string {
+    // For existence check, if no '@', assume uni domain but do not change the input field
+    const e = (email || '').trim();
+    return e.includes('@') ? e : `${e}${this.uniDomain}`;
+  }
 
   approve(id: string) { this.store.approveStudent(id); this.toast.success('Student approved'); }
   viewDetails(id: string) { this.selectedId = id; }
@@ -62,34 +189,326 @@ export class Admin {
     this.officer = { name: '', email: '' };
     this.toast.success('Internship Officer added');
   }
-  addFaculty() {
-    const name = this.faculty.name?.trim();
-    const email = this.faculty.email?.trim();
-    const dept = this.faculty.department?.trim();
-    const pass = this.faculty.password?.trim();
+  startEditOfficer(id: string) {
+    const o = this.officers().find(x => x.id === id);
+    if (!o) return;
+    this.editingOfficerId = id;
+    this.officerEdit = { name: o.name, email: o.email };
+  }
+  cancelEditOfficer() {
+    this.editingOfficerId = null;
+    this.officerEdit = {};
+  }
+  saveOfficerEdit() {
+    if (!this.editingOfficerId) return;
+    const current = this.officers().find(x => x.id === this.editingOfficerId);
+    if (!current) { this.cancelEditOfficer(); return; }
+    const name = (this.officerEdit.name || '').trim();
+    const email = (this.officerEdit.email || '').trim();
+    if (!name || !email) { this.toast.warning('Name and email are required'); return; }
+    // Enforce domain for officers (ADMIN policy)
+    if (!this.isEmailAllowedForRole(email, 'ADMIN')) {
+      this.toast.warning(`Officer email must end with ${this.uniDomain}`);
+      return;
+    }
+    // Duplicate check excluding current officer's existing email
+    const lower = email.toLowerCase();
+    const taken = new Set(this.allEmails());
+    taken.delete((current.email || '').toLowerCase());
+    if (taken.has(lower)) { this.toast.warning('Email already exists. Try a different one.'); return; }
+    this.store.updateInternshipOfficer(this.editingOfficerId, { name, email });
+    this.cancelEditOfficer();
+    this.toast.success('Officer updated');
+  }
+  removeOfficer(id: string) {
+    if (!confirm('Remove this internship officer?')) return;
+    this.store.removeInternshipOfficer(id);
+    if (this.editingOfficerId === id) this.cancelEditOfficer();
+    this.toast.warning('Officer removed');
+  }
+  onOfficerNameBlur() {
+    const name = (this.officer.name || '').trim();
+    const email = (this.officer.email || '').trim();
+    if (!email && name) {
+      const taken = new Set(this.allEmails());
+      this.officer.email = this.suggestEmail(name, this.uniDomain, taken);
+    }
+  }
+  adminOfficerEmailSuggestions: string[] = [];
+  adminOfficerSuggestIndex = -1;
+  async createAdminAccount() {
+    const name = (this.adminAccount.name || '').trim();
+    const email = (this.adminAccount.email || '').trim();
+    const password = (this.adminAccount.password || '').trim();
+    if (!name || !email || !password) { this.toast.warning('Name, email and password are required'); return; }
+    // Validate domain for ADMIN
+    if (!this.isEmailAllowedForRole(email, 'ADMIN')) {
+      const taken = new Set(this.allEmails());
+      const suggestion = this.suggestEmail(name, this.uniDomain, taken);
+      this.toast.warning(`Officer email must end with ${this.uniDomain}. Suggestion: ${suggestion}`);
+      return;
+    }
+    // Duplicate email
+    if (this.allEmails().includes(email.toLowerCase())) {
+      const taken = new Set(this.allEmails());
+      this.adminOfficerEmailSuggestions = this.suggestEmailOptions(name, this.uniDomain, taken, 4, email);
+      this.adminOfficerSuggestIndex = this.adminOfficerEmailSuggestions.length ? 0 : -1;
+      this.toast.warning('Email already exists. Choose a suggestion below or edit the email.');
+      return;
+    }
+    const payload: CreateAccountRequest = { name, email, password, role: 'ADMIN' } as any;
+    try {
+      this.creatingAdmin = true;
+  const res = await this.adminApi.createAccount(payload);
+  this.toast.success(res?.message || 'Internship Officer added');
+      // reflect in local list
+      this.store.addInternshipOfficer(name, email);
+      this.adminAccount = { name: '', email: '', password: '' };
+  } catch (err: any) {
+      const status = err?.status ?? 0;
+      const networkMsg = status === 0 ? 'Network/CORS error while contacting API. Retrying via proxy failed.' : null;
+  const unauthorized = status === 401 ? 'Unauthorized: Your session may be expired or your account lacks ADMIN permission. Try re‑logging in to refresh tokens, then retry. If it persists, verify your role on the backend.' : null;
+  const backendDetail = err?.error?.details || err?.error?.error || err?.error?.reason;
+  const msg = unauthorized || networkMsg || backendDetail || err?.error?.message || err?.message || 'Failed to add Internship Officer';
+      this.toast.danger(msg);
+    } finally { this.creatingAdmin = false; }
+  }
+  onAdminOfficerNameBlur() {
+    const name = (this.adminAccount.name || '').trim();
+    const email = (this.adminAccount.email || '').trim();
+    if (!email && name) {
+      const taken = new Set(this.allEmails());
+      // Prefill a reasonable email if left empty, but do not show suggestion list here
+      this.adminAccount.email = this.suggestEmail(name, this.uniDomain, taken);
+    }
+    // Only show suggestions when a duplicate is detected (handled in email blur or submit)
+    this.adminOfficerEmailSuggestions = [];
+  }
+  onAdminOfficerEmailBlur() {
+    const e = this.ensureDomain(this.adminAccount.email, this.uniDomain);
+    this.adminAccount.email = e;
+    // if collides, refresh suggestions
+    const taken = new Set(this.allEmails());
+    if (taken.has(e.toLowerCase())) {
+      this.adminOfficerEmailSuggestions = this.suggestEmailOptions(this.adminAccount.name, this.uniDomain, taken, 4, e);
+      this.adminOfficerSuggestIndex = this.adminOfficerEmailSuggestions.length ? 0 : -1;
+    } else {
+      this.adminOfficerEmailSuggestions = [];
+      this.adminOfficerSuggestIndex = -1;
+    }
+  }
+  private adminOfficerEmailDebounceId: any;
+  onAdminOfficerEmailInput() {
+    if (this.adminOfficerEmailDebounceId) clearTimeout(this.adminOfficerEmailDebounceId);
+    this.adminOfficerEmailDebounceId = setTimeout(() => {
+      const candidate = this.normalizedForCheck(this.adminAccount.email);
+      if (!candidate) { this.adminOfficerEmailSuggestions = []; this.adminOfficerSuggestIndex = -1; return; }
+      if (this.emailExists(candidate)) {
+        const taken = new Set(this.allEmails());
+        this.adminOfficerEmailSuggestions = this.suggestEmailOptions(this.adminAccount.name, this.uniDomain, taken, 4, candidate);
+        this.adminOfficerSuggestIndex = this.adminOfficerEmailSuggestions.length ? 0 : -1;
+      } else {
+        this.adminOfficerEmailSuggestions = [];
+        this.adminOfficerSuggestIndex = -1;
+      }
+    }, 250);
+  }
+  async addFaculty() {
+    const name = this.faculty.name?.trim() || '';
+    const email = this.faculty.email?.trim() || '';
+    const dept = this.faculty.department?.trim() || '';
+    const pass = this.faculty.password?.trim() || '';
     if (!name || !email) { this.toast.warning('Name and email are required'); return; }
     if (!pass) { this.toast.warning('Set a temporary password for the faculty supervisor'); return; }
-    this.store.addFacultySupervisor(name, email, dept, pass);
-    this.faculty = { name: '', email: '', department: '', password: '' };
-    this.toast.success('Faculty Supervisor added');
+    if (!this.isEmailAllowedForRole(email, 'FACULTY')) {
+      const taken = new Set(this.allEmails());
+      const suggestion = this.suggestEmail(name, this.uniDomain, taken);
+      this.toast.warning(`Faculty email must end with ${this.uniDomain}. Suggestion: ${suggestion}`);
+      return;
+    }
+    if (this.allEmails().includes(email.toLowerCase())) {
+      const taken = new Set(this.allEmails());
+      this.facultyEmailSuggestions = this.suggestEmailOptions(name, this.uniDomain, taken, 4, email);
+      this.facultySuggestIndex = this.facultyEmailSuggestions.length ? 0 : -1;
+      this.toast.warning('Email already exists. Choose a suggestion below or edit the email.');
+      return;
+    }
+    try {
+      await this.adminApi.createAccount({ name, email, password: pass, role: 'FACULTY' } as any);
+      this.store.addFacultySupervisor(name, email, dept, pass);
+      this.faculty = { name: '', email: '', department: '', password: '' };
+      this.toast.success('Faculty Supervisor added');
+    } catch (err: any) {
+      const msg = err?.error?.message || err?.message || 'Failed to add faculty supervisor';
+      this.toast.danger(msg);
+    }
   }
-  addCompany() {
-    if (!this.company.name) return;
-    const cid = this.store.addCompany(this.company.name, this.company.address);
-    if (this.site.companyId === '') this.site.companyId = cid;
-    this.company = { name: '', address: '' };
-    this.toast.success('Company added');
+  onFacultyNameBlur() {
+    const name = (this.faculty.name || '').trim();
+    const email = (this.faculty.email || '').trim();
+    if (!email && name) {
+      const taken = new Set(this.allEmails());
+      this.faculty.email = this.suggestEmail(name, this.uniDomain, taken);
+    }
+    // Do not show suggestions here; only when a duplicate is detected
+    this.facultyEmailSuggestions = [];
   }
-  addSite() {
-    const name = this.site.name?.trim();
-    const email = this.site.email?.trim();
-    const cid = this.site.companyId?.trim();
-    const pass = this.site.password?.trim();
+  onFacultyEmailBlur() {
+    const e = this.ensureDomain(this.faculty.email, this.uniDomain);
+    this.faculty.email = e;
+    const taken = new Set(this.allEmails());
+    if (taken.has(e.toLowerCase())) {
+      this.facultyEmailSuggestions = this.suggestEmailOptions(this.faculty.name, this.uniDomain, taken, 4, e);
+      this.facultySuggestIndex = this.facultyEmailSuggestions.length ? 0 : -1;
+    } else {
+      this.facultyEmailSuggestions = [];
+      this.facultySuggestIndex = -1;
+    }
+  }
+  private facultyEmailDebounceId: any;
+  onFacultyEmailInput() {
+    if (this.facultyEmailDebounceId) clearTimeout(this.facultyEmailDebounceId);
+    this.facultyEmailDebounceId = setTimeout(() => {
+      const candidate = this.normalizedForCheck(this.faculty.email);
+      if (!candidate) { this.facultyEmailSuggestions = []; this.facultySuggestIndex = -1; return; }
+      if (this.emailExists(candidate)) {
+        const taken = new Set(this.allEmails());
+        this.facultyEmailSuggestions = this.suggestEmailOptions(this.faculty.name, this.uniDomain, taken, 4, candidate);
+        this.facultySuggestIndex = this.facultyEmailSuggestions.length ? 0 : -1;
+      } else {
+        this.facultyEmailSuggestions = [];
+        this.facultySuggestIndex = -1;
+      }
+    }, 250);
+  }
+  facultyEmailSuggestions: string[] = [];
+  facultySuggestIndex = -1;
+
+  // Suggestion helpers (Gmail-like keyboard navigation)
+  onAdminOfficerEmailKeydown(ev: KeyboardEvent) {
+    if (!this.adminOfficerEmailSuggestions.length) return;
+    const len = this.adminOfficerEmailSuggestions.length;
+    if (ev.key === 'ArrowDown') {
+      ev.preventDefault();
+      this.adminOfficerSuggestIndex = (this.adminOfficerSuggestIndex + 1 + len) % len;
+    } else if (ev.key === 'ArrowUp') {
+      ev.preventDefault();
+      this.adminOfficerSuggestIndex = (this.adminOfficerSuggestIndex - 1 + len) % len;
+    } else if (ev.key === 'Enter') {
+      if (this.adminOfficerSuggestIndex >= 0) {
+        ev.preventDefault();
+        this.selectAdminOfficerSuggestion(this.adminOfficerSuggestIndex);
+      }
+    } else if (ev.key === 'Escape') {
+      ev.preventDefault();
+      this.adminOfficerEmailSuggestions = [];
+      this.adminOfficerSuggestIndex = -1;
+    }
+  }
+  selectAdminOfficerSuggestion(i: number) {
+    const s = this.adminOfficerEmailSuggestions[i];
+    if (!s) return;
+    this.adminAccount.email = s;
+    this.adminOfficerEmailSuggestions = [];
+    this.adminOfficerSuggestIndex = -1;
+  }
+
+  onFacultyEmailKeydown(ev: KeyboardEvent) {
+    if (!this.facultyEmailSuggestions.length) return;
+    const len = this.facultyEmailSuggestions.length;
+    if (ev.key === 'ArrowDown') {
+      ev.preventDefault();
+      this.facultySuggestIndex = (this.facultySuggestIndex + 1 + len) % len;
+    } else if (ev.key === 'ArrowUp') {
+      ev.preventDefault();
+      this.facultySuggestIndex = (this.facultySuggestIndex - 1 + len) % len;
+    } else if (ev.key === 'Enter') {
+      if (this.facultySuggestIndex >= 0) {
+        ev.preventDefault();
+        this.selectFacultySuggestion(this.facultySuggestIndex);
+      }
+    } else if (ev.key === 'Escape') {
+      ev.preventDefault();
+      this.facultyEmailSuggestions = [];
+      this.facultySuggestIndex = -1;
+    }
+  }
+  selectFacultySuggestion(i: number) {
+    const s = this.facultyEmailSuggestions[i];
+    if (!s) return;
+    this.faculty.email = s;
+    this.facultyEmailSuggestions = [];
+    this.facultySuggestIndex = -1;
+  }
+  async addCompany() {
+    const { name, email, phone, address, website, industry, description } = this.company;
+    if (!name?.trim()) { this.toast.warning('Company name is required'); return; }
+    if (!email?.trim()) { this.toast.warning('Company email is required'); return; }
+    // Duplicate validation by name (case-insensitive)
+  const exists = (this.companyList() || []).some(c => (c.name || '').trim().toLowerCase() === name.trim().toLowerCase());
+    if (exists) { this.toast.warning('This company is already listed'); return; }
+    try {
+    const res = await this.adminApi.addCompany({ name, email, phone, address, website, industry, description });
+    // Refresh from server instead of adding locally
+    await this.refreshCompanies();
+    // Preselect last created if present
+    if (this.site.companyId === '' && res?.id) this.site.companyId = res.id;
+      this.company = { name: '', email: '', phone: '', address: '', website: '', industry: '', description: '' };
+      this.toast.success(res?.message || 'Company added');
+    } catch (err: any) {
+      const msg = err?.error?.message || err?.message || 'Failed to add company';
+      this.toast.danger(msg);
+    }
+  }
+  startEditCompany(id: string) {
+    const c = this.companyList().find(x => x.id === id);
+    if (!c) return;
+    this.editingCompanyId = id;
+    this.companyEdit = { ...c };
+  }
+  cancelEditCompany() {
+    this.editingCompanyId = null;
+    this.companyEdit = {};
+  }
+  async saveCompanyEdit() {
+    if (!this.editingCompanyId) return;
+  const local = this.companyList().find(x => x.id === this.editingCompanyId);
+    if (!local) { this.cancelEditCompany(); return; }
+    const changes = this.companyEdit;
+    const name = (changes.name || local.name || '').trim();
+    if (!name) { this.toast.warning('Company name is required'); return; }
+    try {
+      // Update on backend, then refresh list
+      await this.adminApi.updateCompany({ id: (local as any).remoteId || local.id, name, email: changes.email, phone: changes.phone, address: changes.address, website: changes.website, industry: changes.industry, description: changes.description });
+      await this.refreshCompanies();
+    } catch {}
+    this.cancelEditCompany();
+    this.toast.success('Company updated');
+  }
+  async addSite() {
+    const name = this.site.name?.trim() || '';
+    const email = this.site.email?.trim() || '';
+    const cid = this.site.companyId?.trim() || '';
+    const pass = this.site.password?.trim() || '';
     if (!name || !email) { this.toast.warning('Name and email are required'); return; }
+    if (!cid) { this.toast.warning('Select a company for the site supervisor'); return; }
+    const emailOk = /^(?=.{3,100}@)[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(email);
+    if (!emailOk) { this.toast.warning('Enter a valid email address'); return; }
     if (!pass) { this.toast.warning('Set a temporary password for the site supervisor'); return; }
-    this.store.addSiteSupervisor(name, email, cid || undefined, pass);
-    this.site = { name: '', email: '', companyId: '', password: '' };
-    this.toast.success('Site Supervisor added');
+    // No domain restriction for site; still check duplicates
+    if (this.allEmails().includes(email.toLowerCase())) { this.toast.warning('Email already exists. Try a different one.'); return; }
+    try {
+      await this.adminApi.createAccount({ name, email, password: pass, role: 'SITE' } as any);
+      this.store.addSiteSupervisor(name, email, cid || undefined, pass);
+      this.site = { name: '', email: '', companyId: '', password: '' };
+      this.toast.success('Site Supervisor added');
+    } catch (err: any) {
+      const status = err?.status ?? 0;
+      const unauthorized = status === 401 ? 'Unauthorized (401): Your session may be expired. Please log in again as ADMIN and retry.' : null;
+      const backendDetail = err?.error?.details || err?.error?.error || err?.error?.reason;
+      const msg = unauthorized || backendDetail || err?.error?.message || err?.message || 'Failed to add site supervisor';
+      this.toast.danger(msg);
+    }
   }
   companyName(id?: string) {
     if (!id) return '-';
@@ -170,7 +589,7 @@ export class Admin {
   removeAnnouncement(id: string) {
     if (confirm('Remove this announcement?')) { this.store.removeAnnouncement(id); this.toast.warning('Announcement removed'); }
   }
-  facultyName(id: string) {
+  facultyName(id?: string) {
     const f = this.facultyList().find(x => x.id === id);
     return f ? `${f.name} (${f.email})` : id;
   }
@@ -178,6 +597,23 @@ export class Admin {
     if (!id) return '-';
     const s = this.siteList().find(x => x.id === id);
     return s?.name ?? '-';
+  }
+  // Filtered views
+  filteredFaculty() {
+    const list = this.facultyList() || [];
+    const q = (this.search.faculty || '').trim().toLowerCase();
+    const dept = (this.filter.facultyDept || '').trim().toLowerCase();
+    return list.filter(f => {
+      if (q) {
+        const hay = ((f.name || '') + ' ' + (f.email || '')).toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      if (dept) {
+        const d = (f.department || '').toLowerCase();
+        if (!d.includes(dept)) return false;
+      }
+      return true;
+    });
   }
   // Per-student data getters
   approvalsOf(id: string) { return this.approvals()[id] ?? []; }
@@ -187,6 +623,7 @@ export class Admin {
   designStatementsOf(id: string) { return this.designStatementsMap()[id] ?? []; }
   assignmentsOf(id: string) { return this.assignmentsMap()[id] ?? []; }
   freelanceOf(id: string) { return this.freelanceMap()[id] ?? []; }
+  latestAgreement(id: string) { const list = this.agreementsOf(id) ?? []; return list.length ? list[list.length - 1] : null; }
   requestPrimary(r: import('../../shared/services/store.service').RequestItem) {
     if (r.type === 'company') return r.name;
     // site

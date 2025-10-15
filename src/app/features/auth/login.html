@@ -1,12 +1,19 @@
 <div class="login-bg">
-<div class="container py-5" style="max-width:520px">
-  <div class="text-center mb-3 brand-block">
-    <img src="/assets/cui-logo.jpg" alt="CUI" width="56" height="56" style="object-fit:contain;background:#fff;border-radius:6px" />
-    <h2 class="mt-2 mb-0">Login</h2>
-    <div class="brand-subtitle">CUI Internship System</div>
+  <div class="bg-slides" aria-hidden="true">
+    <div class="slide s1"></div>
+    <div class="slide s2"></div>
+    <div class="slide s3"></div>
+    <div class="slide s4"></div>
   </div>
-  <div class="card login-card shadow-lg border-0">
-    <div class="card-body">
+  <div class="bg-tint" aria-hidden="true"></div>
+  <div class="form-wrapper" style="width:100%;max-width:520px;margin:0 auto;">
+    <div class="text-center mb-3 brand-block">
+      <img src="/assets/cui-logo.jpg" alt="CUI" width="56" height="56" style="object-fit:contain;background:#fff;border-radius:6px" />
+      <h2 class="mt-2 mb-0">Login</h2>
+      <div class="brand-subtitle">CUI Internship System</div>
+    </div>
+    <div class="card login-card shadow-lg border-0">
+      <div class="card-body">
       <form (ngSubmit)="submit()" #f="ngForm" class="row g-3" novalidate>
         <div class="col-12">
           <label for="email" class="form-label">Email</label>
@@ -44,11 +51,14 @@
             </button>
           </div>
           <input type="text" class="form-control" placeholder="Enter the text above" [(ngModel)]="captchaInput" name="captchaInput" required />
+          @if (!captchaError && captchaInput && captchaInput.trim().length === captchaCode.length && captchaInput.trim().toUpperCase() === captchaCode.toUpperCase()) {
+            <div class="captcha-ok" aria-live="polite"><i class="pi pi-check-circle"></i> Captcha matched</div>
+          }
           @if (captchaError) { <div class="text-danger small mt-2">{{ captchaError }}</div> }
         </div>
         <div class="col-12">
           <button class="btn btn-primary w-100 d-inline-flex justify-content-center align-items-center" [disabled]="!f.form.valid || loading">
-            @if (loading) {<span class="spinner-border spinner-border-sm me-2" role="status"></span>}
+            @if (loading) {<span class="btn-dots me-2" aria-hidden="true"><span></span><span></span><span></span></span>}
             Login
           </button>
         </div>
@@ -63,16 +73,31 @@
             <input type="number" class="form-control form-control-sm" [(ngModel)]="challengeAnswer" name="challenge" />
           </div>
         }
+        @if (signupMsg) {
+          <div class="col-12">
+            <div class="alert alert-success py-2">{{ signupMsg }}</div>
+          </div>
+        }
+        @if (apiMessage && !error) {
+          <div class="col-12">
+            <div class="alert alert-secondary py-2">{{ apiMessage }}</div>
+          </div>
+        }
         @if (error) {
           <div class="col-12">
             <div class="alert alert-danger py-2">{{ error }}</div>
           </div>
         }
+        @if (slow && !error) {
+          <div class="col-12">
+            <div class="alert alert-info py-2">Still working… the server is taking longer than usual.</div>
+          </div>
+        }
         <div class="col-12 text-center small">
           <span>New student? <a routerLink="/signup">Create an account</a></span>
         </div>
-      </form>
+        </form>
+      </div>
     </div>
   </div>
-</div>
 </div>

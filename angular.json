@@ -62,7 +62,8 @@
               "buildTarget": "cui_Internship_system:build:production"
             },
             "development": {
-              "buildTarget": "cui_Internship_system:build:development"
+              "buildTarget": "cui_Internship_system:build:development",
+              "proxyConfig": "proxy.conf.json"
             }
           },
           "defaultConfiguration": "development"

@@ -1,530 +1,133 @@
 <div class="container py-4">
   <h2 class="mb-3">Internship Office</h2>
+  <ul class="nav nav-tabs mb-3">
+    <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='students'" (click)="selectTab('students')">Students</button></li>
+    <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='applications'" (click)="selectTab('applications')">Applications</button></li>
+    <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='requests'" (click)="selectTab('requests')">Requests</button></li>
+    <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='announcements'" (click)="selectTab('announcements')">Announcements</button></li>
+    <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='officers'" (click)="selectTab('officers')">Officers</button></li>
+    <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='faculty'" (click)="selectTab('faculty')">Faculty</button></li>
+    <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='companies'" (click)="selectTab('companies')">Companies</button></li>
+    <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='sites'" (click)="selectTab('sites')">Site Supervisors</button></li>
+    <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='compliance'" (click)="selectTab('compliance')">Log Compliance</button></li>
+    <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='complaints'" (click)="selectTab('complaints')">Complaints</button></li>
+    <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='scheme'" (click)="selectTab('scheme')">Scheme</button></li>
+    <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='evidence'" (click)="selectTab('evidence')">Evidence</button></li>
+  </ul>
 
-  <div class="row g-3 mb-4">
-    <div class="col-12">
-      <div class="card">
-        <div class="card-header bg-light">Responsibilities</div>
-        <div class="card-body">
-          <ul class="mb-0">
-            <li>Identify potential host organizations and establish collaborations (MoUs).</li>
-            <li>Arrange internship placements for students based on availability and suitability.</li>
-            <li>Maintain a complete database of all internship records (placements, evaluations, reports).</li>
-            <li>Assign supervisory roles: a faculty supervisor and a site/host supervisor.</li>
-            <li>Organize on-campus internship expos and employer meetups with the Industry Liaison Cell.</li>
-            <li>Process and respond to feedback and complaints from students, faculty, and host supervisors.</li>
-            <li>Support technical infrastructure:
-              <ul>
-                <li>Assist students with Git/GitHub for version control and portfolios.</li>
-                <li>Guide the use of Jira/Trello for project tracking and collaboration.</li>
-              </ul>
-            </li>
-            <li>Collaborate with the Alumni Office to enhance access to opportunities via referrals and networks.</li>
-          </ul>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="table-responsive">
-    <table class="table table-striped align-middle">
-      <thead>
-        <tr>
-          <th>Name</th><th>Email</th><th>Approved</th><th>Faculty</th><th>Site</th><th>Company</th><th>Office Marks</th><th>Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        @for (s of students(); track s.id) {
-        <tr>
-          <td>{{ s.name }}</td>
-          <td>{{ s.email }}</td>
-          <td>
-            <span class="badge" [class.text-bg-success]="s.approved" [class.text-bg-secondary]="!s.approved">{{ s.approved ? 'Yes' : 'No' }}</span>
-          </td>
-          <td>{{ s.facultyId ? facultyName(s.facultyId) : '-' }}</td>
-          <td>{{ siteSupervisorName(s.siteId) }}</td>
-          <td>{{ companyName(s.companyId) }}</td>
-          <td style="min-width:240px">
-            <div class="d-flex gap-2">
-              <input type="number" class="form-control form-control-sm" [ngModel]="s.marks?.adminProposal ?? ''" (ngModelChange)="setAdminSubMarks(s.id, $event, s.marks?.adminLogs || 0, s.marks?.adminFinal || 0)" min="0" max="5" placeholder="Proposal /5" />
-              <input type="number" class="form-control form-control-sm" [ngModel]="s.marks?.adminLogs ?? ''" (ngModelChange)="setAdminSubMarks(s.id, s.marks?.adminProposal || 0, $event, s.marks?.adminFinal || 0)" min="0" max="5" placeholder="Logs /5" />
-              <input type="number" class="form-control form-control-sm" [ngModel]="s.marks?.adminFinal ?? ''" (ngModelChange)="setAdminSubMarks(s.id, s.marks?.adminProposal || 0, s.marks?.adminLogs || 0, $event)" min="0" max="10" placeholder="Final /10" />
-            </div>
-            <small class="text-muted">Auto total: {{ s.marks?.admin ?? 0 }}/20</small>
-          </td>
-          <td style="width:600px">
-            <button class="btn btn-sm btn-outline-success me-2" (click)="approve(s.id)" [disabled]="s.approved">Approve</button>
-            <div class="d-inline-flex gap-2 align-items-center">
-              <select class="form-select form-select-sm" [(ngModel)]="facultyId" style="width:160px">
-                <option [ngValue]="''">Faculty...</option>
-                @for (f of facultyList(); track f.id) {
-                <option [ngValue]="f.id">{{ f.name }} ({{ f.email }})</option>
-                }
-              </select>
-              <select class="form-select form-select-sm" [(ngModel)]="siteId" style="width:160px">
-                <option [ngValue]="''">Site...</option>
-                @for (t of siteList(); track t.id) {
-                <option [ngValue]="t.id">{{ t.name }} ({{ t.email }})</option>
-                }
-              </select>
-              <select class="form-select form-select-sm" [(ngModel)]="companyForStudent[s.id]" style="width:160px">
-                <option [ngValue]="''">Company...</option>
-                @for (c of companyList(); track c.id) {
-                <option [ngValue]="c.id">{{ c.name }}</option>
-                }
-              </select>
-              <button class="btn btn-sm btn-primary" (click)="assign(s.id)">Assign</button>
-              <button class="btn btn-sm btn-outline-primary" (click)="assignCompanyToStudent(s.id)">Set Company</button>
-              <button class="btn btn-sm btn-outline-secondary" (click)="viewDetails(s.id)">Details</button>
-            </div>
-          </td>
-        </tr>
-        }
-      </tbody>
-    </table>
-  </div>
-
-  <!-- Student Details Drawer -->
-  @if (selectedId; as sid) {
-  <div class="card mt-3">
-    <div class="card-header bg-light">Student Details</div>
-    <div class="card-body">
-      <div class="row g-3 mb-2">
-        <div class="col-12"><strong>Student:</strong> {{ studentName(sid) }}</div>
-      </div>
-      <div class="row g-3">
-        <div class="col-12 col-lg-6">
-          <h6>Approval Forms</h6>
-          <ul class="list-group mb-3">
-            @for (a of approvalsOf(sid); track $index; let i = $index) {
-            <li class="list-group-item">
-              <details>
-                <summary class="d-flex flex-wrap gap-2 align-items-baseline">
-                  <span class="fw-semibold">v{{ a.version || (i+1) }}</span>
-                  <span class="text-muted">— {{ a.createdAt | date:'short' }}</span>
-                  <span>• Status: {{ a.status || 'pending' }}</span>
-                  <span class="text-muted">• Company: {{ a.company.name || '-' }}</span>
-                  <span class="text-muted">• {{ a.internship.startDate }} → {{ a.internship.endDate }}</span>
-                </summary>
-                <div class="mt-2">
-                  <div class="row g-2">
-                    <div class="col-12 col-md-6">
-                      <div class="fw-semibold mb-1">Student Info</div>
-                      <div class="small">Name: {{ a.studentInfo.name }}</div>
-                      <div class="small">Program: {{ a.studentInfo.program }} · Semester: {{ a.studentInfo.semester }}</div>
-                      <div class="small text-muted">Student ID: {{ a.studentInfo.studentId }}</div>
-                    </div>
-                    <div class="col-12 col-md-6">
-                      <div class="fw-semibold mb-1">Company</div>
-                      <div class="small">Name: {{ a.company.name }}</div>
-                      <div class="small">Address: {{ a.company.address }}</div>
-                      <div class="small">Supervisor: {{ a.company.supervisorName }} ({{ a.company.supervisorEmail }} · {{ a.company.supervisorPhone }})</div>
-                    </div>
-                  </div>
-                  <hr class="my-2" />
-                  <div class="row g-2">
-                    <div class="col-12 col-md-6">
-                      <div class="fw-semibold mb-1">Internship</div>
-                      <div class="small">Dates: {{ a.internship.startDate }} → {{ a.internship.endDate }}</div>
-                      <div class="small">Hours/Week: {{ a.internship.hoursPerWeek }} · Paid: {{ a.internship.paid }}</div>
-                    </div>
-                    <div class="col-12 col-md-6">
-                      <div class="fw-semibold mb-1">Objectives & Outcomes</div>
-                      <div class="small"><strong>Objectives:</strong> {{ a.objectives }}</div>
-                      <div class="small"><strong>Outcomes:</strong> {{ a.outcomes }}</div>
-                    </div>
-                  </div>
-                  @if (a.officerComment) {
-                  <div class="mt-2 small"><strong>Officer Comment:</strong> <em>{{ a.officerComment }}</em></div>
-                  }
-                  @if (a.resolvedAt) {
-                  <div class="mt-1 small text-muted">Resolved: {{ a.resolvedAt | date:'short' }}</div>
-                  }
+  <!-- Clean unified tab switcher using Angular 17+ control flow -->
+  @switch (currentTab) {
+    @case ('students') {
+    <div class="row g-3 mt-0">
+      <div class="col-12">
+        <div class="card">
+          <div class="card-header bg-light">Students</div>
+          <div class="card-body p-0">
+            <div class="p-2">
+              <div class="row g-2 align-items-end">
+                <div class="col-12 col-md-6">
+                  <input class="form-control" placeholder="Search students..." [(ngModel)]="search.students" name="ssearch0" />
                 </div>
-              </details>
-            </li>
-            }
-          </ul>
-
-          <h6>Agreement (latest)</h6>
-          @if (agreementsOf(sid); as agrs) {
-            @if (agrs.length) {
-              <div class="small">
-                <div class="fw-semibold">Declarations</div>
-                <ul class="small mb-2">
-                  <li>Policy Acknowledgement: {{ agrs[agrs.length-1].policyAcknowledgement ? 'Yes' : 'No' }}</li>
-                  <li>Confidentiality Agreement: {{ agrs[agrs.length-1].confidentialityAgreement ? 'Yes' : 'No' }}</li>
-                  <li>Safety Training: {{ agrs[agrs.length-1].safetyTraining ? 'Yes' : 'No' }}</li>
-                </ul>
-                <div class="fw-semibold">Signatures</div>
-                <div>Student: {{ agrs[agrs.length-1].studentSignatureName }} <span class="text-muted">— {{ agrs[agrs.length-1].date }}</span></div>
-                <div>Faculty: {{ agrs[agrs.length-1].facultySignatureName || '-' }} <span class="text-muted">— {{ agrs[agrs.length-1].facultySignedAt | date:'short' }}</span></div>
-                <div>Office: {{ agrs[agrs.length-1].officeSignatureName || '-' }} <span class="text-muted">— {{ agrs[agrs.length-1].officeSignedAt | date:'short' }}</span></div>
+                <div class="col-12 col-md-3">
+                  <select class="form-select" [(ngModel)]="filter.studentsApproved" name="sapproved">
+                    <option [ngValue]="'all'">All</option>
+                    <option [ngValue]="'yes'">Approved</option>
+                    <option [ngValue]="'no'">Not approved</option>
+                  </select>
+                </div>
               </div>
-            } @else {
-              <div class="text-muted small">No agreement submitted.</div>
-            }
-          }
-
-          <h6 class="mt-3">Design Statement</h6>
-          @if (designStatementsOf(sid); as dss) {
-            @if (dss.length) {
-              <div class="small">
-                <details>
-                  <summary>
-                    <strong>Organization:</strong> {{ dss[dss.length-1].placement.organization }} ({{ dss[dss.length-1].placement.mode }})
-                    <span class="text-muted">· Functional Area: {{ dss[dss.length-1].placement.functionalArea }}</span>
-                  </summary>
-                  <div class="mt-2">
-                    <div class="fw-semibold">Career Goal</div>
-                    <div class="mb-2">{{ dss[dss.length-1].careerGoal }}</div>
-                    <div class="fw-semibold">Learning Objectives</div>
-                    <div class="mb-2">{{ dss[dss.length-1].learningObjectives }}</div>
-                    <div class="fw-semibold">Placement Overview</div>
-                    <div class="mb-2">{{ dss[dss.length-1].placement.overview || '-' }}</div>
-                    <div class="fw-semibold">Supervisor</div>
-                    <div class="mb-2">{{ dss[dss.length-1].supervisor.name }} — {{ dss[dss.length-1].supervisor.designation }} ({{ dss[dss.length-1].supervisor.email }} · {{ dss[dss.length-1].supervisor.contact }})</div>
-                    <div class="fw-semibold">Scope & Deliverables</div>
-                    <div class="mb-2">{{ dss[dss.length-1].scopeAndDeliverables }}</div>
-                    <div class="fw-semibold">Academic Preparation</div>
-                    <div class="mb-2">{{ dss[dss.length-1].academicPreparation }}</div>
-                    <div class="fw-semibold">Comments</div>
-                    <div class="mb-1">{{ dss[dss.length-1].comments || '-' }}</div>
-                  </div>
-                </details>
-              </div>
-            } @else {
-              <div class="text-muted small">No design statement.</div>
-            }
-          }
-        </div>
-
-        <div class="col-12 col-lg-6">
-          <h6>Reports</h6>
-          <ul class="list-group mb-3">
-            @for (r of reportsOf(sid); track $index) {
-            <li class="list-group-item d-flex justify-content-between align-items-center">
-              <span>{{ r.type | titlecase }} — {{ r.title || '(Untitled)' }} <span class="text-muted">· {{ r.date | date:'short' }}</span></span>
-              @if (r.score != null) {<span class="badge text-bg-secondary">Score: {{ r.score }}</span>}
-            </li>
-            }
-          </ul>
-          <h6>Weekly Logs</h6>
-          <ul class="list-group mb-3">
-            @for (l of logsOf(sid); track $index) {
-            <li class="list-group-item">Week {{ l.week }} · {{ l.note }} <span class="text-muted">— {{ l.date | date:'short' }}</span></li>
-            }
-          </ul>
-          <h6>Assignments</h6>
-          <ul class="list-group mb-3">
-            @for (a of assignmentsOf(sid); track $index) {
-            <li class="list-group-item d-flex justify-content-between align-items-center">
-              <span>{{ a.fileName }} <span class="text-muted">· {{ a.uploadedAt | date:'short' }}</span></span>
-              <button class="btn btn-sm btn-outline-primary" (click)="downloadAssignment(a)">Download</button>
-            </li>
-            }
-          </ul>
-          <h6>Freelance / Mode</h6>
-          <ul class="list-group">
-            @for (f of freelanceOf(sid); track $index) {
-            <li class="list-group-item"><strong>{{ f.platform }}</strong> <span class="text-muted">— {{ f.createdAt | date:'short' }}</span></li>
-            }
-          </ul>
+            </div>
+            <div class="table-responsive">
+              <table class="table table-striped table-sm mb-0 align-middle">
+                <thead><tr><th>Name</th><th>Email</th><th>Approved</th></tr></thead>
+                <tbody>
+                  @for (s of (students() | paginate: page.students : pageSize); track s.id) {
+                  <tr [hidden]="(search.students && !(s.name + ' ' + s.email).toLowerCase().includes(search.students.toLowerCase())) || (filter.studentsApproved==='yes' && !s.approved) || (filter.studentsApproved==='no' && s.approved)">
+                    <td>{{ s.name }}</td>
+                    <td>{{ s.email }}</td>
+                    <td>
+                      <span class="badge" [class.text-bg-success]="s.approved" [class.text-bg-secondary]="!s.approved">{{ s.approved ? 'Yes' : 'No' }}</span>
+                    </td>
+                  </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+            <div class="p-2">
+              <app-paginator [total]="students().length" [(page)]="page.students" [pageSize]="pageSize"></app-paginator>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
   </div>
   }
-
-  <div class="row g-3 mt-4">
-    <div class="col-12">
-      <div class="card">
-        <div class="card-header bg-light">Applications (Approval Forms)</div>
-        <div class="card-body">
-          <div class="form-check form-switch mb-2">
-            <input class="form-check-input" type="checkbox" id="pendOnly" [(ngModel)]="showPendingOnly">
-            <label class="form-check-label" for="pendOnly">Show only pending</label>
-          </div>
-          <div class="table-responsive">
-            <table class="table table-sm align-middle">
-              <thead>
-                <tr><th>Student</th><th>Submitted</th><th>Status</th><th>Officer Comment</th><th>Actions</th></tr>
-              </thead>
-              <tbody>
-                @for (s of students(); track s.id) {
-                <tr [hidden]="!showInApplications(s.id)">
-                  <td>
-                    <div><strong>{{ s.name }}</strong> <span class="text-muted small">({{ s.email }})</span></div>
-                    @if (latestApproval(s.id); as a) {
-                    <div class="small text-muted">v{{ a.version }} — Company: {{ a.company.name || '-' }} — {{ a.internship.startDate }} → {{ a.internship.endDate }}</div>
-                    }
-                  </td>
-                  <td>{{ latestApproval(s.id)?.createdAt | date:'short' }}</td>
-                  <td>
-                    <span class="badge"
-                      [class.text-bg-secondary]="!latestApproval(s.id)?.status || latestApproval(s.id)?.status==='pending'"
-                      [class.text-bg-success]="latestApproval(s.id)?.status==='approved'"
-                      [class.text-bg-danger]="latestApproval(s.id)?.status==='rejected'">
-                      {{ latestApproval(s.id)?.status || 'pending' }}
-                    </span>
-                    @if (latestApproval(s.id)?.resolvedAt) {
-                    <div class="small text-muted">{{ latestApproval(s.id)?.resolvedAt | date:'short' }}</div>
-                    }
-                  </td>
-                  <td class="w-25">
-                    <input class="form-control form-control-sm" placeholder="Comment (optional)" [(ngModel)]="approvalComment[s.id]" name="ac{{s.id}}" />
-                  </td>
-                  <td>
-                    <div class="d-flex gap-2">
-                      <select class="form-select form-select-sm" style="width:140px" [(ngModel)]="approvalDecision[s.id]" name="ad{{s.id}}">
-                        <option [ngValue]="''">Choose…</option>
-                        <option [ngValue]="'approved'">Approve</option>
-                        <option [ngValue]="'rejected'">Reject</option>
-                      </select>
-                      <button class="btn btn-sm btn-outline-primary" (click)="reviewApproval(s.id)">Apply</button>
-                    </div>
-                  </td>
-                </tr>
-                }
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="row g-3 mt-3">
-    <div class="col-12">
-      <div class="alert alert-info">
-        <div class="fw-semibold">Evaluation Scheme</div>
-        <ul class="mb-0">
-          <li><strong>On-site / Virtual:</strong> Site Supervisor (40) + Faculty Supervisor (40) + Internship Office (20). Office sub-breakdown: Proposal 5, Weekly Logs 5, Final Report 10.</li>
-          <li><strong>Freelancing (Fiverr/Upwork):</strong> Supervisor (60) + Internship Office (40). Office sub-breakdown still 5+5+10 but auto-scales to 40.</li>
-        </ul>
-      </div>
-    </div>
-  </div>
-
-  <div class="row g-3 mt-4">
-    <div class="col-12">
-      <div class="card">
-        <div class="card-header bg-light">Internship Evaluation Committee (20% Weightage)</div>
-        <div class="card-body">
-          <p class="mb-2"><strong>Composition:</strong> Notified by the HoD under the convenorship of the In-charge Internship Office with other members as deemed fit.</p>
-          <p class="mb-2"><strong>Role:</strong> Evaluate internship report, weekly logs, and technical contribution.</p>
-          <p class="mb-0"><strong>Grading:</strong> Assigns 20% of total marks (15% Report Submission, 5% Weekly Log) and submits results to the Internship Office for final processing.</p>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="row g-3 mt-4">
-    <div class="col-12">
-      <div class="card">
-        <div class="card-header bg-light">Weekly Log Compliance</div>
-        <div class="card-body">
-          <p class="text-muted">Tracks expected vs submitted weekly logs based on the Approval start date.</p>
-          <div class="table-responsive">
-            <table class="table table-sm align-middle">
-              <thead>
-                <tr><th>Student</th><th>Start</th><th>Expected Weeks</th><th>Submitted</th><th>Status</th></tr>
-              </thead>
-              <tbody>
-                @for (s of students(); track s.id) {
-                <tr>
-                  <td>{{ s.name }} <span class="text-muted small">({{ s.email }})</span></td>
-                  <td>{{ startDateString(s.id) }}</td>
-                  <td>{{ expectedWeeks(s.id) }}</td>
-                  <td>{{ logsCount(s.id) }}</td>
-                  <td>
-                    <span class="badge" [class.text-bg-success]="hasLogThisWeek(s.id)" [class.text-bg-danger]="!hasLogThisWeek(s.id)">
-                      {{ hasLogThisWeek(s.id) ? 'This week submitted' : 'Missing this week' }}
-                    </span>
-                  </td>
-                </tr>
-                }
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="row g-3 mt-4">
-    <div class="col-12">
-      <div class="card">
-        <div class="card-header bg-light">Suitable Host Organizations</div>
-        <div class="card-body">
-          <p class="mb-2">Preferred organizations include:</p>
-          <ul>
-            <li>Software houses and IT consulting firms</li>
-            <li>Banks and telecom companies (IT divisions)</li>
-            <li>Startups and tech incubators</li>
-            <li>Government departments with IT infrastructure</li>
-            <li>Academic institutions and research centers</li>
-            <li>NGOs with digital transformation initiatives</li>
-          </ul>
-          <p class="mb-0">Freelancing via Fiverr/Upwork is acceptable for technical gigs only (e.g., Development, Data Science/AI/ML, APIs/Automation, DevOps/Cloud, Cybersecurity, Database, Testing, UI implementation). Non‑technical roles are not permitted.</p>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="row g-3 mt-4">
-    <div class="col-12">
-      <div class="card">
-        <div class="card-header bg-light">Complaints & Grievances</div>
-        <div class="card-body">
-          <p class="text-muted">Respond to student complaints submitted to the Internship Office.</p>
-          <div class="table-responsive">
-            <table class="table table-sm align-middle">
-              <thead><tr><th>Date</th><th>Student</th><th>Category</th><th>Message</th><th>Status</th><th>Response</th><th>Action</th></tr></thead>
-              <tbody>
-                @for (c of complaints(); track c.id) {
-                <tr>
-                  <td>{{ c.createdAt | date:'short' }}</td>
-                  <td>{{ studentName(c.studentId) }}</td>
-                  <td>{{ c.category }}</td>
-                  <td style="max-width:280px">{{ c.message }}</td>
-                  <td>
-                    <span class="badge" [class.text-bg-secondary]="c.status==='open'" [class.text-bg-success]="c.status==='resolved'">{{ c.status }}</span>
-                  </td>
-                  <td style="max-width:260px">{{ c.response || '-' }}</td>
-                  <td>
-                    @if (c.status==='open') {
-                      <div class="input-group input-group-sm">
-                        <input class="form-control" placeholder="Type response..." [(ngModel)]="responses[c.id]" name="resp{{c.id}}" />
-                        <button class="btn btn-outline-success" (click)="resolve(c.id)">Resolve</button>
-                      </div>
-                    }
-                  </td>
-                </tr>
-                }
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="row g-3 mt-4">
-    <div class="col-12">
-      <div class="card">
-        <div class="card-header bg-light">Requests from Faculty</div>
-        <div class="card-body">
-          <p class="text-muted">Review requests to add Companies or Site Supervisors submitted by faculty supervisors.</p>
-          <div class="table-responsive">
-            <table class="table table-sm align-middle">
-              <thead>
-                <tr>
-                  <th>When</th>
-                  <th>Type</th>
-                  <th>Details</th>
-                  <th>Requested By</th>
-                  <th>Status</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (r of requests(); track r.id) {
-                <tr>
-                  <td>{{ r.createdAt | date:'short' }}</td>
-                  <td>
-                    <span class="badge" [class.text-bg-primary]="r.type==='company'" [class.text-bg-info]="r.type==='site'">{{ r.type | titlecase }}</span>
-                  </td>
-                  <td>
-                    @if (r.type==='company') {
-                      <div><strong>{{ r.name }}</strong></div>
-                      <div class="text-muted small">{{ r.address || '-' }}</div>
-                    } @else {
-                      <div><strong>{{ requestPrimary(r) }}</strong></div>
-                      <div class="text-muted small">{{ requestSecondary(r) }}</div>
-                    }
-                  </td>
-                  <td>{{ facultyName(r.requestedByFacultyId) }}</td>
-                  <td>
-                    <span class="badge"
-                      [class.text-bg-secondary]="r.status==='pending'"
-                      [class.text-bg-success]="r.status==='approved'"
-                      [class.text-bg-danger]="r.status==='rejected'">
-                      {{ r.status }}
-                    </span>
-                    @if (r.resolvedAt) {
-                    <div class="small text-muted">{{ r.resolvedAt | date:'short' }}</div>
-                    }
-                  </td>
-                  <td>
-                    @if (r.status==='pending') {
-                      <div class="d-flex gap-2">
-                        <button class="btn btn-sm btn-outline-success" (click)="approveRequest(r.id)">Approve</button>
-                        <button class="btn btn-sm btn-outline-danger" (click)="rejectRequest(r.id)">Reject</button>
-                      </div>
-                    } @else {
-                      <div class="small text-muted">—</div>
-                    }
-                  </td>
-                </tr>
-                }
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="row g-3 mt-4">
-    <div class="col-12">
-      <div class="card">
-        <div class="card-header bg-light">Announcements</div>
-        <div class="card-body">
-          <div class="row g-2 align-items-end">
-            <div class="col-md-3">
-              <label class="form-label">Title (optional)</label>
-              <input class="form-control" [(ngModel)]="announcement.title" name="atitle" />
-            </div>
-            <div class="col-md-5">
-              <label class="form-label">Message</label>
-              <input class="form-control" [(ngModel)]="announcement.message" name="amsg" placeholder="e.g., Weekly log window extended till Friday" />
-            </div>
-            <div class="col-md-3">
-              <label class="form-label">Link (optional)</label>
-              <input class="form-control" [(ngModel)]="announcement.link" name="alink" placeholder="https://..." />
-            </div>
-            <div class="col-md-1">
-              <div class="form-check mt-4">
-                <input class="form-check-input" type="checkbox" [(ngModel)]="announcement.pinned" name="apinned" id="apinned">
-                <label class="form-check-label" for="apinned">Pin</label>
-              </div>
-            </div>
-            <div class="col-12 col-md-2 mt-2 mt-md-0">
-              <button class="btn btn-primary w-100" (click)="addAnnouncement()">Publish</button>
-            </div>
-          </div>
-
-          @if (announcements(); as anns) {
-            <div class="table-responsive mt-3">
-              <table class="table table-sm align-middle">
-                <thead><tr><th>When</th><th>Title</th><th>Message</th><th>Link</th><th>Pinned</th><th>Actions</th></tr></thead>
-                <tbody>
-                  @for (a of anns; track a.id) {
+  @case ('evidence') {
+    <div class="row g-3 mt-0">
+      <div class="col-12">
+        <div class="card">
+          <div class="card-header bg-light">Evidence Review (Fiverr / Upwork / On-site / Virtual)</div>
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="table table-sm mb-0 align-middle">
+                <thead>
                   <tr>
-                    <td class="small text-muted">{{ a.createdAt | date:'short' }}</td>
-                    <td>{{ a.title || '-' }}</td>
-                    <td style="max-width:420px">{{ a.message }}</td>
+                    <th>Student</th>
+                    <th>Platform</th>
+                    <th>Summary</th>
+                    <th>Status</th>
+                    <th>Comment</th>
+                    <th>Decision</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (s of students(); track s.id) {
+                  <tr>
                     <td>
-                      @if (a.link) { <a [href]="a.link" target="_blank" rel="noopener">Open</a> } @else { <span class="text-muted">—</span> }
+                      <div><strong>{{ s.name }}</strong> <span class="text-muted small">({{ s.email }})</span></div>
+                      <div class="small text-muted">Faculty: {{ facultyName(s.facultyId) }} | Site: {{ siteSupervisorName(s.siteId) }}</div>
+                    </td>
+                    <td>{{ latestEvidence(s.id)?.platform || '-' }}</td>
+                    <td style="max-width:420px">
+                      @if (latestEvidence(s.id); as e) {
+                        <div class="small">
+                          @if (e.platform==='Fiverr') {
+                            <div>Gigs: {{ e.gigsCompleted || 0 }} | Earnings: ${{ e.earningsUSD || 0 }} | Rating: {{ e.avgRating || '-' }}</div>
+                          } @else if (e.platform==='Upwork') {
+                            <div>Proposals: {{ e.proposalsApplied || 0 }} | Earnings: ${{ e.earningsUSD || 0 }}</div>
+                          } @else {
+                            <div>{{ e.workSummary || '—' }}</div>
+                          }
+                          <div class="text-muted">{{ e.contractSummary || e.approvalEvidence || e.clientFeedback || e.technologies || e.logbook || '—' }}</div>
+                        </div>
+                      } @else {
+                        <span class="text-muted">—</span>
+                      }
                     </td>
                     <td>
-                      <span class="badge" [class.text-bg-primary]="a.pinned" [class.text-bg-secondary]="!a.pinned">{{ a.pinned ? 'Yes' : 'No' }}</span>
+                      <span class="badge"
+                        [class.text-bg-secondary]="!latestEvidence(s.id)?.status || latestEvidence(s.id)?.status==='pending'"
+                        [class.text-bg-success]="latestEvidence(s.id)?.status==='approved'"
+                        [class.text-bg-danger]="latestEvidence(s.id)?.status==='rejected'">
+                        {{ latestEvidence(s.id)?.status || 'pending' }}
+                      </span>
+                      @if (latestEvidence(s.id)?.resolvedAt) {
+                        <div class="small text-muted">{{ latestEvidence(s.id)?.resolvedAt | date:'short' }}</div>
+                      }
+                    </td>
+                    <td style="min-width:200px">
+                      <input class="form-control form-control-sm" [disabled]="!latestEvidence(s.id)" [(ngModel)]="evidenceComment[latestEvidence(s.id)?.id || '']" [name]="'ec' + (latestEvidence(s.id)?.id || '')" placeholder="Comment (optional)" />
+                      @if (latestEvidence(s.id)?.officerComment) {
+                        <div class="small text-muted mt-1">Last: {{ latestEvidence(s.id)?.officerComment }}</div>
+                      }
                     </td>
                     <td>
                       <div class="d-flex gap-2">
-                        <button class="btn btn-sm btn-outline-secondary" (click)="togglePinned(a.id)">{{ a.pinned ? 'Unpin' : 'Pin' }}</button>
-                        <button class="btn btn-sm btn-outline-danger" (click)="removeAnnouncement(a.id)">Remove</button>
+                        <select class="form-select form-select-sm" style="width:120px" [disabled]="!latestEvidence(s.id) || latestEvidence(s.id)?.status==='approved'" [(ngModel)]="evidenceDecision[latestEvidence(s.id)?.id || '']" [name]="'ed' + (latestEvidence(s.id)?.id || '')">
+                          <option [ngValue]="''">Choose…</option>
+                          <option [ngValue]="'approved'">Approve</option>
+                          <option [ngValue]="'rejected'">Reject</option>
+                        </select>
+                        <button class="btn btn-sm btn-outline-primary" [disabled]="!latestEvidence(s.id)" (click)="reviewEvidence(s.id)">Apply</button>
                       </div>
                     </td>
                   </tr>
@@ -532,147 +135,570 @@
                 </tbody>
               </table>
             </div>
-          }
+          </div>
         </div>
       </div>
     </div>
-  </div>
-
-  <hr class="my-4" />
-  <h3 class="mb-3">Internship Officers</h3>
-  <div class="row g-3 align-items-end">
-    <div class="col-md-4">
-      <label class="form-label">Name</label>
-      <input class="form-control" [(ngModel)]="officer.name" name="oname" />
-    </div>
-    <div class="col-md-4">
-      <label class="form-label">Email</label>
-      <input type="email" class="form-control" [(ngModel)]="officer.email" name="oemail" />
-    </div>
-    <div class="col-md-4">
-      <button class="btn btn-primary" (click)="addOfficer()">Add Officer</button>
-    </div>
-  </div>
-  <ul class="list-group mt-3">
-    @for (o of officers(); track o.email) {
-    <li class="list-group-item d-flex justify-content-between align-items-center">{{ o.name }} <span class="text-muted">{{ o.email }}</span></li>
-    }
-  </ul>
-
-  <hr class="my-4" />
-  <h3 class="mb-3">Faculty Supervisors</h3>
-  <div class="row g-3 align-items-end">
-    <div class="col-md-4">
-      <label class="form-label">Name</label>
-      <input class="form-control" [(ngModel)]="faculty.name" name="fname" />
-    </div>
-    <div class="col-md-4">
-      <label class="form-label">Email</label>
-      <input type="email" class="form-control" [(ngModel)]="faculty.email" name="femail" />
-    </div>
-    <div class="col-md-3">
-      <label class="form-label">Department</label>
-      <input class="form-control" [(ngModel)]="faculty.department" name="fdept" />
-    </div>
-    <div class="col-md-3">
-      <label class="form-label">Password</label>
-      <input type="password" class="form-control" [(ngModel)]="faculty.password" name="fpass" />
-    </div>
-    <div class="col-md-1 d-grid">
-      <button class="btn btn-primary" (click)="addFaculty()">Add</button>
-    </div>
-  </div>
-  <ul class="list-group mt-3">
-    @for (f of facultyList(); track f.id) {
-    <li class="list-group-item d-flex justify-content-between align-items-center">
-      <div class="me-2">
-        <div>{{ f.name }} — <span class="text-muted">{{ f.email }}</span></div>
-        <div class="small text-muted">Password: {{ f.password ? 'set' : 'not set' }}</div>
-      </div>
-      <div class="d-flex gap-2 align-items-center">
-        <input class="form-control form-control-sm" style="width:160px" placeholder="New password" [(ngModel)]="facultyNewPw[f.id]" name="fpw{{f.id}}" />
-        <button class="btn btn-sm btn-outline-secondary" (click)="setFacultyPassword(f.id)">Set Password</button>
-        <button class="btn btn-sm btn-outline-danger" (click)="removeFaculty(f.id)">Remove</button>
-      </div>
-    </li>
-    }
-  </ul>
-
-  <hr class="my-4" />
-  <h3 class="mb-3">Companies & Site Supervisors</h3>
-  <div class="row g-3 align-items-end">
-    <div class="col-md-5">
-      <label class="form-label">Company Name</label>
-      <input class="form-control" [(ngModel)]="company.name" name="cname2" />
-    </div>
-    <div class="col-md-5">
-      <label class="form-label">Address</label>
-      <input class="form-control" [(ngModel)]="company.address" name="caddr2" />
-    </div>
-    <div class="col-md-2">
-      <button class="btn btn-primary w-100" (click)="addCompany()">Add Company</button>
-    </div>
-  </div>
-  <div class="row g-3 align-items-end mt-2">
-    <div class="col-md-3">
-      <label class="form-label">Site Supervisor</label>
-      <input class="form-control" [(ngModel)]="site.name" name="sname2" />
-    </div>
-    <div class="col-md-3">
-      <label class="form-label">Email</label>
-      <input type="email" class="form-control" [(ngModel)]="site.email" name="semail2" />
-    </div>
-    <div class="col-md-4">
-      <label class="form-label">Company</label>
-      <select class="form-select" [(ngModel)]="site.companyId" name="scid2">
-        <option [ngValue]="''">Select company...</option>
-        @for (c of companyList(); track c.id) {
-        <option [ngValue]="c.id">{{ c.name }}</option>
-        }
-      </select>
-    </div>
-    <div class="col-md-2">
-      <label class="form-label">Password</label>
-      <input type="password" class="form-control" [(ngModel)]="site.password" name="spass2" />
-    </div>
-    <div class="col-md-2 d-grid">
-      <button class="btn btn-primary" (click)="addSite()">Add Site</button>
-    </div>
-  </div>
-  <div class="table-responsive mt-3">
-    <table class="table table-sm">
-      <thead><tr><th>Company</th><th>Site Supervisor</th><th>Email</th><th>Password</th><th>Actions</th></tr></thead>
-      <tbody>
-        @for (t of siteList(); track t.id) {
-        <tr>
-          <td>{{ companyName(t.companyId) }}</td>
-          <td>{{ t.name }}</td>
-          <td>{{ t.email }}</td>
-          <td class="text-muted small">{{ t.password ? 'set' : 'not set' }}</td>
-          <td>
-            <div class="d-flex gap-2 align-items-center">
-              <input class="form-control form-control-sm" style="width:160px" placeholder="New password" [(ngModel)]="siteNewPw[t.id]" name="spw{{t.id}}" />
-              <button class="btn btn-sm btn-outline-secondary" (click)="setSitePassword(t.id)">Set Password</button>
-              <button class="btn btn-sm btn-outline-danger" (click)="removeSite(t.id)">Remove</button>
+  }
+  @case ('applications') {
+    <div class="row g-3 mt-0">
+      <div class="col-12">
+        <div class="card">
+          <div class="card-header bg-light">Applications (Approval Forms)</div>
+          <div class="card-body">
+            <div class="form-check form-switch mb-2">
+              <input class="form-check-input" type="checkbox" id="pendOnly" [(ngModel)]="showPendingOnly">
+              <label class="form-check-label" for="pendOnly">Show only pending</label>
             </div>
-          </td>
-        </tr>
-        }
-      </tbody>
-    </table>
+            <div class="table-responsive">
+              <table class="table table-sm align-middle">
+                <thead><tr><th>Student</th><th>Submitted</th><th>Status</th><th>Comment</th><th>Decision</th></tr></thead>
+                <tbody>
+                  @for (s of students(); track s.id) {
+                  <tr [hidden]="!showInApplications(s.id)">
+                    <td>
+                      <div><strong>{{ s.name }}</strong> <span class="text-muted small">({{ s.email }})</span></div>
+                      @if (latestApproval(s.id); as a) {
+                        <div class="small text-muted">v{{ a.version }} — {{ a.company.name || '-' }} — {{ a.internship.startDate }} → {{ a.internship.endDate }}</div>
+                      }
+                    </td>
+                    <td>{{ latestApproval(s.id)?.createdAt | date:'short' }}</td>
+                    <td>
+                      <span class="badge"
+                        [class.text-bg-secondary]="!latestApproval(s.id)?.status || latestApproval(s.id)?.status==='pending'"
+                        [class.text-bg-success]="latestApproval(s.id)?.status==='approved'"
+                        [class.text-bg-danger]="latestApproval(s.id)?.status==='rejected'">
+                        {{ latestApproval(s.id)?.status || 'pending' }}
+                      </span>
+                      @if (latestApproval(s.id)?.resolvedAt) {
+                        <div class="small text-muted">{{ latestApproval(s.id)?.resolvedAt | date:'short' }}</div>
+                      }
+                    </td>
+                    <td><input class="form-control form-control-sm" [(ngModel)]="approvalComment[s.id]" placeholder="Comment" name="ac{{s.id}}" /></td>
+                    <td>
+                      <div class="d-flex gap-2">
+                        <select class="form-select form-select-sm" [(ngModel)]="approvalDecision[s.id]" name="ad{{s.id}}" style="width:120px">
+                          <option [ngValue]="''">Choose…</option>
+                          <option [ngValue]="'approved'">Approve</option>
+                          <option [ngValue]="'rejected'">Reject</option>
+                        </select>
+                        <button class="btn btn-sm btn-outline-primary" (click)="reviewApproval(s.id)">Apply</button>
+                      </div>
+                    </td>
+                  </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
   </div>
-  <div class="table-responsive mt-3">
-    <table class="table table-sm">
-      <thead><tr><th>Company</th><th>Address</th><th>Actions</th></tr></thead>
-      <tbody>
-        @for (c of companyList(); track c.id) {
-        <tr>
-          <td>{{ c.name }}</td>
-          <td>{{ c.address || '-' }}</td>
-          <td><button class="btn btn-sm btn-outline-danger" (click)="removeCompany(c.id)">Remove</button></td>
-        </tr>
-        }
-      </tbody>
-    </table>
+  }
+  @case ('announcements') {
+    <div class="row g-3 mt-0">
+      <div class="col-12">
+        <div class="card">
+          <div class="card-header bg-light">Announcements</div>
+          <div class="card-body">
+            <div class="row g-2 align-items-end">
+              <div class="col-12 col-sm-6 col-md-3">
+                <label class="form-label">Title (optional)</label>
+                <input class="form-control" [(ngModel)]="announcement.title" name="atitle" />
+              </div>
+              <div class="col-12 col-sm-6 col-md-5">
+                <label class="form-label">Message</label>
+                <input class="form-control" [(ngModel)]="announcement.message" name="amsg" placeholder="e.g., Weekly log window extended till Friday" />
+              </div>
+              <div class="col-12 col-sm-6 col-md-3">
+                <label class="form-label">Link (optional)</label>
+                <input class="form-control" [(ngModel)]="announcement.link" name="alink" placeholder="https://..." />
+              </div>
+              <div class="col-12 col-sm-6 col-md-1">
+                <div class="form-check mt-4">
+                  <input class="form-check-input" type="checkbox" [(ngModel)]="announcement.pinned" name="apinned" id="apinned">
+                  <label class="form-check-label" for="apinned">Pin</label>
+                </div>
+              </div>
+            </div>
+            <div class="row mt-2">
+              <div class="col-12 text-end">
+                <button class="btn btn-primary" (click)="addAnnouncement()">Publish</button>
+              </div>
+            </div>
+            @if (announcements(); as anns) {
+              <div class="table-responsive mt-3">
+                <table class="table table-sm align-middle">
+                  <thead><tr><th>When</th><th>Title</th><th>Message</th><th>Link</th><th>Pinned</th><th>Actions</th></tr></thead>
+                  <tbody>
+                    @for (a of anns; track a.id) {
+                    <tr>
+                      <td class="small text-muted">{{ a.createdAt | date:'short' }}</td>
+                      <td>{{ a.title || '-' }}</td>
+                      <td style="max-width:420px">{{ a.message }}</td>
+                      <td>@if (a.link) { <a [href]="a.link" target="_blank" rel="noopener">Open</a> } @else { <span class="text-muted">—</span> }</td>
+                      <td><span class="badge" [class.text-bg-primary]="a.pinned" [class.text-bg-secondary]="!a.pinned">{{ a.pinned ? 'Yes' : 'No' }}</span></td>
+                      <td>
+                        <div class="d-flex gap-2">
+                          <button class="btn btn-sm btn-outline-secondary" (click)="togglePinned(a.id)">{{ a.pinned ? 'Unpin' : 'Pin' }}</button>
+                          <button class="btn btn-sm btn-outline-danger" (click)="removeAnnouncement(a.id)">Remove</button>
+                        </div>
+                      </td>
+                    </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
   </div>
+  }
+  @case ('officers') {
+    <div class="row g-3 mt-0">
+      <div class="col-12">
+        <div class="card">
+          <div class="card-header bg-light">Internship Officers</div>
+          <div class="card-body">
+            <!-- Add Officer (ADMIN create-account) first -->
+            <div class="row g-3 align-items-end">
+              <div class="col-12 col-sm-6 col-md-4">
+                <label class="form-label">Officer Name</label>
+                <input class="form-control" [(ngModel)]="adminAccount.name" name="aname" (blur)="onAdminOfficerNameBlur()" />
+              </div>
+              <div class="col-12 col-sm-6 col-md-4">
+                <label class="form-label">Officer Email</label>
+                <input type="email" class="form-control" [(ngModel)]="adminAccount.email" name="aemail" (input)="onAdminOfficerEmailInput()" (blur)="onAdminOfficerEmailBlur()" (keydown)="onAdminOfficerEmailKeydown($event)" />
+                @if (adminOfficerEmailSuggestions.length) {
+                  <div class="mt-2 border rounded">
+                    <div class="list-group list-group-flush">
+                      @for (em of adminOfficerEmailSuggestions; let i = $index; track em) {
+                        <button type="button" class="list-group-item list-group-item-action py-2" [class.active]="i===adminOfficerSuggestIndex" (click)="selectAdminOfficerSuggestion(i)">{{ em }}</button>
+                      }
+                    </div>
+                  </div>
+                }
+              </div>
+              <div class="col-12 col-sm-6 col-md-3">
+                <label class="form-label">Password</label>
+                <input type="password" class="form-control" [(ngModel)]="adminAccount.password" name="apass" />
+              </div>
+              <div class="col-12 col-sm-6 col-md-1 d-grid">
+                <button class="btn btn-outline-primary" [disabled]="creatingAdmin" (click)="createAdminAccount()">{{ creatingAdmin ? 'Adding…' : 'Add' }}</button>
+              </div>
+            </div>
+            
+
+            <hr>
+
+            <!-- Officers list after add form -->
+            <div class="row mt-1">
+              <div class="col-12 col-md-6 ms-auto">
+                <input class="form-control" placeholder="Search officers..." [(ngModel)]="search.officers" name="osearch" />
+              </div>
+            </div>
+            <div class="table-responsive mt-2">
+              <table class="table table-sm align-middle">
+                <thead><tr><th>Name</th><th>Email</th><th>Actions</th></tr></thead>
+                <tbody>
+                  @for (o of (officers() | paginate: page.officers : pageSize); track o.id) {
+                  <tr [hidden]="search.officers && !(o.name + ' ' + o.email).toLowerCase().includes(search.officers.toLowerCase())">
+                    <td>
+                      @if (editingOfficerId===o.id) {
+                        <input class="form-control form-control-sm" [(ngModel)]="officerEdit.name" name="eoname{{o.id}}" />
+                      } @else { {{ o.name }} }
+                    </td>
+                    <td>
+                      @if (editingOfficerId===o.id) {
+                        <input class="form-control form-control-sm" [(ngModel)]="officerEdit.email" name="eoemail{{o.id}}" />
+                      } @else { {{ o.email }} }
+                    </td>
+                    <td>
+                      <div class="btn-group btn-group-sm">
+                        @if (editingOfficerId===o.id) {
+                          <button class="btn btn-outline-success" (click)="saveOfficerEdit()">Save</button>
+                          <button class="btn btn-outline-secondary" (click)="cancelEditOfficer()">Cancel</button>
+                        } @else {
+                          <button class="btn btn-outline-secondary" (click)="startEditOfficer(o.id)">Edit</button>
+                          <button class="btn btn-outline-danger" (click)="removeOfficer(o.id)">Remove</button>
+                        }
+                      </div>
+                    </td>
+                  </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+            <div class="p-2">
+              <app-paginator [total]="officers().length" [(page)]="page.officers" [pageSize]="pageSize"></app-paginator>
+            </div>
+          </div>
+        </div>
+      </div>
+  </div>
+  }
+  @case ('faculty') {
+    <div class="row g-3 mt-0">
+      <div class="col-12">
+        <div class="card">
+          <div class="card-header bg-light">Faculty Supervisors</div>
+          <div class="card-body">
+            <div class="row g-2 g-md-3 align-items-end">
+              <div class="col-12 col-sm-6 col-md-3">
+                <label class="form-label">Name</label>
+                <input class="form-control" [(ngModel)]="faculty.name" name="fname" (blur)="onFacultyNameBlur()" />
+              </div>
+              <div class="col-12 col-sm-6 col-md-3">
+                <label class="form-label">Email</label>
+                <input type="email" class="form-control" [(ngModel)]="faculty.email" name="femail" (input)="onFacultyEmailInput()" (blur)="onFacultyEmailBlur()" (keydown)="onFacultyEmailKeydown($event)" />
+                @if (facultyEmailSuggestions.length) {
+                  <div class="mt-2 border rounded">
+                    <div class="list-group list-group-flush">
+                      @for (em of facultyEmailSuggestions; let i = $index; track em) {
+                        <button type="button" class="list-group-item list-group-item-action py-2" [class.active]="i===facultySuggestIndex" (click)="selectFacultySuggestion(i)">{{ em }}</button>
+                      }
+                    </div>
+                  </div>
+                }
+              </div>
+              <div class="col-12 col-sm-6 col-md-3">
+                <label class="form-label">Department</label>
+                <input class="form-control" [(ngModel)]="faculty.department" name="fdept" />
+              </div>
+              <div class="col-12 col-sm-6 col-md-2">
+                <label class="form-label">Password</label>
+                <input type="password" class="form-control" [(ngModel)]="faculty.password" name="fpass" />
+              </div>
+              <div class="col-12 col-sm-6 col-md-1 d-grid">
+                <button class="btn btn-primary" (click)="addFaculty()">Add</button>
+              </div>
+            </div>
+            <div class="row mt-3 g-2 align-items-end">
+              <div class="col-12 col-md-6">
+                <input class="form-control" placeholder="Search faculty..." [(ngModel)]="search.faculty" name="fsearch" />
+              </div>
+              <div class="col-12 col-md-3">
+                <input class="form-control" placeholder="Filter by department" [(ngModel)]="filter.facultyDept" name="fdeptf" />
+              </div>
+            </div>
+            <div class="table-responsive mt-2">
+              <table class="table table-sm align-middle">
+                <thead><tr><th>Name</th><th>Email</th><th>Department</th><th>Password</th><th>Actions</th></tr></thead>
+                <tbody>
+                  @for (f of (filteredFaculty() | paginate: page.faculty : pageSize); track f.id) {
+                  <tr>
+                    <td>{{ f.name }}</td>
+                    <td>{{ f.email }}</td>
+                    <td>{{ f.department || '-' }}</td>
+                    <td class="small text-muted">{{ f.password ? 'set' : 'not set' }}</td>
+                    <td>
+                      <div class="d-flex flex-wrap gap-2 align-items-center">
+                        <input class="form-control form-control-sm" style="min-width:160px" placeholder="New password" [(ngModel)]="facultyNewPw[f.id]" name="fpw{{f.id}}" />
+                        <div class="btn-group btn-group-sm">
+                          <button class="btn btn-outline-secondary" (click)="setFacultyPassword(f.id)">Set</button>
+                          <button class="btn btn-outline-danger" (click)="removeFaculty(f.id)">Remove</button>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+            <div class="p-2">
+              <app-paginator [total]="facultyList().length" [(page)]="page.faculty" [pageSize]="pageSize"></app-paginator>
+            </div>
+          </div>
+        </div>
+      </div>
+  </div>
+  }
+  @case ('companies') {
+    <div class="row g-3 mt-0">
+      <div class="col-12">
+        <div class="card mb-3">
+          <div class="card-header bg-light">Companies</div>
+          <div class="card-body">
+            <div class="row g-3 align-items-end">
+              <div class="col-12 col-sm-6 col-md-4">
+                <label class="form-label">Company Name</label>
+                <input class="form-control" [(ngModel)]="company.name" name="cname2" />
+              </div>
+              <div class="col-12 col-sm-6 col-md-4">
+                <label class="form-label">Address</label>
+                <input class="form-control" [(ngModel)]="company.address" name="caddr2" />
+              </div>
+              <div class="col-12 col-sm-6 col-md-4">
+                <label class="form-label">Email</label>
+                <input type="email" class="form-control" [(ngModel)]="company.email" name="cemail2" />
+              </div>
+              <div class="col-12 col-sm-6 col-md-4">
+                <label class="form-label">Phone</label>
+                <input class="form-control" [(ngModel)]="company.phone" name="cphone2" />
+              </div>
+            </div>
+            <div class="row g-3 align-items-end mt-2">
+              <div class="col-12 col-sm-6 col-md-4">
+                <label class="form-label">Website</label>
+                <input class="form-control" [(ngModel)]="company.website" name="cweb2" placeholder="https://..." />
+              </div>
+              <div class="col-12 col-sm-6 col-md-4">
+                <label class="form-label">Industry</label>
+                <input class="form-control" [(ngModel)]="company.industry" name="cind2" />
+              </div>
+              <div class="col-12 col-md-4">
+                <label class="form-label">Description</label>
+                <input class="form-control" [(ngModel)]="company.description" name="cdesc2" />
+              </div>
+            </div>
+            <div class="row g-3 align-items-end mt-2">
+              <div class="col-12 col-md-3 d-grid ms-auto">
+                <button class="btn btn-primary" (click)="addCompany()">Add Company</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header bg-light">Companies</div>
+          <div class="card-body p-0">
+            <div class="p-2">
+              <div class="row g-2 align-items-end">
+                <div class="col-12 col-md-6 ms-auto">
+                  <input class="form-control" placeholder="Search companies..." [(ngModel)]="search.companies" name="csearch" />
+                </div>
+                <div class="col-12 col-md-3">
+                  <input class="form-control" placeholder="Filter by industry" [(ngModel)]="filter.industry" name="cindustryf" />
+                </div>
+              </div>
+            </div>
+            <div class="table-responsive">
+              <table class="table table-sm mb-0 align-middle">
+                <thead><tr><th>Name</th><th>Address</th><th>Email</th><th>Website</th><th>Description</th><th>Actions</th></tr></thead>
+                <tbody>
+                  @for (c of (companyList() | paginate: page.companies : pageSize); track c.id) {
+                  <tr [hidden]="(search.companies && !(c.name + ' ' + (c.address||'') + ' ' + (c.email||'') + ' ' + (c.website||'')).toLowerCase().includes(search.companies.toLowerCase())) || (filter.industry && (c.industry||'').toLowerCase().indexOf(filter.industry.toLowerCase())===-1)">
+                    <td>
+                      @if (editingCompanyId===c.id) {
+                        <input class="form-control form-control-sm" [(ngModel)]="companyEdit.name" name="ecname{{c.id}}" />
+                      } @else { {{ c.name }} }
+                    </td>
+                    <td>
+                      @if (editingCompanyId===c.id) {
+                        <input class="form-control form-control-sm" [(ngModel)]="companyEdit.address" name="ecaddr{{c.id}}" />
+                      } @else { {{ c.address || '-' }} }
+                    </td>
+                    <td>
+                      @if (editingCompanyId===c.id) {
+                        <input class="form-control form-control-sm" [(ngModel)]="companyEdit.email" name="ecemail{{c.id}}" />
+                      } @else { {{ c.email || '-' }} }
+                    </td>
+                    <td>
+                      @if (editingCompanyId===c.id) {
+                        <input class="form-control form-control-sm" [(ngModel)]="companyEdit.website" name="ecweb{{c.id}}" />
+                      } @else {
+                        @if (c.website) { <a [href]="c.website" target="_blank" rel="noopener">{{ c.website }}</a> } @else { <span class="text-muted">—</span> }
+                      }
+                    </td>
+                    <td style="max-width:260px">
+                      @if (editingCompanyId===c.id) {
+                        <input class="form-control form-control-sm" [(ngModel)]="companyEdit.description" name="ecdesc{{c.id}}" />
+                      } @else { {{ c.description || '-' }} }
+                    </td>
+                    <td>
+                      <div class="btn-group btn-group-sm">
+                        @if (editingCompanyId===c.id) {
+                          <button class="btn btn-outline-success" (click)="saveCompanyEdit()">Save</button>
+                          <button class="btn btn-outline-secondary" (click)="cancelEditCompany()">Cancel</button>
+                        } @else {
+                          <button class="btn btn-outline-secondary" (click)="startEditCompany(c.id)">Edit</button>
+                          <button class="btn btn-outline-danger" (click)="removeCompany(c.id)">Remove</button>
+                        }
+                      </div>
+                    </td>
+                  </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+            <div class="p-2">
+              <app-paginator [total]="companyList().length" [(page)]="page.companies" [pageSize]="pageSize"></app-paginator>
+            </div>
+          </div>
+        </div>
+      </div>
+  </div>
+  }
+  @case ('sites') {
+    <div class="row g-3 mt-0">
+      <div class="col-12">
+        <div class="card mb-3">
+          <div class="card-header bg-light">Add Site Supervisor</div>
+          <div class="card-body">
+            <div class="row g-3 align-items-end">
+              <div class="col-12 col-sm-6 col-md-3">
+                <label class="form-label">Name</label>
+                <input class="form-control" [(ngModel)]="site.name" name="sname2" />
+              </div>
+              <div class="col-12 col-sm-6 col-md-3">
+                <label class="form-label">Email</label>
+                <input type="email" class="form-control" [(ngModel)]="site.email" name="semail2" />
+              </div>
+              <div class="col-12 col-sm-6 col-md-3">
+                <label class="form-label">Company</label>
+                <select class="form-select" [(ngModel)]="site.companyId" name="scid2">
+                  <option [ngValue]="''">Select company...</option>
+                  @for (c of companyList(); track c.id) { <option [ngValue]="c.id">{{ c.name }}</option> }
+                </select>
+              </div>
+              <div class="col-12 col-sm-6 col-md-2">
+                <label class="form-label">Password</label>
+                <input type="password" class="form-control" [(ngModel)]="site.password" name="spass2" />
+              </div>
+              <div class="col-12 col-sm-6 col-md-1 d-grid">
+                <button class="btn btn-primary" (click)="addSite()">Add</button>
+              </div>
+            </div>
+            <div class="text-muted small mt-1">Role: SITE</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header bg-light">Site Supervisors</div>
+          <div class="card-body p-0">
+            <div class="p-2">
+              <div class="row g-2 align-items-end">
+                <div class="col-12 col-md-6">
+                  <input class="form-control" placeholder="Search sites..." [(ngModel)]="search.sites" name="ssearch" />
+                </div>
+                <div class="col-12 col-md-3">
+                  <select class="form-select" [(ngModel)]="filter.siteCompanyId" name="scombf">
+                    <option [ngValue]="''">All companies</option>
+                    @for (c of companyList(); track c.id) { <option [ngValue]="c.id">{{ c.name }}</option> }
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div class="table-responsive">
+              <table class="table table-sm mb-0 align-middle">
+                <thead><tr><th>Company</th><th>Name</th><th>Email</th><th>Password</th><th>Actions</th></tr></thead>
+                <tbody>
+                  @for (t of (siteList() | paginate: page.sites : pageSize); track t.id) {
+                  <tr [hidden]="(search.sites && !(t.name + ' ' + t.email + ' ' + companyName(t.companyId)).toLowerCase().includes(search.sites.toLowerCase())) || (filter.siteCompanyId && t.companyId !== filter.siteCompanyId)">
+                    <td>{{ companyName(t.companyId) }}</td>
+                    <td>{{ t.name }}</td>
+                    <td>{{ t.email }}</td>
+                    <td class="small text-muted">{{ t.password ? 'set' : 'not set' }}</td>
+                    <td>
+                      <div class="d-flex flex-wrap gap-2 align-items-center">
+                        <input class="form-control form-control-sm flex-grow-1 flex-sm-grow-0" style="min-width:140px" placeholder="New password" [(ngModel)]="siteNewPw[t.id]" name="spw{{t.id}}" />
+                        <div class="btn-group btn-group-sm">
+                          <button class="btn btn-outline-secondary" (click)="setSitePassword(t.id)">Set</button>
+                          <button class="btn btn-outline-danger" (click)="removeSite(t.id)">Remove</button>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+            <div class="p-2">
+              <app-paginator [total]="siteList().length" [(page)]="page.sites" [pageSize]="pageSize"></app-paginator>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+  @case ('complaints') {
+    <div class="row g-3 mt-0">
+      <div class="col-12">
+        <div class="card">
+          <div class="card-header bg-light">Complaints & Grievances</div>
+          <div class="card-body">
+            <div class="table-responsive">
+              <table class="table table-sm align-middle">
+                <thead><tr><th>Date</th><th>Student</th><th>Category</th><th>Message</th><th>Status</th><th>Response</th><th>Action</th></tr></thead>
+                <tbody>
+                  @for (c of complaints(); track c.id) {
+                  <tr>
+                    <td>{{ c.createdAt | date:'short' }}</td>
+                    <td>{{ studentName(c.studentId) }}</td>
+                    <td>{{ c.category }}</td>
+                    <td style="max-width:260px">{{ c.message }}</td>
+                    <td><span class="badge" [class.text-bg-secondary]="c.status==='open'" [class.text-bg-success]="c.status==='resolved'">{{ c.status }}</span></td>
+                    <td style="max-width:240px">{{ c.response || '-' }}</td>
+                    <td>
+                      @if (c.status==='open') {
+                        <div class="input-group input-group-sm">
+                          <input class="form-control" placeholder="Type response..." [(ngModel)]="responses[c.id]" name="resp{{c.id}}" />
+                          <button class="btn btn-outline-success" (click)="resolve(c.id)">Resolve</button>
+                        </div>
+                      }
+                    </td>
+                  </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+  </div>
+  }
+  @case ('compliance') {
+    <div class="row g-3 mt-0">
+      <div class="col-12">
+        <div class="card mb-3">
+          <div class="card-header bg-light">Internship Evaluation Committee (20% Weightage)</div>
+          <div class="card-body">
+            <p class="mb-2"><strong>Composition:</strong> Notified by the HoD under the convenorship of the In-charge Internship Office with other members as deemed fit.</p>
+            <p class="mb-2"><strong>Role:</strong> Evaluate internship report, weekly logs, and technical contribution.</p>
+            <p class="mb-0"><strong>Grading:</strong> 20% (Report 15%, Weekly Log 5%). Results forwarded to Internship Office.</p>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header bg-light">Weekly Log Compliance</div>
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="table table-sm mb-0 align-middle">
+                <thead><tr><th>Student</th><th>Start</th><th>Expected Weeks</th><th>Submitted</th><th>Status</th></tr></thead>
+                <tbody>
+                  @for (s of students(); track s.id) {
+                  <tr>
+                    <td>{{ s.name }} <span class="text-muted small">({{ s.email }})</span></td>
+                    <td>{{ startDateString(s.id) }}</td>
+                    <td>{{ expectedWeeks(s.id) }}</td>
+                    <td>{{ logsCount(s.id) }}</td>
+                    <td>
+                      <span class="badge" [class.text-bg-success]="hasLogThisWeek(s.id)" [class.text-bg-danger]="!hasLogThisWeek(s.id)">{{ hasLogThisWeek(s.id) ? 'This week submitted' : 'Missing this week' }}</span>
+                    </td>
+                  </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+  </div>
+  }
+  @case ('scheme') {
+    <div class="row g-3 mt-0">
+      <div class="col-12">
+        <div class="alert alert-info">
+          <div class="fw-semibold">Evaluation Scheme</div>
+          <ul class="mb-0">
+            <li><strong>On-site / Virtual:</strong> Site Supervisor (40) + Faculty Supervisor (40) + Internship Office (20: Proposal 5, Weekly Logs 5, Final Report 10)</li>
+            <li><strong>Freelancing (Fiverr/Upwork):</strong> Supervisor (60) + Internship Office (40) with same sub-breakdown.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    }
+    @default {
+      <div class="text-muted small">Select a tab.</div>
+    }
+  }
 </div>

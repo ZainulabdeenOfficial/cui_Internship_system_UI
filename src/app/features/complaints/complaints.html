@@ -1,0 +1,54 @@
+<div class="container py-4 complaints-page">
+  <h2 class="mb-3">Complaints & Grievances</h2>
+
+  @if (!isStudent) {
+    <div class="alert alert-info">
+      Please login as a student to submit and view your complaints.
+    </div>
+  }
+
+  @if (isStudent && studentId; as sid) {
+    <div class="card mb-3 bg-white shadow-sm">
+      <div class="card-header">Submit a Complaint</div>
+      <div class="card-body">
+        <form (ngSubmit)="submitComplaint()" #cf="ngForm" class="row g-3">
+          <div class="col-md-3">
+            <label class="form-label">Category</label>
+            <select class="form-select" [(ngModel)]="complaint.category" name="ccat" required>
+              <option [ngValue]="'Technical'">Technical</option>
+              <option [ngValue]="'Supervisor'">Supervisor</option>
+              <option [ngValue]="'Organization'">Organization</option>
+              <option [ngValue]="'Other'">Other</option>
+            </select>
+          </div>
+          <div class="col-md-9">
+            <label class="form-label">Message</label>
+            <input class="form-control" [(ngModel)]="complaint.message" name="cmsg" required />
+          </div>
+          <div class="col-12">
+            <button class="btn btn-primary" [disabled]="!cf.form.valid" type="submit">Submit Complaint</button>
+            <a class="btn btn-link" routerLink="/student" [queryParams]="{ tab: 'overview' }">Back to Student Dashboard</a>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="card bg-white shadow-sm">
+      <div class="card-header">Your Complaints</div>
+      <div class="card-body">
+        <ul class="list-group list-unstyled">
+          @for (c of myComplaints(); track c.id) {
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            <span>
+              <strong>{{ c.category }}</strong> — {{ c.message }}
+              <span class="text-muted"> · {{ c.createdAt | date:'short' }}</span>
+            </span>
+            <span class="badge" [class.text-bg-secondary]="c.status==='open'" [class.text-bg-success]="c.status==='resolved'">{{ c.status }}</span>
+          </li>
+          }
+        </ul>
+        @if (myComplaints().length===0) { <div class="text-muted">No complaints yet.</div> }
+      </div>
+    </div>
+  }
+</div>

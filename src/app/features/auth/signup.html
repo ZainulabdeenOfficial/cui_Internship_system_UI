@@ -1,12 +1,19 @@
 <div class="login-bg">
-<div class="container py-5" style="max-width:520px">
-  <div class="text-center mb-3 brand-block">
-    <img src="/assets/cui-logo.jpg" alt="CUI" width="56" height="56" style="object-fit:contain;background:#fff;border-radius:6px" />
-    <h2 class="mt-2 mb-0">Create Student Account</h2>
-    <div class="brand-subtitle">CUI Internship System</div>
+  <div class="bg-slides" aria-hidden="true">
+    <div class="slide s1"></div>
+    <div class="slide s2"></div>
+    <div class="slide s3"></div>
+    <div class="slide s4"></div>
   </div>
-  <div class="card login-card shadow-lg border-0">
-    <div class="card-body">
+  <div class="bg-tint" aria-hidden="true"></div>
+  <div class="form-wrapper" style="width:100%;max-width:520px;margin:0 auto;">
+    <div class="text-center mb-3 brand-block">
+      <img src="/assets/cui-logo.jpg" alt="CUI" width="56" height="56" style="object-fit:contain;background:#fff;border-radius:6px" />
+      <h2 class="mt-2 mb-0">Create Student Account</h2>
+      <div class="brand-subtitle">CUI Internship System</div>
+    </div>
+    <div class="card login-card shadow-lg border-0">
+      <div class="card-body">
       <form (ngSubmit)="submit()" #f="ngForm" class="row g-3">
         <div class="col-12">
           <label class="form-label">Name</label>
@@ -19,24 +26,33 @@
           <label class="form-label">Registration No</label>
           <div class="input-group">
             <span class="input-group-text"><i class="pi pi-hashtag"></i></span>
-            <input class="form-control" [(ngModel)]="model.registrationNo" (ngModelChange)="onRegNoChange($event)" name="regNo" #regNo="ngModel" required
-                   placeholder="FA22-BCS-090" pattern="^[A-Z]{2}\d{2}-[A-Z]{2,4}-\d{3}$" />
+       <input class="form-control" [(ngModel)]="model.registrationNo" (ngModelChange)="onRegNoChange($event)" (keydown)="filterRegKey($event)" (paste)="onRegPaste($event)" name="regNo" #regNo="ngModel" required
+         [attr.maxlength]="model.registrationNo.length >= 12 ? 12 : 12"
+         placeholder="AA00-BBB-000" pattern="^[A-Z]{2}\d{2}-[A-Z]{3}-\d{3}$" />
           </div>
           @if ((f.submitted || regNo.touched) && regNo.invalid) {
-            <div class="invalid-feedback d-block">Format must be FAyy-DEPT-ROLL (e.g., FA22-BCS-090).</div>
+            <div class="invalid-feedback d-block">Use pattern AA00-BBB-000. A & B parts letters only, 0 parts digits only (ex: FA22-BCS-090).</div>
           }
           @if (regNoDisplay) {
             <div class="regno-preview small mt-1">CIIT/<strong>{{ regNoDisplay }}</strong>/SWL</div>
           }
-          <small class="text-muted d-block">We auto-format your Reg No. Underscores (_) become hyphens (-); spaces are removed.</small>
+          <small class="text-muted d-block">Pattern: AA00-BBB-000. Any invalid character you type is ignored automatically.</small>
         </div>
         <div class="col-12">
-          <label class="form-label">Email</label>
+          <label class="form-label">University Email (auto)</label>
           <div class="input-group">
             <span class="input-group-text"><i class="pi pi-envelope"></i></span>
-            <input type="email" class="form-control" [(ngModel)]="model.email" name="email" required />
+            <input type="email" class="form-control" [value]="model.email" readonly required
+                   placeholder="aa00-bbb-000@students.cuisahiwal.edu.pk"
+                   [class.is-invalid]="f.submitted && !emailMatchesReg" />
           </div>
-          <small class="text-muted">Use your CUI Sahiwal email (e.g., fa22-bcs-090@students.cuisahiwal.edu.pk or name@sahiwal.comsats.edu.pk)</small>
+          @if (f.submitted && !emailMatchesReg) {
+            <div class="invalid-feedback d-block">Enter a complete valid Registration No first.</div>
+          }
+          <small class="text-muted">Auto-generated from Registration No; cannot edit.</small>
+          @if (emailMatchesReg && model.email && emailTaken) {
+            <div class="text-danger small mt-1">Account already exists for this email.</div>
+          }
         </div>
         <div class="col-12">
           <label class="form-label">Password</label>
@@ -46,16 +62,28 @@
           </div>
         </div>
         <div class="col-12">
-          <button class="btn btn-primary w-100" [disabled]="!f.form.valid">Create Account</button>
+          <button class="btn btn-primary w-100 d-inline-flex justify-content-center align-items-center" [disabled]="!f.form.valid || loading">
+            @if (loading) {
+              <span class="btn-dots me-2" aria-hidden="true"><span></span><span></span><span></span></span>
+            }
+            Create Account
+          </button>
         </div>
-        <div class="col-12" *ngIf="error">
-          <div class="alert alert-danger">{{ error }}</div>
-        </div>
+        @if (error) {
+          <div class="col-12">
+            <div class="alert alert-danger">{{ error }}</div>
+          </div>
+        }
+        @if (slow && !error) {
+          <div class="col-12">
+            <div class="alert alert-info py-2">Still working… the server is taking longer than usual.</div>
+          </div>
+        }
         <div class="col-12 text-center">
           <span>Already have an account? <a routerLink="/login">Login</a></span>
         </div>
-      </form>
+        </form>
+      </div>
     </div>
   </div>
-</div>
 </div>

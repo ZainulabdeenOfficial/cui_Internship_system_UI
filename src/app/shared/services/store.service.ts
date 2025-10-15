@@ -68,6 +68,9 @@ export type FreelanceRecord = {
   technologies?: string;
   logbook?: string;
   createdAt: string;
+  status?: 'pending'|'approved'|'rejected';
+  officerComment?: string;
+  resolvedAt?: string;
 };
 
 export type Complaint = {
@@ -89,7 +92,7 @@ export type SiteSupervisorRequest = BaseRequest & { type: 'site'; name: string; 
 export type RequestItem = CompanyRequest | SiteSupervisorRequest;
 
 export type FacultySupervisor = { id: string; name: string; email: string; department?: string; password?: string; avatarBase64?: string; bio?: string };
-export type Company = { id: string; name: string; address?: string };
+export type Company = { id: string; name: string; address?: string; email?: string; phone?: string; website?: string; industry?: string; description?: string; remoteId?: string };
 export type SiteSupervisor = { id: string; name: string; email: string; companyId?: string; password?: string; avatarBase64?: string; bio?: string };
 
 // Internship Design Statement (submitted in first week along with initial progress)
@@ -214,14 +217,22 @@ export class StoreService {
     this.internshipOfficers.update(a => [...a, { id, name, email }]);
     this.persist();
   }
+  updateInternshipOfficer(id: string, changes: Partial<{ name: string; email: string }>) {
+    this.internshipOfficers.update(a => a.map(o => o.id === id ? { ...o, ...changes } : o));
+    this.persist();
+  }
+  removeInternshipOfficer(id: string) {
+    this.internshipOfficers.update(a => a.filter(o => o.id !== id));
+    this.persist();
+  }
   addFacultySupervisor(name: string, email: string, department?: string, password?: string) {
     const id = crypto.randomUUID();
     this.facultySupervisors.update(a => [...a, { id, name, email, department, password }]);
     this.persist();
   }
-  addCompany(name: string, address?: string) {
+  addCompany(name: string, address?: string, extras?: { email?: string; phone?: string; website?: string; industry?: string; description?: string; remoteId?: string }) {
     const id = crypto.randomUUID();
-    this.companies.update(a => [...a, { id, name, address }]);
+    this.companies.update(a => [...a, { id, name, address, ...(extras || {}) }]);
     this.persist();
     return id;
   }
@@ -436,12 +447,19 @@ export class StoreService {
     return entry;
   }
   submitFreelance(studentId: string, rec: Omit<FreelanceRecord, 'id'|'createdAt'>) {
-    const entry: FreelanceRecord = { id: crypto.randomUUID(), createdAt: new Date().toISOString(), ...rec };
+    const entry: FreelanceRecord = { id: crypto.randomUUID(), createdAt: new Date().toISOString(), status: 'pending', ...rec };
     this.freelance.update(m => ({ ...m, [studentId]: [...(m[studentId] ?? []), entry] }));
     // set student's internship mode based on entry
     this.students.update(a => a.map(s => s.id === studentId ? { ...s, internshipMode: entry.platform } : s));
     this.persist();
     return entry;
+  }
+  reviewFreelance(studentId: string, recordId: string, decision: 'approved'|'rejected', officerComment?: string) {
+    const list = this.freelance()[studentId] ?? [];
+    const now = new Date().toISOString();
+    const updated = list.map(r => r.id === recordId ? { ...r, status: decision, officerComment, resolvedAt: now } : r);
+    this.freelance.update(m => ({ ...m, [studentId]: updated }));
+    this.persist();
   }
   submitDesignStatement(studentId: string, ds: Omit<DesignStatement, 'id'|'createdAt'>) {
     const entry: DesignStatement = { id: crypto.randomUUID(), createdAt: new Date().toISOString(), ...ds };

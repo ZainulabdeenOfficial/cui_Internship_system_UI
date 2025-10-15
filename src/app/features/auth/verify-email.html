@@ -1,0 +1,27 @@
+<div class="container py-5" style="max-width:520px">
+  <h2 class="mb-3">Verify Your Email</h2>
+  <div class="card shadow-sm border-0">
+    <div class="card-body">
+      <p class="mb-3">We sent a verification link to your university email. Please open your inbox and click the link to activate your account.</p>
+      <p class="text-muted small mb-4">Didn’t get it? Enter your email below and resend.</p>
+      <form class="row g-3" (ngSubmit)="resend()">
+        <div class="col-12">
+          <label class="form-label">Email</label>
+          <div class="input-group">
+            <span class="input-group-text"><i class="pi pi-envelope"></i></span>
+            <input class="form-control" [(ngModel)]="email" name="email" type="email" placeholder="fa22-bcs-090@students.cuisahiwal.edu.pk" required />
+          </div>
+        </div>
+        <div class="col-12 d-flex gap-2">
+          <button class="btn btn-primary flex-grow-1 d-inline-flex align-items-center justify-content-center" [disabled]="!email || loading || cooldownSec > 0" type="submit">
+            @if (loading) { <span class="spinner-border spinner-border-sm me-2" role="status"></span> }
+            {{ sentOnce ? (cooldownSec > 0 ? 'Resend (' + cooldownSec + 's)' : 'Resend Email') : 'Send Verification Email' }}
+          </button>
+        </div>
+      </form>
+      @if (message) { <div class="alert mt-3 py-2 mb-0" [ngClass]="{'alert-success': message.toLowerCase().includes('inbox') || message.toLowerCase().includes('sent') || message.toLowerCase().includes('success'), 'alert-danger': message.toLowerCase().includes('fail') || message.toLowerCase().includes('error'), 'alert-info': loading}">{{ message }}</div> }
+      @if (slow && loading) { <div class="small text-muted mt-2">Still sending… please keep this tab open.</div> }
+    </div>
+  </div>
+  <div class="text-center mt-3 small text-muted">After verifying, you can close this page and log in.</div>
+</div>
