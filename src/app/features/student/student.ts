@@ -2,6 +2,7 @@ import { Component, computed, effect } from '@angular/core';
 import { CommonModule, NgIf, NgFor } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { StoreService } from '../../shared/services/store.service';
+import { StudentService } from '../../shared/services/student.service';
 import { ToastService } from '../../shared/toast/toast.service';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { PaginatePipe } from '../../shared/pagination/paginate.pipe';
@@ -107,7 +108,7 @@ export class Student {
     if (!this.selectedId) return [] as any[];
     return this.store.complaints().filter(c => c.studentId === this.selectedId);
   };
-  constructor(private store: StoreService, private toast: ToastService, private route: ActivatedRoute, private router: Router) {
+  constructor(private store: StoreService, private toast: ToastService, private route: ActivatedRoute, private router: Router, private studentApi: StudentService) {
     this.lockSelection = effect(() => {
       const mine = this.myStudentId();
       if (mine && this.selectedId !== mine) this.selectedId = mine;
@@ -127,6 +128,88 @@ export class Student {
         }
       });
     } catch {}
+  }
+
+  // API helpers: Internship creation and AppEx-A
+  async apiCreateInternship(type: 'ONSITE'|'REMOTE'|'VIRTUAL'|'HYBRID', siteId?: string, facultyId?: string) {
+    try {
+      const res = await this.studentApi.createInternship({ type, siteId, facultyId });
+      this.toast.success(res?.message || 'Internship request created');
+      return res;
+    } catch (err: any) {
+      const msg = err?.error?.message || err?.error?.error || err?.message || 'Failed to create internship';
+      this.toast.danger(msg);
+      throw err;
+    }
+  }
+  async apiGetAppExA() {
+    try { return await this.studentApi.getAppExA(); } catch (err: any) { this.toast.danger(err?.error?.message || err?.message || 'Failed to load AppEx-A'); throw err; }
+  }
+  async apiSubmitAppExA(payload: any) {
+    try { const res = await this.studentApi.submitAppExA(payload); this.toast.success(res?.message || 'AppEx-A submitted'); return res; } catch (err: any) { this.toast.danger(err?.error?.message || err?.message || 'Failed to submit AppEx-A'); throw err; }
+  }
+  async apiUpdateAppExA(payload: any) {
+    try { const res = await this.studentApi.updateAppExA(payload); this.toast.success(res?.message || 'AppEx-A updated'); return res; } catch (err: any) { this.toast.danger(err?.error?.message || err?.message || 'Failed to update AppEx-A'); throw err; }
+  }
+
+  // Forms for new API integrations
+  createInternshipModel: { type: 'ONSITE'|'REMOTE'|'VIRTUAL'|'HYBRID'; siteId?: string; facultyId?: string } = { type: 'ONSITE', siteId: '', facultyId: '' };
+  companyRequest = { name: '', email: '', phone: '', address: '', website: '', industry: '', description: '', justification: '' };
+  companyRequestsList: any[] = [];
+  appexAForm = {
+    organization: '', address: '', industrySector: '', contactName: '', contactDesignation: '', contactPhone: '', contactEmail: '',
+    internshipField: '', internshipLocation: '', startDate: '', endDate: '', workingDays: '', workingHours: ''
+  };
+
+  async createInternshipSubmit() {
+    const type = this.createInternshipModel.type;
+    const siteId = (this.createInternshipModel.siteId || '').trim() || undefined;
+    const facultyId = (this.createInternshipModel.facultyId || '').trim() || undefined;
+    await this.apiCreateInternship(type, siteId, facultyId);
+  }
+  async submitCompanyRequest() {
+    const p = this.companyRequest;
+    if (!p.name?.trim() || !p.email?.trim()) { this.toast.warning('Name and email are required'); return; }
+    try {
+      await this.studentApi.requestToAddCompany({
+        name: p.name.trim(), email: p.email.trim(), phone: p.phone?.trim(), address: p.address?.trim(),
+        website: p.website?.trim(), industry: p.industry?.trim(), description: p.description?.trim(), justification: p.justification?.trim()
+      });
+      this.toast.success('Company request submitted');
+      this.companyRequest = { name: '', email: '', phone: '', address: '', website: '', industry: '', description: '', justification: '' };
+      await this.loadMyCompanyRequests();
+    } catch (err: any) {
+      const msg = err?.error?.message || err?.message || 'Failed to submit company request';
+      this.toast.danger(msg);
+    }
+  }
+  async loadMyCompanyRequests() {
+    try {
+      const res = await this.studentApi.getMyCompanyRequests();
+      this.companyRequestsList = Array.isArray((res as any)?.companyRequests) ? (res as any).companyRequests : [];
+    } catch (err: any) {
+      // just warn silently in UI
+      this.companyRequestsList = [];
+    }
+  }
+  async loadAppExA() {
+    try {
+      const res = await this.apiGetAppExA();
+      const ax = (res as any)?.internship?.appexA || (res as any)?.appexA || {};
+      this.appexAForm = {
+        organization: ax.organization || '', address: ax.address || '', industrySector: ax.industrySector || '',
+        contactName: ax.contactName || '', contactDesignation: ax.contactDesignation || '', contactPhone: ax.contactPhone || '', contactEmail: ax.contactEmail || '',
+        internshipField: ax.internshipField || '', internshipLocation: ax.internshipLocation || '',
+        startDate: (ax.startDate || '').slice(0,10), endDate: (ax.endDate || '').slice(0,10),
+        workingDays: ax.workingDays || '', workingHours: ax.workingHours || ''
+      };
+    } catch {}
+  }
+  async submitAppExAFromForm() {
+    try { await this.apiSubmitAppExA({ ...this.appexAForm }); } catch {}
+  }
+  async updateAppExAFromForm() {
+    try { await this.apiUpdateAppExA({ ...this.appexAForm }); } catch {}
   }
 
   private isApprovalComplete(): boolean {

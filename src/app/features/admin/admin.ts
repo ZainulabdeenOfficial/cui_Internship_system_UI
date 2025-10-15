@@ -31,6 +31,8 @@ export class Admin {
   get students() { return this.store.students; }
   get complaints() { return this.store.complaints; }
   get requests() { return this.store.requests; }
+  reviewCompany = { items: [] as Array<{ id: string; companyName?: string; email?: string; studentId?: string; registrationNo?: string; status?: string; createdAt?: string }>, total: 0 };
+  reviewCompanyFilter = { status: 'PENDING' as 'PENDING'|'APPROVED'|'REJECTED', page: 1, limit: 10 };
   get approvals() { return this.store.approvals; }
   get logsMap() { return this.store.logs; }
   get reportsMap() { return this.store.reports; }
@@ -48,7 +50,7 @@ export class Admin {
   // search/filter inputs
   search = { officers: '', faculty: '', companies: '', sites: '', students: '' };
   filter = { facultyDept: '', industry: '', siteCompanyId: '', studentsApproved: 'all' as 'all'|'yes'|'no' };
-  unassignedOnly = false;
+  assignmentFilter: 'ALL'|'UNASSIGNED'|'ASSIGNED' = 'ALL';
   facultyId = '';
   siteId = '';
   selectedId: string | null = null;
@@ -63,6 +65,9 @@ export class Admin {
     if (tab === 'companies' || tab === 'sites') {
       this.refreshCompanies();
       this.refreshSites();
+    }
+    if (tab === 'requests') {
+      this.loadReviewCompany();
     }
   }
   get officers() { return this.store.internshipOfficers; }
@@ -85,6 +90,8 @@ export class Admin {
   // password reset buffers
   facultyNewPw: Record<string, string> = {};
   siteNewPw: Record<string, string> = {};
+  // assign site -> company buffer
+  siteAssignCompany: Record<string, string> = {};
   // announcements
   announcement = { title: '', message: '', link: '', pinned: false };
   get announcements() { return this.store.announcements; }
@@ -118,10 +125,49 @@ export class Admin {
 
   async refreshSites() {
     try {
-      const list = await this.adminApi.getAssignableSiteSupervisors({ companyId: this.filter.siteCompanyId || undefined, unassigned: this.unassignedOnly });
+      const unassigned = this.assignmentFilter === 'UNASSIGNED' ? true : (this.assignmentFilter === 'ASSIGNED' ? false : undefined);
+      const list = await this.adminApi.getAssignableSiteSupervisors({ companyId: this.filter.siteCompanyId || undefined, unassigned });
       this.sitesCache = list;
     } catch (err: any) {
       const msg = err?.error?.message || err?.message || 'Failed to load site supervisors from server';
+      this.toast.danger(msg);
+    }
+  }
+
+  async assignSiteToCompany(siteSupervisorId: string) {
+    const companyId = (this.siteAssignCompany[siteSupervisorId] || '').trim();
+    if (!siteSupervisorId || !companyId) { this.toast.warning('Select a company to assign'); return; }
+    try {
+      await this.adminApi.assignSiteSupervisorToCompany({ siteSupervisorId, companyId });
+      this.toast.success('Site supervisor assigned');
+      delete this.siteAssignCompany[siteSupervisorId];
+      await this.refreshSites();
+    } catch (err: any) {
+      const status = err?.status ?? 0;
+      const msg = err?.error?.message || err?.error?.error ||
+        (status === 401 ? 'Unauthorized: login again as ADMIN' : (status === 403 ? 'Forbidden: Admin access required' : err?.message || 'Failed to assign'));
+      this.toast.danger(msg);
+    }
+  }
+
+  async loadReviewCompany() {
+    try {
+      const res = await this.adminApi.getCompanyReviewRequests({ page: this.reviewCompanyFilter.page, limit: this.reviewCompanyFilter.limit, status: this.reviewCompanyFilter.status });
+      this.reviewCompany.items = res.items;
+      this.reviewCompany.total = res.total || res.items.length;
+    } catch (err: any) {
+      const msg = err?.error?.message || err?.message || 'Failed to load company review requests';
+      this.toast.danger(msg);
+    }
+  }
+  async applyReviewCompanyDecision(requestId: string, decision: 'APPROVED'|'REJECTED') {
+    try {
+      await this.adminApi.reviewCompanyRequest({ requestId, decision });
+      this.toast.success(`Request ${decision === 'APPROVED' ? 'approved' : 'rejected'}`);
+      await this.loadReviewCompany();
+      await this.refreshCompanies(); // reflect new companies on approval
+    } catch (err: any) {
+      const msg = err?.error?.message || err?.message || 'Failed to apply decision';
       this.toast.danger(msg);
     }
   }

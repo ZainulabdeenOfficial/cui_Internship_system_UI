@@ -195,6 +195,54 @@
       </div>
   </div>
   }
+  @case ('requests') {
+    <div class="row g-3 mt-0">
+      <div class="col-12">
+        <div class="card">
+          <div class="card-header bg-light d-flex align-items-center justify-content-between">
+            <span>Company Review Requests</span>
+            <div class="d-flex gap-2 align-items-center">
+              <select class="form-select form-select-sm" style="width:160px" [(ngModel)]="reviewCompanyFilter.status" (ngModelChange)="reviewCompanyFilter.page=1; loadReviewCompany()" name="rcstatus">
+                <option [ngValue]="'PENDING'">Pending</option>
+                <option [ngValue]="'APPROVED'">Approved</option>
+                <option [ngValue]="'REJECTED'">Rejected</option>
+              </select>
+              <button class="btn btn-sm btn-outline-secondary" (click)="loadReviewCompany()">Refresh</button>
+            </div>
+          </div>
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="table table-sm mb-0 align-middle">
+                <thead><tr><th>When</th><th>Company</th><th>Student</th><th>Reg No</th><th>Status</th><th>Actions</th></tr></thead>
+                <tbody>
+                  @for (r of reviewCompany.items | paginate: reviewCompanyFilter.page : reviewCompanyFilter.limit; track r.id) {
+                  <tr>
+                    <td class="small text-muted">{{ r.createdAt | date:'short' }}</td>
+                    <td>{{ r.companyName || '-' }}</td>
+                    <td>{{ r.email || r.studentId || '-' }}</td>
+                    <td>{{ r.registrationNo || '-' }}</td>
+                    <td>
+                      <span class="badge" [class.text-bg-secondary]="r.status==='PENDING'" [class.text-bg-success]="r.status==='APPROVED'" [class.text-bg-danger]="r.status==='REJECTED'">{{ r.status || 'PENDING' }}</span>
+                    </td>
+                    <td>
+                      <div class="btn-group btn-group-sm">
+                        <button class="btn btn-outline-success" [disabled]="r.status==='APPROVED'" (click)="applyReviewCompanyDecision(r.id, 'APPROVED')">Approve</button>
+                        <button class="btn btn-outline-danger" [disabled]="r.status==='REJECTED'" (click)="applyReviewCompanyDecision(r.id, 'REJECTED')">Reject</button>
+                      </div>
+                    </td>
+                  </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+            <div class="p-2">
+              <app-paginator [total]="reviewCompany.total" [(page)]="reviewCompanyFilter.page" [pageSize]="reviewCompanyFilter.limit"></app-paginator>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
   @case ('announcements') {
     <div class="row g-3 mt-0">
       <div class="col-12">
@@ -577,21 +625,33 @@
                     @for (c of companyList(); track c.id) { <option [ngValue]="c.id">{{ c.name }}</option> }
                   </select>
                 </div>
-                <div class="col-12 col-md-3 form-check ms-auto" style="user-select:none">
-                  <input id="unassignedOnly" class="form-check-input" type="checkbox" [(ngModel)]="unassignedOnly" (change)="refreshSites()" name="sunassigned" />
-                  <label class="form-check-label ms-2" for="unassignedOnly">Unassigned only</label>
+                <div class="col-12 col-md-3 ms-auto">
+                  <select class="form-select" [(ngModel)]="assignmentFilter" (ngModelChange)="refreshSites()" name="sassignf">
+                    <option [ngValue]="'ALL'">All (assigned + unassigned)</option>
+                    <option [ngValue]="'UNASSIGNED'">Unassigned only</option>
+                    <option [ngValue]="'ASSIGNED'">Assigned only</option>
+                  </select>
                 </div>
               </div>
             </div>
             <div class="table-responsive">
               <table class="table table-sm mb-0 align-middle">
-                <thead><tr><th>Company</th><th>Name</th><th>Email</th><th>Password</th><th>Actions</th></tr></thead>
+                <thead><tr><th>Company</th><th>Name</th><th>Email</th><th>Assign</th><th>Password</th><th>Actions</th></tr></thead>
                 <tbody>
                   @for (t of (sitesCache | paginate: page.sites : pageSize); track t.id) {
                   <tr [hidden]="(search.sites && !(t.name + ' ' + t.email + ' ' + companyName(t.companyId)).toLowerCase().includes(search.sites.toLowerCase())) || (filter.siteCompanyId && t.companyId !== filter.siteCompanyId)">
                     <td>{{ companyName(t.companyId) }}</td>
                     <td>{{ t.name }}</td>
                     <td>{{ t.email }}</td>
+                    <td>
+                      <div class="d-flex gap-2 align-items-center">
+                        <select class="form-select form-select-sm" style="min-width:160px" [(ngModel)]="siteAssignCompany[t.id]" [name]="'sac' + t.id">
+                          <option [ngValue]="''">Select company…</option>
+                          @for (c of companyList(); track c.id) { <option [ngValue]="c.id">{{ c.name }}</option> }
+                        </select>
+                        <button class="btn btn-sm btn-outline-primary" (click)="assignSiteToCompany(t.id)">Assign</button>
+                      </div>
+                    </td>
                     <td class="small text-muted">—</td>
                     <td>
                       <div class="d-flex flex-wrap gap-2 align-items-center">
