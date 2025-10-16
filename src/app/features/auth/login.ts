@@ -116,7 +116,15 @@ export class Login implements OnDestroy, OnInit {
           } catch {}
         }
         if (this.remember) localStorage.setItem('lastStudentEmail', email);
-        // Determine role from API user if provided; do NOT default silently
+    // Require email verification flag
+    const isVerified = (apiRes.user?.verified ?? apiRes.user?.isVerified ?? apiRes.user?.emailVerified ?? false) === true;
+    if (!isVerified) {
+      const msg = 'Please verify your email to continue.';
+      this.error = msg; this.toast.warning(msg);
+      this.router.navigate(['/verify-email']);
+      return;
+    }
+    // Determine role from API user if provided; do NOT default silently
   const apiRole = (apiRes.role || apiRes.user?.role || '').toLowerCase();
         if (!apiRole) {
           const msg = 'User not found or role not assigned';

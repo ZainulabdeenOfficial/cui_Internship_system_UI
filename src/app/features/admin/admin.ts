@@ -560,7 +560,7 @@ export class Admin {
     // No domain restriction for site; still check duplicates
     if (this.allEmails().includes(email.toLowerCase())) { this.toast.warning('Email already exists. Try a different one.'); return; }
     try {
-      await this.adminApi.createAccount({ name, email, password: pass, role: 'SITE' } as any);
+      await this.adminApi.createAccount({ name, email, password: pass, role: 'SITE_SUPERVISOR' } as any);
       this.store.addSiteSupervisor(name, email, cid || undefined, pass);
       this.site = { name: '', email: '', companyId: '', password: '' };
       this.toast.success('Site Supervisor added');

@@ -50,6 +50,7 @@ export class ForgotPassword implements OnInit, OnDestroy {
     try {
       const res = await this.auth.forgotPassword(this.email.trim());
       this.message = res?.message || 'Verification email sent';
+      this.sent = true;
     } catch (e: any) {
       this.message = e?.error?.message || e?.message || 'Failed to resend email';
     } finally {

@@ -63,7 +63,9 @@ export class AdminService {
 
   async createAccount(input: CreateAccountRequest): Promise<CreateAccountResponse> {
   const normalizedRole = ((input.role as any) || 'ADMIN').toString().toUpperCase();
-  const apiRole = normalizedRole === 'FACULTY' ? 'FACULT' : (normalizedRole === 'SITE' ? 'SITE' : normalizedRole);
+  // Map UI roles to backend expected identifiers
+  const apiRole = normalizedRole === 'FACULTY' ? 'FACULTY'
+    : (normalizedRole === 'SITE' || normalizedRole === 'SITE_SUPERVISOR' ? 'SITE_SUPERVISOR' : normalizedRole);
     const body = {
       email: (input.email || '').trim(),
       name: (input.name || '').trim(),

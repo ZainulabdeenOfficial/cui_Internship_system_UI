@@ -150,8 +150,9 @@ export class Signup {
     try {
       res = await this.auth.registerStudent(payload, { timeoutMs: 4000 });
     } catch (e:any) {
-      this.error = e?.message || 'Network error';
-      this.loading = false; if (this.slowTimer) { clearTimeout(this.slowTimer); this.slowTimer = null; } this.slow = false; return;
+      this.error = e?.error?.message || e?.message || 'Network error';
+      if (this.slowTimer) { clearTimeout(this.slowTimer); this.slowTimer = null; }
+      this.loading = false; this.slow = false; return;
     }
     if (!res.success) {
       this.error = res.message || 'Registration failed';
@@ -164,6 +165,7 @@ export class Signup {
 
   // Redirect to verify email so user can complete verification before login
   this.toast.success('Account created. Please verify your email (we sent a link).');
+  this.loading = false; // stop loader before navigation
   this.router.navigate(['/verify-email']);
     if (this.slowTimer) { clearTimeout(this.slowTimer); this.slowTimer = null; }
     this.slow = false; this.loading = false;
