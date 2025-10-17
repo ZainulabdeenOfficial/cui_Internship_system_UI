@@ -22,18 +22,19 @@ export class Student {
   dropdownCompanies: Array<{ id: string; name: string; email?: string; address?: string; website?: string; industry?: string }> = [];
   private companySearchDebounceId: any;
   private lastCompanyQuery: string = '';
-  // Company details cache and preview
-  private companyDetailsCache: Array<{ id: string; name: string; email?: string; phone?: string; address?: string; website?: string; industry?: string; description?: string }> = [];
-  private companyDetailsLoaded = false;
+  // Selected/preview company state
   companyPreview: { id: string; name: string; email?: string; phone?: string; address?: string; website?: string; industry?: string; description?: string } | null = null;
+  private selectedCompany: { id: string; name: string; email?: string; address?: string; website?: string; industry?: string } | null = null;
 
   isCompanyNotFound(): boolean {
     const name = this.approval?.company?.name?.trim();
     if (!name) return false;
     // Only show when user typed at least 2 chars and current fetched list doesn't include exact name
     if (name.length < 2) return false;
-    const lower = name.toLowerCase();
-    return !this.dropdownCompanies.some(c => (c.name || '').toLowerCase() === lower);
+  const lower = name.toLowerCase();
+  // If a company is selected and matches current text, it's not "not found"
+  if (this.selectedCompany && (this.selectedCompany.name || '').toLowerCase() === lower) return false;
+  return !this.dropdownCompanies.some(c => (c.name || '').toLowerCase() === lower);
   }
   get students() { return this.store.students; }
   get me() { return this.store.currentUser; }
@@ -154,12 +155,17 @@ export class Student {
   onCompanyNameInput(value: string) {
     const q = (value || '').trim();
     this.lastCompanyQuery = q;
+    // If user types something different than the selected company's name, clear selection
+    if (this.selectedCompany && (this.selectedCompany.name || '').toLowerCase() !== q.toLowerCase()) {
+      this.selectedCompany = null;
+    }
     if (this.companySearchDebounceId) clearTimeout(this.companySearchDebounceId);
     this.companySearchDebounceId = setTimeout(async () => {
       try {
         if (!q) {
           // Avoid fetching all when empty; clear suggestions
           this.dropdownCompanies = [];
+          this.companyPreview = null;
         } else {
           const results = await this.adminApi.getDropdownCompanies(q);
           const lower = q.toLowerCase();
@@ -177,31 +183,15 @@ export class Student {
       } catch {
         this.dropdownCompanies = [];
       }
-      // Compute preview primarily from current dropdown results; lazy fallback to full list only if needed
+      // Compute preview only from current dropdown results (no local fallback)
       this.companyPreview = null;
       if (q) {
         const lower = q.toLowerCase();
-        // Prefer exact match from dropdown
+        // Prefer exact match from dropdown, else show top suggestion
         let match = this.dropdownCompanies.find(c => (c.name || '').toLowerCase() === lower) || null;
-        if (!match && this.dropdownCompanies.length) {
-          match = this.dropdownCompanies[0] || null;
-        }
-        if (!match && q.length >= 2 && !this.companyDetailsLoaded) {
-          try {
-            this.companyDetailsCache = await this.adminApi.getCompanies();
-            this.companyDetailsLoaded = true;
-            match = this.companyDetailsCache.find(c => (c.name || '').toLowerCase() === lower) ||
-                    this.companyDetailsCache.find(c => (c.name || '').toLowerCase().includes(lower)) || null;
-          } catch {}
-        }
+        if (!match && this.dropdownCompanies.length) match = this.dropdownCompanies[0] || null;
         this.companyPreview = match || null;
-        // If exact match and address empty, auto-fill address
-        if (match && (match.name || '').toLowerCase() === lower) {
-          const currentAddr = (this.approval?.company?.address || '').trim();
-          if (!currentAddr && match.address) {
-            this.approval.company.address = match.address;
-          }
-        }
+        // Do not auto-fill address while typing; only set on explicit selection
       }
     }, 250);
   }
@@ -224,10 +214,10 @@ export class Student {
         this.approval.company.name = match.name || q;
         // Update preview and auto-fill address if available and empty
         this.companyPreview = match as any;
-        const currentAddr = (this.approval?.company?.address || '').trim();
-        if (!currentAddr && match.address) {
-          this.approval.company.address = match.address;
-        }
+        this.selectedCompany = match as any;
+        if (match.address) this.approval.company.address = match.address;
+        // Hide suggestions until the user types again
+        this.dropdownCompanies = [];
       } else {
         // No exact match in current list; keep existing preview if any
         // Optional: we could trigger a fetch here, but onCompanyNameInput already handles live fetching
