@@ -108,6 +108,14 @@ export class Student {
     if (!this.selectedId) return [] as any[];
     return this.store.complaints().filter(c => c.studentId === this.selectedId);
   };
+  
+  // Company search
+  companySearchQuery = '';
+  companySearchResults: Array<{ id: string; name: string; email?: string; phone?: string; address?: string; website?: string; industry?: string; description?: string }> = [];
+  isSearchingCompany = false;
+  showRequestCompanyForm = false;
+  selectedCompany: { id: string; name: string } | null = null;
+  
   constructor(private store: StoreService, private toast: ToastService, private route: ActivatedRoute, private router: Router, private studentApi: StudentService) {
     this.lockSelection = effect(() => {
       const mine = this.myStudentId();
@@ -167,6 +175,46 @@ export class Student {
     const facultyId = (this.createInternshipModel.facultyId || '').trim() || undefined;
     await this.apiCreateInternship(type, siteId, facultyId);
   }
+  async searchCompanies() {
+    const query = this.companySearchQuery.trim();
+    if (!query || query.length < 2) {
+      this.companySearchResults = [];
+      return;
+    }
+    this.isSearchingCompany = true;
+    try {
+      this.companySearchResults = await this.studentApi.searchCompanies(query);
+      if (this.companySearchResults.length === 0) {
+        this.showRequestCompanyForm = true;
+        this.companyRequest.name = query;
+      } else {
+        this.showRequestCompanyForm = false;
+      }
+    } catch (err: any) {
+      this.toast.danger('Failed to search companies');
+      this.companySearchResults = [];
+    } finally {
+      this.isSearchingCompany = false;
+    }
+  }
+  
+  selectCompanyFromSearch(company: { id: string; name: string; email?: string; phone?: string; address?: string }) {
+    this.selectedCompany = company;
+    this.approval.company.name = company.name;
+    this.approval.company.supervisorEmail = company.email || '';
+    this.approval.company.supervisorPhone = company.phone || '';
+    this.approval.company.address = company.address || '';
+    this.companySearchQuery = company.name;
+    this.companySearchResults = [];
+    this.showRequestCompanyForm = false;
+    this.toast.info(`Selected: ${company.name}`);
+  }
+  
+  requestNewCompany() {
+    this.showRequestCompanyForm = true;
+    this.companyRequest.name = this.companySearchQuery;
+  }
+  
   async submitCompanyRequest() {
     const p = this.companyRequest;
     if (!p.name?.trim() || !p.email?.trim()) { this.toast.warning('Name and email are required'); return; }
@@ -175,8 +223,9 @@ export class Student {
         name: p.name.trim(), email: p.email.trim(), phone: p.phone?.trim(), address: p.address?.trim(),
         website: p.website?.trim(), industry: p.industry?.trim(), description: p.description?.trim(), justification: p.justification?.trim()
       });
-      this.toast.success('Company request submitted');
+      this.toast.success('Company request submitted to admin for approval');
       this.companyRequest = { name: '', email: '', phone: '', address: '', website: '', industry: '', description: '', justification: '' };
+      this.showRequestCompanyForm = false;
       await this.loadMyCompanyRequests();
     } catch (err: any) {
       const msg = err?.error?.message || err?.message || 'Failed to submit company request';
@@ -242,6 +291,10 @@ export class Student {
     this.currentTab = tab;
     // Reflect in URL for deep links
     try { this.router.navigate([], { relativeTo: this.route, queryParams: { tab }, queryParamsHandling: 'merge' }); } catch {}
+    // Load company requests when opening applications tab
+    if (tab === 'applications') {
+      this.loadMyCompanyRequests();
+    }
   }
 
   meetsFiverr(rec: any) {
