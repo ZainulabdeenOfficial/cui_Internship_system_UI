@@ -180,12 +180,8 @@ export class Student {
           this.activeCompanyIndex = -1;
           const results = await this.adminApi.getDropdownCompanies(q);
           const lower = q.toLowerCase();
-          // Filter to only items that actually include the query in known fields
-          const filtered = (results || []).filter(c => {
-            const fields = [c.name, (c as any).email, (c as any).address, (c as any).website, (c as any).industry]
-              .map(v => (v || '').toString().toLowerCase());
-            return fields.some(f => f.includes(lower));
-          });
+          // Filter: show only companies whose NAME contains the query (case-insensitive)
+          const filtered = (results || []).filter(c => ((c.name || '').toLowerCase()).includes(lower));
           // Sort: names starting with query first, then others containing query
           this.dropdownCompanies = filtered.sort((a, b) => {
             const an = (a.name || '').toLowerCase();
