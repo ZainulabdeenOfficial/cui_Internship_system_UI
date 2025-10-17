@@ -82,6 +82,9 @@ export class Admin {
   faculty = { name: '', email: '', department: '', password: '' };
   company = { name: '', email: '', phone: '', address: '', website: '', industry: '', description: '' };
   site = { name: '', email: '', companyId: '', password: '' };
+  // Dynamic company dropdown for Sites tab
+  dropdownCompanies: Array<{ id: string; name: string }> = [];
+  private companySearchDebounceId: any;
   // inline company edit buffers
   editingCompanyId: string | null = null;
   companyEdit: Partial<import('../../shared/services/store.service').Company> = {};
@@ -121,6 +124,18 @@ export class Admin {
       const msg = err?.error?.message || err?.message || 'Failed to load companies from server';
       this.toast.danger(msg);
     }
+  }
+
+  onSiteCompanyInput(value: string) {
+    const q = (value || '').trim();
+    if (this.companySearchDebounceId) clearTimeout(this.companySearchDebounceId);
+    this.companySearchDebounceId = setTimeout(async () => {
+      try {
+        this.dropdownCompanies = await this.adminApi.getDropdownCompanies(q);
+      } catch {
+        this.dropdownCompanies = [];
+      }
+    }, 250);
   }
 
   async refreshSites() {

@@ -69,9 +69,9 @@
         <div class="col-12"><div class="section-title mt-2">Company Details</div></div>
         <div class="col-md-4">
           <label class="form-label">Company Name</label>
-          <input list="companyList" class="form-control" placeholder="Type or select company..." [(ngModel)]="approval.company.name" name="cname" required />
+          <input list="companyList" class="form-control" placeholder="Type to search or select..." [(ngModel)]="approval.company.name" (ngModelChange)="onCompanyNameInput($event)" name="cname" required />
           <datalist id="companyList">
-            <option *ngFor="let c of availableCompanies()" [value]="c.name">{{ c.name }}</option>
+            <option *ngFor="let c of dropdownCompanies" [value]="c.name">{{ c.name }}</option>
           </datalist>
           <div *ngIf="isCompanyNotFound()" class="mt-2">
             <button type="button" class="btn btn-warning btn-sm" (click)="showRequestCompanyForm = true">Request to add company</button>

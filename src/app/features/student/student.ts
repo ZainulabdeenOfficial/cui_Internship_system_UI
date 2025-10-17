@@ -3,6 +3,7 @@ import { CommonModule, NgIf, NgFor } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { StoreService } from '../../shared/services/store.service';
 import { StudentService } from '../../shared/services/student.service';
+import { AdminService } from '../../shared/services/admin.service';
 import { ToastService } from '../../shared/toast/toast.service';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { PaginatePipe } from '../../shared/pagination/paginate.pipe';
@@ -17,11 +18,18 @@ import { PaginatorComponent } from '../../shared/pagination/paginator';
 })
 export class Student {
   showRequestCompanyForm = false;
+  // Dynamic dropdown options from backend
+  dropdownCompanies: Array<{ id: string; name: string }> = [];
+  private companySearchDebounceId: any;
+  private lastCompanyQuery: string = '';
 
   isCompanyNotFound(): boolean {
     const name = this.approval?.company?.name?.trim();
     if (!name) return false;
-    return !this.availableCompanies().some(c => c.name === name);
+    // Only show when user typed at least 2 chars and current fetched list doesn't include exact name
+    if (name.length < 2) return false;
+    const lower = name.toLowerCase();
+    return !this.dropdownCompanies.some(c => (c.name || '').toLowerCase() === lower);
   }
   get students() { return this.store.students; }
   get me() { return this.store.currentUser; }
@@ -117,7 +125,7 @@ export class Student {
     return this.store.complaints().filter(c => c.studentId === this.selectedId);
   };
   
-  constructor(private store: StoreService, private toast: ToastService, private route: ActivatedRoute, private router: Router, private studentApi: StudentService) {
+  constructor(private store: StoreService, private toast: ToastService, private route: ActivatedRoute, private router: Router, private studentApi: StudentService, private adminApi: AdminService) {
     this.lockSelection = effect(() => {
       const mine = this.myStudentId();
       if (mine && this.selectedId !== mine) this.selectedId = mine;
@@ -137,6 +145,23 @@ export class Student {
         }
       });
     } catch {}
+  }
+
+  onCompanyNameInput(value: string) {
+    const q = (value || '').trim();
+    this.lastCompanyQuery = q;
+    if (this.companySearchDebounceId) clearTimeout(this.companySearchDebounceId);
+    this.companySearchDebounceId = setTimeout(async () => {
+      try {
+        if (!q) {
+          this.dropdownCompanies = await this.adminApi.getDropdownCompanies();
+        } else {
+          this.dropdownCompanies = await this.adminApi.getDropdownCompanies(q);
+        }
+      } catch {
+        this.dropdownCompanies = [];
+      }
+    }, 250);
   }
 
   // API helpers: Internship creation and AppEx-A

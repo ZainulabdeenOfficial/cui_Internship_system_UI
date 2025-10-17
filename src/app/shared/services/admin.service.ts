@@ -18,6 +18,19 @@ export class AdminService {
         || localStorage.getItem('accessToken');
     } catch { return null; }
   }
+
+  // Lightweight dropdown companies for selects/search (id + name)
+  async getDropdownCompanies(query?: string): Promise<Array<{ id: string; name: string }>> {
+    const base = environment.apiBaseUrl.replace(/\/$/, '');
+    const path = '/api/dropdown/companies';
+    const qs = query && query.trim() ? `?q=${encodeURIComponent(query.trim())}` : '';
+    const url = environment.production ? `${path}${qs}` : `${base}${path}${qs}`;
+    const res = await firstValueFrom(this.http.get<any>(url, { headers: await this.authHeaders() }));
+    const list: any[] = Array.isArray(res?.companies) ? res.companies : (Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []));
+    return list
+      .map((x: any) => ({ id: (x.id ?? x._id ?? x.companyId ?? '').toString(), name: x.name ?? x.companyName ?? '' }))
+      .filter(x => !!x.id && !!x.name);
+  }
   private async ensureFreshToken(): Promise<string | null> {
     const get = () => this.getTokenFromStorage();
     let token = get();

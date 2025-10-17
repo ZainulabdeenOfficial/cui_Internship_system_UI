@@ -595,9 +595,9 @@
               </div>
               <div class="col-12 col-sm-6 col-md-3">
                 <label class="form-label">Company</label>
-                <input list="companyDatalist" class="form-control" [(ngModel)]="site.companyId" name="scid2" placeholder="Type or select company..." />
+                <input list="companyDatalist" class="form-control" [(ngModel)]="site.companyId" (ngModelChange)="onSiteCompanyInput($event)" name="scid2" placeholder="Type or select company..." />
                 <datalist id="companyDatalist">
-                  @for (c of companyList(); track c.id) { <option [value]="c.id">{{ c.name }}</option> }
+                  @for (c of dropdownCompanies; track c.id) { <option [value]="c.id">{{ c.name }}</option> }
                 </datalist>
               </div>
               <div class="col-12 col-sm-6 col-md-2">
