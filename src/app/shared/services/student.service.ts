@@ -23,7 +23,7 @@ export class StudentService {
 
   // POST /api/student/request-to-add-company
   async requestToAddCompany(payload: { name: string; email: string; phone?: string; address?: string; website?: string; industry?: string; description?: string; justification?: string }) {
-    const url = this.abs('/api/student/request-to-add-company');
+    const url = 'https://cui-internship-system-git-dev-zas-projects-7d9cf03b.vercel.app/api/student/request-to-add-company';
     return await firstValueFrom(this.http.post<any>(url, payload, { headers: this.jsonHeaders() }));
   }
 

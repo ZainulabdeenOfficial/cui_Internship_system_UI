@@ -298,42 +298,51 @@
     </div>
   </div>
 
-  <!-- Company Request (API-backed) -->
+  <!-- Company Requests (list only) -->
   <div class="card mb-3" *ngIf="selectedId && currentTab==='evidence'">
-    <div class="card-header">Request to Add Company</div>
+    <div class="card-header">My Company Requests</div>
     <div class="card-body">
-      <form (ngSubmit)="submitCompanyRequest()" #crf="ngForm" class="row g-3">
-        <div class="col-md-4"><label class="form-label">Name</label><input class="form-control" [(ngModel)]="companyRequest.name" name="crname" required /></div>
-        <div class="col-md-4"><label class="form-label">Email</label><input type="email" class="form-control" [(ngModel)]="companyRequest.email" name="cremail" required /></div>
-        <div class="col-md-4"><label class="form-label">Phone</label><input class="form-control" [(ngModel)]="companyRequest.phone" name="crphone" /></div>
-        <div class="col-md-6"><label class="form-label">Address</label><input class="form-control" [(ngModel)]="companyRequest.address" name="craddr" /></div>
-        <div class="col-md-6"><label class="form-label">Website</label><input class="form-control" [(ngModel)]="companyRequest.website" name="crweb" placeholder="https://..." /></div>
-        <div class="col-md-6"><label class="form-label">Industry</label><input class="form-control" [(ngModel)]="companyRequest.industry" name="crind" /></div>
-        <div class="col-md-6"><label class="form-label">Description</label><input class="form-control" [(ngModel)]="companyRequest.description" name="crdesc" /></div>
-        <div class="col-12"><label class="form-label">Justification</label><textarea class="form-control" rows="2" [(ngModel)]="companyRequest.justification" name="crjust"></textarea></div>
-        <div class="col-12 text-end">
-          <button class="btn btn-outline-primary" [disabled]="!crf.form.valid" type="submit">Submit Request</button>
-        </div>
-      </form>
-      <div class="mt-3">
-        <div class="d-flex justify-content-between align-items-center mb-2">
-          <h6 class="mb-0">My Company Requests</h6>
-          <button class="btn btn-sm btn-outline-secondary" (click)="loadMyCompanyRequests()">Refresh</button>
-        </div>
-        <div class="table-responsive">
-          <table class="table table-sm align-middle">
-            <thead><tr><th>When</th><th>Name</th><th>Email</th><th>Status</th></tr></thead>
-            <tbody>
-              <tr *ngFor="let r of companyRequestsList">
-                <td class="small text-muted">{{ r.createdAt | date:'short' }}</td>
-                <td>{{ r.name }}</td>
-                <td>{{ r.email }}</td>
-                <td><span class="badge" [class.text-bg-secondary]="r.status==='PENDING'" [class.text-bg-success]="r.status==='APPROVED'" [class.text-bg-danger]="r.status==='REJECTED'">{{ r.status || 'PENDING' }}</span></td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <span class="text-muted small">These are the companies you requested to be added. Status may be Pending, Approved, or Rejected.</span>
+        <button class="btn btn-sm btn-outline-secondary" (click)="loadMyCompanyRequests()">Refresh</button>
       </div>
+      <div class="table-responsive" *ngIf="companyRequestsList?.length; else noReqs">
+        <table class="table table-sm align-middle">
+          <thead>
+            <tr>
+              <th>When</th>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Status</th>
+              <th>Details</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let r of companyRequestsList">
+              <td class="small text-muted">{{ r.createdAt | date:'short' }}</td>
+              <td>{{ r.name }}</td>
+              <td>{{ r.email }}</td>
+              <td>
+                <span class="badge"
+                      [class.text-bg-secondary]="(r.status || 'PENDING').toUpperCase()==='PENDING'"
+                      [class.text-bg-success]="(r.status || '').toUpperCase()==='APPROVED'"
+                      [class.text-bg-danger]="(r.status || '').toUpperCase()==='REJECTED'">
+                  {{ (r.status || 'PENDING') }}
+                </span>
+              </td>
+              <td class="small text-muted">
+                <div *ngIf="r.address">{{ r.address }}</div>
+                <div *ngIf="r.website"><a [href]="r.website" target="_blank" rel="noopener">{{ r.website }}</a></div>
+                <div *ngIf="r.industry">{{ r.industry }}</div>
+                <div *ngIf="r.phone">{{ r.phone }}</div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <ng-template #noReqs>
+        <div class="text-muted">No company requests yet.</div>
+      </ng-template>
     </div>
   </div>
 

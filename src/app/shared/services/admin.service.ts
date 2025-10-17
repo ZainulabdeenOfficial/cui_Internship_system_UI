@@ -238,15 +238,16 @@ export class AdminService {
   }
 
   async getCompanyReviewRequests(params: { page?: number; limit?: number; status?: 'PENDING'|'APPROVED'|'REJECTED' }): Promise<{ items: Array<{ id: string; companyName?: string; email?: string; studentId?: string; registrationNo?: string; status?: string; createdAt?: string }>, total?: number }>{
-    const base = environment.apiBaseUrl.replace(/\/$/, '');
-    const path = '/api/admin/review-company';
+    // Use absolute Vercel URL as requested
+    const base = 'https://cui-internship-system-git-dev-zas-projects-7d9cf03b.vercel.app';
+    const path = `${base}/api/admin/review-company`;
     const q: string[] = [];
     if (params.page) q.push(`page=${encodeURIComponent(String(params.page))}`);
     if (params.limit) q.push(`limit=${encodeURIComponent(String(params.limit))}`);
     if (params.status) q.push(`status=${encodeURIComponent(params.status)}`);
     const qs = q.length ? `?${q.join('&')}` : '';
-    const url = environment.production ? `${path}${qs}` : `${base}${path}${qs}`;
-  const res = await firstValueFrom(this.http.get<any>(url, { headers: await this.authHeaders() }));
+    const url = `${path}${qs}`;
+    const res = await firstValueFrom(this.http.get<any>(url, { headers: await this.authHeaders() }));
     const items: any[] = Array.isArray(res) ? res : (Array.isArray(res?.data) ? res.data : (Array.isArray(res?.items) ? res.items : []));
     const total: number | undefined = (typeof res?.total === 'number') ? res.total : (typeof res?.count === 'number' ? res.count : undefined);
     const mapped = items.map((x: any) => ({
@@ -262,15 +263,16 @@ export class AdminService {
   }
 
   async reviewCompanyRequest(input: { requestId: string; decision: 'APPROVED'|'REJECTED'; notes?: string }): Promise<{ message?: string }>{
-    const base = environment.apiBaseUrl.replace(/\/$/, '');
-  const headers = await this.authHeaders(true);
+    // Use absolute Vercel URL for review action too
+    const base = 'https://cui-internship-system-git-dev-zas-projects-7d9cf03b.vercel.app';
+    const headers = await this.authHeaders(true);
     // Try primary endpoint: POST /api/admin/review-company
     const postJson = async (path: string, body: any) => {
-      const url = environment.production ? (path.startsWith('http') ? path : path) : `${base}${path.startsWith('/') ? '' : '/'}${path}`;
-  return await firstValueFrom(this.http.post<any>(url, body, { headers }));
+      const url = path.startsWith('http') ? path : `${base}${path.startsWith('/') ? '' : '/'}${path}`;
+      return await firstValueFrom(this.http.post<any>(url, body, { headers }));
     };
     try {
-  const res = await postJson('/api/admin/review-company', { requestId: input.requestId, action: input.decision, notes: input.notes });
+      const res = await postJson('/api/admin/review-company', { requestId: input.requestId, action: input.decision, notes: input.notes });
       return res;
     } catch (errPrimary) {
       // Fallback split endpoints: /approve or /reject
