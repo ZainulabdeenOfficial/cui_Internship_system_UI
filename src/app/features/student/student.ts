@@ -161,7 +161,7 @@ export class Student {
     if (this.companySearchDebounceId) clearTimeout(this.companySearchDebounceId);
     this.companySearchDebounceId = setTimeout(async () => {
       try {
-        if (!q) {
+        if (!q || q.length < 2) {
           // Avoid fetching all when empty; clear suggestions
           this.dropdownCompanies = [];
           this.companyPreview = null;
@@ -197,6 +197,17 @@ export class Student {
   usePreviewAddress() {
     const addr = this.companyPreview?.address?.trim();
     if (addr) this.approval.company.address = addr;
+  }
+
+  openRequestToAddCompany() {
+    // Prefill request form from what the student typed and any preview data
+    const typedName = (this.approval?.company?.name || '').trim();
+    const typedAddr = (this.approval?.company?.address || '').trim();
+    const previewAddr = (this.companyPreview?.address || '').trim();
+    this.companyRequest.name = typedName;
+    // Prefer the typed address; else use preview address if available
+    this.companyRequest.address = typedAddr || previewAddr || '';
+    this.showRequestCompanyForm = true;
   }
 
   onCompanyNameSelected(ev: any) {

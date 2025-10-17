@@ -69,7 +69,7 @@
         <div class="col-12"><div class="section-title mt-2">Company Details</div></div>
         <div class="col-md-4">
           <label class="form-label">Company Name</label>
-          <input list="companyList" class="form-control" placeholder="Type to search or select..." [(ngModel)]="approval.company.name" (ngModelChange)="onCompanyNameInput($event)" (change)="onCompanyNameSelected($event)" name="cname" required />
+          <input list="companyList" class="form-control" placeholder="Type to search or select..." [(ngModel)]="approval.company.name" (ngModelChange)="onCompanyNameInput($event)" (input)="onCompanyNameSelected($event)" name="cname" required />
           <datalist id="companyList">
             <option *ngFor="let c of dropdownCompanies" [value]="c.name">{{ c.name }}</option>
           </datalist>
@@ -87,7 +87,7 @@
             </div>
           </div>
           <div *ngIf="isCompanyNotFound()" class="mt-2">
-            <button type="button" class="btn btn-warning btn-sm" (click)="showRequestCompanyForm = true">Request to add company</button>
+            <button type="button" class="btn btn-warning btn-sm" (click)="openRequestToAddCompany()">Request to add company</button>
           </div>
           <div *ngIf="showRequestCompanyForm" class="mt-2">
             <div class="card border-warning">
@@ -96,7 +96,7 @@
                 <form (ngSubmit)="submitCompanyRequest()" #crf="ngForm" class="row g-3">
                   <div class="col-md-6">
                     <label class="form-label">Company Name</label>
-                    <input class="form-control" [(ngModel)]="companyRequest.name" name="crname" required [value]="approval.company.name" />
+                    <input class="form-control" [(ngModel)]="companyRequest.name" name="crname" required />
                   </div>
                   <div class="col-md-6">
                     <label class="form-label">Email</label>
