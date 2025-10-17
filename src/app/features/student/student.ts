@@ -16,6 +16,13 @@ import { PaginatorComponent } from '../../shared/pagination/paginator';
   styleUrl: './student.css'
 })
 export class Student {
+  showRequestCompanyForm = false;
+
+  isCompanyNotFound(): boolean {
+    const name = this.approval?.company?.name?.trim();
+    if (!name) return false;
+    return !this.availableCompanies().some(c => c.name === name);
+  }
   get students() { return this.store.students; }
   get me() { return this.store.currentUser; }
   availableCompanies = computed(() => this.store.companies());

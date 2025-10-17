@@ -73,6 +73,54 @@
           <datalist id="companyList">
             <option *ngFor="let c of availableCompanies()" [value]="c.name">{{ c.name }}</option>
           </datalist>
+          <div *ngIf="isCompanyNotFound()" class="mt-2">
+            <button type="button" class="btn btn-warning btn-sm" (click)="showRequestCompanyForm = true">Request to add company</button>
+          </div>
+          <div *ngIf="showRequestCompanyForm" class="mt-2">
+            <div class="card border-warning">
+              <div class="card-header bg-warning text-dark">Request to Add Company</div>
+              <div class="card-body">
+                <form (ngSubmit)="submitCompanyRequest()" #crf="ngForm" class="row g-3">
+                  <div class="col-md-6">
+                    <label class="form-label">Company Name</label>
+                    <input class="form-control" [(ngModel)]="companyRequest.name" name="crname" required [value]="approval.company.name" />
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label">Email</label>
+                    <input type="email" class="form-control" [(ngModel)]="companyRequest.email" name="cremail" required />
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label">Phone</label>
+                    <input class="form-control" [(ngModel)]="companyRequest.phone" name="crphone" />
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label">Address</label>
+                    <input class="form-control" [(ngModel)]="companyRequest.address" name="craddress" />
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label">Website</label>
+                    <input class="form-control" [(ngModel)]="companyRequest.website" name="crwebsite" />
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label">Industry</label>
+                    <input class="form-control" [(ngModel)]="companyRequest.industry" name="crindustry" />
+                  </div>
+                  <div class="col-md-12">
+                    <label class="form-label">Description</label>
+                    <input class="form-control" [(ngModel)]="companyRequest.description" name="crdesc" />
+                  </div>
+                  <div class="col-md-12">
+                    <label class="form-label">Justification</label>
+                    <textarea class="form-control" rows="2" [(ngModel)]="companyRequest.justification" name="crjust"></textarea>
+                  </div>
+                  <div class="col-12 d-flex gap-2">
+                    <button class="btn btn-primary" type="submit" [disabled]="!crf.form.valid">Submit Request</button>
+                    <button class="btn btn-outline-secondary" type="button" (click)="showRequestCompanyForm = false">Cancel</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
         </div>
         <div class="col-md-8">
           <label class="form-label">Address</label>
