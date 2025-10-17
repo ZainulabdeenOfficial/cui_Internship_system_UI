@@ -173,11 +173,21 @@ export class Student {
           this.loadingCompanies = false;
           this.activeCompanyIndex = -1;
         } else {
+          // New search: clear previous suggestions to avoid stale items
           this.loadingCompanies = true;
+          this.isCompanyDropdownOpen = true;
+          this.dropdownCompanies = [];
+          this.activeCompanyIndex = -1;
           const results = await this.adminApi.getDropdownCompanies(q);
           const lower = q.toLowerCase();
+          // Filter to only items that actually include the query in known fields
+          const filtered = (results || []).filter(c => {
+            const fields = [c.name, (c as any).email, (c as any).address, (c as any).website, (c as any).industry]
+              .map(v => (v || '').toString().toLowerCase());
+            return fields.some(f => f.includes(lower));
+          });
           // Sort: names starting with query first, then others containing query
-          this.dropdownCompanies = (results || []).sort((a, b) => {
+          this.dropdownCompanies = filtered.sort((a, b) => {
             const an = (a.name || '').toLowerCase();
             const bn = (b.name || '').toLowerCase();
             const aStarts = an.startsWith(lower) ? 0 : 1;
@@ -186,7 +196,6 @@ export class Student {
             // Secondary: position of substring
             return an.indexOf(lower) - bn.indexOf(lower);
           }).slice(0, 20);
-          this.isCompanyDropdownOpen = true;
           this.activeCompanyIndex = this.dropdownCompanies.length ? 0 : -1;
         }
       } catch {
