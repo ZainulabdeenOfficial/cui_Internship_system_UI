@@ -82,6 +82,7 @@
             name="cname"
             required
           />
+          <button type="button" class="btn btn-sm btn-link text-decoration-none position-absolute" style="top: 36px; right: 6px;" *ngIf="(approval?.company?.name || '').length" (mousedown)="$event.preventDefault()" (click)="clearCompanyInput()">Clear</button>
           <!-- Custom dropdown -->
           <div *ngIf="isCompanyDropdownOpen" class="dropdown-menu show w-100 shadow" style="max-height: 280px; overflow:auto;">
             <div class="px-3 py-2 text-muted small" *ngIf="loadingCompanies">Searching...</div>

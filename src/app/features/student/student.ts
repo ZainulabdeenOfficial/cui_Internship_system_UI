@@ -245,7 +245,7 @@ export class Student {
     const normalized = match?.name || fallbackName || '';
     this.approval.company.name = normalized;
     // Update preview and auto-fill address if available
-    this.companyPreview = match as any;
+    this.companyPreview = null; // hide card after selection for a cleaner UI
     this.selectedCompany = match as any;
     if (match.address) this.approval.company.address = match.address;
     // Hide suggestions until the user types again
@@ -255,28 +255,47 @@ export class Student {
   }
 
   onCompanyKeydown(ev: KeyboardEvent) {
-    if (!this.isCompanyDropdownOpen) return;
     const key = ev.key;
-    if (key === 'ArrowDown') {
+    if (key === 'ArrowDown' && this.isCompanyDropdownOpen) {
       ev.preventDefault();
       if (this.dropdownCompanies.length) {
         this.activeCompanyIndex = (this.activeCompanyIndex + 1) % this.dropdownCompanies.length;
       }
-    } else if (key === 'ArrowUp') {
+    } else if (key === 'ArrowUp' && this.isCompanyDropdownOpen) {
       ev.preventDefault();
       if (this.dropdownCompanies.length) {
         this.activeCompanyIndex = (this.activeCompanyIndex - 1 + this.dropdownCompanies.length) % this.dropdownCompanies.length;
       }
     } else if (key === 'Enter') {
-      if (this.activeCompanyIndex >= 0 && this.activeCompanyIndex < this.dropdownCompanies.length) {
-        ev.preventDefault();
-        const sel = this.dropdownCompanies[this.activeCompanyIndex];
-        if (sel) this.selectCompany(sel);
-      } else if (this.isCompanyNotFound()) {
-        ev.preventDefault();
-        this.openRequestToAddCompany();
+      const q = (this.approval?.company?.name || '').trim().toLowerCase();
+      if (this.isCompanyDropdownOpen) {
+        if (this.activeCompanyIndex >= 0 && this.activeCompanyIndex < this.dropdownCompanies.length) {
+          ev.preventDefault();
+          const sel = this.dropdownCompanies[this.activeCompanyIndex];
+          if (sel) this.selectCompany(sel);
+          this.companyPreview = null; // hide card after Enter
+        } else if (this.dropdownCompanies.length === 1) {
+          ev.preventDefault();
+          this.selectCompany(this.dropdownCompanies[0]);
+          this.companyPreview = null;
+        } else {
+          // If exact match exists, select it
+          const exact = this.dropdownCompanies.find(c => (c.name || '').toLowerCase() === q);
+          if (exact) {
+            ev.preventDefault();
+            this.selectCompany(exact);
+            this.companyPreview = null;
+          } else if (this.isCompanyNotFound()) {
+            ev.preventDefault();
+            this.openRequestToAddCompany();
+            this.companyPreview = null;
+          }
+        }
+      } else {
+        // Enter pressed without dropdown; just hide preview card
+        this.companyPreview = null;
       }
-    } else if (key === 'Escape') {
+    } else if (key === 'Escape' && this.isCompanyDropdownOpen) {
       ev.preventDefault();
       this.isCompanyDropdownOpen = false;
       this.activeCompanyIndex = -1;
@@ -306,6 +325,16 @@ export class Student {
     const match = n.slice(idx, idx + q.length);
     const after = n.slice(idx + q.length);
     return `${before}<mark>${match}</mark>${after}`;
+  }
+
+  clearCompanyInput() {
+    this.approval.company.name = '';
+    this.approval.company.address = '';
+    this.dropdownCompanies = [];
+    this.companyPreview = null;
+    this.selectedCompany = null;
+    this.isCompanyDropdownOpen = false;
+    this.activeCompanyIndex = -1;
   }
 
   // API helpers: Internship creation and AppEx-A
