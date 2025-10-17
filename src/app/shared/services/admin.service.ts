@@ -20,7 +20,7 @@ export class AdminService {
   }
 
   // Lightweight dropdown companies for selects/search (id + name)
-  async getDropdownCompanies(query?: string): Promise<Array<{ id: string; name: string }>> {
+  async getDropdownCompanies(query?: string): Promise<Array<{ id: string; name: string; email?: string; address?: string; website?: string; industry?: string }>> {
     const base = environment.apiBaseUrl.replace(/\/$/, '');
     const path = '/api/dropdown/companies';
     const qs = query && query.trim() ? `?q=${encodeURIComponent(query.trim())}` : '';
@@ -28,7 +28,14 @@ export class AdminService {
     const res = await firstValueFrom(this.http.get<any>(url, { headers: await this.authHeaders() }));
     const list: any[] = Array.isArray(res?.companies) ? res.companies : (Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []));
     return list
-      .map((x: any) => ({ id: (x.id ?? x._id ?? x.companyId ?? '').toString(), name: x.name ?? x.companyName ?? '' }))
+      .map((x: any) => ({
+        id: (x.id ?? x._id ?? x.companyId ?? '').toString(),
+        name: x.name ?? x.companyName ?? '',
+        email: x.email,
+        address: x.address,
+        website: x.website,
+        industry: x.industry
+      }))
       .filter(x => !!x.id && !!x.name);
   }
   private async ensureFreshToken(): Promise<string | null> {
