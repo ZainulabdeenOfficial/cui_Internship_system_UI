@@ -20,6 +20,10 @@ export class Student {
   showRequestCompanyForm = false;
   // Dynamic dropdown options from backend
   dropdownCompanies: Array<{ id: string; name: string; email?: string; address?: string; website?: string; industry?: string }> = [];
+  // UI state for professional autocomplete
+  isCompanyDropdownOpen = false;
+  activeCompanyIndex = -1;
+  loadingCompanies = false;
   private companySearchDebounceId: any;
   private lastCompanyQuery: string = '';
   // Selected/preview company state
@@ -165,7 +169,11 @@ export class Student {
           // Avoid fetching all when empty; clear suggestions
           this.dropdownCompanies = [];
           this.companyPreview = null;
+          this.isCompanyDropdownOpen = false;
+          this.loadingCompanies = false;
+          this.activeCompanyIndex = -1;
         } else {
+          this.loadingCompanies = true;
           const results = await this.adminApi.getDropdownCompanies(q);
           const lower = q.toLowerCase();
           // Sort: names starting with query first, then others containing query
@@ -178,9 +186,14 @@ export class Student {
             // Secondary: position of substring
             return an.indexOf(lower) - bn.indexOf(lower);
           }).slice(0, 20);
+          this.isCompanyDropdownOpen = true;
+          this.activeCompanyIndex = this.dropdownCompanies.length ? 0 : -1;
         }
       } catch {
         this.dropdownCompanies = [];
+        this.activeCompanyIndex = -1;
+      } finally {
+        this.loadingCompanies = false;
       }
       // Compute preview only from current dropdown results (no local fallback)
       this.companyPreview = null;
@@ -219,19 +232,80 @@ export class Student {
       // Find exact suggestion match
       const match = this.dropdownCompanies.find(c => (c.name || '').toLowerCase() === lower);
       if (match) {
-        // Normalize name case
-        this.approval.company.name = match.name || q;
-        // Update preview and auto-fill address if available and empty
-        this.companyPreview = match as any;
-        this.selectedCompany = match as any;
-        if (match.address) this.approval.company.address = match.address;
-        // Hide suggestions until the user types again
-        this.dropdownCompanies = [];
+        this.selectCompany(match, q);
       } else {
         // No exact match in current list; keep existing preview if any
         // Optional: we could trigger a fetch here, but onCompanyNameInput already handles live fetching
       }
     } catch {}
+  }
+
+  selectCompany(match: { id: string; name: string; address?: string; email?: string; website?: string; industry?: string }, fallbackName?: string) {
+    // Normalize name case
+    const normalized = match?.name || fallbackName || '';
+    this.approval.company.name = normalized;
+    // Update preview and auto-fill address if available
+    this.companyPreview = match as any;
+    this.selectedCompany = match as any;
+    if (match.address) this.approval.company.address = match.address;
+    // Hide suggestions until the user types again
+    this.dropdownCompanies = [];
+    this.isCompanyDropdownOpen = false;
+    this.activeCompanyIndex = -1;
+  }
+
+  onCompanyKeydown(ev: KeyboardEvent) {
+    if (!this.isCompanyDropdownOpen) return;
+    const key = ev.key;
+    if (key === 'ArrowDown') {
+      ev.preventDefault();
+      if (this.dropdownCompanies.length) {
+        this.activeCompanyIndex = (this.activeCompanyIndex + 1) % this.dropdownCompanies.length;
+      }
+    } else if (key === 'ArrowUp') {
+      ev.preventDefault();
+      if (this.dropdownCompanies.length) {
+        this.activeCompanyIndex = (this.activeCompanyIndex - 1 + this.dropdownCompanies.length) % this.dropdownCompanies.length;
+      }
+    } else if (key === 'Enter') {
+      if (this.activeCompanyIndex >= 0 && this.activeCompanyIndex < this.dropdownCompanies.length) {
+        ev.preventDefault();
+        const sel = this.dropdownCompanies[this.activeCompanyIndex];
+        if (sel) this.selectCompany(sel);
+      } else if (this.isCompanyNotFound()) {
+        ev.preventDefault();
+        this.openRequestToAddCompany();
+      }
+    } else if (key === 'Escape') {
+      ev.preventDefault();
+      this.isCompanyDropdownOpen = false;
+      this.activeCompanyIndex = -1;
+    }
+  }
+
+  onCompanyInputFocus() {
+    const q = (this.approval?.company?.name || '').trim();
+    this.isCompanyDropdownOpen = q.length >= 2 && ((this.dropdownCompanies?.length || 0) > 0 || this.loadingCompanies || this.isCompanyNotFound());
+  }
+
+  onCompanyInputBlur() {
+    // Delay closing to allow click selection
+    setTimeout(() => {
+      this.isCompanyDropdownOpen = false;
+      this.activeCompanyIndex = -1;
+    }, 150);
+  }
+
+  highlightCompanyName(name: string): string {
+    const q = (this.lastCompanyQuery || '').toLowerCase();
+    const n = (name || '').toString();
+    if (!q) return n;
+    const idx = n.toLowerCase().indexOf(q);
+    if (idx === -1) return n;
+    const before = n.slice(0, idx);
+    const match = n.slice(idx, idx + q.length);
+    const after = n.slice(idx + q.length);
+    return `${before}<mark>${match}</mark>${after}`;
   }
 
   // API helpers: Internship creation and AppEx-A
