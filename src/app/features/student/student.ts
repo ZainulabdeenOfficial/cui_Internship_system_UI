@@ -18,6 +18,7 @@ import { PaginatorComponent } from '../../shared/pagination/paginator';
 export class Student {
   get students() { return this.store.students; }
   get me() { return this.store.currentUser; }
+  availableCompanies = computed(() => this.store.companies());
   selectedId: string | null = null;
   selectedStudent = computed(() => this.selectedId ? this.students().find(s => s.id === this.selectedId!) : undefined);
   myStudentId = computed(() => this.me()?.studentId ?? null);

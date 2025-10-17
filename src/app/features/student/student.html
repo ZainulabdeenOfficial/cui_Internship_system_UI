@@ -69,7 +69,10 @@
         <div class="col-12"><div class="section-title mt-2">Company Details</div></div>
         <div class="col-md-4">
           <label class="form-label">Company Name</label>
-          <input class="form-control" placeholder="e.g., ABC Software" [(ngModel)]="approval.company.name" name="cname" required />
+          <input list="companyList" class="form-control" placeholder="Type or select company..." [(ngModel)]="approval.company.name" name="cname" required />
+          <datalist id="companyList">
+            <option *ngFor="let c of availableCompanies()" [value]="c.name">{{ c.name }}</option>
+          </datalist>
         </div>
         <div class="col-md-8">
           <label class="form-label">Address</label>
@@ -148,7 +151,6 @@
           <button class="btn btn-outline-primary" type="submit">Create</button>
         </div>
       </form>
-      <div class="form-text">Requires student authentication; uses bearer token.</div>
     </div>
   </div>
 
@@ -243,10 +245,10 @@
 
   <!-- AppEx-A (API-backed) -->
   <div class="card mb-3" *ngIf="selectedId && currentTab==='applications'">
-    <div class="card-header">AppEx-A (Internship Approval) — Server</div>
+    <div class="card-header">AppEx-A (Internship Approval)</div>
     <div class="card-body">
       <div class="d-flex gap-2 mb-2">
-        <button class="btn btn-sm btn-outline-secondary" (click)="loadAppExA()">Load from server</button>
+        <button class="btn btn-sm btn-outline-secondary" (click)="loadAppExA()">Load</button>
       </div>
       <form (ngSubmit)="submitAppExAFromForm()" #axf="ngForm" class="row g-3">
         <div class="col-md-6"><label class="form-label">Organization</label><input class="form-control" [(ngModel)]="appexAForm.organization" name="axorg" required /></div>
@@ -267,7 +269,6 @@
           <button class="btn btn-outline-primary" type="button" (click)="updateAppExAFromForm()">Update AppEx-A</button>
         </div>
       </form>
-      <div class="form-text">Requires student authentication; uses bearer token. Server enforces ownership and role.</div>
     </div>
   </div>
 
