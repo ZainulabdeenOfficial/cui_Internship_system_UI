@@ -211,6 +211,30 @@ export class Student {
     if (addr) this.approval.company.address = addr;
   }
 
+  onCompanyNameSelected(ev: any) {
+    try {
+      const value: string = (ev?.target?.value ?? this.approval?.company?.name ?? '').toString();
+      const q = value.trim();
+      if (!q) { this.companyPreview = null; return; }
+      const lower = q.toLowerCase();
+      // Find exact suggestion match
+      const match = this.dropdownCompanies.find(c => (c.name || '').toLowerCase() === lower);
+      if (match) {
+        // Normalize name case
+        this.approval.company.name = match.name || q;
+        // Update preview and auto-fill address if available and empty
+        this.companyPreview = match as any;
+        const currentAddr = (this.approval?.company?.address || '').trim();
+        if (!currentAddr && match.address) {
+          this.approval.company.address = match.address;
+        }
+      } else {
+        // No exact match in current list; keep existing preview if any
+        // Optional: we could trigger a fetch here, but onCompanyNameInput already handles live fetching
+      }
+    } catch {}
+  }
+
   // API helpers: Internship creation and AppEx-A
   async apiCreateInternship(type: 'ONSITE'|'REMOTE'|'VIRTUAL'|'HYBRID', siteId?: string, facultyId?: string) {
     try {
