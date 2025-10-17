@@ -29,12 +29,11 @@ export class Student {
   isCompanyNotFound(): boolean {
     const name = this.approval?.company?.name?.trim();
     if (!name) return false;
-    // Only show when user typed at least 2 chars and current fetched list doesn't include exact name
+    // Only show when user typed at least 2 chars and API returned zero matches for current query
     if (name.length < 2) return false;
-  const lower = name.toLowerCase();
-  // If a company is selected and matches current text, it's not "not found"
-  if (this.selectedCompany && (this.selectedCompany.name || '').toLowerCase() === lower) return false;
-  return !this.dropdownCompanies.some(c => (c.name || '').toLowerCase() === lower);
+    // If a company was selected and matches current text, don't show request
+    if (this.selectedCompany && (this.selectedCompany.name || '').toLowerCase() === name.toLowerCase()) return false;
+    return (this.dropdownCompanies?.length || 0) === 0;
   }
   get students() { return this.store.students; }
   get me() { return this.store.currentUser; }
@@ -187,10 +186,9 @@ export class Student {
       this.companyPreview = null;
       if (q) {
         const lower = q.toLowerCase();
-        // Prefer exact match from dropdown, else show top suggestion
-        let match = this.dropdownCompanies.find(c => (c.name || '').toLowerCase() === lower) || null;
-        if (!match && this.dropdownCompanies.length) match = this.dropdownCompanies[0] || null;
-        this.companyPreview = match || null;
+        // Only show preview when exact match exists; avoid unrelated suggestions preview
+        const match = this.dropdownCompanies.find(c => (c.name || '').toLowerCase() === lower) || null;
+        this.companyPreview = match;
         // Do not auto-fill address while typing; only set on explicit selection
       }
     }, 250);
