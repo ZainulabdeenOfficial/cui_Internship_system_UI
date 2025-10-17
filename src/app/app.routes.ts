@@ -17,6 +17,6 @@ export const routes: Routes = [
     { path: 'student', loadComponent: () => import('./features/student/student').then(m => m.Student), canMatch: [roleCanMatch], canActivate: [roleCanActivate], data: { roles: ['student'] } },
     { path: 'admin',   loadComponent: () => import('./features/admin/admin').then(m => m.Admin), canMatch: [roleCanMatch], canActivate: [roleCanActivate], data: { roles: ['admin'] } },
     { path: 'faculty', loadComponent: () => import('./features/faculty-supervisor/faculty-supervisor').then(m => m.FacultySupervisor), canMatch: [roleCanMatch], canActivate: [roleCanActivate], data: { roles: ['faculty'] } },
-    { path: 'site',    loadComponent: () => import('./features/site-supervisor/site-supervisor').then(m => m.SiteSupervisor), canMatch: [roleCanMatch], canActivate: [roleCanActivate], data: { roles: ['site'] } },
+    { path: 'site',    loadComponent: () => import('./features/site-supervisor/site-supervisor').then(m => m.SiteSupervisor), canMatch: [roleCanMatch], canActivate: [roleCanActivate], data: { roles: ['site', 'site_supervisor'] } },
     { path: '**', redirectTo: '',component:Home}
 ];

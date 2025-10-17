@@ -51,7 +51,7 @@
 											<li><a class="link-light text-decoration-none" [routerLink]="['/faculty']" [queryParams]="{ tab: 'agreements' }">Agreements</a></li>
 											<li><a class="link-light text-decoration-none" [routerLink]="['/faculty']" [queryParams]="{ tab: 'profile' }">Profile</a></li>
 										}
-										@if (store.currentUser()?.role === 'site') {
+										@if (store.currentUser()?.role === 'site' || store.currentUser()?.role === 'site_supervisor') {
 											<li><a class="link-light text-decoration-none" [routerLink]="['/site']" [queryParams]="{ tab: 'students' }">Students</a></li>
 											<li><a class="link-light text-decoration-none" [routerLink]="['/site']" [queryParams]="{ tab: 'details' }">Details</a></li>
 											<li><a class="link-light text-decoration-none" [routerLink]="['/site']" [queryParams]="{ tab: 'reports' }">Reports</a></li>

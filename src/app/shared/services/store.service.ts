@@ -3,7 +3,7 @@ import { Injectable, signal } from '@angular/core';
 export type WeeklyLog = { id: string; week: number; note: string; date: string };
 export type Report = { id: string; type: 'proposal'|'progress'|'final'|'mid'|'site-final'|'reflective'; title: string; content: string; date: string; score?: number; approved?: boolean };
 export type StudentProfile = { id: string; name: string; email: string; registrationNo?: string; password?: string; avatarBase64?: string; bio?: string; approved?: boolean; facultyId?: string; siteId?: string; companyId?: string; internshipMode?: 'OnSite'|'Virtual'|'Fiverr'|'Upwork'; marks?: { faculty?: number; admin?: number; site?: number; adminProposal?: number; adminLogs?: number; adminFinal?: number } };
-export type Role = 'student'|'admin'|'faculty'|'site';
+export type Role = 'student'|'admin'|'faculty'|'site'|'site_supervisor';
 
 // Public announcements displayed on Home page (managed by Internship Office)
 export type Announcement = {
@@ -295,7 +295,7 @@ export class StoreService {
   loginSite(email: string, password: string) {
     const s = this.siteSupervisors().find(u => u.email.toLowerCase() === email.toLowerCase() && (u.password ?? '') === password);
     if (!s) throw new Error('Invalid site supervisor credentials');
-    this.currentUser.set({ role: 'site', siteId: s.id });
+    this.currentUser.set({ role: 'site_supervisor', siteId: s.id });
     this.currentStudentId.set(null);
     this.persist();
     return s;

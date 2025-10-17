@@ -161,7 +161,7 @@
 						</ul>
 					</li>
 					}
-					@if (user.role === 'site') {
+					@if (user.role === 'site' || user.role === 'site_supervisor') {
 					<li class="nav-item dropdown">
 						<a class="nav-link dropdown-toggle d-flex align-items-center gap-2" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
 							<span class="d-inline-block rounded-circle overflow-hidden" style="width:28px;height:28px;background:#fff">

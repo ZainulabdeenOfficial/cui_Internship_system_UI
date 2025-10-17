@@ -595,10 +595,10 @@
               </div>
               <div class="col-12 col-sm-6 col-md-3">
                 <label class="form-label">Company</label>
-                <select class="form-select" [(ngModel)]="site.companyId" name="scid2">
-                  <option [ngValue]="''">Select company...</option>
-                  @for (c of companyList(); track c.id) { <option [ngValue]="c.id">{{ c.name }}</option> }
-                </select>
+                <input list="companyDatalist" class="form-control" [(ngModel)]="site.companyId" name="scid2" placeholder="Type or select company..." />
+                <datalist id="companyDatalist">
+                  @for (c of companyList(); track c.id) { <option [value]="c.id">{{ c.name }}</option> }
+                </datalist>
               </div>
               <div class="col-12 col-sm-6 col-md-2">
                 <label class="form-label">Password</label>

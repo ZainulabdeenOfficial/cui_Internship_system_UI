@@ -150,13 +150,13 @@ export class Login implements OnDestroy, OnInit {
           try { localStorage.setItem('currentUser', JSON.stringify({ role: 'faculty', facultyId: f.id })); localStorage.setItem('currentStudentId', JSON.stringify(null)); } catch {}
           this.toast.success('Logged in as Faculty');
           this.router.navigate(['/faculty']);
-        } else if (apiRole === 'site') {
+        } else if (apiRole === 'site' || apiRole === 'site_supervisor') {
           const lower = email.toLowerCase();
           let ssv = this.store.siteSupervisors().find(u => u.email.toLowerCase() === lower);
           if (!ssv) { const companyId = undefined; this.store.addSiteSupervisor(apiRes.user?.name || email.split('@')[0], email, companyId, password); ssv = this.store.siteSupervisors().find(u => u.email.toLowerCase() === lower)!; }
-          this.store.currentUser.set({ role: 'site', siteId: ssv.id });
+          this.store.currentUser.set({ role: 'site_supervisor', siteId: ssv.id });
           this.store.currentStudentId.set(null);
-          try { localStorage.setItem('currentUser', JSON.stringify({ role: 'site', siteId: ssv.id })); localStorage.setItem('currentStudentId', JSON.stringify(null)); } catch {}
+          try { localStorage.setItem('currentUser', JSON.stringify({ role: 'site_supervisor', siteId: ssv.id })); localStorage.setItem('currentStudentId', JSON.stringify(null)); } catch {}
           this.toast.success('Logged in as Site Supervisor');
           this.router.navigate(['/site']);
         } else if (apiRole === 'student') {
