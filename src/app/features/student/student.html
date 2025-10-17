@@ -73,6 +73,19 @@
           <datalist id="companyList">
             <option *ngFor="let c of dropdownCompanies" [value]="c.name">{{ c.name }}</option>
           </datalist>
+          <div *ngIf="companyPreview as cp" class="mt-2 small">
+            <div class="card border-info">
+              <div class="card-body py-2">
+                <div><strong>{{ cp.name }}</strong></div>
+                <div class="text-muted">{{ cp.address || '—' }}</div>
+                <div class="text-muted">{{ cp.email || '' }} <span *ngIf="cp.phone">· {{ cp.phone }}</span></div>
+                <div class="text-muted" *ngIf="cp.website || cp.industry">{{ cp.website || '' }}<span *ngIf="cp.website && cp.industry"> · </span>{{ cp.industry || '' }}</div>
+                <div class="mt-1 d-flex gap-2">
+                  <button type="button" class="btn btn-sm btn-outline-info" (click)="usePreviewAddress()" [disabled]="!cp.address">Use this address</button>
+                </div>
+              </div>
+            </div>
+          </div>
           <div *ngIf="isCompanyNotFound()" class="mt-2">
             <button type="button" class="btn btn-warning btn-sm" (click)="showRequestCompanyForm = true">Request to add company</button>
           </div>

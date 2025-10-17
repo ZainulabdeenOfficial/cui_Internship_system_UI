@@ -22,6 +22,10 @@ export class Student {
   dropdownCompanies: Array<{ id: string; name: string }> = [];
   private companySearchDebounceId: any;
   private lastCompanyQuery: string = '';
+  // Company details cache and preview
+  private companyDetailsCache: Array<{ id: string; name: string; email?: string; phone?: string; address?: string; website?: string; industry?: string; description?: string }> = [];
+  private companyDetailsLoaded = false;
+  companyPreview: { id: string; name: string; email?: string; phone?: string; address?: string; website?: string; industry?: string; description?: string } | null = null;
 
   isCompanyNotFound(): boolean {
     const name = this.approval?.company?.name?.trim();
@@ -161,7 +165,36 @@ export class Student {
       } catch {
         this.dropdownCompanies = [];
       }
+      // Ensure details cache once, then compute preview
+      try {
+        if (!this.companyDetailsLoaded) {
+          this.companyDetailsCache = await this.adminApi.getCompanies();
+          this.companyDetailsLoaded = true;
+        }
+      } catch {}
+      // Compute preview from details cache based on current query
+      this.companyPreview = null;
+      if (q && this.companyDetailsCache.length) {
+        const lower = q.toLowerCase();
+        // Prefer exact match
+        let match = this.companyDetailsCache.find(c => (c.name || '').toLowerCase() === lower) || null;
+        // Otherwise first includes match
+        if (!match) match = this.companyDetailsCache.find(c => (c.name || '').toLowerCase().includes(lower)) || null;
+        this.companyPreview = match || null;
+        // If exact match and address empty, auto-fill address
+        if (match && (match.name || '').toLowerCase() === lower) {
+          const currentAddr = (this.approval?.company?.address || '').trim();
+          if (!currentAddr && match.address) {
+            this.approval.company.address = match.address;
+          }
+        }
+      }
     }, 250);
+  }
+
+  usePreviewAddress() {
+    const addr = this.companyPreview?.address?.trim();
+    if (addr) this.approval.company.address = addr;
   }
 
   // API helpers: Internship creation and AppEx-A
