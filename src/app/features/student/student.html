@@ -67,28 +67,9 @@
         </div>
 
         <div class="col-12"><div class="section-title mt-2">Company Details</div></div>
-        <div class="col-md-12">
-          <label class="form-label">Search Company (Type to search in database)</label>
-          <div class="position-relative">
-            <input class="form-control" placeholder="Type company name..." [(ngModel)]="companySearchQuery" name="csearch" (input)="searchCompanies()" />
-            <div class="position-absolute w-100 bg-white border rounded shadow-sm mt-1" style="z-index:1000; max-height:200px; overflow-y:auto" *ngIf="companySearchResults.length > 0">
-              <div class="list-group list-group-flush">
-                <button type="button" class="list-group-item list-group-item-action" *ngFor="let c of companySearchResults" (click)="selectCompanyFromSearch(c)">
-                  <strong>{{ c.name }}</strong>
-                  <small class="d-block text-muted" *ngIf="c.address">{{ c.address }}</small>
-                </button>
-              </div>
-            </div>
-            <small class="text-muted d-block mt-1" *ngIf="isSearchingCompany">Searching...</small>
-            <div class="alert alert-warning mt-2 py-2" *ngIf="!isSearchingCompany && companySearchQuery.length >= 2 && companySearchResults.length === 0">
-              <p class="mb-2">Company not found in database.</p>
-              <button type="button" class="btn btn-sm btn-primary" (click)="requestNewCompany()">Request to Add This Company</button>
-            </div>
-          </div>
-        </div>
         <div class="col-md-4">
           <label class="form-label">Company Name</label>
-          <input class="form-control" placeholder="e.g., ABC Software" [(ngModel)]="approval.company.name" name="cname" required [readonly]="!!selectedCompany" />
+          <input class="form-control" placeholder="e.g., ABC Software" [(ngModel)]="approval.company.name" name="cname" required />
         </div>
         <div class="col-md-8">
           <label class="form-label">Address</label>
@@ -138,79 +119,6 @@
           <button class="btn btn-success" [disabled]="!af.form.valid" type="submit">Submit Approval</button>
         </div>
       </form>
-    </div>
-  </div>
-
-  <!-- Request New Company Form -->
-  <div class="card mb-3 border-warning" *ngIf="showRequestCompanyForm && currentTab==='applications'">
-    <div class="card-header bg-warning text-dark">Request to Add New Company</div>
-    <div class="card-body">
-      <p class="text-muted small mb-3">This company is not in our database. Fill the form below to request admin approval.</p>
-      <form (ngSubmit)="submitCompanyRequest()" #crf="ngForm" class="row g-3">
-        <div class="col-md-4">
-          <label class="form-label">Company Name *</label>
-          <input class="form-control" [(ngModel)]="companyRequest.name" name="crname" required />
-        </div>
-        <div class="col-md-4">
-          <label class="form-label">Email *</label>
-          <input type="email" class="form-control" [(ngModel)]="companyRequest.email" name="cremail" required />
-        </div>
-        <div class="col-md-4">
-          <label class="form-label">Phone</label>
-          <input class="form-control" [(ngModel)]="companyRequest.phone" name="crphone" />
-        </div>
-        <div class="col-md-6">
-          <label class="form-label">Address</label>
-          <input class="form-control" [(ngModel)]="companyRequest.address" name="craddress" />
-        </div>
-        <div class="col-md-6">
-          <label class="form-label">Website</label>
-          <input class="form-control" placeholder="https://..." [(ngModel)]="companyRequest.website" name="crwebsite" />
-        </div>
-        <div class="col-md-6">
-          <label class="form-label">Industry</label>
-          <input class="form-control" placeholder="e.g., Software Development" [(ngModel)]="companyRequest.industry" name="crindustry" />
-        </div>
-        <div class="col-md-6">
-          <label class="form-label">Description</label>
-          <input class="form-control" [(ngModel)]="companyRequest.description" name="crdesc" />
-        </div>
-        <div class="col-12">
-          <label class="form-label">Justification (Why this company?)</label>
-          <textarea class="form-control" rows="2" [(ngModel)]="companyRequest.justification" name="crjust" placeholder="Explain why you want to add this company..."></textarea>
-        </div>
-        <div class="col-12 d-flex gap-2">
-          <button class="btn btn-primary" type="submit" [disabled]="!crf.form.valid">Submit Request</button>
-          <button class="btn btn-outline-secondary" type="button" (click)="showRequestCompanyForm = false">Cancel</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- My Company Requests Status -->
-  <div class="card mb-3" *ngIf="companyRequestsList.length > 0 && currentTab==='applications'">
-    <div class="card-header bg-light">My Company Requests</div>
-    <div class="card-body p-0">
-      <div class="table-responsive">
-        <table class="table table-sm mb-0">
-          <thead><tr><th>Company</th><th>Status</th><th>Requested</th><th>Admin Note</th></tr></thead>
-          <tbody>
-            <tr *ngFor="let cr of companyRequestsList">
-              <td>{{ cr.companyName || cr.name || '-' }}</td>
-              <td>
-                <span class="badge" 
-                  [class.text-bg-warning]="cr.status === 'PENDING' || !cr.status"
-                  [class.text-bg-success]="cr.status === 'APPROVED'"
-                  [class.text-bg-danger]="cr.status === 'REJECTED'">
-                  {{ cr.status || 'PENDING' }}
-                </span>
-              </td>
-              <td class="small text-muted">{{ cr.createdAt | date:'short' }}</td>
-              <td class="small">{{ cr.adminNote || cr.notes || '-' }}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
     </div>
   </div>
 

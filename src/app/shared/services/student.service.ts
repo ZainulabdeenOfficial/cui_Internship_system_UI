@@ -21,27 +21,6 @@ export class StudentService {
     return await firstValueFrom(this.http.post<any>(url, input, { headers: this.jsonHeaders() }));
   }
 
-  // Search companies by name
-  async searchCompanies(query: string): Promise<Array<{ id: string; name: string; email?: string; phone?: string; address?: string; website?: string; industry?: string; description?: string }>> {
-    const url = this.abs(`/api/companies/search?q=${encodeURIComponent(query)}`);
-    try {
-      const res = await firstValueFrom(this.http.get<any>(url, { headers: new HttpHeaders({ Accept: 'application/json' }) }));
-      const items: any[] = Array.isArray(res) ? res : (Array.isArray(res?.data) ? res.data : (Array.isArray(res?.companies) ? res.companies : []));
-      return items.map((c: any) => ({
-        id: (c.id ?? c._id ?? '').toString(),
-        name: c.name ?? '',
-        email: c.email,
-        phone: c.phone,
-        address: c.address,
-        website: c.website,
-        industry: c.industry,
-        description: c.description
-      }));
-    } catch {
-      return [];
-    }
-  }
-
   // POST /api/student/request-to-add-company
   async requestToAddCompany(payload: { name: string; email: string; phone?: string; address?: string; website?: string; industry?: string; description?: string; justification?: string }) {
     const url = this.abs('/api/student/request-to-add-company');
