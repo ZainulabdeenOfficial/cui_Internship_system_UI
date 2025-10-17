@@ -97,12 +97,17 @@
               <small class="text-muted" *ngIf="c.address">{{ c.address }}</small>
             </button>
             <div *ngIf="!loadingCompanies && dropdownCompanies.length === 0">
-              <div class="px-3 py-2 text-muted small" *ngIf="(approval?.company?.name || '').trim().length < 2">Type 2+ characters to search</div>
-              <div class="px-3 py-2 d-flex justify-content-between align-items-center" *ngIf="(approval?.company?.name || '').trim().length >= 2">
-                <span class="small text-muted">No results found</span>
+              <div class="px-3 py-2 text-muted small" *ngIf="(approval.company.name || '').trim().length < 2">Type 2+ characters to search</div>
+              <div class="px-3 py-2 d-flex justify-content-between align-items-center" *ngIf="(approval.company.name || '').trim().length >= 2">
+                <span class="small text-muted">No results found · Press Enter to request</span>
                 <button type="button" class="btn btn-warning btn-sm" (mousedown)="$event.preventDefault()" (click)="openRequestToAddCompany()">Request to add</button>
               </div>
             </div>
+          </div>
+          <!-- Persistent CTA when dropdown is closed and no results -->
+          <div class="mt-2 d-flex justify-content-between align-items-center" *ngIf="!isCompanyDropdownOpen && isCompanyNotFound()">
+            <span class="small text-muted">No results for "{{ (approval.company.name || '').trim() }}"</span>
+            <button type="button" class="btn btn-warning btn-sm" (click)="openRequestToAddCompany()">Request to add</button>
           </div>
           <div *ngIf="companyPreview as cp" class="mt-2 small">
             <div class="card border-info">
