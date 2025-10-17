@@ -25,6 +25,10 @@ export class Student {
   activeCompanyIndex = -1;
   loadingCompanies = false;
   private companySearchDebounceId: any;
+  private companySearchRequestId = 0;
+  private companyCache = new Map<string, Array<{ id: string; name: string; email?: string; address?: string; website?: string; industry?: string }>>();
+  private companyCacheKeys: string[] = [];
+  private lastFetchedCompanyQuery: string = '';
   private lastCompanyQuery: string = '';
   // Selected/preview company state
   companyPreview: { id: string; name: string; email?: string; phone?: string; address?: string; website?: string; industry?: string; description?: string } | null = null;
@@ -178,8 +182,26 @@ export class Student {
           this.isCompanyDropdownOpen = true;
           this.dropdownCompanies = [];
           this.activeCompanyIndex = -1;
-          const results = await this.adminApi.getDropdownCompanies(q);
           const lower = q.toLowerCase();
+          // Serve from cache if available
+          let results: Array<{ id: string; name: string; email?: string; address?: string; website?: string; industry?: string }> | null = null;
+          if (this.companyCache.has(lower)) {
+            results = this.companyCache.get(lower)!;
+          } else {
+            const reqId = ++this.companySearchRequestId;
+            this.lastFetchedCompanyQuery = lower;
+            const fetched = await this.adminApi.getDropdownCompanies(q);
+            // If a newer request has been made, ignore this response
+            if (reqId !== this.companySearchRequestId) return;
+            results = fetched || [];
+            // Cache with simple LRU of size 50
+            this.companyCache.set(lower, results);
+            this.companyCacheKeys.push(lower);
+            if (this.companyCacheKeys.length > 50) {
+              const oldest = this.companyCacheKeys.shift();
+              if (oldest) this.companyCache.delete(oldest);
+            }
+          }
           // Filter: show only companies whose NAME contains the query (case-insensitive)
           const filtered = (results || []).filter(c => ((c.name || '').toLowerCase()).includes(lower));
           // Sort: names starting with query first, then others containing query
@@ -191,7 +213,7 @@ export class Student {
             if (aStarts !== bStarts) return aStarts - bStarts;
             // Secondary: position of substring
             return an.indexOf(lower) - bn.indexOf(lower);
-          }).slice(0, 20);
+          }).slice(0, 10);
           this.activeCompanyIndex = this.dropdownCompanies.length ? 0 : -1;
         }
       } catch {
@@ -209,7 +231,7 @@ export class Student {
         this.companyPreview = match;
         // Do not auto-fill address while typing; only set on explicit selection
       }
-    }, 250);
+    }, 150);
   }
 
   usePreviewAddress() {
