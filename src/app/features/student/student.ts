@@ -19,7 +19,7 @@ import { PaginatorComponent } from '../../shared/pagination/paginator';
 export class Student {
   showRequestCompanyForm = false;
   // Dynamic dropdown options from backend
-  dropdownCompanies: Array<{ id: string; name: string }> = [];
+  dropdownCompanies: Array<{ id: string; name: string; email?: string; address?: string; website?: string; industry?: string }> = [];
   private companySearchDebounceId: any;
   private lastCompanyQuery: string = '';
   // Company details cache and preview
@@ -158,28 +158,42 @@ export class Student {
     this.companySearchDebounceId = setTimeout(async () => {
       try {
         if (!q) {
-          this.dropdownCompanies = await this.adminApi.getDropdownCompanies();
+          // Avoid fetching all when empty; clear suggestions
+          this.dropdownCompanies = [];
         } else {
-          this.dropdownCompanies = await this.adminApi.getDropdownCompanies(q);
+          const results = await this.adminApi.getDropdownCompanies(q);
+          const lower = q.toLowerCase();
+          // Sort: names starting with query first, then others containing query
+          this.dropdownCompanies = (results || []).sort((a, b) => {
+            const an = (a.name || '').toLowerCase();
+            const bn = (b.name || '').toLowerCase();
+            const aStarts = an.startsWith(lower) ? 0 : 1;
+            const bStarts = bn.startsWith(lower) ? 0 : 1;
+            if (aStarts !== bStarts) return aStarts - bStarts;
+            // Secondary: position of substring
+            return an.indexOf(lower) - bn.indexOf(lower);
+          }).slice(0, 20);
         }
       } catch {
         this.dropdownCompanies = [];
       }
-      // Ensure details cache once, then compute preview
-      try {
-        if (!this.companyDetailsLoaded) {
-          this.companyDetailsCache = await this.adminApi.getCompanies();
-          this.companyDetailsLoaded = true;
-        }
-      } catch {}
-      // Compute preview from details cache based on current query
+      // Compute preview primarily from current dropdown results; lazy fallback to full list only if needed
       this.companyPreview = null;
-      if (q && this.companyDetailsCache.length) {
+      if (q) {
         const lower = q.toLowerCase();
-        // Prefer exact match
-        let match = this.companyDetailsCache.find(c => (c.name || '').toLowerCase() === lower) || null;
-        // Otherwise first includes match
-        if (!match) match = this.companyDetailsCache.find(c => (c.name || '').toLowerCase().includes(lower)) || null;
+        // Prefer exact match from dropdown
+        let match = this.dropdownCompanies.find(c => (c.name || '').toLowerCase() === lower) || null;
+        if (!match && this.dropdownCompanies.length) {
+          match = this.dropdownCompanies[0] || null;
+        }
+        if (!match && q.length >= 2 && !this.companyDetailsLoaded) {
+          try {
+            this.companyDetailsCache = await this.adminApi.getCompanies();
+            this.companyDetailsLoaded = true;
+            match = this.companyDetailsCache.find(c => (c.name || '').toLowerCase() === lower) ||
+                    this.companyDetailsCache.find(c => (c.name || '').toLowerCase().includes(lower)) || null;
+          } catch {}
+        }
         this.companyPreview = match || null;
         // If exact match and address empty, auto-fill address
         if (match && (match.name || '').toLowerCase() === lower) {
