@@ -366,9 +366,17 @@ export class Admin {
 
   async refreshSites() {
     try {
-      const unassigned = this.assignmentFilter === 'UNASSIGNED' ? true : (this.assignmentFilter === 'ASSIGNED' ? false : undefined);
-      const list = await this.adminApi.getAssignableSiteSupervisors({ companyId: this.filter.siteCompanyId || undefined, unassigned });
-      this.sitesCache = list;
+      // Only pass unassigned=true when explicitly filtering for unassigned. Many backends ignore false.
+      const unassignedParam = this.assignmentFilter === 'UNASSIGNED' ? true : undefined;
+      const list = await this.adminApi.getAssignableSiteSupervisors({ companyId: this.filter.siteCompanyId || undefined, unassigned: unassignedParam });
+      // Derive ASSIGNED/UNASSIGNED locally to ensure correctness regardless of backend behavior
+      let filtered = list;
+      if (this.assignmentFilter === 'ASSIGNED') {
+        filtered = list.filter(x => !!x.companyId);
+      } else if (this.assignmentFilter === 'UNASSIGNED') {
+        filtered = list.filter(x => !x.companyId);
+      }
+      this.sitesCache = filtered;
     } catch (err: any) {
       const msg = err?.error?.message || err?.message || 'Failed to load site supervisors from server';
       this.toast.danger(msg);
