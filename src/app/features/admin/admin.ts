@@ -52,6 +52,7 @@ export class Admin {
   private reviewCompanyCache = new Map<string, { items: Array<{ id: string; companyName?: string; email?: string; studentId?: string; registrationNo?: string; status?: string; createdAt?: string }>; total: number; at: number }>();
   private reviewCompanyReqId = 0;
   private reviewCompanySearchDebounce: any;
+  private reviewInFlight = new Map<string, Promise<{ items: Array<{ id: string; companyName?: string; email?: string; studentId?: string; registrationNo?: string; status?: string; createdAt?: string }>; total: number }>>();
   get approvals() { return this.store.approvals; }
   get logsMap() { return this.store.logs; }
   get reportsMap() { return this.store.reports; }
@@ -392,29 +393,34 @@ export class Admin {
 
   async loadReviewCompany() {
     const key = this.makeReviewKey(this.reviewCompanyFilter);
-    const cached = this.reviewCompanyCache.get(key);
-    const now = Date.now();
-    const freshMs = 60_000; // 60s considered fresh
-    if (cached && (now - cached.at) < freshMs) {
-      // Instantly show cached data; refresh in background without toggling loading UI
+    let cached = this.reviewCompanyCache.get(key);
+    // If no in-memory cache and this is the default view, try session storage for instant show
+    if (!cached && this.isDefaultReviewFilter()) {
+      const stored = this.getDefaultReviewFromSession();
+      if (stored) {
+        cached = { items: stored.items, total: stored.total, at: stored.at };
+        // prime memory cache so subsequent opens are instant
+        this.reviewCompanyCache.set(key, cached);
+      }
+    }
+    if (cached) {
+      // Always show cached immediately (stale-while-revalidate)
       this.reviewCompany.items = cached.items;
       this.reviewCompany.total = cached.total;
       this.backgroundFetchReviewCompany(key);
       return;
     }
-    // No fresh cache: show loading and fetch
+    // No cache: show loading and fetch
     this.reviewCompanyLoading = true;
     const reqId = ++this.reviewCompanyReqId;
     try {
-      const res = await this.adminApi.getCompanyReviewRequests({ page: this.reviewCompanyFilter.page, limit: this.reviewCompanyFilter.limit, status: this.reviewCompanyFilter.status, search: (this.reviewCompanyFilter.search || '').trim() || undefined });
+      const res = await this.fetchReviewCompany(key, this.reviewCompanyFilter);
       if (this.reviewCompanyReqId !== reqId) return; // ignore stale
       this.reviewCompany.items = res.items;
       this.reviewCompany.total = res.total || res.items.length;
-      this.setReviewCache(key, { items: res.items, total: this.reviewCompany.total, at: Date.now() });
+      this.setReviewCache(key, { items: this.reviewCompany.items, total: this.reviewCompany.total, at: Date.now() });
       // Prefetch next page if likely
-      if ((res.items?.length || 0) >= this.reviewCompanyFilter.limit) {
-        this.prefetchNextReviewCompanyPage();
-      }
+      if ((res.items?.length || 0) >= this.reviewCompanyFilter.limit) this.prefetchNextReviewCompanyPage();
     } catch (err: any) {
       if (this.reviewCompanyReqId !== reqId) return;
       const msg = err?.error?.message || err?.message || 'Failed to load company review requests';
@@ -427,13 +433,12 @@ export class Admin {
   private async backgroundFetchReviewCompany(expectedKey: string) {
     const reqId = ++this.reviewCompanyReqId;
     try {
-      const res = await this.adminApi.getCompanyReviewRequests({ page: this.reviewCompanyFilter.page, limit: this.reviewCompanyFilter.limit, status: this.reviewCompanyFilter.status, search: (this.reviewCompanyFilter.search || '').trim() || undefined });
-      // Only update if this response matches latest request and key still current
+      const res = await this.fetchReviewCompany(expectedKey, this.reviewCompanyFilter);
       const currentKey = this.makeReviewKey(this.reviewCompanyFilter);
       if (this.reviewCompanyReqId !== reqId || currentKey !== expectedKey) return;
       this.reviewCompany.items = res.items;
       this.reviewCompany.total = res.total || res.items.length;
-      this.setReviewCache(currentKey, { items: res.items, total: this.reviewCompany.total, at: Date.now() });
+      this.setReviewCache(currentKey, { items: this.reviewCompany.items, total: this.reviewCompany.total, at: Date.now() });
       if ((res.items?.length || 0) >= this.reviewCompanyFilter.limit) this.prefetchNextReviewCompanyPage();
     } catch {
       // Silent background failure
@@ -445,7 +450,7 @@ export class Admin {
     const key = this.makeReviewKey(f);
     if (this.reviewCompanyCache.has(key)) return;
     // fire-and-forget
-    this.adminApi.getCompanyReviewRequests({ page: f.page, limit: f.limit, status: f.status, search: (f.search || '').trim() || undefined })
+    this.fetchReviewCompany(key, f)
       .then(res => {
         this.setReviewCache(key, { items: res.items || [], total: res.total || (res.items || []).length, at: Date.now() });
       })
@@ -464,6 +469,10 @@ export class Admin {
       if (!firstKey) break;
       this.reviewCompanyCache.delete(firstKey);
     }
+    // Persist default Pending page-1 view for instant tab opens within session
+    if (this.isDefaultReviewFilterByKey(key)) {
+      try { sessionStorage.setItem('admin:reviewCompany:default', JSON.stringify(value)); } catch {}
+    }
   }
 
   onReviewCompanySearchChange(value: string) {
@@ -471,6 +480,34 @@ export class Admin {
     this.reviewCompanyFilter.page = 1;
     if (this.reviewCompanySearchDebounce) clearTimeout(this.reviewCompanySearchDebounce);
     this.reviewCompanySearchDebounce = setTimeout(() => this.loadReviewCompany(), 200);
+  }
+
+  private isDefaultReviewFilter(): boolean {
+    return this.reviewCompanyFilter.status === 'PENDING' && this.reviewCompanyFilter.page === 1 && !((this.reviewCompanyFilter.search || '').trim());
+  }
+  private isDefaultReviewFilterByKey(key: string): boolean {
+    const parts = key.split('|');
+    const status = parts[0];
+    const page = Number(parts[1] || '1');
+    const limit = Number(parts[2] || '10');
+    const search = parts.slice(3).join('|');
+    return status === 'PENDING' && page === 1 && !search && limit === this.reviewCompanyFilter.limit;
+  }
+  private getDefaultReviewFromSession(): { items: Array<{ id: string; companyName?: string; email?: string; studentId?: string; registrationNo?: string; status?: string; createdAt?: string }>; total: number; at: number } | undefined {
+    try {
+      const raw = sessionStorage.getItem('admin:reviewCompany:default');
+      if (!raw) return undefined;
+      const v = JSON.parse(raw);
+      if (!v || !Array.isArray(v.items)) return undefined;
+      return { items: v.items, total: Number(v.total) || (v.items?.length || 0), at: Number(v.at) || Date.now() };
+    } catch { return undefined; }
+  }
+  private async fetchReviewCompany(key: string, f: { status: 'PENDING'|'APPROVED'|'REJECTED'; page: number; limit: number; search: string }) {
+    if (this.reviewInFlight.has(key)) return this.reviewInFlight.get(key)!;
+    const p = this.adminApi.getCompanyReviewRequests({ page: f.page, limit: f.limit, status: f.status, search: (f.search || '').trim() || undefined })
+      .finally(() => { this.reviewInFlight.delete(key); }) as unknown as Promise<{ items: any[]; total: number }>;
+    this.reviewInFlight.set(key, p);
+    return p;
   }
   async applyReviewCompanyDecision(requestId: string, decision: 'APPROVED'|'REJECTED') {
     // Optimistic UI update for speed
