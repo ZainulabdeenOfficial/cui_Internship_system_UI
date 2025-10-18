@@ -44,6 +44,10 @@ export class Admin {
   reviewCompany = { items: [] as Array<{ id: string; companyName?: string; email?: string; studentId?: string; registrationNo?: string; status?: string; createdAt?: string }>, total: 0 };
   reviewCompanyFilter = { status: 'PENDING' as 'PENDING'|'APPROVED'|'REJECTED', page: 1, limit: 10, search: '' };
   reviewCompanyLoading = false;
+  // Performance: caching + de-bounce + stale-while-revalidate
+  private reviewCompanyCache = new Map<string, { items: Array<{ id: string; companyName?: string; email?: string; studentId?: string; registrationNo?: string; status?: string; createdAt?: string }>; total: number; at: number }>();
+  private reviewCompanyReqId = 0;
+  private reviewCompanySearchDebounce: any;
   get approvals() { return this.store.approvals; }
   get logsMap() { return this.store.logs; }
   get reportsMap() { return this.store.reports; }
@@ -285,25 +289,146 @@ export class Admin {
   }
 
   async loadReviewCompany() {
+    const key = this.makeReviewKey(this.reviewCompanyFilter);
+    const cached = this.reviewCompanyCache.get(key);
+    const now = Date.now();
+    const freshMs = 60_000; // 60s considered fresh
+    if (cached && (now - cached.at) < freshMs) {
+      // Instantly show cached data; refresh in background without toggling loading UI
+      this.reviewCompany.items = cached.items;
+      this.reviewCompany.total = cached.total;
+      this.backgroundFetchReviewCompany(key);
+      return;
+    }
+    // No fresh cache: show loading and fetch
     this.reviewCompanyLoading = true;
+    const reqId = ++this.reviewCompanyReqId;
     try {
       const res = await this.adminApi.getCompanyReviewRequests({ page: this.reviewCompanyFilter.page, limit: this.reviewCompanyFilter.limit, status: this.reviewCompanyFilter.status, search: (this.reviewCompanyFilter.search || '').trim() || undefined });
+      if (this.reviewCompanyReqId !== reqId) return; // ignore stale
       this.reviewCompany.items = res.items;
       this.reviewCompany.total = res.total || res.items.length;
+      this.setReviewCache(key, { items: res.items, total: this.reviewCompany.total, at: Date.now() });
+      // Prefetch next page if likely
+      if ((res.items?.length || 0) >= this.reviewCompanyFilter.limit) {
+        this.prefetchNextReviewCompanyPage();
+      }
     } catch (err: any) {
+      if (this.reviewCompanyReqId !== reqId) return;
       const msg = err?.error?.message || err?.message || 'Failed to load company review requests';
       this.toast.danger(msg);
     } finally {
-      this.reviewCompanyLoading = false;
+      if (this.reviewCompanyReqId === reqId) this.reviewCompanyLoading = false;
     }
   }
+
+  private async backgroundFetchReviewCompany(expectedKey: string) {
+    const reqId = ++this.reviewCompanyReqId;
+    try {
+      const res = await this.adminApi.getCompanyReviewRequests({ page: this.reviewCompanyFilter.page, limit: this.reviewCompanyFilter.limit, status: this.reviewCompanyFilter.status, search: (this.reviewCompanyFilter.search || '').trim() || undefined });
+      // Only update if this response matches latest request and key still current
+      const currentKey = this.makeReviewKey(this.reviewCompanyFilter);
+      if (this.reviewCompanyReqId !== reqId || currentKey !== expectedKey) return;
+      this.reviewCompany.items = res.items;
+      this.reviewCompany.total = res.total || res.items.length;
+      this.setReviewCache(currentKey, { items: res.items, total: this.reviewCompany.total, at: Date.now() });
+      if ((res.items?.length || 0) >= this.reviewCompanyFilter.limit) this.prefetchNextReviewCompanyPage();
+    } catch {
+      // Silent background failure
+    }
+  }
+
+  private prefetchNextReviewCompanyPage() {
+    const f = { ...this.reviewCompanyFilter, page: this.reviewCompanyFilter.page + 1 };
+    const key = this.makeReviewKey(f);
+    if (this.reviewCompanyCache.has(key)) return;
+    // fire-and-forget
+    this.adminApi.getCompanyReviewRequests({ page: f.page, limit: f.limit, status: f.status, search: (f.search || '').trim() || undefined })
+      .then(res => {
+        this.setReviewCache(key, { items: res.items || [], total: res.total || (res.items || []).length, at: Date.now() });
+      })
+      .catch(() => {});
+  }
+
+  private makeReviewKey(f: { status: 'PENDING'|'APPROVED'|'REJECTED'; page: number; limit: number; search: string }): string {
+    return `${f.status}|${f.page}|${f.limit}|${(f.search || '').trim().toLowerCase()}`;
+  }
+  private setReviewCache(key: string, value: { items: Array<{ id: string; companyName?: string; email?: string; studentId?: string; registrationNo?: string; status?: string; createdAt?: string }>; total: number; at: number }) {
+    if (this.reviewCompanyCache.has(key)) this.reviewCompanyCache.delete(key);
+    this.reviewCompanyCache.set(key, value);
+    // LRU limit 50
+    while (this.reviewCompanyCache.size > 50) {
+      const firstKey = this.reviewCompanyCache.keys().next().value as string | undefined;
+      if (!firstKey) break;
+      this.reviewCompanyCache.delete(firstKey);
+    }
+  }
+
+  onReviewCompanySearchChange(value: string) {
+    this.reviewCompanyFilter.search = value;
+    this.reviewCompanyFilter.page = 1;
+    if (this.reviewCompanySearchDebounce) clearTimeout(this.reviewCompanySearchDebounce);
+    this.reviewCompanySearchDebounce = setTimeout(() => this.loadReviewCompany(), 200);
+  }
   async applyReviewCompanyDecision(requestId: string, decision: 'APPROVED'|'REJECTED') {
+    // Optimistic UI update for speed
+    const currentKey = this.makeReviewKey(this.reviewCompanyFilter);
+    const beforeIdx = this.reviewCompany.items.findIndex(x => x.id === requestId);
+    const before = beforeIdx >= 0 ? { ...this.reviewCompany.items[beforeIdx] } : null;
+    let reverted = false;
+    if (before) {
+      // If current filter is not the target status, remove it immediately; else set status locally
+      if (this.reviewCompanyFilter.status !== decision) {
+        this.reviewCompany.items = this.reviewCompany.items.filter(x => x.id !== requestId);
+        if (this.reviewCompany.total > 0) this.reviewCompany.total -= 1;
+      } else {
+        this.reviewCompany.items[beforeIdx] = { ...before, status: decision };
+      }
+      const cached = this.reviewCompanyCache.get(currentKey);
+      if (cached) {
+        const items = [...cached.items];
+        const idx = items.findIndex(x => x.id === requestId);
+        if (idx >= 0) {
+          if (this.reviewCompanyFilter.status !== decision) {
+            items.splice(idx, 1);
+            this.setReviewCache(currentKey, { items, total: Math.max(0, cached.total - 1), at: cached.at });
+          } else {
+            items[idx] = { ...items[idx], status: decision } as any;
+            this.setReviewCache(currentKey, { items, total: cached.total, at: cached.at });
+          }
+        }
+      }
+    }
     try {
       await this.adminApi.reviewCompanyRequest({ requestId, decision });
       this.toast.success(`Request ${decision === 'APPROVED' ? 'approved' : 'rejected'}`);
-      await this.loadReviewCompany();
-      await this.refreshCompanies(); // reflect new companies on approval
+      // Background refresh current list to reconcile
+      this.backgroundFetchReviewCompany(currentKey);
+      if (decision === 'APPROVED') await this.refreshCompanies();
     } catch (err: any) {
+      // Revert optimistic change
+      if (before && !reverted) {
+        reverted = true;
+        // Put it back depending on current filter
+        if (this.reviewCompanyFilter.status !== decision) {
+          this.reviewCompany.items = [before, ...this.reviewCompany.items];
+          this.reviewCompany.total += 1;
+        } else if (beforeIdx >= 0) {
+          this.reviewCompany.items[beforeIdx] = before;
+        }
+        const cached = this.reviewCompanyCache.get(currentKey);
+        if (cached) {
+          const items = [...cached.items];
+          const idx = items.findIndex(x => x.id === requestId);
+          if (this.reviewCompanyFilter.status !== decision) {
+            items.unshift(before);
+            this.setReviewCache(currentKey, { items, total: cached.total + 1, at: cached.at });
+          } else if (idx >= 0) {
+            items[idx] = before;
+            this.setReviewCache(currentKey, { items, total: cached.total, at: cached.at });
+          }
+        }
+      }
       const msg = err?.error?.message || err?.message || 'Failed to apply decision';
       this.toast.danger(msg);
     }

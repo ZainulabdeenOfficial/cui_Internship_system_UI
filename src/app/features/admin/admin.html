@@ -202,10 +202,10 @@
           <div class="card-header bg-light d-flex align-items-center justify-content-between">
             <span>Company Review Requests</span>
             <div class="d-flex gap-2 align-items-center">
-              <input class="form-control form-control-sm" style="width:220px" placeholder="Search (name/email/industry)"
-                     [(ngModel)]="reviewCompanyFilter.search"
-                     (ngModelChange)="reviewCompanyFilter.page=1; loadReviewCompany()"
-                     name="rcsearch" />
+    <input class="form-control form-control-sm" style="width:220px" placeholder="Search (name/email/industry)"
+      [ngModel]="reviewCompanyFilter.search"
+      (ngModelChange)="onReviewCompanySearchChange($event)"
+      name="rcsearch" />
               <select class="form-select form-select-sm" style="width:160px" [(ngModel)]="reviewCompanyFilter.status" (ngModelChange)="reviewCompanyFilter.page=1; loadReviewCompany()" name="rcstatus">
                 <option [ngValue]="'PENDING'">Pending</option>
                 <option [ngValue]="'APPROVED'">Approved</option>
