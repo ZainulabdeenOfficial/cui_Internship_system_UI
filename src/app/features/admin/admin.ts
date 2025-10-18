@@ -85,6 +85,14 @@ export class Admin {
   // Dynamic company dropdown for Sites tab
   dropdownCompanies: Array<{ id: string; name: string }> = [];
   private companySearchDebounceId: any;
+  // Per-site-supervisor company search (student-like UI)
+  siteCompanySearchQuery: Record<string, string> = {};
+  siteDropdownCompanies: Record<string, Array<{ id: string; name: string; address?: string }>> = {};
+  siteDropdownOpen: Record<string, boolean> = {};
+  siteLoading: Record<string, boolean> = {};
+  siteActiveIndex: Record<string, number> = {};
+  private siteCompanyDebounce: Record<string, any> = {};
+  private siteCompanyReqId: Record<string, number> = {};
   // inline company edit buffers
   editingCompanyId: string | null = null;
   companyEdit: Partial<import('../../shared/services/store.service').Company> = {};
@@ -136,6 +144,106 @@ export class Admin {
         this.dropdownCompanies = [];
       }
     }, 250);
+  }
+
+  // New: per-row search like student UI (name-only, 2+ chars, no request button)
+  onSiteRowCompanyInput(rowId: string, value: string) {
+    const q = (value || '').trim();
+    this.siteCompanySearchQuery[rowId] = q;
+    if (this.siteCompanyDebounce[rowId]) clearTimeout(this.siteCompanyDebounce[rowId]);
+    this.siteCompanyDebounce[rowId] = setTimeout(async () => {
+      try {
+        if (!q || q.length < 2) {
+          this.siteDropdownCompanies[rowId] = [];
+          this.siteDropdownOpen[rowId] = false;
+          this.siteLoading[rowId] = false;
+          this.siteActiveIndex[rowId] = -1;
+          return;
+        }
+        this.siteLoading[rowId] = true;
+        this.siteDropdownOpen[rowId] = true;
+        this.siteDropdownCompanies[rowId] = [];
+        this.siteActiveIndex[rowId] = -1;
+        const reqId = (this.siteCompanyReqId[rowId] ?? 0) + 1;
+        this.siteCompanyReqId[rowId] = reqId;
+        const results = await this.adminApi.getDropdownCompanies(q);
+        // Ignore stale responses
+        if (this.siteCompanyReqId[rowId] !== reqId) return;
+        const lower = q.toLowerCase();
+        const filtered = (results || []).filter(c => ((c.name || '').toLowerCase()).includes(lower));
+        this.siteDropdownCompanies[rowId] = filtered.sort((a, b) => {
+          const an = (a.name || '').toLowerCase();
+          const bn = (b.name || '').toLowerCase();
+          const aStarts = an.startsWith(lower) ? 0 : 1;
+          const bStarts = bn.startsWith(lower) ? 0 : 1;
+          if (aStarts !== bStarts) return aStarts - bStarts;
+          return an.indexOf(lower) - bn.indexOf(lower);
+        }).slice(0, 10).map(x => ({ id: x.id, name: x.name, address: (x as any).address }));
+        this.siteActiveIndex[rowId] = (this.siteDropdownCompanies[rowId] || []).length ? 0 : -1;
+      } catch {
+        this.siteDropdownCompanies[rowId] = [];
+        this.siteActiveIndex[rowId] = -1;
+      } finally {
+        this.siteLoading[rowId] = false;
+      }
+    }, 150);
+  }
+
+  selectSiteCompany(rowId: string, c: { id: string; name: string; address?: string }) {
+    // Set selection buffer used by Assign action and reflect name into the input
+    this.siteAssignCompany[rowId] = c.id;
+    this.siteCompanySearchQuery[rowId] = c.name;
+    this.siteDropdownOpen[rowId] = false;
+    this.siteActiveIndex[rowId] = -1;
+  }
+
+  onSiteCompanyKeydown(rowId: string, ev: KeyboardEvent) {
+    const key = ev.key;
+    if (key === 'ArrowDown' && this.siteDropdownOpen[rowId]) {
+      ev.preventDefault();
+      const len = (this.siteDropdownCompanies[rowId] || []).length;
+      if (len) this.siteActiveIndex[rowId] = ((this.siteActiveIndex[rowId] ?? -1) + 1) % len;
+    } else if (key === 'ArrowUp' && this.siteDropdownOpen[rowId]) {
+      ev.preventDefault();
+      const len = (this.siteDropdownCompanies[rowId] || []).length;
+      if (len) this.siteActiveIndex[rowId] = ((this.siteActiveIndex[rowId] ?? 0) - 1 + len) % len;
+    } else if (key === 'Enter') {
+      const list = this.siteDropdownCompanies[rowId] || [];
+      const q = (this.siteCompanySearchQuery[rowId] || '').trim().toLowerCase();
+      if (this.siteDropdownOpen[rowId] && this.siteActiveIndex[rowId] != null && this.siteActiveIndex[rowId] >= 0 && this.siteActiveIndex[rowId] < list.length) {
+        ev.preventDefault();
+        this.selectSiteCompany(rowId, list[this.siteActiveIndex[rowId]]);
+      } else if (list.length === 1) {
+        ev.preventDefault(); this.selectSiteCompany(rowId, list[0]);
+      } else {
+        const exact = list.find(c => (c.name || '').toLowerCase() === q);
+        if (exact) { ev.preventDefault(); this.selectSiteCompany(rowId, exact); }
+        // No request-to-add here; just keep "No results" if empty
+      }
+    } else if (key === 'Escape' && this.siteDropdownOpen[rowId]) {
+      ev.preventDefault();
+      this.siteDropdownOpen[rowId] = false;
+      this.siteActiveIndex[rowId] = -1;
+    }
+  }
+
+  onSiteCompanyFocus(rowId: string) {
+    const q = (this.siteCompanySearchQuery[rowId] || '').trim();
+    this.siteDropdownOpen[rowId] = q.length >= 2 && ((this.siteDropdownCompanies[rowId]?.length || 0) > 0 || !!this.siteLoading[rowId]);
+  }
+  onSiteCompanyBlur(rowId: string) {
+    setTimeout(() => { this.siteDropdownOpen[rowId] = false; this.siteActiveIndex[rowId] = -1; }, 150);
+  }
+  highlightName(name: string, query?: string): string {
+    const q = (query || '').toLowerCase();
+    const n = (name || '').toString();
+    if (!q) return n;
+    const idx = n.toLowerCase().indexOf(q);
+    if (idx === -1) return n;
+    const before = n.slice(0, idx);
+    const match = n.slice(idx, idx + q.length);
+    const after = n.slice(idx + q.length);
+    return `${before}<mark>${match}</mark>${after}`;
   }
 
   async refreshSites() {

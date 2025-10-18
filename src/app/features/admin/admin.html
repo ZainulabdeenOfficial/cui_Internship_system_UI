@@ -644,11 +644,32 @@
                     <td>{{ t.name }}</td>
                     <td>{{ t.email }}</td>
                     <td>
-                      <div class="d-flex gap-2 align-items-center">
-                        <select class="form-select form-select-sm" style="min-width:160px" [(ngModel)]="siteAssignCompany[t.id]" [name]="'sac' + t.id">
-                          <option [ngValue]="''">Select company…</option>
-                          @for (c of companyList(); track c.id) { <option [ngValue]="c.id">{{ c.name }}</option> }
-                        </select>
+                      <div class="position-relative" style="min-width:260px">
+                        <input class="form-control form-control-sm" placeholder="Type company name…"
+                               [(ngModel)]="siteCompanySearchQuery[t.id]"
+                               (ngModelChange)="onSiteRowCompanyInput(t.id, $event)"
+                               (keydown)="onSiteCompanyKeydown(t.id, $event)"
+                               (focus)="onSiteCompanyFocus(t.id)"
+                               (blur)="onSiteCompanyBlur(t.id)"
+                               [name]="'scq' + t.id" />
+                        <div *ngIf="siteDropdownOpen[t.id]" class="dropdown-menu show w-100 shadow" style="max-height: 240px; overflow:auto;">
+                          <div class="px-3 py-1 text-muted small" *ngIf="siteLoading[t.id]">Searching…</div>
+                          <button type="button"
+                                  class="dropdown-item d-flex flex-column align-items-start"
+                                  *ngFor="let c of siteDropdownCompanies[t.id]; let i = index"
+                                  [class.active]="i === siteActiveIndex[t.id]"
+                                  (mousedown)="$event.preventDefault()"
+                                  (click)="selectSiteCompany(t.id, c)">
+                            <span [innerHTML]="highlightName(c.name, siteCompanySearchQuery[t.id])"></span>
+                            <small class="text-muted" *ngIf="c.address">{{ c.address }}</small>
+                          </button>
+                          <div class="px-3 py-2 text-muted small" *ngIf="!siteLoading[t.id] && (!siteDropdownCompanies[t.id] || siteDropdownCompanies[t.id].length===0)">
+                            <span *ngIf="(siteCompanySearchQuery[t.id]||'').length<2">Type 2+ characters to search</span>
+                            <span *ngIf="(siteCompanySearchQuery[t.id]||'').length>=2">No results found</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="mt-2">
                         <button class="btn btn-sm btn-outline-primary" (click)="assignSiteToCompany(t.id)">Assign</button>
                       </div>
                     </td>
