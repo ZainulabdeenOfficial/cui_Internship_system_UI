@@ -430,7 +430,7 @@ export class Student {
   
   async loadMyCompanyRequests() {
     try {
-      const res = await this.studentApi.getMyCompanyRequests();
+      const res = await this.studentApi.getMyCompanyRequests({ page: 1, limit: 10 });
       this.companyRequestsList = Array.isArray((res as any)?.companyRequests) ? (res as any).companyRequests : [];
     } catch (err: any) {
       // just warn silently in UI

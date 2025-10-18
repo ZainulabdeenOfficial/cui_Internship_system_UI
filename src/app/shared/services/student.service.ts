@@ -27,10 +27,39 @@ export class StudentService {
     return await firstValueFrom(this.http.post<any>(url, payload, { headers: this.jsonHeaders() }));
   }
 
-  // GET /api/student/request-to-add-company
-  async getMyCompanyRequests(): Promise<{ companyRequests: any[]; message?: string }> {
-    const url = this.abs('/api/student/request-to-add-company');
-    return await firstValueFrom(this.http.get<any>(url, { headers: new HttpHeaders({ Accept: 'application/json' }) }));
+  // GET student company requests via admin review endpoint (supports page/limit/status/search)
+  async getMyCompanyRequests(params?: { page?: number; limit?: number; status?: string; search?: string }): Promise<{ companyRequests: any[]; total?: number; message?: string }> {
+    const base = 'https://cui-internship-system-git-dev-zas-projects-7d9cf03b.vercel.app';
+    const q: string[] = [];
+    const page = params?.page ?? 1;
+    const limit = params?.limit ?? 10;
+    q.push(`page=${encodeURIComponent(String(page))}`);
+    q.push(`limit=${encodeURIComponent(String(limit))}`);
+    if (params?.status) q.push(`status=${encodeURIComponent(params.status)}`);
+    if (params?.search) q.push(`search=${encodeURIComponent(params.search)}`);
+    const qs = q.length ? `?${q.join('&')}` : '';
+    const url = `${base}/api/admin/review-company${qs}`;
+    const res = await firstValueFrom(this.http.get<any>(url, { headers: new HttpHeaders({ Accept: 'application/json' }) }));
+    const items: any[] = Array.isArray(res?.requests) ? res.requests : (Array.isArray(res?.data) ? res.data : (Array.isArray(res?.items) ? res.items : (Array.isArray(res) ? res : [])));
+    const mapped = items.map((x: any) => ({
+      id: (x.id ?? x._id ?? x.requestId ?? '').toString(),
+      name: x.name ?? x.companyName ?? x.company?.name,
+      email: x.email ?? x.requestedBy?.email,
+      phone: x.phone,
+      address: x.address,
+      website: x.website,
+      industry: x.industry,
+      description: x.description,
+      reason: x.reason ?? x.justification,
+      status: x.status ?? x.state ?? 'PENDING',
+      notes: x.notes,
+      createdAt: x.createdAt ?? x.requestedAt,
+      reviewedAt: x.reviewedAt,
+      requestedBy: x.requestedBy,
+      reviewedBy: x.reviewedBy
+    }));
+    const total: number | undefined = (typeof res?.total === 'number') ? res.total : (typeof res?.count === 'number' ? res.count : (typeof res?.totalItems === 'number' ? res.totalItems : undefined));
+    return { companyRequests: mapped, total };
   }
 
   // GET /api/student/appex-a

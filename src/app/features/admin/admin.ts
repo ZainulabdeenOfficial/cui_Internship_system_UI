@@ -32,7 +32,7 @@ export class Admin {
   get complaints() { return this.store.complaints; }
   get requests() { return this.store.requests; }
   reviewCompany = { items: [] as Array<{ id: string; companyName?: string; email?: string; studentId?: string; registrationNo?: string; status?: string; createdAt?: string }>, total: 0 };
-  reviewCompanyFilter = { status: 'PENDING' as 'PENDING'|'APPROVED'|'REJECTED', page: 1, limit: 10 };
+  reviewCompanyFilter = { status: 'PENDING' as 'PENDING'|'APPROVED'|'REJECTED', page: 1, limit: 10, search: '' };
   get approvals() { return this.store.approvals; }
   get logsMap() { return this.store.logs; }
   get reportsMap() { return this.store.reports; }
@@ -275,7 +275,7 @@ export class Admin {
 
   async loadReviewCompany() {
     try {
-      const res = await this.adminApi.getCompanyReviewRequests({ page: this.reviewCompanyFilter.page, limit: this.reviewCompanyFilter.limit, status: this.reviewCompanyFilter.status });
+      const res = await this.adminApi.getCompanyReviewRequests({ page: this.reviewCompanyFilter.page, limit: this.reviewCompanyFilter.limit, status: this.reviewCompanyFilter.status, search: (this.reviewCompanyFilter.search || '').trim() || undefined });
       this.reviewCompany.items = res.items;
       this.reviewCompany.total = res.total || res.items.length;
     } catch (err: any) {

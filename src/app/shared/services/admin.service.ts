@@ -237,25 +237,29 @@ export class AdminService {
     return list.map((x: any) => ({ id: (x.id ?? x._id ?? x.siteId ?? '').toString(), name: x.name ?? x.fullName ?? '', email: x.email, companyId: (x.companyId ?? '').toString() })).filter(x => !!x.id);
   }
 
-  async getCompanyReviewRequests(params: { page?: number; limit?: number; status?: 'PENDING'|'APPROVED'|'REJECTED' }): Promise<{ items: Array<{ id: string; companyName?: string; email?: string; studentId?: string; registrationNo?: string; status?: string; createdAt?: string }>, total?: number }>{
+  async getCompanyReviewRequests(params: { page?: number; limit?: number; status?: 'PENDING'|'APPROVED'|'REJECTED'; search?: string }): Promise<{ items: Array<{ id: string; companyName?: string; email?: string; studentId?: string; registrationNo?: string; status?: string; createdAt?: string }>, total?: number }>{
     // Use absolute Vercel URL as requested
     const base = 'https://cui-internship-system-git-dev-zas-projects-7d9cf03b.vercel.app';
     const path = `${base}/api/admin/review-company`;
     const q: string[] = [];
     if (params.page) q.push(`page=${encodeURIComponent(String(params.page))}`);
     if (params.limit) q.push(`limit=${encodeURIComponent(String(params.limit))}`);
-    if (params.status) q.push(`status=${encodeURIComponent(params.status)}`);
+  if (params.status) q.push(`status=${encodeURIComponent(params.status)}`);
+  if (params.search) q.push(`search=${encodeURIComponent(params.search)}`);
     const qs = q.length ? `?${q.join('&')}` : '';
     const url = `${path}${qs}`;
     const res = await firstValueFrom(this.http.get<any>(url, { headers: await this.authHeaders() }));
-    const items: any[] = Array.isArray(res) ? res : (Array.isArray(res?.data) ? res.data : (Array.isArray(res?.items) ? res.items : []));
-    const total: number | undefined = (typeof res?.total === 'number') ? res.total : (typeof res?.count === 'number' ? res.count : undefined);
+    // Support multiple shapes; prefer the documented 'requests' list
+    const items: any[] = Array.isArray(res?.requests) ? res.requests
+      : (Array.isArray(res) ? res : (Array.isArray(res?.data) ? res.data : (Array.isArray(res?.items) ? res.items : [])));
+    const total: number | undefined = (typeof res?.total === 'number') ? res.total
+      : (typeof res?.count === 'number' ? res.count : (typeof res?.totalItems === 'number' ? res.totalItems : undefined));
     const mapped = items.map((x: any) => ({
       id: (x.id ?? x._id ?? x.requestId ?? '').toString(),
-      companyName: x.companyName ?? x.name ?? x.company?.name,
-      email: x.email ?? x.requesterEmail ?? x.student?.email,
-      studentId: (x.studentId ?? x.student?.id ?? '').toString() || undefined,
-      registrationNo: x.registrationNo ?? x.student?.registrationNo,
+      companyName: x.name ?? x.companyName ?? x.company?.name,
+      email: x.requestedBy?.email ?? x.email ?? x.requesterEmail ?? x.student?.email,
+      studentId: (x.requestedBy?.id ?? x.studentId ?? x.student?.id ?? '').toString() || undefined,
+      registrationNo: x.requestedBy?.regNo ?? x.registrationNo ?? x.student?.registrationNo,
       status: x.status ?? x.state,
       createdAt: x.createdAt ?? x.requestedAt
     })).filter(r => !!r.id);
