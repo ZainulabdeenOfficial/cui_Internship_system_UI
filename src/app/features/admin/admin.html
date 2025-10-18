@@ -650,13 +650,13 @@
                   <input class="form-control" placeholder="Search sites..." [(ngModel)]="search.sites" name="ssearch" />
                 </div>
                 <div class="col-12 col-md-3">
-                  <select class="form-select" [(ngModel)]="filter.siteCompanyId" (ngModelChange)="refreshSites()" name="scombf">
+                  <select class="form-select" [(ngModel)]="filter.siteCompanyId" (ngModelChange)="page.sites=1; refreshSites()" name="scombf">
                     <option [ngValue]="''">All companies</option>
                     @for (c of companyList(); track c.id) { <option [ngValue]="c.id">{{ c.name }}</option> }
                   </select>
                 </div>
                 <div class="col-12 col-md-3 ms-auto">
-                  <select class="form-select" [(ngModel)]="assignmentFilter" (ngModelChange)="refreshSites()" name="sassignf">
+                  <select class="form-select" [(ngModel)]="assignmentFilter" (ngModelChange)="page.sites=1; refreshSites()" name="sassignf">
                     <option [ngValue]="'ALL'">All (assigned + unassigned)</option>
                     <option [ngValue]="'UNASSIGNED'">Unassigned only</option>
                     <option [ngValue]="'ASSIGNED'">Assigned only</option>
