@@ -211,15 +211,19 @@
                 <option [ngValue]="'APPROVED'">Approved</option>
                 <option [ngValue]="'REJECTED'">Rejected</option>
               </select>
-              <button class="btn btn-sm btn-outline-secondary" (click)="loadReviewCompany()">Refresh</button>
+              <button class="btn btn-sm btn-outline-secondary" (click)="loadReviewCompany()" [disabled]="reviewCompanyLoading">
+                <span *ngIf="!reviewCompanyLoading">Refresh</span>
+                <span *ngIf="reviewCompanyLoading">Loading…</span>
+              </button>
             </div>
           </div>
           <div class="card-body p-0">
+            <div class="px-3 py-2 small text-muted" *ngIf="reviewCompanyLoading">Loading requests…</div>
             <div class="table-responsive">
               <table class="table table-sm mb-0 align-middle">
                 <thead><tr><th>When</th><th>Company</th><th>Student</th><th>Reg No</th><th>Status</th><th>Actions</th></tr></thead>
                 <tbody>
-                  @for (r of reviewCompany.items | paginate: reviewCompanyFilter.page : reviewCompanyFilter.limit; track r.id) {
+                  @for (r of reviewCompany.items; track r.id) {
                   <tr>
                     <td class="small text-muted">{{ r.createdAt | date:'short' }}</td>
                     <td>{{ r.companyName || '-' }}</td>
@@ -240,7 +244,7 @@
               </table>
             </div>
             <div class="p-2">
-              <app-paginator [total]="reviewCompany.total" [(page)]="reviewCompanyFilter.page" [pageSize]="reviewCompanyFilter.limit"></app-paginator>
+              <app-paginator [total]="reviewCompany.total" [page]="reviewCompanyFilter.page" [pageSize]="reviewCompanyFilter.limit" (pageChange)="reviewCompanyFilter.page=$event; loadReviewCompany()"></app-paginator>
             </div>
           </div>
         </div>

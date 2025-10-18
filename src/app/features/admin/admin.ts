@@ -22,7 +22,17 @@ export class Admin {
       this.route.queryParamMap.subscribe(p => {
         const t = (p.get('tab') || '').toLowerCase();
         const allowed = ['students','applications','requests','announcements','officers','faculty','companies','sites','compliance','complaints','scheme','evidence'] as const;
-        if ((allowed as readonly string[]).includes(t)) this.currentTab = t as any;
+        if ((allowed as readonly string[]).includes(t)) {
+          this.currentTab = t as any;
+          // Auto-load data when navigating directly via URL (no need to click refresh)
+          if (this.currentTab === 'requests') {
+            this.loadReviewCompany();
+          } else if (this.currentTab === 'companies' || this.currentTab === 'sites') {
+            // Ensure these sections are populated on direct navigation as well
+            this.refreshCompanies();
+            if (this.currentTab === 'sites') this.refreshSites();
+          }
+        }
       });
     } catch {}
     // Preload companies once for cross-tab usage (site supervisor dropdowns etc.)
@@ -33,6 +43,7 @@ export class Admin {
   get requests() { return this.store.requests; }
   reviewCompany = { items: [] as Array<{ id: string; companyName?: string; email?: string; studentId?: string; registrationNo?: string; status?: string; createdAt?: string }>, total: 0 };
   reviewCompanyFilter = { status: 'PENDING' as 'PENDING'|'APPROVED'|'REJECTED', page: 1, limit: 10, search: '' };
+  reviewCompanyLoading = false;
   get approvals() { return this.store.approvals; }
   get logsMap() { return this.store.logs; }
   get reportsMap() { return this.store.reports; }
@@ -274,6 +285,7 @@ export class Admin {
   }
 
   async loadReviewCompany() {
+    this.reviewCompanyLoading = true;
     try {
       const res = await this.adminApi.getCompanyReviewRequests({ page: this.reviewCompanyFilter.page, limit: this.reviewCompanyFilter.limit, status: this.reviewCompanyFilter.status, search: (this.reviewCompanyFilter.search || '').trim() || undefined });
       this.reviewCompany.items = res.items;
@@ -281,6 +293,8 @@ export class Admin {
     } catch (err: any) {
       const msg = err?.error?.message || err?.message || 'Failed to load company review requests';
       this.toast.danger(msg);
+    } finally {
+      this.reviewCompanyLoading = false;
     }
   }
   async applyReviewCompanyDecision(requestId: string, decision: 'APPROVED'|'REJECTED') {
