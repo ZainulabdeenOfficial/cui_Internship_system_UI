@@ -22,10 +22,14 @@ export class Admin {
       this.route.queryParamMap.subscribe(p => {
         const t = (p.get('tab') || '').toLowerCase();
         const allowed = ['students','applications','requests','announcements','officers','faculty','companies','sites','compliance','complaints','scheme','evidence'] as const;
-        if ((allowed as readonly string[]).includes(t)) {
+        if ( (allowed as readonly string[]).includes(t) ) {
           this.currentTab = t as any;
           // Auto-load data when navigating directly via URL (no need to click refresh)
           if (this.currentTab === 'requests') {
+            // Reset to default view: Pending, first page, no search
+            this.reviewCompanyFilter.status = 'PENDING';
+            this.reviewCompanyFilter.page = 1;
+            this.reviewCompanyFilter.search = '';
             this.loadReviewCompany();
           } else if (this.currentTab === 'companies' || this.currentTab === 'sites') {
             // Ensure these sections are populated on direct navigation as well
@@ -82,6 +86,10 @@ export class Admin {
       this.refreshSites();
     }
     if (tab === 'requests') {
+      // Reset to default: Pending with empty search
+      this.reviewCompanyFilter.status = 'PENDING';
+      this.reviewCompanyFilter.page = 1;
+      this.reviewCompanyFilter.search = '';
       this.loadReviewCompany();
     }
   }
@@ -108,6 +116,14 @@ export class Admin {
   siteActiveIndex: Record<string, number> = {};
   private siteCompanyDebounce: Record<string, any> = {};
   private siteCompanyReqId: Record<string, number> = {};
+  // Add Site Supervisor form - company search state (single input)
+  addSiteCompanySearchQuery = '';
+  addSiteDropdownCompanies: Array<{ id: string; name: string; address?: string }> = [];
+  addSiteDropdownOpen = false;
+  addSiteLoading = false;
+  addSiteActiveIndex = -1;
+  private addSiteCompanyDebounce: any;
+  private addSiteCompanyReqId = 0;
   // inline company edit buffers
   editingCompanyId: string | null = null;
   companyEdit: Partial<import('../../shared/services/store.service').Company> = {};
@@ -202,6 +218,92 @@ export class Admin {
         this.siteLoading[rowId] = false;
       }
     }, 150);
+  }
+
+  // Add Site: standalone typeahead (name-only, 2+ chars, no request)
+  onAddSiteCompanyInput(value: string) {
+    const q = (value || '').trim();
+    this.addSiteCompanySearchQuery = q;
+    // Do not mutate site.companyId until a selection is made
+    if (this.addSiteCompanyDebounce) clearTimeout(this.addSiteCompanyDebounce);
+    this.addSiteCompanyDebounce = setTimeout(async () => {
+      try {
+        if (!q || q.length < 2) {
+          this.addSiteDropdownCompanies = [];
+          this.addSiteDropdownOpen = false;
+          this.addSiteLoading = false;
+          this.addSiteActiveIndex = -1;
+          return;
+        }
+        this.addSiteLoading = true;
+        this.addSiteDropdownOpen = true;
+        this.addSiteDropdownCompanies = [];
+        this.addSiteActiveIndex = -1;
+        const reqId = ++this.addSiteCompanyReqId;
+        const results = await this.adminApi.getDropdownCompanies(q);
+        if (this.addSiteCompanyReqId !== reqId) return; // stale
+        const lower = q.toLowerCase();
+        const filtered = (results || []).filter(c => ((c.name || '').toLowerCase()).includes(lower));
+        this.addSiteDropdownCompanies = filtered.sort((a, b) => {
+          const an = (a.name || '').toLowerCase();
+          const bn = (b.name || '').toLowerCase();
+          const aStarts = an.startsWith(lower) ? 0 : 1;
+          const bStarts = bn.startsWith(lower) ? 0 : 1;
+          if (aStarts !== bStarts) return aStarts - bStarts;
+          return an.indexOf(lower) - bn.indexOf(lower);
+        }).slice(0, 10).map(x => ({ id: x.id, name: x.name, address: (x as any).address }));
+        this.addSiteActiveIndex = this.addSiteDropdownCompanies.length ? 0 : -1;
+      } catch {
+        this.addSiteDropdownCompanies = [];
+        this.addSiteActiveIndex = -1;
+      } finally {
+        this.addSiteLoading = false;
+      }
+    }, 150);
+  }
+
+  selectAddSiteCompany(c: { id: string; name: string }) {
+    this.site.companyId = c.id;
+    this.addSiteCompanySearchQuery = c.name;
+    this.addSiteDropdownOpen = false;
+    this.addSiteActiveIndex = -1;
+  }
+
+  onAddSiteCompanyKeydown(ev: KeyboardEvent) {
+    const key = ev.key;
+    if (key === 'ArrowDown' && this.addSiteDropdownOpen) {
+      ev.preventDefault();
+      const len = this.addSiteDropdownCompanies.length;
+      if (len) this.addSiteActiveIndex = ((this.addSiteActiveIndex ?? -1) + 1) % len;
+    } else if (key === 'ArrowUp' && this.addSiteDropdownOpen) {
+      ev.preventDefault();
+      const len = this.addSiteDropdownCompanies.length;
+      if (len) this.addSiteActiveIndex = ((this.addSiteActiveIndex ?? 0) - 1 + len) % len;
+    } else if (key === 'Enter') {
+      const list = this.addSiteDropdownCompanies || [];
+      const q = (this.addSiteCompanySearchQuery || '').trim().toLowerCase();
+      if (this.addSiteDropdownOpen && this.addSiteActiveIndex != null && this.addSiteActiveIndex >= 0 && this.addSiteActiveIndex < list.length) {
+        ev.preventDefault();
+        this.selectAddSiteCompany(list[this.addSiteActiveIndex]);
+      } else if (list.length === 1) {
+        ev.preventDefault(); this.selectAddSiteCompany(list[0]);
+      } else {
+        const exact = list.find(c => (c.name || '').toLowerCase() === q);
+        if (exact) { ev.preventDefault(); this.selectAddSiteCompany(exact); }
+      }
+    } else if (key === 'Escape' && this.addSiteDropdownOpen) {
+      ev.preventDefault();
+      this.addSiteDropdownOpen = false;
+      this.addSiteActiveIndex = -1;
+    }
+  }
+
+  onAddSiteCompanyFocus() {
+    const q = (this.addSiteCompanySearchQuery || '').trim();
+    this.addSiteDropdownOpen = q.length >= 2 && (this.addSiteDropdownCompanies.length > 0 || !!this.addSiteLoading);
+  }
+  onAddSiteCompanyBlur() {
+    setTimeout(() => { this.addSiteDropdownOpen = false; this.addSiteActiveIndex = -1; }, 150);
   }
 
   selectSiteCompany(rowId: string, c: { id: string; name: string; address?: string }) {

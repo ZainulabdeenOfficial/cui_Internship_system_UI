@@ -603,10 +603,32 @@
               </div>
               <div class="col-12 col-sm-6 col-md-3">
                 <label class="form-label">Company</label>
-                <input list="companyDatalist" class="form-control" [(ngModel)]="site.companyId" (ngModelChange)="onSiteCompanyInput($event)" name="scid2" placeholder="Type or select company..." />
-                <datalist id="companyDatalist">
-                  @for (c of dropdownCompanies; track c.id) { <option [value]="c.id">{{ c.name }}</option> }
-                </datalist>
+                <div class="position-relative">
+                  <input class="form-control" placeholder="Type company name…"
+                         [ngModel]="addSiteCompanySearchQuery"
+                         (ngModelChange)="onAddSiteCompanyInput($event)"
+                         (keydown)="onAddSiteCompanyKeydown($event)"
+                         (focus)="onAddSiteCompanyFocus()"
+                         (blur)="onAddSiteCompanyBlur()"
+                         name="scid2" />
+                  <div *ngIf="addSiteDropdownOpen" class="dropdown-menu show w-100 shadow" style="max-height: 240px; overflow:auto;">
+                    <div class="px-3 py-1 text-muted small" *ngIf="addSiteLoading">Searching…</div>
+                    <button type="button"
+                            class="dropdown-item d-flex flex-column align-items-start"
+                            *ngFor="let c of addSiteDropdownCompanies; let i = index"
+                            [class.active]="i === addSiteActiveIndex"
+                            (mousedown)="$event.preventDefault()"
+                            (click)="selectAddSiteCompany(c)">
+                      <span [innerHTML]="highlightName(c.name, addSiteCompanySearchQuery)"></span>
+                      <small class="text-muted" *ngIf="c.address">{{ c.address }}</small>
+                    </button>
+                    <div class="px-3 py-2 text-muted small" *ngIf="!addSiteLoading && (!addSiteDropdownCompanies || addSiteDropdownCompanies.length===0)">
+                      <span *ngIf="(addSiteCompanySearchQuery||'').length<2">Type 2+ characters to search</span>
+                      <span *ngIf="(addSiteCompanySearchQuery||'').length>=2">No results found</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="form-text" *ngIf="site.companyId">Selected ID: {{ site.companyId }}</div>
               </div>
               <div class="col-12 col-sm-6 col-md-2">
                 <label class="form-label">Password</label>
