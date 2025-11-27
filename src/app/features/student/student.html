@@ -8,14 +8,13 @@
 
   <!-- Tabs -->
   <ul class="nav nav-tabs mb-3">
-    <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='overview'" (click)="selectTab('overview')">Overview</button></li>
-    <li class="nav-item" *ngIf="!isApproved()"><button class="nav-link" [class.active]="currentTab==='applications'" (click)="selectTab('applications')">Approval & Agreement</button></li>
-    <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='evidence'" (click)="selectTab('evidence')">Design & Evidence</button></li>
-    <li class="nav-item" *ngIf="isApproved()"><button class="nav-link" [class.active]="currentTab==='logs'" (click)="selectTab('logs')">Weekly Logs</button></li>
-    <li class="nav-item" *ngIf="isApproved()"><button class="nav-link" [class.active]="currentTab==='reports'" (click)="selectTab('reports')">Reports</button></li>
-    <li class="nav-item" *ngIf="isApproved()"><button class="nav-link" [class.active]="currentTab==='assignments'" (click)="selectTab('assignments')">Assignments</button></li>
+    <li class="nav-item" *ngIf="!isApproved()"><button type="button" class="nav-link" [class.active]="currentTab==='applications'" (click)="selectTab('applications')">Internship Approval</button></li>
+    <li class="nav-item" *ngIf="selectedId"><button type="button" class="nav-link" [class.active]="currentTab==='assignment'" (click)="selectTab('assignment')">Assignment & Agreement</button></li>
+    <li class="nav-item" *ngIf="isApproved()"><button type="button" class="nav-link" [class.active]="currentTab==='logs'" (click)="selectTab('logs')">Weekly Logs</button></li>
+    <li class="nav-item" *ngIf="isApproved()"><button type="button" class="nav-link" [class.active]="currentTab==='reports'" (click)="selectTab('reports')">Reports</button></li>
+    <li class="nav-item" *ngIf="isApproved()"><button type="button" class="nav-link" [class.active]="currentTab==='assignments'" (click)="selectTab('assignments')">Assignments</button></li>
   <!-- Complaints moved to separate page -->
-  <li class="nav-item" *ngIf="isApproved()"><button class="nav-link" [class.active]="currentTab==='marks'" (click)="selectTab('marks')">Marks</button></li>
+    <li class="nav-item" *ngIf="isApproved()"><button type="button" class="nav-link" [class.active]="currentTab==='marks'" (click)="selectTab('marks')">Marks</button></li>
   </ul>
 
   <!-- Assignment and Approval Status -->
@@ -29,530 +28,193 @@
 
   
 
-  <!-- Internship approval/agreement -->
-  <div class="card mb-3" *ngIf="selectedId && currentTab==='applications'">
-    <div class="card-header">Internship Approval Form</div>
-    <div class="card-body">
-      <div class="alert alert-secondary py-2" *ngIf="approvals().length as ct">
-        <ng-container *ngIf="approvals()[ct-1] as last">
-          <div class="d-flex flex-wrap gap-3 align-items-center">
-            <span>Latest status: <span class="badge"
-              [class.text-bg-secondary]="!last.status || last.status==='pending'"
-              [class.text-bg-success]="last.status==='approved'"
-              [class.text-bg-danger]="last.status==='rejected'">
-              {{ last.status || 'pending' }}
-            </span></span>
-            <span *ngIf="last.officerComment">Officer comment: <em>{{ last.officerComment }}</em></span>
-            <button class="btn btn-sm btn-outline-primary" (click)="loadLatestApproval()">Edit latest and resubmit</button>
-          </div>
-        </ng-container>
-      </div>
-      <form (ngSubmit)="submitApproval()" #af="ngForm" class="row g-3">
-        <div class="col-12"><div class="section-title">Student Information</div></div>
-        <div class="col-md-3">
-          <label class="form-label">Name</label>
-          <input class="form-control" placeholder="e.g., Ali Ahmed" [(ngModel)]="approval.studentInfo.name" name="sname" required />
-        </div>
-        <div class="col-md-3">
-          <label class="form-label">Student ID</label>
-          <input class="form-control" placeholder="e.g., FA22-BCS-090" [(ngModel)]="approval.studentInfo.studentId" name="sid" required />
-        </div>
-        <div class="col-md-3">
-          <label class="form-label">Program</label>
-          <input class="form-control" placeholder="e.g., BCS" [(ngModel)]="approval.studentInfo.program" name="program" required />
-        </div>
-        <div class="col-md-3">
-          <label class="form-label">Semester</label>
-          <input class="form-control" placeholder="e.g., 7" [(ngModel)]="approval.studentInfo.semester" name="semester" required />
-        </div>
+  <!-- Old Approval & Agreement form removed — AppEx-A used as single internship approval form -->
 
-        <div class="col-12"><div class="section-title mt-2">Company Details</div></div>
-        <div class="col-md-4 position-relative">
-          <label class="form-label">Company Name</label>
-          <input
-            class="form-control"
-            placeholder="Type at least 2 characters..."
-            [(ngModel)]="approval.company.name"
-            (ngModelChange)="onCompanyNameInput($event)"
-            (input)="onCompanyNameSelected($event)"
-            (keydown)="onCompanyKeydown($event)"
-            (focus)="onCompanyInputFocus()"
-            (blur)="onCompanyInputBlur()"
-            autocomplete="off"
-            name="cname"
-            required
-          />
-          <button type="button" class="btn btn-sm btn-link text-decoration-none position-absolute" style="top: 36px; right: 6px;" *ngIf="(approval?.company?.name || '').length" (mousedown)="$event.preventDefault()" (click)="clearCompanyInput()">Clear</button>
-          <!-- Custom dropdown -->
-          <div *ngIf="isCompanyDropdownOpen" class="dropdown-menu show w-100 shadow" style="max-height: 280px; overflow:auto;">
-            <div class="px-3 py-2 text-muted small" *ngIf="loadingCompanies">Searching...</div>
-            <button type="button"
-              class="dropdown-item d-flex flex-column align-items-start"
-              *ngFor="let c of dropdownCompanies; let i = index"
-              [class.active]="i === activeCompanyIndex"
-              (mousedown)="$event.preventDefault()"
-              (click)="selectCompany(c)"
-            >
-              <span [innerHTML]="highlightCompanyName(c.name)"></span>
-              <small class="text-muted" *ngIf="c.address">{{ c.address }}</small>
-            </button>
-            <div *ngIf="!loadingCompanies && dropdownCompanies.length === 0">
-              <div class="px-3 py-2 text-muted small" *ngIf="(approval.company.name || '').trim().length < 2">Type 2+ characters to search</div>
-              <div class="px-3 py-2 d-flex justify-content-between align-items-center" *ngIf="(approval.company.name || '').trim().length >= 2">
-                <span class="small text-muted">No results found · Press Enter to request</span>
-                <button type="button" class="btn btn-warning btn-sm" (mousedown)="$event.preventDefault()" (click)="openRequestToAddCompany()">Request to add</button>
-              </div>
-            </div>
-          </div>
-          <!-- Persistent CTA when dropdown is closed and no results -->
-          <div class="mt-2 d-flex justify-content-between align-items-center" *ngIf="!isCompanyDropdownOpen && isCompanyNotFound()">
-            <span class="small text-muted">No results for "{{ (approval.company.name || '').trim() }}"</span>
-            <button type="button" class="btn btn-warning btn-sm" (click)="openRequestToAddCompany()">Request to add</button>
-          </div>
-          <div *ngIf="companyPreview as cp" class="mt-2 small">
-            <div class="card border-info">
-              <div class="card-body py-2">
-                <div><strong>{{ cp.name }}</strong></div>
-                <div class="text-muted">{{ cp.address || '—' }}</div>
-                <div class="text-muted">{{ cp.email || '' }} <span *ngIf="cp.phone">· {{ cp.phone }}</span></div>
-                <div class="text-muted" *ngIf="cp.website || cp.industry">{{ cp.website || '' }}<span *ngIf="cp.website && cp.industry"> · </span>{{ cp.industry || '' }}</div>
-                <div class="mt-1 d-flex gap-2">
-                  <button type="button" class="btn btn-sm btn-outline-info" (click)="usePreviewAddress()" [disabled]="!cp.address">Use this address</button>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div *ngIf="showRequestCompanyForm" class="mt-2">
-            <div class="card border-warning">
-              <div class="card-header bg-warning text-dark">Request to Add Company</div>
-              <div class="card-body">
-                <form (ngSubmit)="submitCompanyRequest()" #crf="ngForm" class="row g-3">
-                  <div class="col-md-6">
-                    <label class="form-label">Company Name</label>
-                    <input class="form-control" [(ngModel)]="companyRequest.name" name="crname" required />
-                  </div>
-                  <div class="col-md-6">
-                    <label class="form-label">Email</label>
-                    <input type="email" class="form-control" [(ngModel)]="companyRequest.email" name="cremail" required />
-                  </div>
-                  <div class="col-md-6">
-                    <label class="form-label">Phone</label>
-                    <input class="form-control" [(ngModel)]="companyRequest.phone" name="crphone" />
-                  </div>
-                  <div class="col-md-6">
-                    <label class="form-label">Address</label>
-                    <input class="form-control" [(ngModel)]="companyRequest.address" name="craddress" />
-                  </div>
-                  <div class="col-md-6">
-                    <label class="form-label">Website</label>
-                    <input class="form-control" [(ngModel)]="companyRequest.website" name="crwebsite" />
-                  </div>
-                  <div class="col-md-6">
-                    <label class="form-label">Industry</label>
-                    <input class="form-control" [(ngModel)]="companyRequest.industry" name="crindustry" />
-                  </div>
-                  <div class="col-md-12">
-                    <label class="form-label">Description</label>
-                    <input class="form-control" [(ngModel)]="companyRequest.description" name="crdesc" />
-                  </div>
-                  <div class="col-md-12">
-                    <label class="form-label">Justification</label>
-                    <textarea class="form-control" rows="2" [(ngModel)]="companyRequest.justification" name="crjust"></textarea>
-                  </div>
-                  <div class="col-12 d-flex gap-2">
-                    <button class="btn btn-primary" type="submit" [disabled]="!crf.form.valid">Submit Request</button>
-                    <button class="btn btn-outline-secondary" type="button" (click)="showRequestCompanyForm = false">Cancel</button>
-                  </div>
-                </form>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="col-md-8">
-          <label class="form-label">Address</label>
-          <input class="form-control" placeholder="e.g., Main Blvd, Sahiwal" [(ngModel)]="approval.company.address" name="caddress" required />
-        </div>
-        <div class="col-md-4">
-          <label class="form-label">Supervisor Name</label>
-          <input class="form-control" placeholder="e.g., Mr. Khan" [(ngModel)]="approval.company.supervisorName" name="supname" required />
-        </div>
-        <div class="col-md-4">
-          <label class="form-label">Supervisor Email</label>
-          <input type="email" class="form-control" placeholder="name@email.com" [(ngModel)]="approval.company.supervisorEmail" name="supemail" required />
-        </div>
-        <div class="col-md-4">
-          <label class="form-label">Supervisor Phone</label>
-          <input class="form-control" placeholder="e.g., 0300-0000000" [(ngModel)]="approval.company.supervisorPhone" name="supphone" required />
-        </div>
-        <div class="col-12"><div class="section-title mt-2">Internship Details</div></div>
-        <div class="col-md-3">
-          <label class="form-label">Start Date</label>
-          <input type="date" class="form-control" [(ngModel)]="approval.internship.startDate" name="start" required />
-        </div>
-        <div class="col-md-3">
-          <label class="form-label">End Date</label>
-          <input type="date" class="form-control" [(ngModel)]="approval.internship.endDate" name="end" required />
-        </div>
-        <div class="col-md-3">
-          <label class="form-label">Hours/Week</label>
-          <input type="number" min="1" class="form-control" [(ngModel)]="approval.internship.hoursPerWeek" name="hours" required />
-        </div>
-        <div class="col-md-3">
-          <label class="form-label">Paid</label>
-          <select class="form-select" [(ngModel)]="approval.internship.paid" name="paid" required>
-            <option [ngValue]="'Yes'">Yes</option>
-            <option [ngValue]="'No'">No</option>
-          </select>
-        </div>
-        <div class="col-md-6">
-          <label class="form-label">Objectives</label>
-          <textarea class="form-control" rows="2" placeholder="What do you aim to achieve?" [(ngModel)]="approval.objectives" name="objectives" required></textarea>
-        </div>
-        <div class="col-md-6">
-          <label class="form-label">Expected Outcomes</label>
-          <textarea class="form-control" rows="2" placeholder="What outcomes/products are expected?" [(ngModel)]="approval.outcomes" name="outcomes" required></textarea>
-        </div>
-        <div class="col-12">
-          <button class="btn btn-success" [disabled]="!af.form.valid" type="submit">Submit Approval</button>
-        </div>
-      </form>
-    </div>
-  </div>
+  <!-- Create Internship Request removed from student UI per request -->
 
-  <!-- Create Internship (API-backed) -->
-  <div class="card mb-3" *ngIf="selectedId && currentTab==='applications'">
-    <div class="card-header">Create Internship Request</div>
-    <div class="card-body">
-      <form (ngSubmit)="createInternshipSubmit()" #cisf="ngForm" class="row g-3 align-items-end">
-        <div class="col-md-3">
-          <label class="form-label">Type</label>
-          <select class="form-select" [(ngModel)]="createInternshipModel.type" name="ctype">
-            <option [ngValue]="'ONSITE'">On-site</option>
-            <option [ngValue]="'REMOTE'">Remote</option>
-            <option [ngValue]="'VIRTUAL'">Virtual</option>
-            <option [ngValue]="'HYBRID'">Hybrid</option>
-          </select>
-        </div>
-        <div class="col-md-4">
-          <label class="form-label">Site Supervisor ID (optional)</label>
-          <input class="form-control" [(ngModel)]="createInternshipModel.siteId" name="csid" placeholder="siteId" />
-        </div>
-        <div class="col-md-4">
-          <label class="form-label">Faculty Supervisor ID (optional)</label>
-          <input class="form-control" [(ngModel)]="createInternshipModel.facultyId" name="cfid" placeholder="facultyId" />
-        </div>
-        <div class="col-md-1 d-grid">
-          <button class="btn btn-outline-primary" type="submit">Create</button>
-        </div>
-      </form>
-    </div>
-  </div>
+  <!-- Internship Agreement removed from student UI; AppEx-A is the single approval path -->
 
-  <div class="card mb-3" *ngIf="selectedId && currentTab==='applications'">
-    <div class="card-header">Internship Agreement</div>
-    <div class="card-body">
-      <form (ngSubmit)="submitAgreement()" #ag="ngForm" class="row g-3">
-        <div class="col-md-4 form-check">
-          <input class="form-check-input" type="checkbox" id="ack" [(ngModel)]="agreement.policyAcknowledgement" name="ack" />
-          <label class="form-check-label" for="ack">I acknowledge program policies</label>
-        </div>
-        <div class="col-md-4 form-check">
-          <input class="form-check-input" type="checkbox" id="conf" [(ngModel)]="agreement.confidentialityAgreement" name="conf" />
-          <label class="form-check-label" for="conf">Confidentiality agreement</label>
-        </div>
-        <div class="col-md-4 form-check">
-          <input class="form-check-input" type="checkbox" id="safe" [(ngModel)]="agreement.safetyTraining" name="safe" />
-          <label class="form-check-label" for="safe">Safety training completed</label>
-        </div>
-        <div class="col-md-6">
-          <label class="form-label">Student Signature (Name)</label>
-          <input class="form-control" [(ngModel)]="agreement.studentSignatureName" name="sig" required />
-        </div>
-        <div class="col-md-6">
-          <label class="form-label">Date</label>
-          <input type="date" class="form-control" [(ngModel)]="agreement.date" name="adate" required />
-        </div>
-        <div class="col-12">
-          <button class="btn btn-success" [disabled]="!ag.form.valid" type="submit">Submit Agreement</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <div class="card mb-3" *ngIf="selectedId && currentTab==='evidence'">
-    <div class="card-header">Design Proposal</div>
-    <div class="card-body">
-      <form (ngSubmit)="submitProposal()" #dp="ngForm" class="row g-3">
-        <div class="col-md-5">
-          <label class="form-label">Title</label>
-          <input class="form-control" [(ngModel)]="proposal.title" name="dtitle" required />
-        </div>
-        <div class="col-md-7">
-          <label class="form-label">Summary</label>
-          <textarea class="form-control" rows="2" [(ngModel)]="proposal.content" name="dcontent" required></textarea>
-        </div>
-        <div class="col-12">
-          <button class="btn btn-primary" [disabled]="!dp.form.valid" type="submit">Submit Proposal</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- Company Requests (list only) -->
-  <div class="card mb-3" *ngIf="selectedId && currentTab==='evidence'">
-    <div class="card-header">My Company Requests</div>
-    <div class="card-body">
-      <div class="d-flex justify-content-between align-items-center mb-2">
-        <span class="text-muted small">These are the companies you requested to be added. Status may be Pending, Approved, or Rejected.</span>
-        <button class="btn btn-sm btn-outline-secondary" (click)="loadMyCompanyRequests()">Refresh</button>
-      </div>
-      <div class="table-responsive" *ngIf="companyRequestsList?.length; else noReqs">
-        <table class="table table-sm align-middle">
-          <thead>
-            <tr>
-              <th>When</th>
-              <th>Name</th>
-              <th>Email</th>
-              <th>Status</th>
-              <th>Details</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let r of companyRequestsList">
-              <td class="small text-muted">{{ r.createdAt | date:'short' }}</td>
-              <td>{{ r.name }}</td>
-              <td>{{ r.email }}</td>
-              <td>
-                <span class="badge"
-                      [class.text-bg-secondary]="(r.status || 'PENDING').toUpperCase()==='PENDING'"
-                      [class.text-bg-success]="(r.status || '').toUpperCase()==='APPROVED'"
-                      [class.text-bg-danger]="(r.status || '').toUpperCase()==='REJECTED'">
-                  {{ (r.status || 'PENDING') }}
-                </span>
-              </td>
-              <td class="small text-muted">
-                <div *ngIf="r.address">{{ r.address }}</div>
-                <div *ngIf="r.website"><a [href]="r.website" target="_blank" rel="noopener">{{ r.website }}</a></div>
-                <div *ngIf="r.industry">{{ r.industry }}</div>
-                <div *ngIf="r.phone">{{ r.phone }}</div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      <ng-template #noReqs>
-        <div class="text-muted">No company requests yet.</div>
-      </ng-template>
-    </div>
-  </div>
+  <!-- Design Proposal and company request lists removed (Evidence flow not used) -->
 
   <!-- AppEx-A (API-backed) -->
   <div class="card mb-3" *ngIf="selectedId && currentTab==='applications'">
-    <div class="card-header">AppEx-A (Internship Approval)</div>
+    <div class="card-header">Internship Approval (Section A & B)</div>
     <div class="card-body">
-      <div class="d-flex gap-2 mb-2">
-        <button class="btn btn-sm btn-outline-secondary" (click)="loadAppExA()">Load</button>
-      </div>
-      <form (ngSubmit)="submitAppExAFromForm()" #axf="ngForm" class="row g-3">
-        <div class="col-md-6"><label class="form-label">Organization</label><input class="form-control" [(ngModel)]="appexAForm.organization" name="axorg" required /></div>
-        <div class="col-md-6"><label class="form-label">Address</label><input class="form-control" [(ngModel)]="appexAForm.address" name="axaddr" required /></div>
-        <div class="col-md-4"><label class="form-label">Industry Sector</label><input class="form-control" [(ngModel)]="appexAForm.industrySector" name="axinds" /></div>
-        <div class="col-md-4"><label class="form-label">Contact Name</label><input class="form-control" [(ngModel)]="appexAForm.contactName" name="axcname" required /></div>
-        <div class="col-md-4"><label class="form-label">Designation</label><input class="form-control" [(ngModel)]="appexAForm.contactDesignation" name="axcdes" /></div>
-        <div class="col-md-4"><label class="form-label">Contact Phone</label><input class="form-control" [(ngModel)]="appexAForm.contactPhone" name="axcphone" required /></div>
-        <div class="col-md-4"><label class="form-label">Contact Email</label><input type="email" class="form-control" [(ngModel)]="appexAForm.contactEmail" name="axcemail" required /></div>
-        <div class="col-md-4"><label class="form-label">Field</label><input class="form-control" [(ngModel)]="appexAForm.internshipField" name="axfield" /></div>
-        <div class="col-md-4"><label class="form-label">Location</label><input class="form-control" [(ngModel)]="appexAForm.internshipLocation" name="axloc" /></div>
-        <div class="col-md-4"><label class="form-label">Start Date</label><input type="date" class="form-control" [(ngModel)]="appexAForm.startDate" name="axstart" required /></div>
-        <div class="col-md-4"><label class="form-label">End Date</label><input type="date" class="form-control" [(ngModel)]="appexAForm.endDate" name="axend" required /></div>
-        <div class="col-md-4"><label class="form-label">Working Days</label><input class="form-control" [(ngModel)]="appexAForm.workingDays" name="axwd" /></div>
-        <div class="col-md-4"><label class="form-label">Working Hours</label><input class="form-control" [(ngModel)]="appexAForm.workingHours" name="axwh" /></div>
-        <div class="col-12 d-flex gap-2">
-          <button class="btn btn-success" [disabled]="!axf.form.valid" type="submit">Submit AppEx-A</button>
-          <button class="btn btn-outline-primary" type="button" (click)="updateAppExAFromForm()">Update AppEx-A</button>
+      <form (ngSubmit)="submitAppExAFromForm()" #iapf="ngForm" class="row g-3">
+        <div class="col-12"><div class="section-title">Section A: Organization Information</div></div>
+        <div class="col-md-6">
+          <label class="form-label">Organization Name</label>
+          <input class="form-control" [(ngModel)]="appexAForm.organization" name="orgName" required />
         </div>
-      </form>
-    </div>
-  </div>
+        <div class="col-md-6">
+          <label class="form-label">Address</label>
+          <input class="form-control" [(ngModel)]="appexAForm.address" name="orgAddress" required />
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Industry Sector</label>
+          <input class="form-control" [(ngModel)]="appexAForm.industrySector" name="industrySector" />
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Contact Person Name</label>
+          <input class="form-control" [(ngModel)]="appexAForm.contactName" name="contactName" required />
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Designation</label>
+          <input class="form-control" [(ngModel)]="appexAForm.contactDesignation" name="contactDesignation" />
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Phone Number</label>
+          <input class="form-control" [(ngModel)]="appexAForm.contactPhone" name="contactPhone" required />
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Email Address</label>
+          <input type="email" class="form-control" [(ngModel)]="appexAForm.contactEmail" name="contactEmail" required />
+        </div>
 
-  <!-- Internship Design Statement -->
-  <div class="card mb-3" *ngIf="selectedId && currentTab==='evidence'">
-    <div class="card-header">Internship Design Statement (submit in first week)</div>
-    <div class="card-body">
-      <form (ngSubmit)="submitDesign()" #dsf="ngForm" class="row g-3">
+        <div class="col-12"><div class="section-title mt-3">Section B: Internship Position Details</div></div>
+        <div class="col-md-3">
+          <label class="form-label">Number of Internship Positions</label>
+          <input type="number" min="1" class="form-control" [(ngModel)]="appexAForm.numberOfPositions" name="numPositions" />
+        </div>
+        <div class="col-md-9">
+          <label class="form-label">Nature of Internship</label>
+          <div class="d-flex flex-wrap gap-2">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" [(ngModel)]="appexAForm.natureOfInternship.softwareDevelopment" name="nature_sd" />
+              <label class="form-check-label">Software Development</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" [(ngModel)]="appexAForm.natureOfInternship.dataScience" name="nature_ds" />
+              <label class="form-check-label">Data Science</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" [(ngModel)]="appexAForm.natureOfInternship.networking" name="nature_net" />
+              <label class="form-check-label">Networking</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" [(ngModel)]="appexAForm.natureOfInternship.cyberSecurity" name="nature_cy" />
+              <label class="form-check-label">Cyber Security</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" [(ngModel)]="appexAForm.natureOfInternship.webMobile" name="nature_web" />
+              <label class="form-check-label">Web/Mobile Development</label>
+            </div>
+            <div class="form-check d-flex align-items-center">
+              <input class="form-check-input" type="checkbox" [(ngModel)]="appexAForm.natureOfInternship.otherChecked" name="nature_other_check" />
+              <label class="form-check-label me-2">Other:</label>
+              <input class="form-control form-control-sm" style="max-width:320px" [(ngModel)]="appexAForm.natureOfInternship.otherText" name="nature_other_text" />
+            </div>
+          </div>
+        </div>
+
         <div class="col-md-6">
-          <label class="form-label">Career Goal</label>
-          <input class="form-control" [(ngModel)]="design.careerGoal" name="career" required />
+          <label class="form-label">Internship Location</label>
+          <input class="form-control" [(ngModel)]="appexAForm.internshipLocation" name="internshipLocation" />
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Start Date</label>
+          <input type="date" class="form-control" [(ngModel)]="appexAForm.startDate" name="iap_start" />
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">End Date</label>
+          <input type="date" class="form-control" [(ngModel)]="appexAForm.endDate" name="iap_end" />
         </div>
         <div class="col-md-6">
-          <label class="form-label">Learning Objectives</label>
-          <input class="form-control" [(ngModel)]="design.learningObjectives" name="learn" required />
+          <label class="form-label">Working Days & Hours</label>
+          <input class="form-control" [(ngModel)]="appexAForm.workingDays" placeholder="e.g., Mon-Fri" name="workingDays" />
         </div>
-        <div class="col-12"><h6 class="text-muted mt-2">Internship Placement Overview</h6></div>
-        <div class="col-md-4">
-          <label class="form-label">Organization</label>
-          <input class="form-control" [(ngModel)]="design.placement.organization" name="org" required />
+        <div class="col-md-3">
+          <label class="form-label">Working Hours</label>
+          <input class="form-control" [(ngModel)]="appexAForm.workingHours" placeholder="e.g., 9am-5pm" name="workingHours" />
         </div>
-        <div class="col-md-4">
+        <div class="col-md-3">
           <label class="form-label">Mode</label>
-          <select class="form-select" [(ngModel)]="design.placement.mode" name="mode">
-            <option [ngValue]="'On-site'">On-site</option>
-            <option [ngValue]="'Remote'">Remote</option>
-            <option [ngValue]="'Hybrid'">Hybrid</option>
+          <select class="form-select" [(ngModel)]="appexAForm.mode" name="iap_mode">
+            <option [ngValue]="'On-Site'">On-Site</option>
+            <option [ngValue]="'Virtual'">Virtual</option>
+            <option [ngValue]="'Freelancing'">Freelancing Based</option>
           </select>
         </div>
-        <div class="col-md-4">
-          <label class="form-label">Functional Area</label>
-          <input class="form-control" [(ngModel)]="design.placement.functionalArea" name="func" required />
-        </div>
-        <div class="col-12">
-          <label class="form-label">Overview (optional)</label>
-          <textarea class="form-control" rows="2" [(ngModel)]="design.placement.overview" name="ov"></textarea>
-        </div>
-        <div class="col-12"><h6 class="text-muted mt-2">Supervisor Details</h6></div>
-        <div class="col-md-3"><input class="form-control" placeholder="Name" [(ngModel)]="design.supervisor.name" name="sname2" required /></div>
-        <div class="col-md-3"><input class="form-control" placeholder="Designation" [(ngModel)]="design.supervisor.designation" name="sdes" required /></div>
-        <div class="col-md-3"><input type="email" class="form-control" placeholder="Email" [(ngModel)]="design.supervisor.email" name="semail3" required /></div>
-        <div class="col-md-3"><input class="form-control" placeholder="Contact" [(ngModel)]="design.supervisor.contact" name="scont" required /></div>
-        <div class="col-md-6">
-          <label class="form-label">Scope of Work / Deliverables</label>
-          <textarea class="form-control" rows="2" [(ngModel)]="design.scopeAndDeliverables" name="scope" required></textarea>
-        </div>
-        <div class="col-md-6">
-          <label class="form-label">Academic Preparation (courses/projects)</label>
-          <textarea class="form-control" rows="2" [(ngModel)]="design.academicPreparation" name="prep" required></textarea>
-        </div>
-        <div class="col-12">
-          <label class="form-label">Additional Comments (optional)</label>
-          <textarea class="form-control" rows="2" [(ngModel)]="design.comments" name="cmt"></textarea>
-        </div>
-        <div class="col-12">
-          <button class="btn btn-primary" [disabled]="!dsf.form.valid" type="submit">Submit Design Statement</button>
+
+        <div class="col-12 d-flex gap-2 mt-2">
+          <button class="btn btn-success" [disabled]="!iapf.form.valid" type="submit">Submit Internship Approval</button>
         </div>
       </form>
     </div>
   </div>
 
-  <!-- Reflective Summary (one page) -->
-  <div class="card mb-3" *ngIf="selectedId">
-    <div class="card-header">One-page Reflective Summary</div>
+  <!-- Internship Assignment & Student Agreement Form (second form) -->
+  <div class="card mb-3" *ngIf="selectedId && currentTab==='assignment'">
+    <div class="card-header">Internship Assignment & Student Agreement Form</div>
     <div class="card-body">
-      <form (ngSubmit)="submitReflective()" #rsf="ngForm" class="row g-3">
-        <div class="col-12">
-          <label class="form-label">Summary (approx. 1 page)</label>
-          <textarea class="form-control" rows="4" [(ngModel)]="reflective.content" name="rcontent" required></textarea>
+      <form (ngSubmit)="submitStudentAssignmentAgreement()" #saf="ngForm" class="row g-3">
+        <div class="col-12"><strong>Student Information</strong></div>
+        <div class="col-md-6">
+          <label class="form-label">Full Name</label>
+          <input class="form-control" [(ngModel)]="studentAgreementForm.fullName" name="s_fullName" required />
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Registration Number</label>
+          <input class="form-control" [(ngModel)]="studentAgreementForm.registrationNumber" name="s_reg" required />
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Degree Program</label>
+          <input class="form-control" [(ngModel)]="studentAgreementForm.degreeProgram" name="s_prog" />
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Semester</label>
+          <input class="form-control" [(ngModel)]="studentAgreementForm.semester" name="s_sem" />
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Contact Number</label>
+          <input class="form-control" [(ngModel)]="studentAgreementForm.contactNumber" name="s_contact" />
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Email Address</label>
+          <input type="email" class="form-control" [(ngModel)]="studentAgreementForm.emailAddress" name="s_email" required />
         </div>
         <div class="col-12">
-          <button class="btn btn-success" [disabled]="!rsf.form.valid" type="submit">Submit Reflective Summary</button>
+          <label class="form-label">Preferred Internship Field/Domain</label>
+          <input class="form-control" [(ngModel)]="studentAgreementForm.preferredField" name="s_field" />
+        </div>
+
+        <div class="col-12 mt-2"><strong>Student Internship Agreement Statement</strong></div>
+        <div class="col-12">
+          <p>
+            I, <input class="form-control d-inline-block" style="width:40%" [(ngModel)]="studentAgreementForm.fullName" name="s_name_inline" /> , a student of
+            <input class="form-control d-inline-block" style="width:30%" [(ngModel)]="studentAgreementForm.degreeProgram" name="s_prog_inline" /> at
+            the university, hereby acknowledge and accept the internship opportunity assigned to me and agree to the statements below.
+          </p>
+          <ol>
+            <li>Abide by the rules, regulations, and code of conduct of the host organization.</li>
+            <li>Maintain punctuality, discipline, and professionalism throughout the internship period.</li>
+            <li>Complete the tasks and responsibilities assigned to me to the best of my ability.</li>
+            <li>Communicate regularly with my academic supervisor and provide updates on my progress.</li>
+            <li>Maintain confidentiality of any sensitive information encountered during the internship.</li>
+            <li>Submit all required internship reports, evaluations, and documents by the specified deadlines.</li>
+          </ol>
+        </div>
+
+        <div class="col-md-6 form-check">
+          <input class="form-check-input" type="checkbox" [(ngModel)]="studentAgreementForm.acknowledged" name="s_ack" />
+          <label class="form-check-label">I agree to the statements above</label>
+        </div>
+        <!-- Student signature and date removed per UX request -->
+        <div class="col-12 d-flex gap-2 mt-2">
+          <button class="btn btn-success" [disabled]="!saf.form.valid || !studentAgreementForm.acknowledged" type="submit">Submit Assignment & Agreement</button>
         </div>
       </form>
     </div>
   </div>
+
+  <!-- Compact AppEx-A removed; kept the full Section A & B form above as primary internship approval entry -->
+
+  <!-- Internship Design Statement removed (Evidence flow removed) -->
+
+  <!-- One-page Reflective Summary removed from student approval section -->
 
   <!-- Freelancing / On-site submission aligned with handbook -->
-  <div class="card mb-3" *ngIf="selectedId">
-    <div class="card-header">Internship Evidence (Fiverr/Upwork/On-site/Virtual)</div>
-    <div class="card-body">
-      <div *ngIf="!canSubmitFreelance()" class="alert alert-info mb-3">
-        Evidence submitted on
-        <strong>{{ lastFreelance()?.createdAt | date:'medium' }}</strong> — status:
-        <span class="badge" [class.text-bg-secondary]="lastFreelance()?.status==='pending'" [class.text-bg-success]="lastFreelance()?.status==='approved'" [class.text-bg-danger]="lastFreelance()?.status==='rejected'">
-          {{ lastFreelance()?.status || 'pending' }}
-        </span>.
-        Please wait for Internship Office review.
-      </div>
-      <form (ngSubmit)="submitFreelance()" #ff="ngForm" class="row g-3" *ngIf="canSubmitFreelance()">
-        <div class="col-md-3">
-          <label class="form-label">Mode/Platform</label>
-          <select class="form-select" [(ngModel)]="freel.platform" name="platform">
-            <option [ngValue]="'Fiverr'">Fiverr</option>
-            <option [ngValue]="'Upwork'">Upwork</option>
-            <option [ngValue]="'OnSite'">On-site</option>
-            <option [ngValue]="'Virtual'">Virtual</option>
-          </select>
-        </div>
-        <div class="col-md-3" *ngIf="freel.platform === 'Fiverr' || freel.platform === 'Upwork'">
-          <label class="form-label">Profile Authentic</label>
-          <select class="form-select" [(ngModel)]="freel.profileAuthentic" name="auth">
-            <option [ngValue]="true">Yes</option>
-            <option [ngValue]="false">No</option>
-          </select>
-        </div>
-        <div class="col-md-3" *ngIf="freel.platform === 'Fiverr'">
-          <label class="form-label">Gigs Completed</label>
-          <input type="number" class="form-control" [(ngModel)]="freel.gigsCompleted" name="gigs" min="0" />
-        </div>
-        <div class="col-md-3" *ngIf="freel.platform === 'Upwork'">
-          <label class="form-label">Proposals Applied</label>
-          <input type="number" class="form-control" [(ngModel)]="freel.proposalsApplied" name="props" min="0" />
-        </div>
-        <div class="col-md-3">
-          <label class="form-label">Earnings (USD)</label>
-          <input type="number" class="form-control" [(ngModel)]="freel.earningsUSD" name="earn" min="0" />
-        </div>
-        <div class="col-md-3">
-          <label class="form-label">Avg Rating</label>
-          <input type="number" step="0.1" class="form-control" [(ngModel)]="freel.avgRating" name="rate" min="0" max="5" />
-        </div>
-        <div class="col-md-6">
-          <label class="form-label">Client Feedback (summary)</label>
-          <input class="form-control" [(ngModel)]="freel.clientFeedback" name="feedback" />
-        </div>
-        <div class="col-md-6">
-          <label class="form-label">Approval Evidence (summary)</label>
-          <input class="form-control" [(ngModel)]="freel.approvalEvidence" name="evidence" />
-        </div>
-        <div class="col-md-6">
-          <label class="form-label">Contract/Chat Summary</label>
-          <textarea class="form-control" rows="2" [(ngModel)]="freel.contractSummary" name="contract"></textarea>
-        </div>
-        <div class="col-md-6">
-          <label class="form-label">Work Summary / Deliverables</label>
-          <textarea class="form-control" rows="2" [(ngModel)]="freel.workSummary" name="work"></textarea>
-        </div>
-        <div class="col-md-6">
-          <label class="form-label">Mentor/Supervisor Name</label>
-          <input class="form-control" [(ngModel)]="freel.mentorName" name="mentor" />
-        </div>
-        <div class="col-md-6">
-          <label class="form-label">Mentor Contact</label>
-          <input class="form-control" [(ngModel)]="freel.mentorContact" name="mcontact" />
-        </div>
-        <div class="col-md-6">
-          <label class="form-label">Technologies/Tools Used</label>
-          <input class="form-control" [(ngModel)]="freel.technologies" name="tech" />
-        </div>
-        <div class="col-md-6">
-          <label class="form-label">Logbook/Portfolio Notes</label>
-          <textarea class="form-control" rows="2" [(ngModel)]="freel.logbook" name="log"></textarea>
-        </div>
-        <div class="col-12">
-          <button class="btn btn-primary" [disabled]="!evidenceValid()" type="submit">Save Evidence</button>
-        </div>
-      </form>
-      <div class="mt-3" *ngIf="lastFreelance()?.status==='rejected'">
-        <div class="alert alert-warning">Your previous evidence was rejected. Please update your details and submit again.</div>
-      </div>
-      <div class="mt-3">
-        <h6>Submitted Evidence</h6>
-        <ul class="list-group">
-          <li class="list-group-item d-flex justify-content-between align-items-center" *ngFor="let f of (freelances() | paginate: page.freel : pageSize)">
-            <span>
-              <strong>{{ f.platform }}</strong>
-              <span class="text-muted">— {{ f.createdAt | date:'short' }}</span>
-            </span>
-            <span *ngIf="f.platform==='Fiverr'" class="badge" [class.text-bg-success]="meetsFiverr(f)" [class.text-bg-danger]="!meetsFiverr(f)">
-              Fiverr: {{ (f.gigsCompleted||0) }} gigs / ${{ (f.earningsUSD||0) }}
-            </span>
-            <span *ngIf="f.platform==='Upwork'" class="badge" [class.text-bg-success]="meetsUpwork(f)" [class.text-bg-danger]="!meetsUpwork(f)">
-              Upwork: {{ (f.proposalsApplied||0) }} proposals / ${{ (f.earningsUSD||0) }}
-            </span>
-          </li>
-  </ul>
-  <app-paginator [total]="freelances().length" [(page)]="page.freel" [pageSize]="pageSize"></app-paginator>
-      </div>
-    </div>
-  </div>
+  <!-- Internship Evidence section removed from student UI -->
 
   <!-- Weekly logs -->
   <div class="card mb-3" *ngIf="selectedId && isApproved() && currentTab==='logs'">
@@ -654,23 +316,7 @@
       <div class="row g-3 mt-2" *ngIf="selectedStudent() as ss2">
         <div class="col-12 small text-muted">Internship Office breakdown: Proposal {{ ss2.marks?.adminProposal ?? 0 }}/5, Activity Log {{ ss2.marks?.adminLogs ?? 0 }}/5, Final Report {{ ss2.marks?.adminFinal ?? 0 }}/10</div>
       </div>
-      <ng-container *ngIf="agreements() as agrs">
-        <div class="row g-3 mt-2" *ngIf="agrs.length > 0">
-          <div class="col-12" >
-            <small class="text-muted">Latest Agreement Signatures:</small>
-            <ng-container *ngIf="agrs[agrs.length-1] as last">
-              <div class="small">
-                Faculty: {{ last.facultySignatureName || '-' }}
-                <span class="text-muted"> — {{ last.facultySignedAt | date:'short' }}</span>
-              </div>
-              <div class="small">
-                Internship Office: {{ last.officeSignatureName || '-' }}
-                <span class="text-muted"> — {{ last.officeSignedAt | date:'short' }}</span>
-              </div>
-            </ng-container>
-          </div>
-        </div>
-      </ng-container>
+      <!-- Agreement signatures removed from student view -->
     </div>
   </div>
 </div>

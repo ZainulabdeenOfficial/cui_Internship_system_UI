@@ -64,7 +64,7 @@ export class StudentService {
 
   // GET /api/student/appex-a
   async getAppExA(): Promise<any> {
-    const url = this.abs('/api/student/appex-a');
+    const url = 'https://cui-internship-system-git-dev-zas-projects-7d9cf03b.vercel.app/api/student/appex-a';
     return await firstValueFrom(this.http.get<any>(url, { headers: new HttpHeaders({ Accept: 'application/json' }) }));
   }
 
@@ -84,7 +84,7 @@ export class StudentService {
     workingDays?: string;
     workingHours?: string;
   }) {
-    const url = this.abs('/api/student/appex-a');
+    const url = 'https://cui-internship-system-git-dev-zas-projects-7d9cf03b.vercel.app/api/student/appex-a';
     return await firstValueFrom(this.http.post<any>(url, payload, { headers: this.jsonHeaders() }));
   }
 
@@ -104,7 +104,7 @@ export class StudentService {
     workingDays?: string;
     workingHours?: string;
   }) {
-    const url = this.abs('/api/student/appex-a');
+    const url = 'https://cui-internship-system-git-dev-zas-projects-7d9cf03b.vercel.app/api/student/appex-a';
     return await firstValueFrom(this.http.put<any>(url, payload, { headers: this.jsonHeaders() }));
   }
 }

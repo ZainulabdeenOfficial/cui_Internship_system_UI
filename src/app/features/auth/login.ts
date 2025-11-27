@@ -47,6 +47,19 @@ export class Login implements OnDestroy, OnInit {
         if (p.get('created') === '1') { this.signupMsg = 'Account created. Please login.'; }
       });
     } catch {}
+    // If already logged in, don't show login page — redirect to appropriate dashboard
+    try {
+      const user = this.store.currentUser();
+      if (user && user.role) {
+        if (user.role === 'student' && user.studentId) {
+          this.router.navigate(['/student']);
+          return;
+        }
+        if (user.role === 'admin') { this.router.navigate(['/admin']); return; }
+        if (user.role === 'faculty') { this.router.navigate(['/faculty']); return; }
+        if (user.role === 'site' || user.role === 'site_supervisor') { this.router.navigate(['/site']); return; }
+      }
+    } catch {}
   }
 
   ngOnDestroy(): void { if (this.ticker) clearInterval(this.ticker); document.body.classList.remove('auth-light'); }

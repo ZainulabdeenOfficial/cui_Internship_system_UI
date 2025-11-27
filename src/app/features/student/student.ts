@@ -35,7 +35,7 @@ export class Student {
   private selectedCompany: { id: string; name: string; email?: string; address?: string; website?: string; industry?: string } | null = null;
 
   isCompanyNotFound(): boolean {
-    const name = this.approval?.company?.name?.trim();
+    const name = this.appexAForm?.organization?.trim();
     if (!name) return false;
     // Only show when user typed at least 2 chars and API returned zero matches for current query
     if (name.length < 2) return false;
@@ -52,7 +52,7 @@ export class Student {
   isApproved = computed(() => !!this.selectedStudent()?.approved);
   private lockSelection: any;
   // tabs
-  currentTab: 'overview'|'applications'|'evidence'|'logs'|'reports'|'assignments'|'complaints'|'marks' = 'overview';
+  currentTab: 'applications'|'assignment'|'evidence'|'logs'|'reports'|'assignments'|'complaints'|'marks' = 'applications';
   // pagination state per tab/list
   page = { logs: 1, reports: 1, assignments: 1, complaints: 1, freel: 1 };
   pageSize = 10;
@@ -76,20 +76,7 @@ export class Student {
   };
 
   // New comprehensive forms based on handbook
-  approval = {
-    studentInfo: { name: '', studentId: '', program: '', semester: '' },
-    company: { name: '', address: '', supervisorName: '', supervisorEmail: '', supervisorPhone: '' },
-    internship: { startDate: '', endDate: '', hoursPerWeek: 40, paid: 'No' as 'Yes'|'No' },
-    objectives: '',
-    outcomes: ''
-  };
-  agreement = {
-    policyAcknowledgement: false,
-    confidentialityAgreement: false,
-    safetyTraining: false,
-    studentSignatureName: '',
-    date: ''
-  };
+  // Approval/Agreement forms removed; AppEx-A (appexAForm) is the canonical internship approval
   proposal = { title: '', content: '' };
   // Assignments upload (base64 for demo)
   assignments = computed(() => this.selectedId ? (this.store.assignments()[this.selectedId] ?? []) : []);
@@ -114,8 +101,7 @@ export class Student {
 
   logs = computed(() => this.selectedId ? (this.store.logs()[this.selectedId] ?? []) : []);
   reports = computed(() => this.selectedId ? (this.store.reports()[this.selectedId] ?? []) : []);
-  approvals = computed(() => this.selectedId ? (this.store.approvals()[this.selectedId] ?? []) : []);
-  agreements = computed(() => this.selectedId ? (this.store.agreements()[this.selectedId] ?? []) : []);
+  // approvals/agreements removed from student UI — AppEx-A is used instead
   freelances = computed(() => this.selectedId ? (this.store.freelance()[this.selectedId] ?? []) : []);
   lastFreelance = computed(() => {
     const list = this.freelances();
@@ -126,8 +112,7 @@ export class Student {
     if (!last) return true; // first submission allowed
     return last.status === 'rejected'; // only allow resubmit on rejection
   });
-  private hasSubmittedApproval(): boolean { return (this.approvals() ?? []).length > 0; }
-  private hasSubmittedAgreement(): boolean { return (this.agreements() ?? []).length > 0; }
+  // approval/agreement submission flow removed per UX request
   get facultyList() { return this.store.facultySupervisors; }
   get siteList() { return this.store.siteSupervisors; }
   // complaints
@@ -145,15 +130,31 @@ export class Student {
     // Initialize tab from query params
     try {
       this.route.queryParamMap.subscribe(p => {
-        const t = (p.get('tab') || '').toLowerCase();
-        const allowed = ['overview','applications','evidence','logs','reports','assignments','complaints','marks'] as const;
-        if ((allowed as readonly string[]).includes(t)) this.currentTab = t as any;
-        // guard: if not approved, restrict to overview/applications/evidence/complaints
+        const tabParam = p.get('tab');
+        const allowed = ['applications','assignment','evidence','logs','reports','assignments','complaints','marks'] as const;
+        if (tabParam && (allowed as readonly string[]).includes(tabParam.toLowerCase())) {
+          this.currentTab = tabParam.toLowerCase() as any;
+        } else {
+          // No explicit tab requested: default students to the Applications tab so Internship Approval shows first
+          this.currentTab = 'applications';
+        }
+        // guard: if not approved, restrict to applications/evidence/complaints
         const isOk = this.isApproved();
-        const visibleWhenPending = new Set(['overview','applications','evidence','complaints']);
+        const visibleWhenPending = new Set(['applications','assignment','evidence','complaints']);
         if (!isOk && !visibleWhenPending.has(this.currentTab)) {
           this.currentTab = 'applications';
           try { this.router.navigate([], { relativeTo: this.route, queryParams: { tab: 'applications' }, queryParamsHandling: 'merge' }); } catch {}
+        }
+      });
+    } catch {}
+
+    // Auto-load AppEx-A for the selected student (no manual Load Existing button)
+    try {
+      effect(() => {
+        const sid = this.selectedId;
+        if (sid) {
+          // fire-and-forget load; errors are handled inside loadAppExA
+          this.loadAppExA().catch(() => {});
         }
       });
     } catch {}
@@ -236,13 +237,13 @@ export class Student {
 
   usePreviewAddress() {
     const addr = this.companyPreview?.address?.trim();
-    if (addr) this.approval.company.address = addr;
+    if (addr) this.appexAForm.address = addr;
   }
 
   openRequestToAddCompany() {
     // Prefill request form from what the student typed and any preview data
-    const typedName = (this.approval?.company?.name || '').trim();
-    const typedAddr = (this.approval?.company?.address || '').trim();
+    const typedName = (this.appexAForm?.organization || '').trim();
+    const typedAddr = (this.appexAForm?.address || '').trim();
     const previewAddr = (this.companyPreview?.address || '').trim();
     this.companyRequest.name = typedName;
     // Prefer the typed address; else use preview address if available
@@ -252,7 +253,7 @@ export class Student {
 
   onCompanyNameSelected(ev: any) {
     try {
-      const value: string = (ev?.target?.value ?? this.approval?.company?.name ?? '').toString();
+      const value: string = (ev?.target?.value ?? this.appexAForm?.organization ?? '').toString();
       const q = value.trim();
       if (!q) { this.companyPreview = null; return; }
       const lower = q.toLowerCase();
@@ -270,11 +271,11 @@ export class Student {
   selectCompany(match: { id: string; name: string; address?: string; email?: string; website?: string; industry?: string }, fallbackName?: string) {
     // Normalize name case
     const normalized = match?.name || fallbackName || '';
-    this.approval.company.name = normalized;
+    this.appexAForm.organization = normalized;
     // Update preview and auto-fill address if available
     this.companyPreview = null; // hide card after selection for a cleaner UI
     this.selectedCompany = match as any;
-    if (match.address) this.approval.company.address = match.address;
+    if (match.address) this.appexAForm.address = match.address;
     // Hide suggestions until the user types again
     this.dropdownCompanies = [];
     this.isCompanyDropdownOpen = false;
@@ -294,7 +295,7 @@ export class Student {
         this.activeCompanyIndex = (this.activeCompanyIndex - 1 + this.dropdownCompanies.length) % this.dropdownCompanies.length;
       }
     } else if (key === 'Enter') {
-      const q = (this.approval?.company?.name || '').trim().toLowerCase();
+      const q = (this.appexAForm?.organization || '').trim().toLowerCase();
       if (this.isCompanyDropdownOpen) {
         if (this.activeCompanyIndex >= 0 && this.activeCompanyIndex < this.dropdownCompanies.length) {
           ev.preventDefault();
@@ -330,7 +331,7 @@ export class Student {
   }
 
   onCompanyInputFocus() {
-    const q = (this.approval?.company?.name || '').trim();
+    const q = (this.appexAForm?.organization || '').trim();
     this.isCompanyDropdownOpen = q.length >= 2 && ((this.dropdownCompanies?.length || 0) > 0 || this.loadingCompanies || this.isCompanyNotFound());
   }
 
@@ -355,8 +356,8 @@ export class Student {
   }
 
   clearCompanyInput() {
-    this.approval.company.name = '';
-    this.approval.company.address = '';
+    this.appexAForm.organization = '';
+    this.appexAForm.address = '';
     this.dropdownCompanies = [];
     this.companyPreview = null;
     this.selectedCompany = null;
@@ -392,7 +393,25 @@ export class Student {
   companyRequestsList: any[] = [];
   appexAForm = {
     organization: '', address: '', industrySector: '', contactName: '', contactDesignation: '', contactPhone: '', contactEmail: '',
-    internshipField: '', internshipLocation: '', startDate: '', endDate: '', workingDays: '', workingHours: ''
+    internshipField: '', internshipLocation: '', startDate: '', endDate: '', workingDays: '', workingHours: '',
+    // additional fields used by the new Internship Approval Form
+    numberOfPositions: 1,
+    natureOfInternship: { softwareDevelopment: false, dataScience: false, networking: false, cyberSecurity: false, webMobile: false, otherChecked: false, otherText: '' },
+    mode: 'On-Site' as 'On-Site'|'Virtual'|'Freelancing'
+  };
+
+  // Student Assignment & Agreement form (from provided PDF)
+  studentAgreementForm = {
+    fullName: '',
+    registrationNumber: '',
+    degreeProgram: '',
+    semester: '',
+    contactNumber: '',
+    emailAddress: '',
+    preferredField: '',
+    // Agreement statement fields
+    acknowledged: false,
+    // signature and date removed per UX request
   };
 
   async createInternshipSubmit() {
@@ -446,42 +465,30 @@ export class Student {
         contactName: ax.contactName || '', contactDesignation: ax.contactDesignation || '', contactPhone: ax.contactPhone || '', contactEmail: ax.contactEmail || '',
         internshipField: ax.internshipField || '', internshipLocation: ax.internshipLocation || '',
         startDate: (ax.startDate || '').slice(0,10), endDate: (ax.endDate || '').slice(0,10),
-        workingDays: ax.workingDays || '', workingHours: ax.workingHours || ''
+        workingDays: ax.workingDays || '', workingHours: ax.workingHours || '',
+        numberOfPositions: ax.numberOfPositions ?? 1,
+        natureOfInternship: ax.natureOfInternship || { softwareDevelopment: false, dataScience: false, networking: false, cyberSecurity: false, webMobile: false, otherChecked: false, otherText: '' },
+        mode: ax.mode || 'On-Site'
       };
     } catch {}
   }
   async submitAppExAFromForm() {
-    try { await this.apiSubmitAppExA({ ...this.appexAForm }); } catch {}
+    try { await this.apiSubmitAppExA({ ...this.appexAForm }); this.appexASubmitted = true; } catch {}
   }
   async updateAppExAFromForm() {
-    try { await this.apiUpdateAppExA({ ...this.appexAForm }); } catch {}
+    try { await this.apiUpdateAppExA({ ...this.appexAForm }); this.appexASubmitted = true; } catch {}
   }
 
-  private isApprovalComplete(): boolean {
-    const a = this.approval;
-    const required = [
-      a.studentInfo.name,
-      a.studentInfo.studentId,
-      a.studentInfo.program,
-      a.studentInfo.semester,
-      a.company.name,
-      a.company.address,
-      a.company.supervisorName,
-      a.company.supervisorEmail,
-      a.company.supervisorPhone,
-      a.internship.startDate,
-      a.internship.endDate,
-      String(a.internship.hoursPerWeek || '') ,
-      a.objectives,
-      a.outcomes
-    ];
-    const allFilled = required.every(v => !!(v && (''+v).toString().trim().length));
-    if (!allFilled) return false;
-    // basic email/phone sanity checks
-    const emailOk = /.+@.+\..+/.test(a.company.supervisorEmail.trim());
-    const phoneOk = a.company.supervisorPhone.replace(/[^0-9]/g, '').length >= 7;
-    const hoursOk = (a.internship.hoursPerWeek || 0) > 0;
-    return emailOk && phoneOk && hoursOk;
+  // Track whether the student has submitted an AppEx-A (formerly approval)
+  appexASubmitted = false;
+
+  // Compatibility helpers for remaining code that expects approval/agreement checks
+  hasSubmittedApproval(): boolean {
+    return !!this.appexASubmitted;
+  }
+  hasSubmittedAgreement(): boolean {
+    // Agreement flow removed from student UI; treat agreement requirement as satisfied when AppEx-A is submitted
+    return !!this.appexASubmitted;
   }
   selectTab(tab: Student['currentTab']) {
     this.currentTab = tab;
@@ -596,28 +603,74 @@ export class Student {
     return !!(f.workSummary && f.workSummary.trim().length) || hasText;
   }
 
-  submitApproval() {
-    if (!this.selectedId) return;
-  if (!this.ensureMine()) return;
-  if (!this.isApprovalComplete()) {
-    this.toast.warning('Please complete all fields in Internship Offer & Approval (student info, company, supervisor, internship, objectives, outcomes) before submitting.');
-    return;
+  private isAppExAComplete(): boolean {
+    const a = this.appexAForm;
+    const required = [
+      a.organization,
+      a.contactName,
+      a.contactEmail,
+      a.startDate,
+      a.endDate
+    ];
+    const allFilled = required.every(v => !!(v && ('' + v).toString().trim().length));
+    if (!allFilled) return false;
+    const emailOk = /.+@.+\..+/.test((a.contactEmail || '').toString().trim());
+    return !!emailOk;
   }
-  this.store.submitApproval(this.selectedId, { ...this.approval });
-  this.toast.success('Approval form submitted');
-    this.approval = {
-      studentInfo: { name: '', studentId: '', program: '', semester: '' },
-      company: { name: '', address: '', supervisorName: '', supervisorEmail: '', supervisorPhone: '' },
-      internship: { startDate: '', endDate: '', hoursPerWeek: 40, paid: 'No' },
-      objectives: '', outcomes: ''
-    };
-  }
-  submitAgreement() {
+
+  async submitApproval() {
     if (!this.selectedId) return;
-  if (!this.ensureMine()) return;
-  this.store.submitAgreement(this.selectedId, { ...this.agreement });
-  this.toast.success('Agreement submitted');
-    this.agreement = { policyAcknowledgement: false, confidentialityAgreement: false, safetyTraining: false, studentSignatureName: '', date: '' };
+    if (!this.ensureMine()) return;
+    if (!this.isAppExAComplete()) {
+      this.toast.warning('Please complete required fields in the Internship Approval form before submitting.');
+      return;
+    }
+    try {
+      await this.apiSubmitAppExA({ ...this.appexAForm });
+      this.appexASubmitted = true;
+      this.toast.success('Internship Approval (AppEx-A) submitted');
+    } catch (err) {
+      // apiSubmitAppExA already shows toast on error
+    }
+  }
+
+  async submitAgreement() {
+    // Agreement flow removed from student UI. Treat agreement as satisfied when AppEx-A is submitted.
+    if (!this.selectedId) return;
+    if (!this.ensureMine()) return;
+    if (!this.appexASubmitted) {
+      this.toast.warning('Please submit the Internship Approval form first.');
+      return;
+    }
+    // Mark agreement as accepted for gating purposes
+    this.toast.success('Agreement acknowledged (student)');
+  }
+
+  // Submit the Assignment & Student Agreement form (persist to store.agreements for record)
+  submitStudentAssignmentAgreement() {
+    if (!this.selectedId) return;
+    // basic validation
+    const f = this.studentAgreementForm as any;
+    if (!f.fullName?.trim() || !f.registrationNumber?.trim() || !f.emailAddress?.trim()) {
+      this.toast.warning('Please complete required fields: name, registration number, email');
+      return;
+    }
+    try {
+      // store.submitAgreement expects Agreement-like payload; cast to any to store full form under agreements
+      const payload: any = {
+        policyAcknowledgement: !!f.acknowledged,
+        confidentialityAgreement: true,
+        safetyTraining: true,
+        // signature and date removed; keep full form data for records
+        studentAgreementData: { ...f }
+      };
+      this.store.submitAgreement(this.selectedId, payload as any);
+      this.toast.success('Student Assignment & Agreement form saved');
+      // clear form
+      this.studentAgreementForm = { fullName: '', registrationNumber: '', degreeProgram: '', semester: '', contactNumber: '', emailAddress: '', preferredField: '', acknowledged: false };
+    } catch (err: any) {
+      this.toast.danger('Failed to save agreement');
+    }
   }
   submitProposal() {
     if (!this.selectedId || !this.proposal.title) return;
@@ -651,19 +704,7 @@ export class Student {
     this.toast.success('Reflective summary submitted');
     this.reflective = { title: 'Reflective Summary', content: '' };
   }
-  // allow editing by pre-filling from latest approval
-  loadLatestApproval() {
-    const list = this.approvals();
-    if (!list.length) return;
-    const a = list[list.length - 1];
-    this.approval = {
-      studentInfo: { ...a.studentInfo },
-      company: { ...a.company },
-      internship: { ...a.internship },
-      objectives: a.objectives,
-      outcomes: a.outcomes
-    };
-  }
+  // loadLatestApproval removed — AppEx-A is the canonical form and is loaded via `loadAppExA()`
   async onAssignmentFileChange(ev: any) {
     const file: File | undefined = ev?.target?.files?.[0];
     if (!file) return;
