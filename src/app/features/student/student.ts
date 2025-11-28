@@ -437,13 +437,52 @@ export class Student {
     }
   }
   async apiGetAppExA() {
-    try { return await this.studentApi.getAppExA(); } catch (err: any) { this.toast.danger(err?.error?.message || err?.message || 'Failed to load AppEx-A'); throw err; }
+    try {
+      return await this.studentApi.getAppExA();
+    } catch (err: any) {
+      // Network/CORS errors surface as status === 0 in Angular HttpErrorResponse
+      const isNet = err && (err.status === 0 || (err.message || '').toString().toLowerCase().includes('unknown error'));
+      if (isNet) {
+        this.toast.warning('Unable to reach AppEx-A server (network/CORS). Working offline and using local draft if available.');
+        // return empty object so caller can fallback to local draft
+        return {};
+      }
+      this.toast.danger(err?.error?.message || err?.message || 'Failed to load AppEx-A');
+      throw err;
+    }
   }
   async apiSubmitAppExA(payload: any) {
-    try { const res = await this.studentApi.submitAppExA(payload); this.toast.success(res?.message || 'AppEx-A submitted'); return res; } catch (err: any) { this.toast.danger(err?.error?.message || err?.message || 'Failed to submit AppEx-A'); throw err; }
+    try {
+      const res = await this.studentApi.submitAppExA(payload);
+      this.toast.success(res?.message || 'AppEx-A submitted');
+      return res;
+    } catch (err: any) {
+      const isNet = err && (err.status === 0 || (err.message || '').toString().toLowerCase().includes('unknown error'));
+      if (isNet) {
+        // Save payload as draft locally so user doesn't lose work
+        try { if (this.selectedId) localStorage.setItem(`appexA_draft_${this.selectedId}`, JSON.stringify(payload)); } catch {}
+        this.toast.info('Network error submitting AppEx-A; changes saved locally and will be retried when online.');
+        return { offline: true } as any;
+      }
+      this.toast.danger(err?.error?.message || err?.message || 'Failed to submit AppEx-A');
+      throw err;
+    }
   }
   async apiUpdateAppExA(payload: any) {
-    try { const res = await this.studentApi.updateAppExA(payload); this.toast.success(res?.message || 'AppEx-A updated'); return res; } catch (err: any) { this.toast.danger(err?.error?.message || err?.message || 'Failed to update AppEx-A'); throw err; }
+    try {
+      const res = await this.studentApi.updateAppExA(payload);
+      this.toast.success(res?.message || 'AppEx-A updated');
+      return res;
+    } catch (err: any) {
+      const isNet = err && (err.status === 0 || (err.message || '').toString().toLowerCase().includes('unknown error'));
+      if (isNet) {
+        try { if (this.selectedId) localStorage.setItem(`appexA_draft_${this.selectedId}`, JSON.stringify(payload)); } catch {}
+        this.toast.info('Network error updating AppEx-A; changes saved locally and will be retried when online.');
+        return { offline: true } as any;
+      }
+      this.toast.danger(err?.error?.message || err?.message || 'Failed to update AppEx-A');
+      throw err;
+    }
   }
 
   // Forms for new API integrations
