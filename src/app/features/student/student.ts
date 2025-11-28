@@ -152,10 +152,69 @@ export class Student {
     try {
       effect(() => {
         const sid = this.selectedId;
-        if (sid) {
-          // fire-and-forget load; errors are handled inside loadAppExA
-          this.loadAppExA().catch(() => {});
-        }
+        if (!sid) return;
+        (async () => {
+          // 1) Try to load from server
+          let serverHas = false;
+          try {
+            const res = await this.apiGetAppExA();
+            const ax = (res as any)?.internship?.appexA || (res as any)?.appexA || {};
+            // treat as present when at least one meaningful field exists
+            serverHas = Object.keys(ax).some(k => {
+              const v = (ax as any)[k];
+              return v !== undefined && v !== null && String(v).toString().trim().length > 0;
+            });
+            if (serverHas) {
+              this.appexAForm = {
+                organization: ax.organization || '', address: ax.address || '', industrySector: ax.industrySector || '',
+                contactName: ax.contactName || '', contactDesignation: ax.contactDesignation || '', contactPhone: ax.contactPhone || '', contactEmail: ax.contactEmail || '',
+                internshipField: ax.internshipField || '', internshipLocation: ax.internshipLocation || '',
+                startDate: (ax.startDate || '').slice(0,10), endDate: (ax.endDate || '').slice(0,10),
+                workingDays: ax.workingDays || '', workingHours: ax.workingHours || '',
+                numberOfPositions: ax.numberOfPositions ?? 1,
+                natureOfInternship: ax.natureOfInternship || { softwareDevelopment: false, dataScience: false, networking: false, cyberSecurity: false, webMobile: false, otherChecked: false, otherText: '' },
+                mode: ax.mode || 'On-Site'
+              };
+            }
+          } catch (err) {
+            // ignore load error, will attempt draft handling
+          }
+
+          // 2) Check for draft in localStorage and auto-save if server has no record
+          try {
+            const key = this.selectedId ? `appexA_draft_${this.selectedId}` : null;
+            if (key) {
+              const draftRaw = localStorage.getItem(key);
+              if (!serverHas && draftRaw) {
+                try {
+                  const draft = JSON.parse(draftRaw);
+                  // submit draft to server
+                  await this.apiSubmitAppExA(draft);
+                  // clear draft after successful auto-save
+                  localStorage.removeItem(key);
+                  this.appexASubmitted = true;
+                  this.toast.info('Saved saved internship approval draft to server');
+                } catch (err) {
+                  // submission failed — keep draft intact
+                }
+              } else if (!serverHas && !draftRaw) {
+                // nothing saved remotely; keep empty form (student can start filling)
+              }
+            }
+          } catch {}
+        })();
+      });
+    } catch {}
+
+    // Persist drafts to localStorage as the student edits the AppEx-A form (debounced via effect trigger)
+    try {
+      effect(() => {
+        const sid = this.selectedId;
+        if (!sid) return;
+        // stringify a stable representation
+        const dump = JSON.stringify(this.appexAForm || {});
+        const key = `appexA_draft_${sid}`;
+        try { localStorage.setItem(key, dump); } catch {}
       });
     } catch {}
   }
@@ -473,10 +532,19 @@ export class Student {
     } catch {}
   }
   async submitAppExAFromForm() {
-    try { await this.apiSubmitAppExA({ ...this.appexAForm }); this.appexASubmitted = true; } catch {}
+    try {
+      await this.apiSubmitAppExA({ ...this.appexAForm });
+      this.appexASubmitted = true;
+      // clear draft
+      try { if (this.selectedId) localStorage.removeItem(`appexA_draft_${this.selectedId}`); } catch {}
+    } catch {}
   }
   async updateAppExAFromForm() {
-    try { await this.apiUpdateAppExA({ ...this.appexAForm }); this.appexASubmitted = true; } catch {}
+    try {
+      await this.apiUpdateAppExA({ ...this.appexAForm });
+      this.appexASubmitted = true;
+      try { if (this.selectedId) localStorage.removeItem(`appexA_draft_${this.selectedId}`); } catch {}
+    } catch {}
   }
 
   // Track whether the student has submitted an AppEx-A (formerly approval)
