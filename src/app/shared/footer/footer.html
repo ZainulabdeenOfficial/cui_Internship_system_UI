@@ -1,3 +1,4 @@
+<ng-container *ngIf="isVisible">
 <footer class="bg-dark text-light mt-auto pt-4 border-top">
 	<div class="container">
 		<div class="row g-4 align-items-start">
@@ -7,59 +8,57 @@
 					<div>
 						<h6 class="mb-2">COMSATS University Islamabad (CUI) - Sahiwal Campus</h6>
 						<p class="small mb-2">
-							The COMSATS University Islamabad (CUI), which received its Charter from the Federal Government in August 2000, as a Degree Awarding Institute (DAI) in the public sector. The CU is up gradated as university by the name of "Comsats University" through an act of the Parliament in April 2018.
+							The COMSATS University Islamabad (CUI), which received its Charter from the Federal Government in August 2000, as a Degree Awarding Institute (DAI) in the public sector. The CU is up graded as university by the name of "Comsats University" through an act of the Parliament in April 2018.
 						</p>
-						
 					</div>
 				</div>
 			</div>
 			<div class="col-12 col-md-4">
 				<h6 class="mb-2">Quick links</h6>
-																<ul class="list-unstyled small mb-0">
-																														@if (store.currentUser()?.role === 'student') {
-																															<div class="mb-2">
-																																<span class="badge" [class.text-bg-success]="studentStatus==='approved'" [class.text-bg-danger]="studentStatus==='rejected'" [class.text-bg-secondary]="studentStatus==='pending'">Status: {{ studentStatus || '-' }}</span>
-																															</div>
-																																@if (studentApproved) {
-																						<li><a class="link-light text-decoration-none" [routerLink]="['/student']" [queryParams]="{ tab: 'evidence' }">Design & Evidence</a></li>
-																						<li><a class="link-light text-decoration-none" [routerLink]="['/student']" [queryParams]="{ tab: 'logs' }">Weekly Logs</a></li>
-																						<li><a class="link-light text-decoration-none" [routerLink]="['/student']" [queryParams]="{ tab: 'reports' }">Reports</a></li>
-																						<li><a class="link-light text-decoration-none" [routerLink]="['/student']" [queryParams]="{ tab: 'assignments' }">Assignments</a></li>
-																						<li><a class="link-light text-decoration-none" routerLink="/complaints">Complaints</a></li>
-																						<li><a class="link-light text-decoration-none" [routerLink]="['/student']" [queryParams]="{ tab: 'marks' }">Marks</a></li>
-																					} @else {
-																																	<li><a class="link-light text-decoration-none" [routerLink]="['/student']" [queryParams]="{ tab: 'evidence' }">Design & Evidence</a></li>
-																																	<li><a class="link-light text-decoration-none" routerLink="/complaints">Complaints</a></li>
-																					}
-																				}
-										@if (store.currentUser()?.role === 'admin') {
-											<li><a class="link-light text-decoration-none" [routerLink]="['/admin']" [queryParams]="{ tab: 'students' }">Students</a></li>
-											<li><a class="link-light text-decoration-none" [routerLink]="['/admin']" [queryParams]="{ tab: 'applications' }">Applications</a></li>
-											<li><a class="link-light text-decoration-none" [routerLink]="['/admin']" [queryParams]="{ tab: 'requests' }">Requests</a></li>
-											<li><a class="link-light text-decoration-none" [routerLink]="['/admin']" [queryParams]="{ tab: 'announcements' }">Announcements</a></li>
-											<li><a class="link-light text-decoration-none" [routerLink]="['/admin']" [queryParams]="{ tab: 'officers' }">Officers</a></li>
-											<li><a class="link-light text-decoration-none" [routerLink]="['/admin']" [queryParams]="{ tab: 'faculty' }">Faculty</a></li>
-											<li><a class="link-light text-decoration-none" [routerLink]="['/admin']" [queryParams]="{ tab: 'companies' }">Companies & Site</a></li>
-											<li><a class="link-light text-decoration-none" [routerLink]="['/admin']" [queryParams]="{ tab: 'compliance' }">Log Compliance</a></li>
-											<li><a class="link-light text-decoration-none" [routerLink]="['/admin']" [queryParams]="{ tab: 'complaints' }">Complaints</a></li>
-										}
-										@if (store.currentUser()?.role === 'faculty') {
-											<li><a class="link-light text-decoration-none" [routerLink]="['/faculty']" [queryParams]="{ tab: 'students' }">Students</a></li>
-											<li><a class="link-light text-decoration-none" [routerLink]="['/faculty']" [queryParams]="{ tab: 'details' }">Details</a></li>
-											<li><a class="link-light text-decoration-none" [routerLink]="['/faculty']" [queryParams]="{ tab: 'reports' }">Reports</a></li>
-											<li><a class="link-light text-decoration-none" [routerLink]="['/faculty']" [queryParams]="{ tab: 'assignments' }">Assignments</a></li>
-											<li><a class="link-light text-decoration-none" [routerLink]="['/faculty']" [queryParams]="{ tab: 'agreements' }">Agreements</a></li>
-											<li><a class="link-light text-decoration-none" [routerLink]="['/faculty']" [queryParams]="{ tab: 'profile' }">Profile</a></li>
-										}
-										@if (store.currentUser()?.role === 'site' || store.currentUser()?.role === 'site_supervisor') {
-											<li><a class="link-light text-decoration-none" [routerLink]="['/site']" [queryParams]="{ tab: 'students' }">Students</a></li>
-											<li><a class="link-light text-decoration-none" [routerLink]="['/site']" [queryParams]="{ tab: 'details' }">Details</a></li>
-											<li><a class="link-light text-decoration-none" [routerLink]="['/site']" [queryParams]="{ tab: 'reports' }">Reports</a></li>
-											<li><a class="link-light text-decoration-none" [routerLink]="['/site']" [queryParams]="{ tab: 'profile' }">Profile</a></li>
-											<li><a class="link-light text-decoration-none" [routerLink]="['/site']" [queryParams]="{ tab: 'password' }">Password</a></li>
-										}
-					@if (!store.currentUser()) { <li><a class="link-light text-decoration-none" routerLink="/login">Login</a></li> }
-					@if (!store.currentUser()) { <li><a class="link-light text-decoration-none" routerLink="/signup">Student Signup</a></li> }
+				<ul class="list-unstyled small mb-0">
+					<ng-container *ngIf="store.currentUser()?.role === 'student'">
+						<div class="mb-2">
+							<span class="badge" [class.text-bg-success]="studentStatus==='approved'" [class.text-bg-danger]="studentStatus==='rejected'" [class.text-bg-secondary]="studentStatus==='pending'">Status: {{ studentStatus || '-' }}</span>
+						</div>
+						<li><a class="link-light text-decoration-none" [routerLink]="['/student']" [queryParams]="{ tab: 'appex' }">Internship Approval (AppEx‑A)</a></li>
+						<li><a class="link-light text-decoration-none" [routerLink]="['/student']" [queryParams]="{ tab: 'assignment' }">Assignment &amp; Agreement</a></li>
+						<li><a class="link-light text-decoration-none" [routerLink]="['/student']" [queryParams]="{ tab: 'form3' }">Organization Overview &amp; Scope of Work</a></li>
+						<li><a class="link-light text-decoration-none" routerLink="/complaints">Complaints</a></li>
+					</ng-container>
+
+					<ng-container *ngIf="store.currentUser()?.role === 'admin'">
+						<li><a class="link-light text-decoration-none" [routerLink]="['/admin']" [queryParams]="{ tab: 'students' }">Students</a></li>
+						<li><a class="link-light text-decoration-none" [routerLink]="['/admin']" [queryParams]="{ tab: 'applications' }">Applications</a></li>
+						<li><a class="link-light text-decoration-none" [routerLink]="['/admin']" [queryParams]="{ tab: 'requests' }">Requests</a></li>
+						<li><a class="link-light text-decoration-none" [routerLink]="['/admin']" [queryParams]="{ tab: 'announcements' }">Announcements</a></li>
+						<li><a class="link-light text-decoration-none" [routerLink]="['/admin']" [queryParams]="{ tab: 'officers' }">Officers</a></li>
+						<li><a class="link-light text-decoration-none" [routerLink]="['/admin']" [queryParams]="{ tab: 'faculty' }">Faculty</a></li>
+						<li><a class="link-light text-decoration-none" [routerLink]="['/admin']" [queryParams]="{ tab: 'companies' }">Companies & Site</a></li>
+						<li><a class="link-light text-decoration-none" [routerLink]="['/admin']" [queryParams]="{ tab: 'compliance' }">Log Compliance</a></li>
+						<li><a class="link-light text-decoration-none" [routerLink]="['/admin']" [queryParams]="{ tab: 'complaints' }">Complaints</a></li>
+					</ng-container>
+
+					<ng-container *ngIf="store.currentUser()?.role === 'faculty'">
+						<li><a class="link-light text-decoration-none" [routerLink]="['/faculty']" [queryParams]="{ tab: 'students' }">Students</a></li>
+						<li><a class="link-light text-decoration-none" [routerLink]="['/faculty']" [queryParams]="{ tab: 'details' }">Details</a></li>
+						<li><a class="link-light text-decoration-none" [routerLink]="['/faculty']" [queryParams]="{ tab: 'reports' }">Reports</a></li>
+						<li><a class="link-light text-decoration-none" [routerLink]="['/faculty']" [queryParams]="{ tab: 'assignments' }">Assignments</a></li>
+						<li><a class="link-light text-decoration-none" [routerLink]="['/faculty']" [queryParams]="{ tab: 'agreements' }">Agreements</a></li>
+						<li><a class="link-light text-decoration-none" [routerLink]="['/faculty']" [queryParams]="{ tab: 'profile' }">Profile</a></li>
+					</ng-container>
+
+					<ng-container *ngIf="store.currentUser()?.role === 'site' || store.currentUser()?.role === 'site_supervisor'">
+						<li><a class="link-light text-decoration-none" [routerLink]="['/site']" [queryParams]="{ tab: 'students' }">Students</a></li>
+						<li><a class="link-light text-decoration-none" [routerLink]="['/site']" [queryParams]="{ tab: 'details' }">Details</a></li>
+						<li><a class="link-light text-decoration-none" [routerLink]="['/site']" [queryParams]="{ tab: 'reports' }">Reports</a></li>
+						<li><a class="link-light text-decoration-none" [routerLink]="['/site']" [queryParams]="{ tab: 'profile' }">Profile</a></li>
+						<li><a class="link-light text-decoration-none" [routerLink]="['/site']" [queryParams]="{ tab: 'password' }">Password</a></li>
+					</ng-container>
+
+					<ng-container *ngIf="!store.currentUser()">
+						<li><a class="link-light text-decoration-none" routerLink="/login">Login</a></li>
+						<li><a class="link-light text-decoration-none" routerLink="/signup">Student Signup</a></li>
+					</ng-container>
 				</ul>
 			</div>
 			<div class="col-12 col-md-3">
@@ -77,4 +76,6 @@
 			<span class="text-secondary small">Made for CUI Sahiwal</span>
 		</div>
 	</div>
+    
 </footer>
+</ng-container>

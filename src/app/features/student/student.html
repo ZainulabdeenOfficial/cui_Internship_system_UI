@@ -6,15 +6,12 @@
     <a routerLink="/guidance" class="btn btn-sm btn-outline-primary">Open Guidance</a>
   </div>
 
-  <!-- Tabs -->
+  <!-- Tabs: separate tabs for each student form and Complaints -->
   <ul class="nav nav-tabs mb-3">
-    <li class="nav-item" *ngIf="!isApproved()"><button type="button" class="nav-link" [class.active]="currentTab==='applications'" (click)="selectTab('applications')">Internship Approval</button></li>
-    <li class="nav-item" *ngIf="selectedId"><button type="button" class="nav-link" [class.active]="currentTab==='assignment'" (click)="selectTab('assignment')">Assignment & Agreement</button></li>
-    <li class="nav-item" *ngIf="isApproved()"><button type="button" class="nav-link" [class.active]="currentTab==='logs'" (click)="selectTab('logs')">Weekly Logs</button></li>
-    <li class="nav-item" *ngIf="isApproved()"><button type="button" class="nav-link" [class.active]="currentTab==='reports'" (click)="selectTab('reports')">Reports</button></li>
-    <li class="nav-item" *ngIf="isApproved()"><button type="button" class="nav-link" [class.active]="currentTab==='assignments'" (click)="selectTab('assignments')">Assignments</button></li>
-  <!-- Complaints moved to separate page -->
-    <li class="nav-item" *ngIf="isApproved()"><button type="button" class="nav-link" [class.active]="currentTab==='marks'" (click)="selectTab('marks')">Marks</button></li>
+    <li class="nav-item"><button type="button" class="nav-link" [class.active]="isCurrentTab('appex')" (click)="selectTab('appex')">Internship Approval (AppEx‑A)</button></li>
+    <li class="nav-item"><button type="button" class="nav-link" [class.active]="isCurrentTab('assignment')" (click)="selectTab('assignment')">Assignment & Agreement</button></li>
+    <li class="nav-item"><button type="button" class="nav-link" [class.active]="isCurrentTab('form3')" (click)="selectTab('form3')">Organization Overview &amp; Scope of Work</button></li>
+    <li class="nav-item ms-auto"><button type="button" class="nav-link" [class.active]="isCurrentTab('complaints')" (click)="selectTab('complaints')">Complaints</button></li>
   </ul>
 
   <!-- Assignment and Approval Status -->
@@ -37,7 +34,8 @@
   <!-- Design Proposal and company request lists removed (Evidence flow not used) -->
 
   <!-- AppEx-A (API-backed) -->
-  <div class="card mb-3" *ngIf="selectedId && currentTab==='applications'">
+  <div *ngIf="isCurrentTab('appex')">
+    <div class="card mb-3">
     <div class="card-header">Internship Approval (Section A & B)</div>
     <div class="card-body">
       <form (ngSubmit)="submitAppExAFromForm()" #iapf="ngForm" class="row g-3">
@@ -107,6 +105,8 @@
           </div>
         </div>
 
+            <!-- Complaints moved to its own tab/page; content removed from Forms grouping -->
+
         <div class="col-md-6">
           <label class="form-label">Internship Location</label>
           <input class="form-control" [(ngModel)]="appexAForm.internshipLocation" name="internshipLocation" />
@@ -142,70 +142,18 @@
       </form>
     </div>
   </div>
-
-  <!-- Internship Assignment & Student Agreement Form (second form) -->
-  <div class="card mb-3" *ngIf="selectedId && currentTab==='assignment'">
-    <div class="card-header">Internship Assignment & Student Agreement Form</div>
-    <div class="card-body">
-      <form (ngSubmit)="submitStudentAssignmentAgreement()" #saf="ngForm" class="row g-3">
-        <div class="col-12"><strong>Student Information</strong></div>
-        <div class="col-md-6">
-          <label class="form-label">Full Name</label>
-          <input class="form-control" [(ngModel)]="studentAgreementForm.fullName" name="s_fullName" required />
-        </div>
-        <div class="col-md-6">
-          <label class="form-label">Registration Number</label>
-          <input class="form-control" [(ngModel)]="studentAgreementForm.registrationNumber" name="s_reg" required />
-        </div>
-        <div class="col-md-6">
-          <label class="form-label">Degree Program</label>
-          <input class="form-control" [(ngModel)]="studentAgreementForm.degreeProgram" name="s_prog" />
-        </div>
-        <div class="col-md-6">
-          <label class="form-label">Semester</label>
-          <input class="form-control" [(ngModel)]="studentAgreementForm.semester" name="s_sem" />
-        </div>
-        <div class="col-md-6">
-          <label class="form-label">Contact Number</label>
-          <input class="form-control" [(ngModel)]="studentAgreementForm.contactNumber" name="s_contact" />
-        </div>
-        <div class="col-md-6">
-          <label class="form-label">Email Address</label>
-          <input type="email" class="form-control" [(ngModel)]="studentAgreementForm.emailAddress" name="s_email" required />
-        </div>
-        <div class="col-12">
-          <label class="form-label">Preferred Internship Field/Domain</label>
-          <input class="form-control" [(ngModel)]="studentAgreementForm.preferredField" name="s_field" />
-        </div>
-
-        <div class="col-12 mt-2"><strong>Student Internship Agreement Statement</strong></div>
-        <div class="col-12">
-          <p>
-            I, <input class="form-control d-inline-block" style="width:40%" [(ngModel)]="studentAgreementForm.fullName" name="s_name_inline" /> , a student of
-            <input class="form-control d-inline-block" style="width:30%" [(ngModel)]="studentAgreementForm.degreeProgram" name="s_prog_inline" /> at
-            the university, hereby acknowledge and accept the internship opportunity assigned to me and agree to the statements below.
-          </p>
-          <ol>
-            <li>Abide by the rules, regulations, and code of conduct of the host organization.</li>
-            <li>Maintain punctuality, discipline, and professionalism throughout the internship period.</li>
-            <li>Complete the tasks and responsibilities assigned to me to the best of my ability.</li>
-            <li>Communicate regularly with my academic supervisor and provide updates on my progress.</li>
-            <li>Maintain confidentiality of any sensitive information encountered during the internship.</li>
-            <li>Submit all required internship reports, evaluations, and documents by the specified deadlines.</li>
-          </ol>
-        </div>
-
-        <div class="col-md-6 form-check">
-          <input class="form-check-input" type="checkbox" [(ngModel)]="studentAgreementForm.acknowledged" name="s_ack" />
-          <label class="form-check-label">I agree to the statements above</label>
-        </div>
-        <!-- Student signature and date removed per UX request -->
-        <div class="col-12 d-flex gap-2 mt-2">
-          <button class="btn btn-success" [disabled]="!saf.form.valid || !studentAgreementForm.acknowledged" type="submit">Submit Assignment & Agreement</button>
-        </div>
-      </form>
-    </div>
   </div>
+
+  <div *ngIf="isCurrentTab('assignment')">
+    <app-assignment-form [selectedId]="selectedId"></app-assignment-form>
+  </div>
+
+  <!-- Form 3: Organization Overview & Scope of Work -->
+  <div *ngIf="isCurrentTab('form3')">
+    <app-form3-form [selectedId]="selectedId"></app-form3-form>
+  </div>
+
+  <!-- Duplicated Assignment and Form3 blocks removed (already included under 'Forms' grouping) -->
 
   <!-- Compact AppEx-A removed; kept the full Section A & B form above as primary internship approval entry -->
 
@@ -217,7 +165,7 @@
   <!-- Internship Evidence section removed from student UI -->
 
   <!-- Weekly logs -->
-  <div class="card mb-3" *ngIf="selectedId && isApproved() && currentTab==='logs'">
+  <div class="card mb-3" *ngIf="selectedId && isApproved() && isCurrentTab('logs')">
     <div class="card-header">Weekly Logs</div>
     <div class="card-body">
       <form (ngSubmit)="addWeekly()" #w="ngForm" class="row g-3">
@@ -241,7 +189,7 @@
   </div>
 
   <!-- Final report -->
-  <div class="card mb-3" *ngIf="selectedId && isApproved() && currentTab==='reports'">
+  <div class="card mb-3" *ngIf="selectedId && isApproved() && isCurrentTab('reports')">
     <div class="card-header">Final Report</div>
     <div class="card-body">
       <form (ngSubmit)="addFinal()" #fr="ngForm" class="row g-3">
@@ -268,7 +216,7 @@
   </div>
 
   <!-- Assignments upload -->
-  <div class="card mb-3" *ngIf="selectedId && isApproved() && currentTab==='assignments'">
+  <div class="card mb-3" *ngIf="selectedId && isApproved() && isCurrentTab('assignments')">
     <div class="card-header">Assignments (PDF, DOCX, PPTX, any file type)</div>
     <div class="card-body">
       <div class="row g-3 align-items-end">
@@ -304,7 +252,7 @@
   <!-- Complaints are now a separate page at /complaints -->
 
   <!-- Marks view (only after Internship Office approval) -->
-  <div class="card mb-3" *ngIf="selectedId && isApproved() && currentTab==='marks'">
+  <div class="card mb-3" *ngIf="selectedId && isApproved() && isCurrentTab('marks')">
   <div class="card-header">Marks (Finalized by Internship Office)</div>
     <div class="card-body">
       <div class="row g-3" *ngIf="selectedStudent() as ss">
@@ -317,6 +265,41 @@
         <div class="col-12 small text-muted">Internship Office breakdown: Proposal {{ ss2.marks?.adminProposal ?? 0 }}/5, Activity Log {{ ss2.marks?.adminLogs ?? 0 }}/5, Final Report {{ ss2.marks?.adminFinal ?? 0 }}/10</div>
       </div>
       <!-- Agreement signatures removed from student view -->
+    </div>
+  </div>
+  
+  <!-- Complaints tab content (in-page) -->
+  <div *ngIf="isCurrentTab('complaints')">
+    <div class="card mb-3">
+      <div class="card-header">Complaints & Grievances</div>
+      <div class="card-body">
+        <form (ngSubmit)="submitComplaint()" #cf="ngForm" class="row g-3">
+          <div class="col-md-3">
+            <label class="form-label">Category</label>
+            <select class="form-select" [(ngModel)]="complaint.category" name="ccat" required>
+              <option [ngValue]="'Technical'">Technical</option>
+              <option [ngValue]="'Supervisor'">Supervisor</option>
+              <option [ngValue]="'Organization'">Organization</option>
+              <option [ngValue]="'Other'">Other</option>
+            </select>
+          </div>
+          <div class="col-md-9">
+            <label class="form-label">Message</label>
+            <input class="form-control" [(ngModel)]="complaint.message" name="cmsg" required />
+          </div>
+          <div class="col-12">
+            <button class="btn btn-primary" [disabled]="!cf.form.valid" type="submit">Submit Complaint</button>
+          </div>
+        </form>
+
+        <div class="mt-3">
+          <h6>Your Complaints</h6>
+          <ul class="list-group">
+            <li class="list-group-item" *ngFor="let c of myComplaints()">{{ c.category }} — {{ c.message }} <span class="text-muted">— {{ c.createdAt | date:'short' }}</span></li>
+          </ul>
+          <div class="text-muted" *ngIf="myComplaints().length === 0">No complaints yet.</div>
+        </div>
+      </div>
     </div>
   </div>
 </div>

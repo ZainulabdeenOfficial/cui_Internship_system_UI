@@ -1,0 +1,46 @@
+<div class="card mb-3">
+  <div class="card-header">Organization Overview & Scope of Work</div>
+  <div class="card-body">
+    <form (ngSubmit)="submit()" #f="ngForm" class="row g-3">
+      <div class="col-12">
+        <div class="section-title">1. Organization Overview & Role</div>
+        <textarea class="form-control" rows="4" [(ngModel)]="model.organizationOverview" name="orgOverview"></textarea>
+      </div>
+      <div class="col-12">
+        <div class="section-title">2. Scope of Work</div>
+        <textarea class="form-control" rows="4" [(ngModel)]="model.scopeOfWork" name="scopeOfWork"></textarea>
+      </div>
+      <div class="col-12">
+        <label class="form-label">2.1 Key Activities (check all that apply)</label>
+        <div class="d-flex flex-wrap gap-3">
+          <div class="form-check"><input class="form-check-input" type="checkbox" [(ngModel)]="model.keyActivities.coding" name="act_coding" /><label class="form-check-label">Coding</label></div>
+          <div class="form-check"><input class="form-check-input" type="checkbox" [(ngModel)]="model.keyActivities.testing" name="act_testing" /><label class="form-check-label">Testing</label></div>
+          <div class="form-check"><input class="form-check-input" type="checkbox" [(ngModel)]="model.keyActivities.documentation" name="act_documentation" /><label class="form-check-label">Documentation</label></div>
+          <div class="form-check"><input class="form-check-input" type="checkbox" [(ngModel)]="model.keyActivities.dataAnalysis" name="act_data" /><label class="form-check-label">Data Analysis</label></div>
+          <div class="form-check"><input class="form-check-input" type="checkbox" [(ngModel)]="model.keyActivities.research" name="act_research" /><label class="form-check-label">Research</label></div>
+          <div class="form-check"><input class="form-check-input" type="checkbox" [(ngModel)]="model.keyActivities.technicalSupport" name="act_support" /><label class="form-check-label">Technical Support</label></div>
+          <div class="form-check"><input class="form-check-input" type="checkbox" [(ngModel)]="model.keyActivities.dashboard" name="act_dashboard" /><label class="form-check-label">Dashboard/Report Creation</label></div>
+          <div class="form-check d-flex align-items-center">
+            <input class="form-check-input" type="checkbox" [(ngModel)]="model.keyActivities.other" name="act_other" />
+            <label class="form-check-label me-2">Other (please specify)</label>
+            <input class="form-control form-control-sm" style="max-width:320px" [(ngModel)]="model.keyActivities.otherText" name="act_other_text" />
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12">
+        <label class="form-label">2.2 Tools/Technologies to be used</label>
+        <input class="form-control" [(ngModel)]="model.tools" name="tools" />
+      </div>
+
+      <div class="col-12">
+        <label class="form-label">2.3 Expected Deliverables</label>
+        <textarea class="form-control" rows="3" [(ngModel)]="model.expectedDeliverables" name="expected"></textarea>
+      </div>
+
+      <div class="col-12 d-flex gap-2 mt-2">
+        <button class="btn btn-success" type="submit">Save</button>
+      </div>
+    </form>
+  </div>
+</div>

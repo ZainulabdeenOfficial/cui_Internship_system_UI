@@ -52,15 +52,10 @@
 								<div class="input-group input-group-sm mb-2"><span class="input-group-text">Confirm</span><input type="password" class="form-control" [(ngModel)]="changeStudentPw.confirm" /></div>
 								<button class="btn btn-sm btn-primary btn-pw" (click)="submitStudentPassword()">Update Password</button>
 							</li>
-																					@if (myStudent()?.approved) {
-																						<li><a class="dropdown-item" [routerLink]="['/student']" [queryParams]="{ tab: 'evidence' }">Design & Evidence</a></li>
-																						<li><a class="dropdown-item" [routerLink]="['/student']" [queryParams]="{ tab: 'logs' }">Weekly Logs</a></li>
-																						<li><a class="dropdown-item" [routerLink]="['/student']" [queryParams]="{ tab: 'reports' }">Reports</a></li>
-																						<li><a class="dropdown-item" [routerLink]="['/student']" [queryParams]="{ tab: 'assignments' }">Assignments</a></li>
-																						<li><a class="dropdown-item" [routerLink]="['/student']" [queryParams]="{ tab: 'marks' }">Marks</a></li>
-																					} @else {
-																						<li><a class="dropdown-item" [routerLink]="['/student']" [queryParams]="{ tab: 'evidence' }">Design & Evidence</a></li>
-																					}
+																					<!-- Student dropdown: only show Forms and Complaints in profile as requested -->
+																					<li><a class="dropdown-item" [routerLink]="['/student']" [queryParams]="{ tab: 'appex' }">Internship Approval (AppEx‑A)</a></li>
+																					<li><a class="dropdown-item" [routerLink]="['/student']" [queryParams]="{ tab: 'assignment' }">Assignment &amp; Agreement</a></li>
+																					<li><a class="dropdown-item" [routerLink]="['/student']" [queryParams]="{ tab: 'form3' }">Organization Overview &amp; Scope of Work</a></li>
 																					<li><a class="dropdown-item" routerLink="/complaints">Complaints</a></li>
 						</ul>
 					</li>

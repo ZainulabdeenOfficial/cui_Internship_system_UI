@@ -1,7 +1,7 @@
 .complaints-page{min-height:100vh;padding:2rem 1rem;background:#f8fafc;color:#212529}
 .complaints-page .card{background:#ffffff;border-radius:.5rem;border:1px solid rgba(0,0,0,0.06);box-shadow:0 6px 18px rgba(14,30,37,0.06)}
-.complaints-page .card-header{background:transparent;border-bottom:0;font-weight:600}
-.complaints-page .list-group-item{background:transparent;border:0;padding:.7rem 0}
+.complaints-page .card-header{background:#ffffff;border-bottom:1px solid rgba(0,0,0,0.06);font-weight:600}
+.complaints-page .list-group-item{background:#ffffff;border-bottom:1px solid rgba(0,0,0,0.04);padding:.7rem 0}
 /* Ensure forms are clearly visible on the complaints page (no glass/transparency) */
 .complaints-page .form-control{background:#fff;border:1px solid rgba(0,0,0,0.08);color:#111}
 .complaints-page .btn-primary{background-image:none;background:#0d6efd;border-color:#0d6efd}

@@ -8,11 +8,13 @@ import { ToastService } from '../../shared/toast/toast.service';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { PaginatePipe } from '../../shared/pagination/paginate.pipe';
 import { PaginatorComponent } from '../../shared/pagination/paginator';
+import { AssignmentForm } from './assignment-form';
+import { Form3Form } from './form3-form';
 
 @Component({
   selector: 'app-student',
   standalone: true,
-  imports: [CommonModule, NgIf, NgFor, FormsModule, RouterModule, PaginatePipe, PaginatorComponent],
+  imports: [CommonModule, NgIf, NgFor, FormsModule, RouterModule, PaginatePipe, PaginatorComponent, AssignmentForm, Form3Form],
   templateUrl: './student.html',
   styleUrl: './student.css'
 })
@@ -51,8 +53,10 @@ export class Student {
   myStudentId = computed(() => this.me()?.studentId ?? null);
   isApproved = computed(() => !!this.selectedStudent()?.approved);
   private lockSelection: any;
-  // tabs
-  currentTab: 'applications'|'assignment'|'evidence'|'logs'|'reports'|'assignments'|'complaints'|'marks' = 'applications';
+  // tabs: make each form an explicit tab so AppEx-A is first
+  currentTab: 'appex'|'assignment'|'form3'|'evidence'|'logs'|'reports'|'assignments'|'complaints'|'marks' = 'appex';
+  // Raw query param value (for debugging why a tab may be set but UI not rendering)
+  lastQueryTab: string | null = null;
   // pagination state per tab/list
   page = { logs: 1, reports: 1, assignments: 1, complaints: 1, freel: 1 };
   pageSize = 10;
@@ -73,6 +77,25 @@ export class Student {
     scopeAndDeliverables: '',
     academicPreparation: '',
     comments: ''
+  };
+
+  // Form 3: Organization Overview & Scope of Work
+  form3 = {
+    organizationOverview: '',
+    scopeOfWork: '',
+    keyActivities: {
+      coding: false,
+      testing: false,
+      documentation: false,
+      dataAnalysis: false,
+      research: false,
+      technicalSupport: false,
+      dashboard: false,
+      other: false,
+      otherText: ''
+    },
+    tools: '',
+    expectedDeliverables: ''
   };
 
   // New comprehensive forms based on handbook
@@ -130,20 +153,51 @@ export class Student {
     // Initialize tab from query params
     try {
       this.route.queryParamMap.subscribe(p => {
-        const tabParam = p.get('tab');
-        const allowed = ['applications','assignment','evidence','logs','reports','assignments','complaints','marks'] as const;
-        if (tabParam && (allowed as readonly string[]).includes(tabParam.toLowerCase())) {
-          this.currentTab = tabParam.toLowerCase() as any;
-        } else {
-          // No explicit tab requested: default students to the Applications tab so Internship Approval shows first
-          this.currentTab = 'applications';
-        }
-        // guard: if not approved, restrict to applications/evidence/complaints
+          const tabParam = p.get('tab');
+          const allowed = ['appex','assignment','form3','evidence','logs','reports','assignments','complaints','marks'] as const;
+          if (tabParam) {
+            // record raw value for diagnostics
+            this.lastQueryTab = tabParam;
+            // Normalize common aliases: remove non-alphanum, collapse dashes/underscores/spaces
+            const norm = (tabParam || '').toString().toLowerCase().replace(/[^a-z0-9]/g, '');
+            // map some legacy/alternate names to canonical tabs
+            const aliasMap: Record<string, string> = {
+              'forms': 'appex', // legacy alias
+              'form3': 'form3',
+              'form03': 'form3',
+              'form-3': 'form3',
+              'form_3': 'form3',
+              'formthree': 'form3',
+              'assignment': 'assignment',
+              'assignments': 'assignments',
+              'complaints': 'complaints',
+              'appex': 'appex',
+              'approval': 'appex'
+            };
+            const mapped = aliasMap[norm] ?? norm;
+            if ((allowed as readonly string[]).includes(mapped)) {
+              this.currentTab = mapped as any;
+              // Reflect canonical tab in URL so aliases normalize in address bar.
+              // Avoid navigating if the incoming param already matches the canonical value
+              // (prevents unnecessary re-navigation / re-entry loops).
+              try {
+                if (tabParam !== mapped) {
+                  this.router.navigate([], { relativeTo: this.route, queryParams: { tab: mapped }, queryParamsHandling: 'merge' });
+                }
+              } catch {}
+            } else {
+              this.currentTab = 'appex';
+            }
+          } else {
+            // No explicit tab requested: default students to the AppEx-A tab so Internship Approval shows first
+            this.currentTab = 'appex';
+          }
+        // guard: if not approved, restrict to core forms/evidence/complaints
         const isOk = this.isApproved();
-        const visibleWhenPending = new Set(['applications','assignment','evidence','complaints']);
+        const visibleWhenPending = new Set(['appex','assignment','form3','evidence','complaints']);
         if (!isOk && !visibleWhenPending.has(this.currentTab)) {
-          this.currentTab = 'applications';
-          try { this.router.navigate([], { relativeTo: this.route, queryParams: { tab: 'applications' }, queryParamsHandling: 'merge' }); } catch {}
+          this.currentTab = 'appex';
+          try { this.router.navigate([], { relativeTo: this.route, queryParams: { tab: 'appex' }, queryParamsHandling: 'merge' }); } catch {}
         }
       });
     } catch {}
@@ -205,6 +259,92 @@ export class Student {
         })();
       });
     } catch {}
+
+      // Auto-load latest Agreement and Design Statement into forms when a student is selected
+      try {
+        effect(() => {
+          const sid = this.selectedId;
+          if (!sid) return;
+          try {
+            const agList = this.store.agreements()[sid] ?? [];
+            if (agList.length) {
+              const latest = agList[agList.length - 1] as any;
+              if (latest && latest.studentAgreementData) {
+                // populate assignment/agreement form fields
+                this.studentAgreementForm = { ...this.studentAgreementForm, ...(latest.studentAgreementData || {}) };
+              }
+            }
+          } catch {}
+          try {
+            const dsList = this.store.designStatements()[sid] ?? [];
+            if (dsList.length) {
+              const latestDs = dsList[dsList.length - 1] as any;
+              if (latestDs) {
+                // Restore overview
+                this.form3.organizationOverview = latestDs.placement?.overview || this.form3.organizationOverview || '';
+
+                // Many fields were serialized into `scopeAndDeliverables` when saved.
+                // Attempt to parse common labeled sections so UI fields (scope, keyActivities, tools, expectedDeliverables)
+                // are restored for editing.
+                const raw = (latestDs.scopeAndDeliverables || '').toString();
+                if (raw) {
+                  // Split into labeled blocks separated by blank lines (as saved in submitForm3)
+                  const parts = raw.split(/\n\s*\n/).map((p: string) => p.trim()).filter((p: string) => p.length > 0);
+                  // Helper to strip leading label like 'Scope: '
+                  const stripLabel = (text: string, label: string) => {
+                    if (!text) return '';
+                    const idx = text.toLowerCase().indexOf(label.toLowerCase());
+                    return idx === -1 ? text : text.slice(idx + label.length).trim();
+                  };
+
+                  // Part 0: Scope
+                  if (parts[0]) this.form3.scopeOfWork = stripLabel(parts[0], 'Scope:') || this.form3.scopeOfWork || '';
+
+                  // Part 1: Key Activities
+                  if (parts[1]) {
+                    const kaRaw = stripLabel(parts[1], 'Key Activities:') || '';
+                    // activities were saved as comma-separated names
+                    const items = kaRaw.split(',').map(s => s.trim()).filter(s => s.length);
+                    // reset activities
+                    const k = { ...this.form3.keyActivities };
+                    // normalize and map
+                    const norm = (s: string) => s.toLowerCase().replace(/[^a-z]/g, '');
+                    const itemNorms = items.map(norm);
+                    k.coding = itemNorms.includes('coding');
+                    k.testing = itemNorms.includes('testing');
+                    k.documentation = itemNorms.includes('documentation');
+                    k.dataAnalysis = itemNorms.includes('dataanalysis') || itemNorms.includes('dataanalysis');
+                    k.research = itemNorms.includes('research');
+                    k.technicalSupport = itemNorms.includes('technicalsupport') || itemNorms.includes('technical');
+                    k.dashboard = itemNorms.includes('dashboardreportcreation') || itemNorms.includes('dashboard') || itemNorms.includes('reportcreation');
+                    // detect 'other' and capture trailing text if present in same part
+                    const otherEntry = items.find(it => /other/i.test(it));
+                    if (otherEntry) {
+                      k.other = true;
+                      // if other contains a parenthetical or colon, try to extract text after ':' or '-' or '('
+                      const m = otherEntry.split(/[:\-\(\)]/).slice(1).join(':').trim();
+                      k.otherText = m || this.form3.keyActivities.otherText || '';
+                    } else {
+                      k.other = this.form3.keyActivities.other || false;
+                      k.otherText = this.form3.keyActivities.otherText || '';
+                    }
+                    this.form3.keyActivities = k;
+                  }
+
+                  // Part 2: Tools/Technologies
+                  if (parts[2]) this.form3.tools = stripLabel(parts[2], 'Tools/Technologies:') || this.form3.tools || '';
+
+                  // Part 3: Expected Deliverables
+                  if (parts[3]) this.form3.expectedDeliverables = stripLabel(parts[3], 'Expected Deliverables:') || this.form3.expectedDeliverables || '';
+                } else {
+                  // Fallback: if no structured string, preserve existing scopeOfWork (already set above)
+                  this.form3.scopeOfWork = this.form3.scopeOfWork || '';
+                }
+              }
+            }
+          } catch {}
+        });
+      } catch {}
 
     // Persist drafts to localStorage as the student edits the AppEx-A form (debounced via effect trigger)
     try {
@@ -603,6 +743,10 @@ export class Student {
     try { this.router.navigate([], { relativeTo: this.route, queryParams: { tab }, queryParamsHandling: 'merge' }); } catch {}
   }
 
+  isCurrentTab(tab: string): boolean {
+    try { return (this.currentTab as any) === tab; } catch { return false; }
+  }
+
   meetsFiverr(rec: any) {
     return (rec.gigsCompleted ?? 0) >= 2 || (rec.earningsUSD ?? 0) >= 500;
   }
@@ -802,6 +946,35 @@ export class Student {
       careerGoal: '', learningObjectives: '', placement: { organization: '', mode: 'On-site', functionalArea: '', overview: '' },
       supervisor: { name: '', designation: '', email: '', contact: '' }, scopeAndDeliverables: '', academicPreparation: '', comments: ''
     };
+  }
+
+  // Submit Form 3 (Organization Overview & Scope of Work)
+  submitForm3() {
+    if (!this.selectedId) return;
+    if (!this.ensureMine()) return;
+    const f = this.form3 as any;
+    if (!f.organizationOverview?.trim() && !f.scopeOfWork?.trim()) {
+      this.toast.warning('Please provide organization overview or scope of work before submitting.');
+      return;
+    }
+    try {
+      // Map fields to DesignStatement structure: keep scope/tools/deliverables in scopeAndDeliverables
+      const ds = {
+        careerGoal: '',
+        learningObjectives: '',
+        placement: { organization: '', mode: 'On-site', functionalArea: '', overview: f.organizationOverview || '' },
+        supervisor: { name: '', designation: '', email: '', contact: '' },
+        scopeAndDeliverables: `Scope: ${f.scopeOfWork || ''}\n\nKey Activities: ${Object.entries(f.keyActivities).filter(([k,v]) => k !== 'other' && v).map(([k]) => k).join(', ')}${f.keyActivities.other ? (', ' + (f.keyActivities.otherText || 'Other')) : ''}\n\nTools/Technologies: ${f.tools || ''}\n\nExpected Deliverables: ${f.expectedDeliverables || ''}`,
+        academicPreparation: '',
+        comments: ''
+      };
+      this.store.submitDesignStatement(this.selectedId, ds as any);
+      this.toast.success('Form 3 (Organization Overview & Scope) saved');
+      // clear form3
+      this.form3 = { organizationOverview: '', scopeOfWork: '', keyActivities: { coding: false, testing: false, documentation: false, dataAnalysis: false, research: false, technicalSupport: false, dashboard: false, other: false, otherText: '' }, tools: '', expectedDeliverables: '' };
+    } catch (err: any) {
+      this.toast.danger('Failed to save Form 3');
+    }
   }
   submitReflective() {
     if (!this.selectedId || !this.reflective.content) return;
