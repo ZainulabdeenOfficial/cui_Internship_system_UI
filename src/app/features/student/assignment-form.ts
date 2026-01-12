@@ -87,9 +87,9 @@ export class AssignmentForm {
         this.toast.warning('Please select or sign-in as a student to submit.'); 
         return; 
       }
-      
-      // Build payload for Backend API: /api/student/appex-a with auth
-      const appexAPayload = {
+
+      // Validate all required fields before submission
+      const requiredFields = {
         organization: this.model.organization,
         address: this.model.address,
         industrySector: this.model.industrySector,
@@ -98,14 +98,78 @@ export class AssignmentForm {
         contactPhone: this.model.contactPhone,
         contactEmail: this.model.contactEmail,
         internshipLocation: this.model.internshipLocation,
-        internshipNature: this.model.internshipField || this.model.internshipNature, // Backend POST expects internshipNature
+        internshipNature: this.model.internshipField || this.model.internshipNature,
         mode: this.model.mode,
-        numberOfInternship: Number(this.model.numberOfInternship),
-        startDate: this.model.startDate, // ISO format: YYYY-MM-DD
-        endDate: this.model.endDate, // ISO format: YYYY-MM-DD
+        numberOfInternship: this.model.numberOfInternship,
+        startDate: this.model.startDate,
+        endDate: this.model.endDate,
         workingDays: this.model.workingDays,
         workingHours: this.model.workingHours
       };
+
+      // Check for empty fields
+      const emptyFields = Object.entries(requiredFields)
+        .filter(([key, value]) => !value)
+        .map(([key]) => key);
+
+      if (emptyFields.length > 0) {
+        this.toast.danger(`Please fill all required fields: ${emptyFields.join(', ')}`);
+        return;
+      }
+
+      // Validate dates
+      try {
+        const startDate = new Date(this.model.startDate);
+        const endDate = new Date(this.model.endDate);
+        
+        if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+          this.toast.danger('Invalid date format. Please use YYYY-MM-DD format.');
+          return;
+        }
+
+        if (startDate >= endDate) {
+          this.toast.danger('Start date must be before end date.');
+          return;
+        }
+      } catch (err: any) {
+        this.toast.danger('Date validation error: ' + err.message);
+        return;
+      }
+
+      // Validate number
+      const numInternship = Number(this.model.numberOfInternship);
+      if (isNaN(numInternship) || numInternship < 1) {
+        this.toast.danger('Number of Internship must be a valid positive number.');
+        return;
+      }
+
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(this.model.contactEmail)) {
+        this.toast.danger('Please enter a valid contact email address.');
+        return;
+      }
+      
+      // Build payload for Backend API: /api/student/appex-a with auth
+      const appexAPayload = {
+        organization: this.model.organization.trim(),
+        address: this.model.address.trim(),
+        industrySector: this.model.industrySector.trim(),
+        contactName: this.model.contactName.trim(),
+        contactDesignation: this.model.contactDesignation.trim(),
+        contactPhone: this.model.contactPhone.trim(),
+        contactEmail: this.model.contactEmail.trim(),
+        internshipLocation: this.model.internshipLocation.trim(),
+        internshipNature: (this.model.internshipField || this.model.internshipNature).trim(),
+        mode: this.model.mode,
+        numberOfInternship: numInternship,
+        startDate: this.model.startDate, // ISO format: YYYY-MM-DD
+        endDate: this.model.endDate, // ISO format: YYYY-MM-DD
+        workingDays: this.model.workingDays.trim(),
+        workingHours: this.model.workingHours.trim()
+      };
+
+      console.log('[AssignmentForm] Submitting AppEx A with payload:', appexAPayload);
       
       // Include auth token in payload headers (will be sent by store service)
       const requestConfig = {
@@ -151,7 +215,8 @@ export class AssignmentForm {
         acknowledged: false
       };
     } catch (err: any) {
-      this.toast.danger('Failed to submit internship application');
+      console.error('[AssignmentForm] Submission error:', err);
+      this.toast.danger('Failed to submit internship application: ' + err.message);
     }
   }
 
