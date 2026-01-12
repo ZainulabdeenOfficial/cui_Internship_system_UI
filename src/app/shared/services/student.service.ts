@@ -98,6 +98,24 @@ export class StudentService {
       }
     };
     
+    // Helper to convert checkbox natureOfInternship to comma-separated string
+    const buildInternshipField = (payload: any): string => {
+      const nature = payload.natureOfInternship;
+      if (!nature || typeof nature !== 'object') {
+        return payload.internshipField || '';
+      }
+      
+      const selected: string[] = [];
+      if (nature.softwareDevelopment) selected.push('Software Development');
+      if (nature.dataScience) selected.push('Data Science');
+      if (nature.networking) selected.push('Networking');
+      if (nature.cyberSecurity) selected.push('Cyber Security');
+      if (nature.webMobile) selected.push('Web/Mobile Development');
+      if (nature.otherChecked && nature.otherText) selected.push(nature.otherText);
+      
+      return selected.length > 0 ? selected.join(', ') : (payload.internshipField || '');
+    };
+    
     // Only send fields the backend expects - filter out extras
     const cleanPayload = {
       organization: payload.organization || '',
@@ -107,7 +125,7 @@ export class StudentService {
       contactDesignation: payload.contactDesignation || '',
       contactPhone: payload.contactPhone || '',
       contactEmail: payload.contactEmail || '',
-      internshipField: payload.internshipField || '',
+      internshipField: buildInternshipField(payload),
       internshipLocation: payload.internshipLocation || '',
       startDate: toISODate(payload.startDate) || '',
       endDate: toISODate(payload.endDate) || '',
@@ -139,6 +157,24 @@ export class StudentService {
       }
     };
     
+    // Helper to convert checkbox natureOfInternship to comma-separated string
+    const buildInternshipField = (payload: any): string => {
+      const nature = payload.natureOfInternship;
+      if (!nature || typeof nature !== 'object') {
+        return payload.internshipField || '';
+      }
+      
+      const selected: string[] = [];
+      if (nature.softwareDevelopment) selected.push('Software Development');
+      if (nature.dataScience) selected.push('Data Science');
+      if (nature.networking) selected.push('Networking');
+      if (nature.cyberSecurity) selected.push('Cyber Security');
+      if (nature.webMobile) selected.push('Web/Mobile Development');
+      if (nature.otherChecked && nature.otherText) selected.push(nature.otherText);
+      
+      return selected.length > 0 ? selected.join(', ') : (payload.internshipField || '');
+    };
+    
     // Only send fields the backend expects - filter out extras
     const cleanPayload = {
       organization: payload.organization || '',
@@ -148,7 +184,7 @@ export class StudentService {
       contactDesignation: payload.contactDesignation || '',
       contactPhone: payload.contactPhone || '',
       contactEmail: payload.contactEmail || '',
-      internshipField: payload.internshipField || '',
+      internshipField: buildInternshipField(payload),
       internshipLocation: payload.internshipLocation || '',
       startDate: toISODate(payload.startDate) || '',
       endDate: toISODate(payload.endDate) || '',
