@@ -10,7 +10,10 @@ export class StudentService {
   constructor(private http: HttpClient) {}
 
   private base = environment.apiBaseUrl.replace(/\/$/, '');
-  private abs(path: string) { return environment.production ? path : `${this.base}${path.startsWith('/') ? '' : '/'}${path}`; }
+  private abs(path: string) { 
+    // In production, use full backend URL. In dev, use relative path (proxy handles routing)
+    return environment.production ? `${this.base}${path.startsWith('/') ? '' : '/'}${path}` : path;
+  }
   private getAuthToken(): string {
     return sessionStorage.getItem('authToken') || localStorage.getItem('authToken') || '';
   }
@@ -72,7 +75,7 @@ export class StudentService {
 
   // GET /api/student/appex-a
   async getAppExA(): Promise<any> {
-    const url = '/api/student/appex-a';
+    const url = this.abs('/api/student/appex-a');
     const token = this.getAuthToken();
     const headers = new HttpHeaders({ 
       Accept: 'application/json',
@@ -97,7 +100,7 @@ export class StudentService {
     workingDays?: string;
     workingHours?: string;
   }) {
-    const url = '/api/student/appex-a';
+    const url = this.abs('/api/student/appex-a');
     return await firstValueFrom(this.http.post<any>(url, payload, { headers: this.jsonHeaders() }));
   }
 
@@ -117,7 +120,7 @@ export class StudentService {
     workingDays?: string;
     workingHours?: string;
   }) {
-    const url = '/api/student/appex-a';
+    const url = this.abs('/api/student/appex-a');
     return await firstValueFrom(this.http.put<any>(url, payload, { headers: this.jsonHeaders() }));
   }
 }
