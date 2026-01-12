@@ -97,8 +97,8 @@ export class AssignmentForm {
         contactDesignation: this.model.contactDesignation,
         contactPhone: this.model.contactPhone,
         contactEmail: this.model.contactEmail,
-        internshipField: this.model.internshipField, // Backend expects this field name
         internshipLocation: this.model.internshipLocation,
+        internshipNature: this.model.internshipField || this.model.internshipNature, // Backend POST expects internshipNature
         mode: this.model.mode,
         numberOfInternship: Number(this.model.numberOfInternship),
         startDate: this.model.startDate, // ISO format: YYYY-MM-DD

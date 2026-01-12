@@ -434,6 +434,38 @@ export class StoreService {
         throw new Error('Authentication required: Auth token missing');
       }
 
+      // Validate required fields
+      const requiredFields = [
+        'organization', 'address', 'industrySector', 'contactName',
+        'contactDesignation', 'contactPhone', 'contactEmail',
+        'internshipLocation', 'internshipNature', 'mode', 'numberOfInternship',
+        'startDate', 'endDate', 'workingDays', 'workingHours'
+      ];
+
+      const missingFields = requiredFields.filter(field => !payload[field]);
+      if (missingFields.length > 0) {
+        throw new Error(`Missing required fields: ${missingFields.join(', ')}`);
+      }
+
+      // Validate date format
+      try {
+        const startDate = new Date(payload.startDate);
+        const endDate = new Date(payload.endDate);
+        if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+          throw new Error('Invalid date format. Use YYYY-MM-DD');
+        }
+        if (startDate >= endDate) {
+          throw new Error('Start date must be before end date');
+        }
+      } catch (dateErr: any) {
+        throw new Error(`Date validation error: ${dateErr.message}`);
+      }
+
+      // Validate numberOfInternship is a number
+      if (isNaN(payload.numberOfInternship) || payload.numberOfInternship < 1) {
+        throw new Error('Number of Internship must be a positive number');
+      }
+
       const appexAPayload = {
         ...payload
       };
@@ -448,6 +480,9 @@ export class StoreService {
       const apiBaseUrl = environment.apiBaseUrl.replace(/\/$/, '');
       const apiUrl = `${apiBaseUrl}/api/student/appex-a`;
 
+      console.log('[Store] Submitting AppEx A to:', apiUrl);
+      console.log('[Store] Payload:', appexAPayload);
+
       // Make actual HTTP POST request to backend
       this.http.post<any>(apiUrl, appexAPayload, { headers }).subscribe(
         (response) => {
@@ -460,9 +495,11 @@ export class StoreService {
           if (error.status === 401) {
             console.error('[Store] Unauthorized - Token may be invalid or expired');
           } else if (error.status === 400) {
-            console.error('[Store] Bad request - Validation error:', error.error?.error);
+            console.error('[Store] Bad request - Validation error:', error.error?.error || error.error?.message || error.message);
           } else if (error.status === 409) {
             console.error('[Store] Conflict - AppEx A already exists:', error.error?.error);
+          } else {
+            console.error('[Store] Server error:', error.error?.error || error.message);
           }
         }
       );
@@ -474,7 +511,7 @@ export class StoreService {
         studentId: configStudentId || studentId
       };
     } catch (err: any) {
-      console.error('[Store] Error preparing AppEx A submission:', err);
+      console.error('[Store] Error preparing AppEx A submission:', err.message);
       throw err;
     }
   }
