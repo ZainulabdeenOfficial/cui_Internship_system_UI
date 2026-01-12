@@ -2,8 +2,7 @@
   <div class="card-header">Internship Assignment & Student Agreement Form</div>
   <div class="card-body">
     <form (ngSubmit)="submit()" #f="ngForm" class="row g-3">
-      <!-- APPENDIX-B: Student Information -->
-      <div class="col-12"><strong>Appendix-B: Student Information</strong></div>
+      <!-- Student Information -->
       <div class="col-md-6">
         <label class="form-label">Name</label>
         <input class="form-control" [(ngModel)]="model.name" name="name" required />
@@ -29,8 +28,7 @@
         <input class="form-control" [(ngModel)]="model.preferredField" name="preferredField" />
       </div>
 
-      <!-- APPENDIX-A: Organization Information -->
-      <div class="col-12 mt-3"><strong>Appendix-A: Organization Information</strong></div>
+      <!-- Organization Information -->
       <div class="col-md-6">
         <label class="form-label">Organization</label>
         <input class="form-control" [(ngModel)]="model.organization" name="organization" required />
@@ -64,8 +62,8 @@
         <input class="form-control" [(ngModel)]="model.internshipLocation" name="internshipLocation" required />
       </div>
       <div class="col-md-6">
-        <label class="form-label">Internship Nature</label>
-        <input class="form-control" [(ngModel)]="model.internshipNature" name="internshipNature" />
+        <label class="form-label">Internship Field</label>
+        <input class="form-control" [(ngModel)]="model.internshipField" name="internshipField" placeholder="e.g., Software Development, Data Science" required />
       </div>
       <div class="col-md-6">
         <label class="form-label">Mode</label>

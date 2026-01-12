@@ -22,7 +22,7 @@ export class AssignmentForm {
     contactNo: '',
     preferredField: '',
     agreementAccepted: false,
-    // Appendix-A: Organization Information (Backend: internshipApproval)
+    // Appendix-A: Organization Information (Backend: appexA)
     organization: '',
     address: '',
     industrySector: '',
@@ -30,15 +30,17 @@ export class AssignmentForm {
     contactDesignation: '',
     contactPhone: '',
     contactEmail: '',
+    internshipField: '', // Backend field name
     internshipLocation: '',
-    internshipNature: '',
     mode: 'On-site',
     numberOfInternship: 0,
     startDate: '',
     endDate: '',
     workingDays: '',
     workingHours: '',
+    status: 'pending',
     // Legacy fields for compatibility
+    internshipNature: '', // Deprecated - use internshipField
     fullName: '',
     registrationNumber: '',
     contactNumber: '',
@@ -65,6 +67,8 @@ export class AssignmentForm {
       this.model.name = this.model.name || this.model.fullName;
       this.model.email = this.model.email || this.model.emailAddress;
       this.model.contactNo = this.model.contactNo || this.model.contactNumber;
+      // Map deprecated internshipNature to internshipField
+      this.model.internshipField = this.model.internshipField || this.model.internshipNature;
     });
   }
 
@@ -85,8 +89,8 @@ export class AssignmentForm {
         contactDesignation: this.model.contactDesignation,
         contactPhone: this.model.contactPhone,
         contactEmail: this.model.contactEmail,
+        internshipField: this.model.internshipField, // Backend expects this field name
         internshipLocation: this.model.internshipLocation,
-        internshipNature: this.model.internshipNature,
         mode: this.model.mode,
         numberOfInternship: Number(this.model.numberOfInternship),
         startDate: this.model.startDate, // ISO format: YYYY-MM-DD
@@ -123,14 +127,16 @@ export class AssignmentForm {
         contactDesignation: '',
         contactPhone: '',
         contactEmail: '',
+        internshipField: '',
         internshipLocation: '',
-        internshipNature: '',
         mode: 'On-site',
         numberOfInternship: 0,
         startDate: '',
         endDate: '',
         workingDays: '',
         workingHours: '',
+        status: 'pending',
+        internshipNature: '',
         fullName: '',
         registrationNumber: '',
         contactNumber: '',
