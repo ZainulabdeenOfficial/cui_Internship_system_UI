@@ -54,6 +54,12 @@ export const authTokenInterceptor: HttpInterceptorFn = (req, next) => {
     const token = needsAuth ? getSessionToken() : null;
     if (needsAuth && !token) {
       console.warn('⚠️ [authTokenInterceptor] No token found for protected endpoint:', path);
+      // Check if refresh token exists before attempting request
+      const hasRefreshToken = localStorage.getItem('refreshToken');
+      if (!hasRefreshToken) {
+        console.error('❌ [authTokenInterceptor] No refresh token available, redirecting to login');
+        auth.logout({ redirect: true }).catch(() => {});
+      }
     }
     if (token) {
       console.log('✅ [authTokenInterceptor] Adding Bearer token for:', path);
