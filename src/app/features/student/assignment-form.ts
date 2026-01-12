@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { StoreService } from '../../shared/services/store.service';
 import { ToastService } from '../../shared/toast/toast.service';
+import { AuthService } from '../../shared/services/auth.service';
 
 @Component({
   selector: 'app-assignment-form',
@@ -48,7 +49,7 @@ export class AssignmentForm {
     acknowledged: false
   };
 
-  constructor(private store: StoreService, private toast: ToastService) {
+  constructor(private store: StoreService, private toast: ToastService, private auth: AuthService) {
     // Auto-load when selectedId changes using effect
     effect(() => {
       const id = this.selectedId();
@@ -74,13 +75,20 @@ export class AssignmentForm {
 
   submit() {
     try {
+      // Auth barrier: Check if user is authenticated
+      const authToken = this.getAuthToken();
+      if (!authToken) {
+        this.toast.danger('Authentication required. Please login to submit.');
+        return;
+      }
+
       const id = this.selectedId();
       if (!id) { 
         this.toast.warning('Please select or sign-in as a student to submit.'); 
         return; 
       }
       
-      // Build payload for Backend API: /api/student/appex-a
+      // Build payload for Backend API: /api/student/appex-a with auth
       const appexAPayload = {
         organization: this.model.organization,
         address: this.model.address,
@@ -99,16 +107,15 @@ export class AssignmentForm {
         workingHours: this.model.workingHours
       };
       
-      // Also maintain legacy payload for store compatibility
-      const legacyPayload: any = {
-        policyAcknowledgement: !!this.model.agreementAccepted,
-        confidentialityAgreement: true,
-        safetyTraining: true,
-        studentAgreementData: { ...this.model }
+      // Include auth token in payload headers (will be sent by store service)
+      const requestConfig = {
+        payload: appexAPayload,
+        authToken: authToken,
+        studentId: id
       };
       
-      // Submit to backend via store service
-      this.store.submitAppexA(id, appexAPayload as any);
+      // Submit to backend via store service with auth
+      this.store.submitAppexA(id, requestConfig as any);
       this.toast.success('Internship Application (AppEx A) submitted successfully');
       
       // reset locally
@@ -145,6 +152,23 @@ export class AssignmentForm {
       };
     } catch (err: any) {
       this.toast.danger('Failed to submit internship application');
+    }
+  }
+
+  private getAuthToken(): string | null {
+    try {
+      // Check session storage first (most common for current session)
+      const token = sessionStorage.getItem('authToken') || sessionStorage.getItem('accessToken');
+      if (token) return token;
+      
+      // Fallback to local storage
+      const refreshToken = localStorage.getItem('refreshToken');
+      if (refreshToken) return refreshToken;
+      
+      return null;
+    } catch (err) {
+      console.error('[AssignmentForm] Error retrieving auth token:', err);
+      return null;
     }
   }
 }

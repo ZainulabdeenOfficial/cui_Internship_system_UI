@@ -423,25 +423,42 @@ export class StoreService {
     return entry;
   }
   
-  submitAppexA(studentId: string, appexAData: any) {
-    // Store AppEx A data locally and prepare for backend submission
+  submitAppexA(studentId: string, requestConfig: any) {
+    // Extract auth token and payload from config
+    const { payload, authToken, studentId: configStudentId } = requestConfig;
+    
     try {
+      if (!authToken) {
+        throw new Error('Authentication required: Auth token missing');
+      }
+
       const appexA = { 
         id: crypto.randomUUID(), 
-        studentId, 
+        studentId: configStudentId || studentId, 
         createdAt: new Date().toISOString(), 
         status: 'pending',
-        ...appexAData 
+        ...payload 
+      };
+      
+      // Add auth barrier information to the submission
+      const authorizedRequest = {
+        appexA,
+        authorization: {
+          token: authToken,
+          studentId: studentId,
+          timestamp: new Date().toISOString(),
+          isAuthenticated: true
+        }
       };
       
       // Store in local state (if needed for offline support)
-      // You can extend the store to include appexA data
+      console.log('[Store] Authorized AppEx A submitted:', authorizedRequest);
       
-      // Make API call to backend
+      // Make API call to backend with auth headers
       // This would typically be done via HttpClient to /api/student/appex-a
-      console.log('[Store] AppEx A submitted:', appexA);
+      // Headers would include: Authorization: Bearer ${authToken}
       
-      return appexA;
+      return authorizedRequest;
     } catch (err: any) {
       console.error('[Store] Error submitting AppEx A:', err);
       throw err;
