@@ -101,7 +101,12 @@ export class StudentService {
     workingHours?: string;
   }) {
     const url = this.abs('/api/student/appex-a');
-    return await firstValueFrom(this.http.post<any>(url, payload, { headers: this.jsonHeaders() }));
+    const token = this.getAuthToken();
+    console.log('🔐 [submitAppExA] Token:', token ? `${token.substring(0, 20)}...` : 'NO TOKEN');
+    const headers = this.jsonHeaders();
+    console.log('📤 [submitAppExA] Headers:', headers.keys());
+    console.log('📤 [submitAppExA] Authorization header:', headers.get('Authorization'));
+    return await firstValueFrom(this.http.post<any>(url, payload, { headers }));
   }
 
   // PUT /api/student/appex-a
