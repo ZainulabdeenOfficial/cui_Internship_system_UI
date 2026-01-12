@@ -11,8 +11,16 @@ export class StudentService {
 
   private base = environment.apiBaseUrl.replace(/\/$/, '');
   private abs(path: string) { return environment.production ? path : `${this.base}${path.startsWith('/') ? '' : '/'}${path}`; }
+  private getAuthToken(): string {
+    return sessionStorage.getItem('authToken') || localStorage.getItem('authToken') || '';
+  }
   private jsonHeaders(): HttpHeaders {
-    return new HttpHeaders({ 'Content-Type': 'application/json', Accept: 'application/json' });
+    const token = this.getAuthToken();
+    return new HttpHeaders({ 
+      'Content-Type': 'application/json', 
+      Accept: 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {})
+    });
   }
 
   // POST /api/student/create-internship
@@ -64,9 +72,13 @@ export class StudentService {
 
   // GET /api/student/appex-a
   async getAppExA(): Promise<any> {
-    // Use the Talha dev Vercel endpoint for GET as requested
-    const url = 'https://cui-internship-git-dev-talhas-projects-59c8907e.vercel.app/api/student/appex-a';
-    return await firstValueFrom(this.http.get<any>(url, { headers: new HttpHeaders({ Accept: 'application/json' }) }));
+    const url = '/api/student/appex-a';
+    const token = this.getAuthToken();
+    const headers = new HttpHeaders({ 
+      Accept: 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {})
+    });
+    return await firstValueFrom(this.http.get<any>(url, { headers }));
   }
 
   // POST /api/student/appex-a
@@ -85,7 +97,7 @@ export class StudentService {
     workingDays?: string;
     workingHours?: string;
   }) {
-    const url = 'https://cui-internship-git-dev-talhas-projects-59c8907e.vercel.app/api/student/appex-a';
+    const url = '/api/student/appex-a';
     return await firstValueFrom(this.http.post<any>(url, payload, { headers: this.jsonHeaders() }));
   }
 
@@ -105,7 +117,7 @@ export class StudentService {
     workingDays?: string;
     workingHours?: string;
   }) {
-    const url = 'https://cui-internship-git-dev-talhas-projects-59c8907e.vercel.app/api/student/appex-a';
+    const url = '/api/student/appex-a';
     return await firstValueFrom(this.http.put<any>(url, payload, { headers: this.jsonHeaders() }));
   }
 }
