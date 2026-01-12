@@ -14,13 +14,35 @@ export class AssignmentForm {
   selectedId = input<string | null>(null);
 
   model = {
-    fullName: '',
-    registrationNumber: '',
+    // Appendix-B: Student Information
+    name: '',
+    email: '',
     degreeProgram: '',
     semester: '',
+    contactNo: '',
+    preferredField: '',
+    agreementAccepted: false,
+    // Appendix-A: Organization Information
+    organization: '',
+    address: '',
+    industrySector: '',
+    contactName: '',
+    contactDesignation: '',
+    contactPhone: '',
+    contactEmail: '',
+    internshipLocation: '',
+    internshipNature: '',
+    mode: 'On-site',
+    numberOfInternship: '',
+    startDate: '',
+    endDate: '',
+    workingDays: '',
+    workingHours: '',
+    // Legacy fields for compatibility
+    fullName: '',
+    registrationNumber: '',
     contactNumber: '',
     emailAddress: '',
-    preferredField: '',
     acknowledged: false
   };
 
@@ -38,6 +60,11 @@ export class AssignmentForm {
           this.model = { ...this.model, ...(latest.studentAgreementData || {}) };
         }
       } catch {}
+      
+      // Map legacy fields to new fields
+      this.model.name = this.model.name || this.model.fullName;
+      this.model.email = this.model.email || this.model.emailAddress;
+      this.model.contactNo = this.model.contactNo || this.model.contactNumber;
     });
   }
 
@@ -61,14 +88,33 @@ export class AssignmentForm {
       
       // reset locally
       this.model = { 
-        fullName: '', 
-        registrationNumber: '', 
-        degreeProgram: '', 
-        semester: '', 
-        contactNumber: '', 
-        emailAddress: '', 
-        preferredField: '', 
-        acknowledged: false 
+        name: '',
+        email: '',
+        degreeProgram: '',
+        semester: '',
+        contactNo: '',
+        preferredField: '',
+        agreementAccepted: false,
+        organization: '',
+        address: '',
+        industrySector: '',
+        contactName: '',
+        contactDesignation: '',
+        contactPhone: '',
+        contactEmail: '',
+        internshipLocation: '',
+        internshipNature: '',
+        mode: 'On-site',
+        numberOfInternship: '',
+        startDate: '',
+        endDate: '',
+        workingDays: '',
+        workingHours: '',
+        fullName: '',
+        registrationNumber: '',
+        contactNumber: '',
+        emailAddress: '',
+        acknowledged: false
       };
     } catch (err: any) {
       this.toast.danger('Failed to save agreement');

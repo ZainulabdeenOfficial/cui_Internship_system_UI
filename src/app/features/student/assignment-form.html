@@ -2,40 +2,105 @@
   <div class="card-header">Internship Assignment & Student Agreement Form</div>
   <div class="card-body">
     <form (ngSubmit)="submit()" #f="ngForm" class="row g-3">
-      <div class="col-12"><strong>Student Information</strong></div>
+      <!-- APPENDIX-B: Student Information -->
+      <div class="col-12"><strong>Appendix-B: Student Information</strong></div>
       <div class="col-md-6">
-        <label class="form-label">Full Name</label>
-        <input class="form-control" [(ngModel)]="model.fullName" name="fullName" required />
+        <label class="form-label">Name</label>
+        <input class="form-control" [(ngModel)]="model.name" name="name" required />
       </div>
       <div class="col-md-6">
-        <label class="form-label">Registration Number</label>
-        <input class="form-control" [(ngModel)]="model.registrationNumber" name="registrationNumber" required />
+        <label class="form-label">Email</label>
+        <input type="email" class="form-control" [(ngModel)]="model.email" name="email" required />
       </div>
       <div class="col-md-6">
         <label class="form-label">Degree Program</label>
-        <input class="form-control" [(ngModel)]="model.degreeProgram" name="degreeProgram" />
+        <input class="form-control" [(ngModel)]="model.degreeProgram" name="degreeProgram" required />
       </div>
       <div class="col-md-6">
         <label class="form-label">Semester</label>
-        <input class="form-control" [(ngModel)]="model.semester" name="semester" />
+        <input class="form-control" [(ngModel)]="model.semester" name="semester" required />
       </div>
       <div class="col-md-6">
-        <label class="form-label">Contact Number</label>
-        <input class="form-control" [(ngModel)]="model.contactNumber" name="contactNumber" />
+        <label class="form-label">Contact No</label>
+        <input class="form-control" [(ngModel)]="model.contactNo" name="contactNo" required />
       </div>
       <div class="col-md-6">
-        <label class="form-label">Email Address</label>
-        <input type="email" class="form-control" [(ngModel)]="model.emailAddress" name="emailAddress" required />
-      </div>
-      <div class="col-12">
-        <label class="form-label">Preferred Internship Field/Domain</label>
+        <label class="form-label">Preferred Field</label>
         <input class="form-control" [(ngModel)]="model.preferredField" name="preferredField" />
       </div>
 
-      <div class="col-12 mt-2"><strong>Student Internship Agreement Statement</strong></div>
+      <!-- APPENDIX-A: Organization Information -->
+      <div class="col-12 mt-3"><strong>Appendix-A: Organization Information</strong></div>
+      <div class="col-md-6">
+        <label class="form-label">Organization</label>
+        <input class="form-control" [(ngModel)]="model.organization" name="organization" required />
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Address</label>
+        <input class="form-control" [(ngModel)]="model.address" name="address" required />
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Industry Sector</label>
+        <input class="form-control" [(ngModel)]="model.industrySector" name="industrySector" />
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Contact Name</label>
+        <input class="form-control" [(ngModel)]="model.contactName" name="contactName" required />
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Contact Designation</label>
+        <input class="form-control" [(ngModel)]="model.contactDesignation" name="contactDesignation" />
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Contact Phone</label>
+        <input class="form-control" [(ngModel)]="model.contactPhone" name="contactPhone" required />
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Contact Email</label>
+        <input type="email" class="form-control" [(ngModel)]="model.contactEmail" name="contactEmail" required />
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Internship Location</label>
+        <input class="form-control" [(ngModel)]="model.internshipLocation" name="internshipLocation" required />
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Internship Nature</label>
+        <input class="form-control" [(ngModel)]="model.internshipNature" name="internshipNature" />
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Mode</label>
+        <select class="form-select" [(ngModel)]="model.mode" name="mode">
+          <option value="On-site">On-site</option>
+          <option value="Remote">Remote</option>
+          <option value="Hybrid">Hybrid</option>
+        </select>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Number of Internship</label>
+        <input type="number" class="form-control" [(ngModel)]="model.numberOfInternship" name="numberOfInternship" />
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Start Date</label>
+        <input type="date" class="form-control" [(ngModel)]="model.startDate" name="startDate" required />
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">End Date</label>
+        <input type="date" class="form-control" [(ngModel)]="model.endDate" name="endDate" required />
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Working Days</label>
+        <input class="form-control" [(ngModel)]="model.workingDays" name="workingDays" placeholder="e.g., Monday-Friday" />
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Working Hours</label>
+        <input class="form-control" [(ngModel)]="model.workingHours" name="workingHours" placeholder="e.g., 9 AM - 5 PM" />
+      </div>
+
+      <!-- Agreement Section -->
+      <div class="col-12 mt-3"><strong>Student Internship Agreement Statement</strong></div>
       <div class="col-12">
         <p>
-          I, <input class="form-control d-inline-block" style="width:40%" [(ngModel)]="model.fullName" name="inline_fullName" /> , a student of
+          I, <input class="form-control d-inline-block" style="width:40%" [(ngModel)]="model.name" name="inline_name" /> , a student of
           <input class="form-control d-inline-block" style="width:30%" [(ngModel)]="model.degreeProgram" name="inline_degreeProgram" /> at
           the university, hereby acknowledge and accept the internship opportunity assigned to me and agree to the statements below.
         </p>
@@ -50,11 +115,11 @@
       </div>
 
       <div class="col-md-6 form-check">
-        <input class="form-check-input" type="checkbox" [(ngModel)]="model.acknowledged" name="acknowledged" />
+        <input class="form-check-input" type="checkbox" [(ngModel)]="model.agreementAccepted" name="agreementAccepted" />
         <label class="form-check-label">I agree to the statements above</label>
       </div>
       <div class="col-12 d-flex gap-2 mt-2">
-        <button class="btn btn-success" [disabled]="!f.form.valid || !model.acknowledged" type="submit">Submit Assignment & Agreement</button>
+        <button class="btn btn-success" [disabled]="!f.form.valid || !model.agreementAccepted" type="submit">Submit Assignment & Agreement</button>
       </div>
     </form>
   </div>

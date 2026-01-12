@@ -6,6 +6,13 @@
         <div class="section-title">1. Organization Overview & Role</div>
         <textarea class="form-control" rows="4" [(ngModel)]="model.organizationOverview" name="orgOverview"></textarea>
       </div>
+      
+      <!-- APPENDIX-C: Role Description Section -->
+      <div class="col-12 mt-3">
+        <div class="section-title">Appendix-C: Role Description</div>
+        <textarea class="form-control" rows="4" [(ngModel)]="model.roleDescription" name="roleDescription" placeholder="Describe your role and responsibilities"></textarea>
+      </div>
+      
       <div class="col-12">
         <div class="section-title">2. Scope of Work</div>
         <textarea class="form-control" rows="4" [(ngModel)]="model.scopeOfWork" name="scopeOfWork"></textarea>
@@ -31,6 +38,12 @@
       <div class="col-12">
         <label class="form-label">2.2 Tools/Technologies to be used</label>
         <input class="form-control" [(ngModel)]="model.tools" name="tools" />
+      </div>
+      
+      <!-- APPENDIX-C: Tools/Technologies Section -->
+      <div class="col-12">
+        <label class="form-label">Appendix-C: Tools/Technologies (Detailed)</label>
+        <textarea class="form-control" rows="3" [(ngModel)]="model.toolsTechnologies" name="toolsTechnologies" placeholder="List all tools and technologies you will use"></textarea>
       </div>
 
       <div class="col-12">

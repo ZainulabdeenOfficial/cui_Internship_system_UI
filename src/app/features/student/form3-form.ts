@@ -28,7 +28,10 @@ export class Form3Form {
       otherText: '' 
     },
     tools: '',
-    expectedDeliverables: ''
+    expectedDeliverables: '',
+    // Appendix-C: Role Description & Activities
+    roleDescription: '',
+    toolsTechnologies: ''
   };
 
   constructor(private store: StoreService, private toast: ToastService) {
@@ -129,7 +132,9 @@ export class Form3Form {
           otherText: '' 
         }, 
         tools: '', 
-        expectedDeliverables: '' 
+        expectedDeliverables: '',
+        roleDescription: '',
+        toolsTechnologies: ''
       };
     } catch (err: any) {
       this.toast.danger('Failed to save Form 3');
