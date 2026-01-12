@@ -1,4 +1,6 @@
 import { Injectable, signal } from '@angular/core';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { environment } from '../../../environments/environment';
 
 export type WeeklyLog = { id: string; week: number; note: string; date: string };
 export type Report = { id: string; type: 'proposal'|'progress'|'final'|'mid'|'site-final'|'reflective'; title: string; content: string; date: string; score?: number; approved?: boolean };
@@ -172,7 +174,7 @@ export class StoreService {
     save('adminProfile', this.adminProfile());
   }
 
-  constructor() {
+  constructor(private http: HttpClient) {
     // Seed requested sample faculty supervisor if none exists
     try {
       if (this.facultySupervisors().length === 0) {
@@ -432,35 +434,47 @@ export class StoreService {
         throw new Error('Authentication required: Auth token missing');
       }
 
-      const appexA = { 
-        id: crypto.randomUUID(), 
-        studentId: configStudentId || studentId, 
-        createdAt: new Date().toISOString(), 
-        status: 'pending',
-        ...payload 
+      const appexAPayload = {
+        ...payload
       };
       
-      // Add auth barrier information to the submission
-      const authorizedRequest = {
-        appexA,
-        authorization: {
-          token: authToken,
-          studentId: studentId,
-          timestamp: new Date().toISOString(),
-          isAuthenticated: true
+      // Build Authorization header
+      const headers = new HttpHeaders({
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken}`
+      });
+
+      // Get API base URL from environment
+      const apiBaseUrl = environment.apiBaseUrl.replace(/\/$/, '');
+      const apiUrl = `${apiBaseUrl}/api/student/appex-a`;
+
+      // Make actual HTTP POST request to backend
+      this.http.post<any>(apiUrl, appexAPayload, { headers }).subscribe(
+        (response) => {
+          console.log('[Store] AppEx A submitted successfully:', response);
+          // Handle success - toast notification is handled in component
+        },
+        (error) => {
+          console.error('[Store] Error submitting AppEx A:', error);
+          // Log the error for debugging
+          if (error.status === 401) {
+            console.error('[Store] Unauthorized - Token may be invalid or expired');
+          } else if (error.status === 400) {
+            console.error('[Store] Bad request - Validation error:', error.error?.error);
+          } else if (error.status === 409) {
+            console.error('[Store] Conflict - AppEx A already exists:', error.error?.error);
+          }
         }
+      );
+
+      // Return success indicator (actual response will be handled by subscription)
+      return { 
+        success: true, 
+        message: 'AppEx A submission initiated',
+        studentId: configStudentId || studentId
       };
-      
-      // Store in local state (if needed for offline support)
-      console.log('[Store] Authorized AppEx A submitted:', authorizedRequest);
-      
-      // Make API call to backend with auth headers
-      // This would typically be done via HttpClient to /api/student/appex-a
-      // Headers would include: Authorization: Bearer ${authToken}
-      
-      return authorizedRequest;
     } catch (err: any) {
-      console.error('[Store] Error submitting AppEx A:', err);
+      console.error('[Store] Error preparing AppEx A submission:', err);
       throw err;
     }
   }
