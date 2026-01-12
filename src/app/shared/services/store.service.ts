@@ -422,6 +422,31 @@ export class StoreService {
     this.persist();
     return entry;
   }
+  
+  submitAppexA(studentId: string, appexAData: any) {
+    // Store AppEx A data locally and prepare for backend submission
+    try {
+      const appexA = { 
+        id: crypto.randomUUID(), 
+        studentId, 
+        createdAt: new Date().toISOString(), 
+        status: 'pending',
+        ...appexAData 
+      };
+      
+      // Store in local state (if needed for offline support)
+      // You can extend the store to include appexA data
+      
+      // Make API call to backend
+      // This would typically be done via HttpClient to /api/student/appex-a
+      console.log('[Store] AppEx A submitted:', appexA);
+      
+      return appexA;
+    } catch (err: any) {
+      console.error('[Store] Error submitting AppEx A:', err);
+      throw err;
+    }
+  }
   signAgreementByFaculty(studentId: string, signerName: string) {
     const list = this.agreements()[studentId] ?? [];
     if (list.length === 0) return;

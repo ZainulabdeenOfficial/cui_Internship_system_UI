@@ -22,7 +22,7 @@ export class AssignmentForm {
     contactNo: '',
     preferredField: '',
     agreementAccepted: false,
-    // Appendix-A: Organization Information
+    // Appendix-A: Organization Information (Backend: internshipApproval)
     organization: '',
     address: '',
     industrySector: '',
@@ -33,7 +33,7 @@ export class AssignmentForm {
     internshipLocation: '',
     internshipNature: '',
     mode: 'On-site',
-    numberOfInternship: '',
+    numberOfInternship: 0,
     startDate: '',
     endDate: '',
     workingDays: '',
@@ -76,15 +76,36 @@ export class AssignmentForm {
         return; 
       }
       
-      const payload: any = {
-        policyAcknowledgement: !!this.model.acknowledged,
+      // Build payload for Backend API: /api/student/appex-a
+      const appexAPayload = {
+        organization: this.model.organization,
+        address: this.model.address,
+        industrySector: this.model.industrySector,
+        contactName: this.model.contactName,
+        contactDesignation: this.model.contactDesignation,
+        contactPhone: this.model.contactPhone,
+        contactEmail: this.model.contactEmail,
+        internshipLocation: this.model.internshipLocation,
+        internshipNature: this.model.internshipNature,
+        mode: this.model.mode,
+        numberOfInternship: Number(this.model.numberOfInternship),
+        startDate: this.model.startDate, // ISO format: YYYY-MM-DD
+        endDate: this.model.endDate, // ISO format: YYYY-MM-DD
+        workingDays: this.model.workingDays,
+        workingHours: this.model.workingHours
+      };
+      
+      // Also maintain legacy payload for store compatibility
+      const legacyPayload: any = {
+        policyAcknowledgement: !!this.model.agreementAccepted,
         confidentialityAgreement: true,
         safetyTraining: true,
         studentAgreementData: { ...this.model }
       };
       
-      this.store.submitAgreement(id, payload as any);
-      this.toast.success('Student Assignment & Agreement form saved');
+      // Submit to backend via store service
+      this.store.submitAppexA(id, appexAPayload as any);
+      this.toast.success('Internship Application (AppEx A) submitted successfully');
       
       // reset locally
       this.model = { 
@@ -105,7 +126,7 @@ export class AssignmentForm {
         internshipLocation: '',
         internshipNature: '',
         mode: 'On-site',
-        numberOfInternship: '',
+        numberOfInternship: 0,
         startDate: '',
         endDate: '',
         workingDays: '',
@@ -117,7 +138,7 @@ export class AssignmentForm {
         acknowledged: false
       };
     } catch (err: any) {
-      this.toast.danger('Failed to save agreement');
+      this.toast.danger('Failed to submit internship application');
     }
   }
 }

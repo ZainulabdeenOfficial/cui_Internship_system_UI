@@ -53,7 +53,7 @@
       </div>
       <div class="col-md-6">
         <label class="form-label">Contact Phone</label>
-        <input class="form-control" [(ngModel)]="model.contactPhone" name="contactPhone" required />
+        <input type="tel" class="form-control" [(ngModel)]="model.contactPhone" name="contactPhone" placeholder="e.g., +92-300-1234567" required />
       </div>
       <div class="col-md-6">
         <label class="form-label">Contact Email</label>
@@ -77,7 +77,7 @@
       </div>
       <div class="col-md-6">
         <label class="form-label">Number of Internship</label>
-        <input type="number" class="form-control" [(ngModel)]="model.numberOfInternship" name="numberOfInternship" />
+        <input type="number" class="form-control" [(ngModel)]="model.numberOfInternship" name="numberOfInternship" min="1" required />
       </div>
       <div class="col-md-6">
         <label class="form-label">Start Date</label>
