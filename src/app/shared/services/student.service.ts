@@ -11,8 +11,8 @@ export class StudentService {
 
   private base = environment.apiBaseUrl.replace(/\/$/, '');
   private abs(path: string) { 
-    // In production, use full backend URL. In dev, use relative path (proxy handles routing)
-    return environment.production ? `${this.base}${path.startsWith('/') ? '' : '/'}${path}` : path;
+    // Always use relative paths - Vercel rewrites and local proxy handle routing to backend
+    return path;
   }
   private getAuthToken(): string {
     return sessionStorage.getItem('authToken') || localStorage.getItem('authToken') || '';
