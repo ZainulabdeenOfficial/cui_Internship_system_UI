@@ -86,6 +86,18 @@ export class StudentService {
 
   // POST /api/student/appex-a
   async submitAppExA(payload: any) {
+    // Helper to convert YYYY-MM-DD to ISO 8601 with timestamp
+    const toISODate = (dateStr: string): string => {
+      if (!dateStr) return '';
+      try {
+        const date = new Date(dateStr);
+        if (isNaN(date.getTime())) return dateStr; // Return as-is if invalid
+        return date.toISOString();
+      } catch {
+        return dateStr;
+      }
+    };
+    
     // Only send fields the backend expects - filter out extras
     const cleanPayload = {
       organization: payload.organization || '',
@@ -97,8 +109,8 @@ export class StudentService {
       contactEmail: payload.contactEmail || '',
       internshipField: payload.internshipField || '',
       internshipLocation: payload.internshipLocation || '',
-      startDate: payload.startDate || '',
-      endDate: payload.endDate || '',
+      startDate: toISODate(payload.startDate) || '',
+      endDate: toISODate(payload.endDate) || '',
       workingDays: payload.workingDays || '',
       workingHours: payload.workingHours || ''
     };
@@ -115,6 +127,18 @@ export class StudentService {
 
   // PUT /api/student/appex-a
   async updateAppExA(payload: any) {
+    // Helper to convert YYYY-MM-DD to ISO 8601 with timestamp
+    const toISODate = (dateStr: string): string => {
+      if (!dateStr) return '';
+      try {
+        const date = new Date(dateStr);
+        if (isNaN(date.getTime())) return dateStr;
+        return date.toISOString();
+      } catch {
+        return dateStr;
+      }
+    };
+    
     // Only send fields the backend expects - filter out extras
     const cleanPayload = {
       organization: payload.organization || '',
@@ -126,8 +150,8 @@ export class StudentService {
       contactEmail: payload.contactEmail || '',
       internshipField: payload.internshipField || '',
       internshipLocation: payload.internshipLocation || '',
-      startDate: payload.startDate || '',
-      endDate: payload.endDate || '',
+      startDate: toISODate(payload.startDate) || '',
+      endDate: toISODate(payload.endDate) || '',
       workingDays: payload.workingDays || '',
       workingHours: payload.workingHours || ''
     };
