@@ -85,48 +85,56 @@ export class StudentService {
   }
 
   // POST /api/student/appex-a
-  async submitAppExA(payload: {
-    organization: string;
-    address: string;
-    industrySector?: string;
-    contactName: string;
-    contactDesignation?: string;
-    contactPhone: string;
-    contactEmail: string;
-    internshipField?: string;
-    internshipLocation?: string;
-    startDate: string; // yyyy-mm-dd
-    endDate: string;   // yyyy-mm-dd
-    workingDays?: string;
-    workingHours?: string;
-  }) {
+  async submitAppExA(payload: any) {
+    // Only send fields the backend expects - filter out extras
+    const cleanPayload = {
+      organization: payload.organization || '',
+      address: payload.address || '',
+      industrySector: payload.industrySector || '',
+      contactName: payload.contactName || '',
+      contactDesignation: payload.contactDesignation || '',
+      contactPhone: payload.contactPhone || '',
+      contactEmail: payload.contactEmail || '',
+      internshipField: payload.internshipField || '',
+      internshipLocation: payload.internshipLocation || '',
+      startDate: payload.startDate || '',
+      endDate: payload.endDate || '',
+      workingDays: payload.workingDays || '',
+      workingHours: payload.workingHours || ''
+    };
+    
     const url = this.abs('/api/student/appex-a');
     const token = this.getAuthToken();
     console.log('🔐 [submitAppExA] Token:', token ? `${token.substring(0, 20)}...` : 'NO TOKEN');
     const headers = this.jsonHeaders();
     console.log('📤 [submitAppExA] Headers:', headers.keys());
     console.log('📤 [submitAppExA] Authorization header:', headers.get('Authorization'));
-    console.log('📦 [submitAppExA] Payload being sent:', JSON.stringify(payload, null, 2));
-    return await firstValueFrom(this.http.post<any>(url, payload, { headers }));
+    console.log('📦 [submitAppExA] Payload being sent:', JSON.stringify(cleanPayload, null, 2));
+    return await firstValueFrom(this.http.post<any>(url, cleanPayload, { headers }));
   }
 
   // PUT /api/student/appex-a
-  async updateAppExA(payload: {
-    organization: string;
-    address: string;
-    industrySector?: string;
-    contactName: string;
-    contactDesignation?: string;
-    contactPhone: string;
-    contactEmail: string;
-    internshipField?: string;
-    internshipLocation?: string;
-    startDate: string;
-    endDate: string;
-    workingDays?: string;
-    workingHours?: string;
-  }) {
+  async updateAppExA(payload: any) {
+    // Only send fields the backend expects - filter out extras
+    const cleanPayload = {
+      organization: payload.organization || '',
+      address: payload.address || '',
+      industrySector: payload.industrySector || '',
+      contactName: payload.contactName || '',
+      contactDesignation: payload.contactDesignation || '',
+      contactPhone: payload.contactPhone || '',
+      contactEmail: payload.contactEmail || '',
+      internshipField: payload.internshipField || '',
+      internshipLocation: payload.internshipLocation || '',
+      startDate: payload.startDate || '',
+      endDate: payload.endDate || '',
+      workingDays: payload.workingDays || '',
+      workingHours: payload.workingHours || ''
+    };
+    
     const url = this.abs('/api/student/appex-a');
-    return await firstValueFrom(this.http.put<any>(url, payload, { headers: this.jsonHeaders() }));
+    const headers = this.jsonHeaders();
+    console.log('📤 [updateAppExA] Sending updated payload:', JSON.stringify(cleanPayload, null, 2));
+    return await firstValueFrom(this.http.put<any>(url, cleanPayload, { headers }));
   }
 }
