@@ -220,12 +220,20 @@ export class Student {
             });
             if (serverHas) {
               this.appexAForm = {
-                organization: ax.organization || '', address: ax.address || '', industrySector: ax.industrySector || '',
-                contactName: ax.contactName || '', contactDesignation: ax.contactDesignation || '', contactPhone: ax.contactPhone || '', contactEmail: ax.contactEmail || '',
-                internshipField: ax.internshipField || '', internshipLocation: ax.internshipLocation || '',
-                startDate: (ax.startDate || '').slice(0,10), endDate: (ax.endDate || '').slice(0,10),
-                workingDays: ax.workingDays || '', workingHours: ax.workingHours || '',
-                numberOfPositions: ax.numberOfPositions ?? 1,
+                organization: ax.organization || '', 
+                address: ax.address || '', 
+                industrySector: ax.industrySector || '',
+                contactName: ax.contactName || '', 
+                contactDesignation: ax.contactDesignation || '', 
+                contactPhone: ax.contactPhone || '', 
+                contactEmail: ax.contactEmail || '',
+                internshipField: ax.internshipNature || ax.internshipField || '', // Backend uses internshipNature
+                internshipLocation: ax.internshipLocation || '',
+                startDate: (ax.startDate || '').slice(0,10), 
+                endDate: (ax.endDate || '').slice(0,10),
+                workingDays: ax.workingDays || '', 
+                workingHours: ax.workingHours || '',
+                numberOfPositions: ax.numberOfInternship || ax.numberOfPositions || 1, // Backend uses numberOfInternship
                 natureOfInternship: ax.natureOfInternship || { softwareDevelopment: false, dataScience: false, networking: false, cyberSecurity: false, webMobile: false, otherChecked: false, otherText: '' },
                 mode: ax.mode || 'On-Site'
               };
