@@ -5,6 +5,7 @@ import { Router, RouterLink, ActivatedRoute } from '@angular/router';
 import { StoreService } from '../../shared/services/store.service';
 import { ToastService } from '../../shared/toast/toast.service';
 import { AuthService } from '../../shared/services/auth.service';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-login',
@@ -60,6 +61,18 @@ export class Login implements OnDestroy, OnInit {
         if (user.role === 'site' || user.role === 'site_supervisor') { this.router.navigate(['/site']); return; }
       }
     } catch {}
+    // Hit backend API on page load to verify system status
+    this.checkSystemStatus();
+  }
+
+  private async checkSystemStatus(): Promise<void> {
+    try {
+      const res = await this.auth.checkSystemStatus();
+      // System is operational; silently continue
+    } catch (e: any) {
+      // Silent failure - don't disrupt login page on backend check
+      try { if (!environment.production) console.warn('[Login] System status check failed:', e?.message); } catch {}
+    }
   }
 
   ngOnDestroy(): void { if (this.ticker) clearInterval(this.ticker); document.body.classList.remove('auth-light'); }
@@ -195,7 +208,11 @@ export class Login implements OnDestroy, OnInit {
   try { sessionStorage.setItem('lastLoginMeta', JSON.stringify({ ts: Date.now(), email, role: apiRole || 'student' })); } catch {}
       } else {
         // API login failed: show error and do not fallback to local logins
-        const msg = apiRes?.message || 'Invalid email or password';
+        let msg = apiRes?.message || 'Invalid email or password';
+        // Hide internal server errors from user - show generic message instead
+        if (msg && (msg.includes('500') || msg.includes('Server error') || msg.includes('Internal'))) {
+          msg = 'Server error. Please try again later.';
+        }
         this.error = msg; this.toast.danger(msg);
         // If server indicates email not verified, guide user to verify page
         if (msg.toLowerCase().includes('verify') || msg.toLowerCase().includes('unverified')) {
@@ -212,15 +229,18 @@ export class Login implements OnDestroy, OnInit {
         this.error = 'Server took too long to respond. Please try again.';
         this.toast.warning(this.error);
       } else {
-        // Surface server message if it's a 5xx, otherwise generic to avoid user enumeration
+        // Hide internal server errors (5xx) from user - show generic message instead
         const status = e?.status ?? e?.error?.status ?? 0;
-        const serverMsg = e?.error?.message || e?.error?.error || e?.message;
+        let errMsg = 'Invalid email or password';
         if (status >= 500) {
-          this.error = serverMsg || 'Server error. Please try again later.';
-        } else {
-          this.error = 'Invalid email or password';
+          // Hide specific 5xx errors from user
+          errMsg = 'Server error. Please try again later.';
+        } else if (status >= 400 && status < 500) {
+          // Show 4xx errors as they are client-related
+          errMsg = e?.error?.message || e?.error?.error || e?.message || 'Invalid email or password';
         }
-  this.toast.danger(this.error || 'Login failed');
+        this.error = errMsg;
+  this.toast.danger(this.error);
         this.failedAttempts++;
       }
       if (this.failedAttempts >= 3) {

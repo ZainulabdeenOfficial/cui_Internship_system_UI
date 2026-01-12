@@ -148,6 +148,10 @@ export class AuthService {
     return await this.getJson<GeneratePasswordResponse>('/api/auth/generate-password');
   }
 
+  async checkSystemStatus(): Promise<{ status: string }> {
+    return await this.getJson<{ status: string }>('/api/auth/status');
+  }
+
   clearTokens() {
     try {
       sessionStorage.removeItem('authToken');
