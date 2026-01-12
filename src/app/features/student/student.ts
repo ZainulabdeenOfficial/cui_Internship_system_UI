@@ -580,6 +580,10 @@ export class Student {
     try {
       return await this.studentApi.getAppExA();
     } catch (err: any) {
+      // 404 means no AppEx-A data exists yet (normal for new students)
+      if (err?.status === 404) {
+        return {}; // Return empty object so form can start fresh
+      }
       // Network/CORS errors surface as status === 0 in Angular HttpErrorResponse
       const isNet = err && (err.status === 0 || (err.message || '').toString().toLowerCase().includes('unknown error'));
       if (isNet) {
