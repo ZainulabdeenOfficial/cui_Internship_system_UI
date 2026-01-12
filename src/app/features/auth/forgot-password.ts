@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink, Router } from '@angular/router';
 import { AuthService } from '../../shared/services/auth.service';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-forgot-password',
@@ -31,24 +32,24 @@ export class ForgotPassword implements OnInit, OnDestroy {
   async submit() {
     if (!this.email) return;
     this.loading = true;
-    this.message = null;
+    // Immediately show success message without waiting for API response
+    this.sent = true;
+    this.message = `Reset link sent to ${this.email}. Please check your inbox.`;
+    // Start redirect countdown immediately
+    this.startRedirectCountdown(5);
+    
+    // Make API call in background (don't wait)
     try {
       const res = await this.auth.forgotPassword(this.email.trim());
-      // Immediately show success screen without loading indicator
-      this.sent = true;
-      this.message = res?.message || `Reset link sent to ${this.email}. Please check your inbox.`;
-      // Auto-redirect to login after 5 seconds
-      this.startRedirectCountdown(5);
-    } catch (e: any) {
-      this.loading = false;
-      const status = e?.status;
-      if (status === 404) {
-        this.message = 'Email not found. Please check and try again.';
-        this.sent = false;
-      } else {
-        this.message = e?.error?.message || e?.message || 'Failed to send email. Please try again.';
-        this.sent = false;
+      // Update message if API provides a better one
+      if (res?.message) {
+        this.message = res.message;
       }
+    } catch (e: any) {
+      // Silent failure - user already sees success message
+      try { if (!environment.production) console.warn('[ForgotPassword] API call failed:', e?.message); } catch {}
+    } finally {
+      this.loading = false;
     }
   }
 
