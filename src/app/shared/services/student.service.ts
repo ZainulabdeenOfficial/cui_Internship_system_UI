@@ -106,6 +106,7 @@ export class StudentService {
     const headers = this.jsonHeaders();
     console.log('📤 [submitAppExA] Headers:', headers.keys());
     console.log('📤 [submitAppExA] Authorization header:', headers.get('Authorization'));
+    console.log('📦 [submitAppExA] Payload being sent:', JSON.stringify(payload, null, 2));
     return await firstValueFrom(this.http.post<any>(url, payload, { headers }));
   }
 

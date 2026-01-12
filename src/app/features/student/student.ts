@@ -597,6 +597,7 @@ export class Student {
   }
   async apiSubmitAppExA(payload: any) {
     try {
+      console.log('📝 [apiSubmitAppExA] Received payload:', JSON.stringify(payload, null, 2));
       const res = await this.studentApi.submitAppExA(payload);
       this.toast.success(res?.message || 'AppEx-A submitted');
       return res;
