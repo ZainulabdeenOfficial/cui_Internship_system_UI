@@ -86,13 +86,14 @@ export class StudentService {
 
   // POST /api/student/appex-a
   async submitAppExA(payload: any) {
-    // Helper to convert YYYY-MM-DD to ISO 8601 with timestamp
-    const toISODate = (dateStr: string): string => {
+    // Helper to convert dates to YYYY-MM-DD format
+    const toSimpleDate = (dateStr: string): string => {
       if (!dateStr) return '';
       try {
         const date = new Date(dateStr);
-        if (isNaN(date.getTime())) return dateStr; // Return as-is if invalid
-        return date.toISOString();
+        if (isNaN(date.getTime())) return dateStr;
+        // Format as YYYY-MM-DD
+        return date.toISOString().split('T')[0];
       } catch {
         return dateStr;
       }
@@ -102,7 +103,7 @@ export class StudentService {
     const buildInternshipField = (payload: any): string => {
       const nature = payload.natureOfInternship;
       if (!nature || typeof nature !== 'object') {
-        return payload.internshipField || '';
+        return payload.internshipField || payload.internshipNature || '';
       }
       
       const selected: string[] = [];
@@ -113,10 +114,10 @@ export class StudentService {
       if (nature.webMobile) selected.push('Web/Mobile Development');
       if (nature.otherChecked && nature.otherText) selected.push(nature.otherText);
       
-      return selected.length > 0 ? selected.join(', ') : (payload.internshipField || '');
+      return selected.length > 0 ? selected.join(', ') : (payload.internshipField || payload.internshipNature || '');
     };
     
-    // Only send fields the backend expects - filter out extras
+    // Only send fields the backend expects
     const cleanPayload = {
       organization: payload.organization || '',
       address: payload.address || '',
@@ -125,10 +126,12 @@ export class StudentService {
       contactDesignation: payload.contactDesignation || '',
       contactPhone: payload.contactPhone || '',
       contactEmail: payload.contactEmail || '',
-      internshipNature: buildInternshipField(payload),
       internshipLocation: payload.internshipLocation || '',
-      startDate: toISODate(payload.startDate) || '',
-      endDate: toISODate(payload.endDate) || '',
+      internshipNature: buildInternshipField(payload),
+      mode: payload.mode || '',
+      numberOfInternship: payload.numberOfPositions || payload.numberOfInternship || 1,
+      startDate: toSimpleDate(payload.startDate) || '',
+      endDate: toSimpleDate(payload.endDate) || '',
       workingDays: payload.workingDays || '',
       workingHours: payload.workingHours || ''
     };
@@ -145,13 +148,13 @@ export class StudentService {
 
   // PUT /api/student/appex-a
   async updateAppExA(payload: any) {
-    // Helper to convert YYYY-MM-DD to ISO 8601 with timestamp
-    const toISODate = (dateStr: string): string => {
+    // Helper to convert dates to YYYY-MM-DD format
+    const toSimpleDate = (dateStr: string): string => {
       if (!dateStr) return '';
       try {
         const date = new Date(dateStr);
         if (isNaN(date.getTime())) return dateStr;
-        return date.toISOString();
+        return date.toISOString().split('T')[0];
       } catch {
         return dateStr;
       }
@@ -161,7 +164,7 @@ export class StudentService {
     const buildInternshipField = (payload: any): string => {
       const nature = payload.natureOfInternship;
       if (!nature || typeof nature !== 'object') {
-        return payload.internshipField || '';
+        return payload.internshipField || payload.internshipNature || '';
       }
       
       const selected: string[] = [];
@@ -172,10 +175,10 @@ export class StudentService {
       if (nature.webMobile) selected.push('Web/Mobile Development');
       if (nature.otherChecked && nature.otherText) selected.push(nature.otherText);
       
-      return selected.length > 0 ? selected.join(', ') : (payload.internshipField || '');
+      return selected.length > 0 ? selected.join(', ') : (payload.internshipField || payload.internshipNature || '');
     };
     
-    // Only send fields the backend expects - filter out extras
+    // Only send fields the backend expects
     const cleanPayload = {
       organization: payload.organization || '',
       address: payload.address || '',
@@ -184,10 +187,12 @@ export class StudentService {
       contactDesignation: payload.contactDesignation || '',
       contactPhone: payload.contactPhone || '',
       contactEmail: payload.contactEmail || '',
-      internshipNature: buildInternshipField(payload),
       internshipLocation: payload.internshipLocation || '',
-      startDate: toISODate(payload.startDate) || '',
-      endDate: toISODate(payload.endDate) || '',
+      internshipNature: buildInternshipField(payload),
+      mode: payload.mode || '',
+      numberOfInternship: payload.numberOfPositions || payload.numberOfInternship || 1,
+      startDate: toSimpleDate(payload.startDate) || '',
+      endDate: toSimpleDate(payload.endDate) || '',
       workingDays: payload.workingDays || '',
       workingHours: payload.workingHours || ''
     };
