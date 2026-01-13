@@ -254,4 +254,91 @@ export class StudentService {
     console.log('📤 [updateAppExB] Sending updated payload:', JSON.stringify(cleanPayload, null, 2));
     return await firstValueFrom(this.http.put<any>(url, cleanPayload, { headers }));
   }
+
+  // GET /api/student/appex-c
+  async getAppExC(): Promise<any> {
+    const url = this.abs('/api/student/appex-c');
+    const token = this.getAuthToken();
+    const headers = new HttpHeaders({ 
+      Accept: 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {})
+    });
+    return await firstValueFrom(this.http.get<any>(url, { headers }));
+  }
+
+  // POST /api/student/appex-c
+  async submitAppExC(payload: any) {
+    // Helper to convert keyActivities to comma-separated string
+    const buildKeyActivities = (payload: any): string => {
+      const activities = payload.keyActivities;
+      if (!activities || typeof activities !== 'object') {
+        return payload.keyActivities || '';
+      }
+      
+      const selected: string[] = [];
+      if (activities.coding) selected.push('Coding');
+      if (activities.testing) selected.push('Testing');
+      if (activities.documentation) selected.push('Documentation');
+      if (activities.dataAnalysis) selected.push('Data Analysis');
+      if (activities.research) selected.push('Research');
+      if (activities.technicalSupport) selected.push('Technical Support');
+      if (activities.dashboard) selected.push('Dashboard/Report Creation');
+      if (activities.other && activities.otherText) selected.push(`Other: ${activities.otherText}`);
+      
+      return selected.length > 0 ? selected.join(', ') : '';
+    };
+
+    // Only send fields the backend expects
+    const cleanPayload = {
+      organizationOverview: payload.organizationOverview || '',
+      roleDescription: payload.roleDescription || '',
+      keyActivities: buildKeyActivities(payload),
+      toolsTechnologies: payload.toolsTechnologies || payload.tools || '',
+      expectedDeliverables: payload.expectedDeliverables || ''
+    };
+    
+    const url = this.abs('/api/student/appex-c');
+    const token = this.getAuthToken();
+    console.log('🔐 [submitAppExC] Token:', token ? `${token.substring(0, 20)}...` : 'NO TOKEN');
+    const headers = this.jsonHeaders();
+    console.log('📦 [submitAppExC] Payload being sent:', JSON.stringify(cleanPayload, null, 2));
+    return await firstValueFrom(this.http.post<any>(url, cleanPayload, { headers }));
+  }
+
+  // PUT /api/student/appex-c
+  async updateAppExC(payload: any) {
+    // Helper to convert keyActivities to comma-separated string
+    const buildKeyActivities = (payload: any): string => {
+      const activities = payload.keyActivities;
+      if (!activities || typeof activities !== 'object') {
+        return payload.keyActivities || '';
+      }
+      
+      const selected: string[] = [];
+      if (activities.coding) selected.push('Coding');
+      if (activities.testing) selected.push('Testing');
+      if (activities.documentation) selected.push('Documentation');
+      if (activities.dataAnalysis) selected.push('Data Analysis');
+      if (activities.research) selected.push('Research');
+      if (activities.technicalSupport) selected.push('Technical Support');
+      if (activities.dashboard) selected.push('Dashboard/Report Creation');
+      if (activities.other && activities.otherText) selected.push(`Other: ${activities.otherText}`);
+      
+      return selected.length > 0 ? selected.join(', ') : '';
+    };
+
+    // Only send fields the backend expects
+    const cleanPayload = {
+      organizationOverview: payload.organizationOverview || '',
+      roleDescription: payload.roleDescription || '',
+      keyActivities: buildKeyActivities(payload),
+      toolsTechnologies: payload.toolsTechnologies || payload.tools || '',
+      expectedDeliverables: payload.expectedDeliverables || ''
+    };
+    
+    const url = this.abs('/api/student/appex-c');
+    const headers = this.jsonHeaders();
+    console.log('📤 [updateAppExC] Sending updated payload:', JSON.stringify(cleanPayload, null, 2));
+    return await firstValueFrom(this.http.put<any>(url, cleanPayload, { headers }));
+  }
 }

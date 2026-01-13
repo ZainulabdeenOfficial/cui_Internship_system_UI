@@ -2,6 +2,7 @@ import { Component, input, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { StoreService } from '../../shared/services/store.service';
+import { StudentService } from '../../shared/services/student.service';
 import { ToastService } from '../../shared/toast/toast.service';
 
 @Component({
@@ -34,7 +35,7 @@ export class Form3Form {
     toolsTechnologies: ''
   };
 
-  constructor(private store: StoreService, private toast: ToastService) {
+  constructor(private store: StoreService, private studentService: StudentService, private toast: ToastService) {
     // Auto-load when selectedId changes using effect
     effect(() => {
       const id = this.selectedId();
@@ -90,7 +91,7 @@ export class Form3Form {
     });
   }
 
-  submit() {
+  async submit() {
     try {
       const id = this.selectedId();
       if (!id) { 
@@ -98,25 +99,29 @@ export class Form3Form {
         return; 
       }
       
-      const f = this.model as any;
-      const ds = {
-        careerGoal: '',
-        learningObjectives: '',
-        placement: { 
-          organization: '', 
-          mode: 'On-site', 
-          functionalArea: '', 
-          overview: f.organizationOverview || '' 
-        },
-        supervisor: { name: '', designation: '', email: '', contact: '' },
-        scopeAndDeliverables: `Scope: ${f.scopeOfWork || ''}\n\nKey Activities: ${Object.entries(f.keyActivities).filter(([k,v]) => k !== 'other' && v).map(([k]) => k).join(', ')}${f.keyActivities.other ? (', ' + (f.keyActivities.otherText || 'Other')) : ''}\n\nTools/Technologies: ${f.tools || ''}\n\nExpected Deliverables: ${f.expectedDeliverables || ''}`,
-        academicPreparation: '',
-        comments: ''
+      // Validate required fields
+      if (!this.model.organizationOverview?.trim()) {
+        this.toast.warning('Organization Overview is required');
+        return;
+      }
+
+      // Build payload for AppEx-C API
+      const appexCPayload = {
+        organizationOverview: this.model.organizationOverview.trim(),
+        roleDescription: this.model.roleDescription?.trim() || '',
+        keyActivities: this.model.keyActivities,
+        toolsTechnologies: this.model.toolsTechnologies?.trim() || this.model.tools?.trim() || '',
+        expectedDeliverables: this.model.expectedDeliverables?.trim() || ''
       };
+
+      console.log('[Form3Form] Submitting AppEx-C with payload:', appexCPayload);
       
-      this.store.submitDesignStatement(id, ds as any);
-      this.toast.success('Form 3 (Organization Overview & Scope) saved');
+      // Submit to AppEx-C API
+      await this.studentService.submitAppExC(appexCPayload);
       
+      this.toast.success('Organization Overview & Scope of Work (AppEx-C) submitted successfully');
+      
+      // Reset form
       this.model = { 
         organizationOverview: '', 
         scopeOfWork: '', 
@@ -137,7 +142,8 @@ export class Form3Form {
         toolsTechnologies: ''
       };
     } catch (err: any) {
-      this.toast.danger('Failed to save Form 3');
+      console.error('[Form3Form] Submission error:', err);
+      this.toast.danger('Failed to submit AppEx-C: ' + (err?.error?.message || err?.message || 'Unknown error'));
     }
   }
 }
