@@ -264,15 +264,50 @@
   @if (facultyProfile(); as fp) { @if (currentTab==='profile') {
     <div class="col-md-4">
       <label class="form-label">Name</label>
-      <input class="form-control" [ngModel]="fp.name" (ngModelChange)="updateMyProfile({ name: $event })" />
+      <input class="form-control" [(ngModel)]="editableProfile.name" />
     </div>
     <div class="col-md-4">
       <label class="form-label">Department</label>
-      <input class="form-control" [ngModel]="fp.department" (ngModelChange)="updateMyProfile({ department: $event })" />
+      <input class="form-control" [(ngModel)]="editableProfile.department" />
     </div>
     <div class="col-md-4">
       <label class="form-label">Email</label>
-      <input class="form-control" [ngModel]="fp.email" (ngModelChange)="updateMyProfile({ email: $event })" />
+      <input class="form-control" [(ngModel)]="editableProfile.email" />
+    </div>
+    <div class="col-md-4">
+      <label class="form-label">Designation</label>
+      <input class="form-control" [(ngModel)]="editableProfile.designation" />
+    </div>
+    <div class="col-md-4">
+      <label class="form-label">Phone</label>
+      <input class="form-control" [(ngModel)]="editableProfile.phone" />
+    </div>
+    <div class="col-md-4">
+      <label class="form-label">Office</label>
+      <input class="form-control" [(ngModel)]="editableProfile.office" />
+    </div>
+    <div class="col-md-12">
+      <label class="form-label">Bio</label>
+      <textarea class="form-control" rows="3" [(ngModel)]="editableProfile.bio"></textarea>
+    </div>
+    <div class="col-md-6">
+      <label class="form-label">Avatar URL</label>
+      <input class="form-control" [(ngModel)]="editableProfile.avatarUrl" />
+    </div>
+    <div class="col-md-6">
+      <label class="form-label">Qualifications</label>
+      <input class="form-control" [(ngModel)]="editableProfile.qualifications" />
+    </div>
+    <div class="col-md-12">
+      <label class="form-label">Expertise</label>
+      <input class="form-control" [(ngModel)]="editableProfile.expertise" />
+    </div>
+    <div class="col-12 mt-3 d-flex gap-2">
+      <button class="btn btn-primary" [disabled]="savingProfile || loadingProfile" (click)="saveProfile()">
+        <span *ngIf="!savingProfile">Update</span>
+        <span *ngIf="savingProfile">Updating…</span>
+      </button>
+      <button class="btn btn-outline-secondary" [disabled]="savingProfile || loadingProfile" (click)="loadMyProfileFromApi()">Reset</button>
     </div>
   } }
 

@@ -1,0 +1,73 @@
+<div class="card mb-3">
+  <div class="card-header">Assignment & Student Agreement Form (Appendix B)</div>
+  <div class="card-body">
+    <form (ngSubmit)="submit()" #f="ngForm" class="row g-3">
+      <!-- Student Information -->
+      <div class="col-12"><h5 class="mb-3">Student Information</h5></div>
+      
+      <div class="col-md-6">
+        <label class="form-label">Full Name *</label>
+        <input class="form-control" [(ngModel)]="model.name" name="name" required />
+      </div>
+      
+      <div class="col-md-6">
+        <label class="form-label">Email Address *</label>
+        <input type="email" class="form-control" [(ngModel)]="model.email" name="email" required />
+      </div>
+      
+      <div class="col-md-6">
+        <label class="form-label">Degree Program *</label>
+        <input class="form-control" [(ngModel)]="model.degreeProgram" name="degreeProgram" placeholder="e.g., BS Computer Science" required />
+      </div>
+      
+      <div class="col-md-6">
+        <label class="form-label">Semester *</label>
+        <input class="form-control" [(ngModel)]="model.semester" name="semester" placeholder="e.g., 8" required />
+      </div>
+      
+      <div class="col-md-6">
+        <label class="form-label">Contact Number *</label>
+        <input class="form-control" [(ngModel)]="model.contactNo" name="contactNo" placeholder="e.g., +92-300-1234567" required />
+      </div>
+      
+      <div class="col-md-6">
+        <label class="form-label">Preferred Field *</label>
+        <input class="form-control" [(ngModel)]="model.preferredField" name="preferredField" placeholder="e.g., Software Development, Data Science" required />
+      </div>
+
+      <!-- Agreement Section -->
+      <div class="col-12 mt-4"><h5 class="mb-3">Student Internship Agreement Statement</h5></div>
+      <div class="col-12">
+        <p>
+          I, <strong>{{ model.name || '_______________' }}</strong>, a student of
+          <strong>{{ model.degreeProgram || '_______________' }}</strong> at
+          COMSATS University Islamabad, Sahiwal Campus, hereby acknowledge and accept the internship opportunity assigned to me and agree to the following statements:
+        </p>
+        <ol class="mt-3">
+          <li>I will abide by the rules, regulations, and code of conduct of the host organization.</li>
+          <li>I will maintain punctuality, discipline, and professionalism throughout the internship period.</li>
+          <li>I will complete the tasks and responsibilities assigned to me to the best of my ability.</li>
+          <li>I will communicate regularly with my academic supervisor and provide updates on my progress.</li>
+          <li>I will maintain confidentiality of any sensitive information encountered during the internship.</li>
+          <li>I will submit all required internship reports, evaluations, and documents by the specified deadlines.</li>
+          <li>I understand that failure to comply with these terms may result in academic penalties or termination of the internship.</li>
+        </ol>
+      </div>
+
+      <div class="col-12 mt-3">
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" [(ngModel)]="model.agreementAccepted" name="agreementAccepted" id="agreementCheck" required />
+          <label class="form-check-label" for="agreementCheck">
+            <strong>I have read and agree to all the statements above *</strong>
+          </label>
+        </div>
+      </div>
+      
+      <div class="col-12 d-flex gap-2 mt-3">
+        <button class="btn btn-success" [disabled]="!f.form.valid || !model.agreementAccepted" type="submit">
+          Submit Assignment & Agreement
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

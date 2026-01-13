@@ -22,7 +22,21 @@ export class Admin {
       this.route.queryParamMap.subscribe(p => {
         const t = (p.get('tab') || '').toLowerCase();
         const allowed = ['students','applications','requests','announcements','officers','faculty','companies','sites','compliance','complaints','scheme','evidence'] as const;
-        if ((allowed as readonly string[]).includes(t)) this.currentTab = t as any;
+        if ( (allowed as readonly string[]).includes(t) ) {
+          this.currentTab = t as any;
+          // Auto-load data when navigating directly via URL (no need to click refresh)
+          if (this.currentTab === 'requests') {
+            // Reset to default view: Pending, first page, no search
+            this.reviewCompanyFilter.status = 'PENDING';
+            this.reviewCompanyFilter.page = 1;
+            this.reviewCompanyFilter.search = '';
+            this.loadReviewCompany();
+          } else if (this.currentTab === 'companies' || this.currentTab === 'sites') {
+            // Ensure these sections are populated on direct navigation as well
+            this.refreshCompanies();
+            if (this.currentTab === 'sites') this.refreshSites();
+          }
+        }
       });
     } catch {}
     // Preload companies once for cross-tab usage (site supervisor dropdowns etc.)
@@ -31,6 +45,14 @@ export class Admin {
   get students() { return this.store.students; }
   get complaints() { return this.store.complaints; }
   get requests() { return this.store.requests; }
+  reviewCompany = { items: [] as Array<{ id: string; companyName?: string; email?: string; studentId?: string; registrationNo?: string; status?: string; createdAt?: string }>, total: 0 };
+  reviewCompanyFilter = { status: 'PENDING' as 'PENDING'|'APPROVED'|'REJECTED', page: 1, limit: 10, search: '' };
+  reviewCompanyLoading = false;
+  // Performance: caching + de-bounce + stale-while-revalidate
+  private reviewCompanyCache = new Map<string, { items: Array<{ id: string; companyName?: string; email?: string; studentId?: string; registrationNo?: string; status?: string; createdAt?: string }>; total: number; at: number }>();
+  private reviewCompanyReqId = 0;
+  private reviewCompanySearchDebounce: any;
+  private reviewInFlight = new Map<string, Promise<{ items: Array<{ id: string; companyName?: string; email?: string; studentId?: string; registrationNo?: string; status?: string; createdAt?: string }>; total: number }>>();
   get approvals() { return this.store.approvals; }
   get logsMap() { return this.store.logs; }
   get reportsMap() { return this.store.reports; }
@@ -43,9 +65,12 @@ export class Admin {
   private companiesCache: Array<import('../../shared/services/store.service').Company & { remoteId?: string }> = [];
   get companyList() { return () => this.companiesCache; }
   get siteList() { return this.store.siteSupervisors; }
+  // Server-driven site supervisors list for assignment/filters
+  sitesCache: Array<{ id: string; name: string; email?: string; companyId?: string }> = [];
   // search/filter inputs
   search = { officers: '', faculty: '', companies: '', sites: '', students: '' };
   filter = { facultyDept: '', industry: '', siteCompanyId: '', studentsApproved: 'all' as 'all'|'yes'|'no' };
+  assignmentFilter: 'ALL'|'UNASSIGNED'|'ASSIGNED' = 'ALL';
   facultyId = '';
   siteId = '';
   selectedId: string | null = null;
@@ -57,7 +82,17 @@ export class Admin {
     this.currentTab = tab;
     try { this.router.navigate([], { relativeTo: this.route, queryParams: { tab }, queryParamsHandling: 'merge' }); } catch {}
     // Lazy-load companies when Companies tab opens
-    if (tab === 'companies' || tab === 'sites') this.refreshCompanies();
+    if (tab === 'companies' || tab === 'sites') {
+      this.refreshCompanies();
+      this.refreshSites();
+    }
+    if (tab === 'requests') {
+      // Reset to default: Pending with empty search
+      this.reviewCompanyFilter.status = 'PENDING';
+      this.reviewCompanyFilter.page = 1;
+      this.reviewCompanyFilter.search = '';
+      this.loadReviewCompany();
+    }
   }
   get officers() { return this.store.internshipOfficers; }
   officer = { name: '', email: '' };
@@ -71,6 +106,25 @@ export class Admin {
   faculty = { name: '', email: '', department: '', password: '' };
   company = { name: '', email: '', phone: '', address: '', website: '', industry: '', description: '' };
   site = { name: '', email: '', companyId: '', password: '' };
+  // Dynamic company dropdown for Sites tab
+  dropdownCompanies: Array<{ id: string; name: string }> = [];
+  private companySearchDebounceId: any;
+  // Per-site-supervisor company search (student-like UI)
+  siteCompanySearchQuery: Record<string, string> = {};
+  siteDropdownCompanies: Record<string, Array<{ id: string; name: string; address?: string }>> = {};
+  siteDropdownOpen: Record<string, boolean> = {};
+  siteLoading: Record<string, boolean> = {};
+  siteActiveIndex: Record<string, number> = {};
+  private siteCompanyDebounce: Record<string, any> = {};
+  private siteCompanyReqId: Record<string, number> = {};
+  // Add Site Supervisor form - company search state (single input)
+  addSiteCompanySearchQuery = '';
+  addSiteDropdownCompanies: Array<{ id: string; name: string; address?: string }> = [];
+  addSiteDropdownOpen = false;
+  addSiteLoading = false;
+  addSiteActiveIndex = -1;
+  private addSiteCompanyDebounce: any;
+  private addSiteCompanyReqId = 0;
   // inline company edit buffers
   editingCompanyId: string | null = null;
   companyEdit: Partial<import('../../shared/services/store.service').Company> = {};
@@ -79,6 +133,8 @@ export class Admin {
   // password reset buffers
   facultyNewPw: Record<string, string> = {};
   siteNewPw: Record<string, string> = {};
+  // assign site -> company buffer
+  siteAssignCompany: Record<string, string> = {};
   // announcements
   announcement = { title: '', message: '', link: '', pinned: false };
   get announcements() { return this.store.announcements; }
@@ -106,6 +162,421 @@ export class Admin {
       }));
     } catch (err: any) {
       const msg = err?.error?.message || err?.message || 'Failed to load companies from server';
+      this.toast.danger(msg);
+    }
+  }
+
+  onSiteCompanyInput(value: string) {
+    const q = (value || '').trim();
+    if (this.companySearchDebounceId) clearTimeout(this.companySearchDebounceId);
+    this.companySearchDebounceId = setTimeout(async () => {
+      try {
+        this.dropdownCompanies = await this.adminApi.getDropdownCompanies(q);
+      } catch {
+        this.dropdownCompanies = [];
+      }
+    }, 250);
+  }
+
+  // New: per-row search like student UI (name-only, 2+ chars, no request button)
+  onSiteRowCompanyInput(rowId: string, value: string) {
+    const q = (value || '').trim();
+    this.siteCompanySearchQuery[rowId] = q;
+    if (this.siteCompanyDebounce[rowId]) clearTimeout(this.siteCompanyDebounce[rowId]);
+    this.siteCompanyDebounce[rowId] = setTimeout(async () => {
+      try {
+        if (!q || q.length < 2) {
+          this.siteDropdownCompanies[rowId] = [];
+          this.siteDropdownOpen[rowId] = false;
+          this.siteLoading[rowId] = false;
+          this.siteActiveIndex[rowId] = -1;
+          return;
+        }
+        this.siteLoading[rowId] = true;
+        this.siteDropdownOpen[rowId] = true;
+        this.siteDropdownCompanies[rowId] = [];
+        this.siteActiveIndex[rowId] = -1;
+        const reqId = (this.siteCompanyReqId[rowId] ?? 0) + 1;
+        this.siteCompanyReqId[rowId] = reqId;
+        const results = await this.adminApi.getDropdownCompanies(q);
+        // Ignore stale responses
+        if (this.siteCompanyReqId[rowId] !== reqId) return;
+        const lower = q.toLowerCase();
+        const filtered = (results || []).filter(c => ((c.name || '').toLowerCase()).includes(lower));
+        this.siteDropdownCompanies[rowId] = filtered.sort((a, b) => {
+          const an = (a.name || '').toLowerCase();
+          const bn = (b.name || '').toLowerCase();
+          const aStarts = an.startsWith(lower) ? 0 : 1;
+          const bStarts = bn.startsWith(lower) ? 0 : 1;
+          if (aStarts !== bStarts) return aStarts - bStarts;
+          return an.indexOf(lower) - bn.indexOf(lower);
+        }).slice(0, 10).map(x => ({ id: x.id, name: x.name, address: (x as any).address }));
+        this.siteActiveIndex[rowId] = (this.siteDropdownCompanies[rowId] || []).length ? 0 : -1;
+      } catch {
+        this.siteDropdownCompanies[rowId] = [];
+        this.siteActiveIndex[rowId] = -1;
+      } finally {
+        this.siteLoading[rowId] = false;
+      }
+    }, 150);
+  }
+
+  // Add Site: standalone typeahead (name-only, 2+ chars, no request)
+  onAddSiteCompanyInput(value: string) {
+    const q = (value || '').trim();
+    this.addSiteCompanySearchQuery = q;
+    // Do not mutate site.companyId until a selection is made
+    if (this.addSiteCompanyDebounce) clearTimeout(this.addSiteCompanyDebounce);
+    this.addSiteCompanyDebounce = setTimeout(async () => {
+      try {
+        if (!q || q.length < 2) {
+          this.addSiteDropdownCompanies = [];
+          this.addSiteDropdownOpen = false;
+          this.addSiteLoading = false;
+          this.addSiteActiveIndex = -1;
+          return;
+        }
+        this.addSiteLoading = true;
+        this.addSiteDropdownOpen = true;
+        this.addSiteDropdownCompanies = [];
+        this.addSiteActiveIndex = -1;
+        const reqId = ++this.addSiteCompanyReqId;
+        const results = await this.adminApi.getDropdownCompanies(q);
+        if (this.addSiteCompanyReqId !== reqId) return; // stale
+        const lower = q.toLowerCase();
+        const filtered = (results || []).filter(c => ((c.name || '').toLowerCase()).includes(lower));
+        this.addSiteDropdownCompanies = filtered.sort((a, b) => {
+          const an = (a.name || '').toLowerCase();
+          const bn = (b.name || '').toLowerCase();
+          const aStarts = an.startsWith(lower) ? 0 : 1;
+          const bStarts = bn.startsWith(lower) ? 0 : 1;
+          if (aStarts !== bStarts) return aStarts - bStarts;
+          return an.indexOf(lower) - bn.indexOf(lower);
+        }).slice(0, 10).map(x => ({ id: x.id, name: x.name, address: (x as any).address }));
+        this.addSiteActiveIndex = this.addSiteDropdownCompanies.length ? 0 : -1;
+      } catch {
+        this.addSiteDropdownCompanies = [];
+        this.addSiteActiveIndex = -1;
+      } finally {
+        this.addSiteLoading = false;
+      }
+    }, 150);
+  }
+
+  selectAddSiteCompany(c: { id: string; name: string }) {
+    this.site.companyId = c.id;
+    this.addSiteCompanySearchQuery = c.name;
+    this.addSiteDropdownOpen = false;
+    this.addSiteActiveIndex = -1;
+  }
+
+  onAddSiteCompanyKeydown(ev: KeyboardEvent) {
+    const key = ev.key;
+    if (key === 'ArrowDown' && this.addSiteDropdownOpen) {
+      ev.preventDefault();
+      const len = this.addSiteDropdownCompanies.length;
+      if (len) this.addSiteActiveIndex = ((this.addSiteActiveIndex ?? -1) + 1) % len;
+    } else if (key === 'ArrowUp' && this.addSiteDropdownOpen) {
+      ev.preventDefault();
+      const len = this.addSiteDropdownCompanies.length;
+      if (len) this.addSiteActiveIndex = ((this.addSiteActiveIndex ?? 0) - 1 + len) % len;
+    } else if (key === 'Enter') {
+      const list = this.addSiteDropdownCompanies || [];
+      const q = (this.addSiteCompanySearchQuery || '').trim().toLowerCase();
+      if (this.addSiteDropdownOpen && this.addSiteActiveIndex != null && this.addSiteActiveIndex >= 0 && this.addSiteActiveIndex < list.length) {
+        ev.preventDefault();
+        this.selectAddSiteCompany(list[this.addSiteActiveIndex]);
+      } else if (list.length === 1) {
+        ev.preventDefault(); this.selectAddSiteCompany(list[0]);
+      } else {
+        const exact = list.find(c => (c.name || '').toLowerCase() === q);
+        if (exact) { ev.preventDefault(); this.selectAddSiteCompany(exact); }
+      }
+    } else if (key === 'Escape' && this.addSiteDropdownOpen) {
+      ev.preventDefault();
+      this.addSiteDropdownOpen = false;
+      this.addSiteActiveIndex = -1;
+    }
+  }
+
+  onAddSiteCompanyFocus() {
+    const q = (this.addSiteCompanySearchQuery || '').trim();
+    this.addSiteDropdownOpen = q.length >= 2 && (this.addSiteDropdownCompanies.length > 0 || !!this.addSiteLoading);
+  }
+  onAddSiteCompanyBlur() {
+    setTimeout(() => { this.addSiteDropdownOpen = false; this.addSiteActiveIndex = -1; }, 150);
+  }
+
+  selectSiteCompany(rowId: string, c: { id: string; name: string; address?: string }) {
+    // Set selection buffer used by Assign action and reflect name into the input
+    this.siteAssignCompany[rowId] = c.id;
+    this.siteCompanySearchQuery[rowId] = c.name;
+    this.siteDropdownOpen[rowId] = false;
+    this.siteActiveIndex[rowId] = -1;
+  }
+
+  onSiteCompanyKeydown(rowId: string, ev: KeyboardEvent) {
+    const key = ev.key;
+    if (key === 'ArrowDown' && this.siteDropdownOpen[rowId]) {
+      ev.preventDefault();
+      const len = (this.siteDropdownCompanies[rowId] || []).length;
+      if (len) this.siteActiveIndex[rowId] = ((this.siteActiveIndex[rowId] ?? -1) + 1) % len;
+    } else if (key === 'ArrowUp' && this.siteDropdownOpen[rowId]) {
+      ev.preventDefault();
+      const len = (this.siteDropdownCompanies[rowId] || []).length;
+      if (len) this.siteActiveIndex[rowId] = ((this.siteActiveIndex[rowId] ?? 0) - 1 + len) % len;
+    } else if (key === 'Enter') {
+      const list = this.siteDropdownCompanies[rowId] || [];
+      const q = (this.siteCompanySearchQuery[rowId] || '').trim().toLowerCase();
+      if (this.siteDropdownOpen[rowId] && this.siteActiveIndex[rowId] != null && this.siteActiveIndex[rowId] >= 0 && this.siteActiveIndex[rowId] < list.length) {
+        ev.preventDefault();
+        this.selectSiteCompany(rowId, list[this.siteActiveIndex[rowId]]);
+      } else if (list.length === 1) {
+        ev.preventDefault(); this.selectSiteCompany(rowId, list[0]);
+      } else {
+        const exact = list.find(c => (c.name || '').toLowerCase() === q);
+        if (exact) { ev.preventDefault(); this.selectSiteCompany(rowId, exact); }
+        // No request-to-add here; just keep "No results" if empty
+      }
+    } else if (key === 'Escape' && this.siteDropdownOpen[rowId]) {
+      ev.preventDefault();
+      this.siteDropdownOpen[rowId] = false;
+      this.siteActiveIndex[rowId] = -1;
+    }
+  }
+
+  onSiteCompanyFocus(rowId: string) {
+    const q = (this.siteCompanySearchQuery[rowId] || '').trim();
+    this.siteDropdownOpen[rowId] = q.length >= 2 && ((this.siteDropdownCompanies[rowId]?.length || 0) > 0 || !!this.siteLoading[rowId]);
+  }
+  onSiteCompanyBlur(rowId: string) {
+    setTimeout(() => { this.siteDropdownOpen[rowId] = false; this.siteActiveIndex[rowId] = -1; }, 150);
+  }
+  highlightName(name: string, query?: string): string {
+    const q = (query || '').toLowerCase();
+    const n = (name || '').toString();
+    if (!q) return n;
+    const idx = n.toLowerCase().indexOf(q);
+    if (idx === -1) return n;
+    const before = n.slice(0, idx);
+    const match = n.slice(idx, idx + q.length);
+    const after = n.slice(idx + q.length);
+    return `${before}<mark>${match}</mark>${after}`;
+  }
+
+  async refreshSites() {
+    try {
+      // Only pass unassigned=true when explicitly filtering for unassigned. Many backends ignore false.
+      const unassignedParam = this.assignmentFilter === 'UNASSIGNED' ? true : undefined;
+      const list = await this.adminApi.getAssignableSiteSupervisors({ companyId: this.filter.siteCompanyId || undefined, unassigned: unassignedParam });
+      // Derive ASSIGNED/UNASSIGNED locally to ensure correctness regardless of backend behavior
+      let filtered = list;
+      if (this.assignmentFilter === 'ASSIGNED') {
+        filtered = list.filter(x => !!x.companyId);
+      } else if (this.assignmentFilter === 'UNASSIGNED') {
+        filtered = list.filter(x => !x.companyId);
+      }
+      this.sitesCache = filtered;
+    } catch (err: any) {
+      const msg = err?.error?.message || err?.message || 'Failed to load site supervisors from server';
+      this.toast.danger(msg);
+    }
+  }
+
+  async assignSiteToCompany(siteSupervisorId: string) {
+    const companyId = (this.siteAssignCompany[siteSupervisorId] || '').trim();
+    if (!siteSupervisorId || !companyId) { this.toast.warning('Select a company to assign'); return; }
+    try {
+      await this.adminApi.assignSiteSupervisorToCompany({ siteSupervisorId, companyId });
+      this.toast.success('Site supervisor assigned');
+      delete this.siteAssignCompany[siteSupervisorId];
+      await this.refreshSites();
+    } catch (err: any) {
+      const status = err?.status ?? 0;
+      const msg = err?.error?.message || err?.error?.error ||
+        (status === 401 ? 'Unauthorized: login again as ADMIN' : (status === 403 ? 'Forbidden: Admin access required' : err?.message || 'Failed to assign'));
+      this.toast.danger(msg);
+    }
+  }
+
+  async loadReviewCompany() {
+    const key = this.makeReviewKey(this.reviewCompanyFilter);
+    let cached = this.reviewCompanyCache.get(key);
+    // If no in-memory cache and this is the default view, try session storage for instant show
+    if (!cached && this.isDefaultReviewFilter()) {
+      const stored = this.getDefaultReviewFromSession();
+      if (stored) {
+        cached = { items: stored.items, total: stored.total, at: stored.at };
+        // prime memory cache so subsequent opens are instant
+        this.reviewCompanyCache.set(key, cached);
+      }
+    }
+    if (cached) {
+      // Always show cached immediately (stale-while-revalidate)
+      this.reviewCompany.items = cached.items;
+      this.reviewCompany.total = cached.total;
+      this.backgroundFetchReviewCompany(key);
+      return;
+    }
+    // No cache: show loading and fetch
+    this.reviewCompanyLoading = true;
+    const reqId = ++this.reviewCompanyReqId;
+    try {
+      const res = await this.fetchReviewCompany(key, this.reviewCompanyFilter);
+      if (this.reviewCompanyReqId !== reqId) return; // ignore stale
+      this.reviewCompany.items = res.items;
+      this.reviewCompany.total = res.total || res.items.length;
+      this.setReviewCache(key, { items: this.reviewCompany.items, total: this.reviewCompany.total, at: Date.now() });
+      // Prefetch next page if likely
+      if ((res.items?.length || 0) >= this.reviewCompanyFilter.limit) this.prefetchNextReviewCompanyPage();
+    } catch (err: any) {
+      if (this.reviewCompanyReqId !== reqId) return;
+      const msg = err?.error?.message || err?.message || 'Failed to load company review requests';
+      this.toast.danger(msg);
+    } finally {
+      if (this.reviewCompanyReqId === reqId) this.reviewCompanyLoading = false;
+    }
+  }
+
+  private async backgroundFetchReviewCompany(expectedKey: string) {
+    const reqId = ++this.reviewCompanyReqId;
+    try {
+      const res = await this.fetchReviewCompany(expectedKey, this.reviewCompanyFilter);
+      const currentKey = this.makeReviewKey(this.reviewCompanyFilter);
+      if (this.reviewCompanyReqId !== reqId || currentKey !== expectedKey) return;
+      this.reviewCompany.items = res.items;
+      this.reviewCompany.total = res.total || res.items.length;
+      this.setReviewCache(currentKey, { items: this.reviewCompany.items, total: this.reviewCompany.total, at: Date.now() });
+      if ((res.items?.length || 0) >= this.reviewCompanyFilter.limit) this.prefetchNextReviewCompanyPage();
+    } catch {
+      // Silent background failure
+    }
+  }
+
+  private prefetchNextReviewCompanyPage() {
+    const f = { ...this.reviewCompanyFilter, page: this.reviewCompanyFilter.page + 1 };
+    const key = this.makeReviewKey(f);
+    if (this.reviewCompanyCache.has(key)) return;
+    // fire-and-forget
+    this.fetchReviewCompany(key, f)
+      .then(res => {
+        this.setReviewCache(key, { items: res.items || [], total: res.total || (res.items || []).length, at: Date.now() });
+      })
+      .catch(() => {});
+  }
+
+  private makeReviewKey(f: { status: 'PENDING'|'APPROVED'|'REJECTED'; page: number; limit: number; search: string }): string {
+    return `${f.status}|${f.page}|${f.limit}|${(f.search || '').trim().toLowerCase()}`;
+  }
+  private setReviewCache(key: string, value: { items: Array<{ id: string; companyName?: string; email?: string; studentId?: string; registrationNo?: string; status?: string; createdAt?: string }>; total: number; at: number }) {
+    if (this.reviewCompanyCache.has(key)) this.reviewCompanyCache.delete(key);
+    this.reviewCompanyCache.set(key, value);
+    // LRU limit 50
+    while (this.reviewCompanyCache.size > 50) {
+      const firstKey = this.reviewCompanyCache.keys().next().value as string | undefined;
+      if (!firstKey) break;
+      this.reviewCompanyCache.delete(firstKey);
+    }
+    // Persist default Pending page-1 view for instant tab opens within session
+    if (this.isDefaultReviewFilterByKey(key)) {
+      try { sessionStorage.setItem('admin:reviewCompany:default', JSON.stringify(value)); } catch {}
+    }
+  }
+
+  onReviewCompanySearchChange(value: string) {
+    this.reviewCompanyFilter.search = value;
+    this.reviewCompanyFilter.page = 1;
+    if (this.reviewCompanySearchDebounce) clearTimeout(this.reviewCompanySearchDebounce);
+    this.reviewCompanySearchDebounce = setTimeout(() => this.loadReviewCompany(), 200);
+  }
+
+  private isDefaultReviewFilter(): boolean {
+    return this.reviewCompanyFilter.status === 'PENDING' && this.reviewCompanyFilter.page === 1 && !((this.reviewCompanyFilter.search || '').trim());
+  }
+  private isDefaultReviewFilterByKey(key: string): boolean {
+    const parts = key.split('|');
+    const status = parts[0];
+    const page = Number(parts[1] || '1');
+    const limit = Number(parts[2] || '10');
+    const search = parts.slice(3).join('|');
+    return status === 'PENDING' && page === 1 && !search && limit === this.reviewCompanyFilter.limit;
+  }
+  private getDefaultReviewFromSession(): { items: Array<{ id: string; companyName?: string; email?: string; studentId?: string; registrationNo?: string; status?: string; createdAt?: string }>; total: number; at: number } | undefined {
+    try {
+      const raw = sessionStorage.getItem('admin:reviewCompany:default');
+      if (!raw) return undefined;
+      const v = JSON.parse(raw);
+      if (!v || !Array.isArray(v.items)) return undefined;
+      return { items: v.items, total: Number(v.total) || (v.items?.length || 0), at: Number(v.at) || Date.now() };
+    } catch { return undefined; }
+  }
+  private async fetchReviewCompany(key: string, f: { status: 'PENDING'|'APPROVED'|'REJECTED'; page: number; limit: number; search: string }) {
+    if (this.reviewInFlight.has(key)) return this.reviewInFlight.get(key)!;
+    const p = this.adminApi.getCompanyReviewRequests({ page: f.page, limit: f.limit, status: f.status, search: (f.search || '').trim() || undefined })
+      .finally(() => { this.reviewInFlight.delete(key); }) as unknown as Promise<{ items: any[]; total: number }>;
+    this.reviewInFlight.set(key, p);
+    return p;
+  }
+  async applyReviewCompanyDecision(requestId: string, decision: 'APPROVED'|'REJECTED') {
+    // Optimistic UI update for speed
+    const currentKey = this.makeReviewKey(this.reviewCompanyFilter);
+    const beforeIdx = this.reviewCompany.items.findIndex(x => x.id === requestId);
+    const before = beforeIdx >= 0 ? { ...this.reviewCompany.items[beforeIdx] } : null;
+    let reverted = false;
+    if (before) {
+      // If current filter is not the target status, remove it immediately; else set status locally
+      if (this.reviewCompanyFilter.status !== decision) {
+        this.reviewCompany.items = this.reviewCompany.items.filter(x => x.id !== requestId);
+        if (this.reviewCompany.total > 0) this.reviewCompany.total -= 1;
+      } else {
+        this.reviewCompany.items[beforeIdx] = { ...before, status: decision };
+      }
+      const cached = this.reviewCompanyCache.get(currentKey);
+      if (cached) {
+        const items = [...cached.items];
+        const idx = items.findIndex(x => x.id === requestId);
+        if (idx >= 0) {
+          if (this.reviewCompanyFilter.status !== decision) {
+            items.splice(idx, 1);
+            this.setReviewCache(currentKey, { items, total: Math.max(0, cached.total - 1), at: cached.at });
+          } else {
+            items[idx] = { ...items[idx], status: decision } as any;
+            this.setReviewCache(currentKey, { items, total: cached.total, at: cached.at });
+          }
+        }
+      }
+    }
+    try {
+      await this.adminApi.reviewCompanyRequest({ requestId, decision });
+      this.toast.success(`Request ${decision === 'APPROVED' ? 'approved' : 'rejected'}`);
+      // Background refresh current list to reconcile
+      this.backgroundFetchReviewCompany(currentKey);
+      if (decision === 'APPROVED') await this.refreshCompanies();
+    } catch (err: any) {
+      // Revert optimistic change
+      if (before && !reverted) {
+        reverted = true;
+        // Put it back depending on current filter
+        if (this.reviewCompanyFilter.status !== decision) {
+          this.reviewCompany.items = [before, ...this.reviewCompany.items];
+          this.reviewCompany.total += 1;
+        } else if (beforeIdx >= 0) {
+          this.reviewCompany.items[beforeIdx] = before;
+        }
+        const cached = this.reviewCompanyCache.get(currentKey);
+        if (cached) {
+          const items = [...cached.items];
+          const idx = items.findIndex(x => x.id === requestId);
+          if (this.reviewCompanyFilter.status !== decision) {
+            items.unshift(before);
+            this.setReviewCache(currentKey, { items, total: cached.total + 1, at: cached.at });
+          } else if (idx >= 0) {
+            items[idx] = before;
+            this.setReviewCache(currentKey, { items, total: cached.total, at: cached.at });
+          }
+        }
+      }
+      const msg = err?.error?.message || err?.message || 'Failed to apply decision';
       this.toast.danger(msg);
     }
   }
@@ -498,7 +969,7 @@ export class Admin {
     // No domain restriction for site; still check duplicates
     if (this.allEmails().includes(email.toLowerCase())) { this.toast.warning('Email already exists. Try a different one.'); return; }
     try {
-      await this.adminApi.createAccount({ name, email, password: pass, role: 'SITE' } as any);
+      await this.adminApi.createAccount({ name, email, password: pass, role: 'SITE_SUPERVISOR' } as any);
       this.store.addSiteSupervisor(name, email, cid || undefined, pass);
       this.site = { name: '', email: '', companyId: '', password: '' };
       this.toast.success('Site Supervisor added');

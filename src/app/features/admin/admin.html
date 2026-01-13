@@ -195,6 +195,62 @@
       </div>
   </div>
   }
+  @case ('requests') {
+    <div class="row g-3 mt-0">
+      <div class="col-12">
+        <div class="card">
+          <div class="card-header bg-light d-flex align-items-center justify-content-between">
+            <span>Company Review Requests</span>
+            <div class="d-flex gap-2 align-items-center">
+    <input class="form-control form-control-sm" style="width:220px" placeholder="Search (name/email/industry)"
+      [ngModel]="reviewCompanyFilter.search"
+      (ngModelChange)="onReviewCompanySearchChange($event)"
+      name="rcsearch" />
+              <select class="form-select form-select-sm" style="width:160px" [(ngModel)]="reviewCompanyFilter.status" (ngModelChange)="reviewCompanyFilter.page=1; loadReviewCompany()" name="rcstatus">
+                <option [ngValue]="'PENDING'">Pending</option>
+                <option [ngValue]="'APPROVED'">Approved</option>
+                <option [ngValue]="'REJECTED'">Rejected</option>
+              </select>
+              <button class="btn btn-sm btn-outline-secondary" (click)="loadReviewCompany()" [disabled]="reviewCompanyLoading">
+                <span *ngIf="!reviewCompanyLoading">Refresh</span>
+                <span *ngIf="reviewCompanyLoading">Loading…</span>
+              </button>
+            </div>
+          </div>
+          <div class="card-body p-0">
+            <div class="px-3 py-2 small text-muted" *ngIf="reviewCompanyLoading">Loading requests…</div>
+            <div class="table-responsive">
+              <table class="table table-sm mb-0 align-middle">
+                <thead><tr><th>When</th><th>Company</th><th>Student</th><th>Reg No</th><th>Status</th><th>Actions</th></tr></thead>
+                <tbody>
+                  @for (r of reviewCompany.items; track r.id) {
+                  <tr>
+                    <td class="small text-muted">{{ r.createdAt | date:'short' }}</td>
+                    <td>{{ r.companyName || '-' }}</td>
+                    <td>{{ r.email || r.studentId || '-' }}</td>
+                    <td>{{ r.registrationNo || '-' }}</td>
+                    <td>
+                      <span class="badge" [class.text-bg-secondary]="r.status==='PENDING'" [class.text-bg-success]="r.status==='APPROVED'" [class.text-bg-danger]="r.status==='REJECTED'">{{ r.status || 'PENDING' }}</span>
+                    </td>
+                    <td>
+                      <div class="btn-group btn-group-sm">
+                        <button class="btn btn-outline-success" [disabled]="r.status==='APPROVED'" (click)="applyReviewCompanyDecision(r.id, 'APPROVED')">Approve</button>
+                        <button class="btn btn-outline-danger" [disabled]="r.status==='REJECTED'" (click)="applyReviewCompanyDecision(r.id, 'REJECTED')">Reject</button>
+                      </div>
+                    </td>
+                  </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+            <div class="p-2">
+              <app-paginator [total]="reviewCompany.total" [page]="reviewCompanyFilter.page" [pageSize]="reviewCompanyFilter.limit" (pageChange)="reviewCompanyFilter.page=$event; loadReviewCompany()"></app-paginator>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
   @case ('announcements') {
     <div class="row g-3 mt-0">
       <div class="col-12">
@@ -547,10 +603,32 @@
               </div>
               <div class="col-12 col-sm-6 col-md-3">
                 <label class="form-label">Company</label>
-                <select class="form-select" [(ngModel)]="site.companyId" name="scid2">
-                  <option [ngValue]="''">Select company...</option>
-                  @for (c of companyList(); track c.id) { <option [ngValue]="c.id">{{ c.name }}</option> }
-                </select>
+                <div class="position-relative">
+                  <input class="form-control" placeholder="Type company name…"
+                         [ngModel]="addSiteCompanySearchQuery"
+                         (ngModelChange)="onAddSiteCompanyInput($event)"
+                         (keydown)="onAddSiteCompanyKeydown($event)"
+                         (focus)="onAddSiteCompanyFocus()"
+                         (blur)="onAddSiteCompanyBlur()"
+                         name="scid2" />
+                  <div *ngIf="addSiteDropdownOpen" class="dropdown-menu show w-100 shadow" style="max-height: 240px; overflow:auto;">
+                    <div class="px-3 py-1 text-muted small" *ngIf="addSiteLoading">Searching…</div>
+                    <button type="button"
+                            class="dropdown-item d-flex flex-column align-items-start"
+                            *ngFor="let c of addSiteDropdownCompanies; let i = index"
+                            [class.active]="i === addSiteActiveIndex"
+                            (mousedown)="$event.preventDefault()"
+                            (click)="selectAddSiteCompany(c)">
+                      <span [innerHTML]="highlightName(c.name, addSiteCompanySearchQuery)"></span>
+                      <small class="text-muted" *ngIf="c.address">{{ c.address }}</small>
+                    </button>
+                    <div class="px-3 py-2 text-muted small" *ngIf="!addSiteLoading && (!addSiteDropdownCompanies || addSiteDropdownCompanies.length===0)">
+                      <span *ngIf="(addSiteCompanySearchQuery||'').length<2">Type 2+ characters to search</span>
+                      <span *ngIf="(addSiteCompanySearchQuery||'').length>=2">No results found</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="form-text" *ngIf="site.companyId">Selected ID: {{ site.companyId }}</div>
               </div>
               <div class="col-12 col-sm-6 col-md-2">
                 <label class="form-label">Password</label>
@@ -560,7 +638,7 @@
                 <button class="btn btn-primary" (click)="addSite()">Add</button>
               </div>
             </div>
-            <div class="text-muted small mt-1">Role: SITE</div>
+           
           </div>
         </div>
         <div class="card">
@@ -572,23 +650,64 @@
                   <input class="form-control" placeholder="Search sites..." [(ngModel)]="search.sites" name="ssearch" />
                 </div>
                 <div class="col-12 col-md-3">
-                  <select class="form-select" [(ngModel)]="filter.siteCompanyId" name="scombf">
+                  <select class="form-select" [(ngModel)]="filter.siteCompanyId" (ngModelChange)="page.sites=1; refreshSites()" name="scombf">
                     <option [ngValue]="''">All companies</option>
                     @for (c of companyList(); track c.id) { <option [ngValue]="c.id">{{ c.name }}</option> }
+                  </select>
+                </div>
+                <div class="col-12 col-md-3 ms-auto">
+                  <select class="form-select" [(ngModel)]="assignmentFilter" (ngModelChange)="page.sites=1; refreshSites()" name="sassignf">
+                    <option [ngValue]="'ALL'">All (assigned + unassigned)</option>
+                    <option [ngValue]="'UNASSIGNED'">Unassigned only</option>
+                    <option [ngValue]="'ASSIGNED'">Assigned only</option>
                   </select>
                 </div>
               </div>
             </div>
             <div class="table-responsive">
               <table class="table table-sm mb-0 align-middle">
-                <thead><tr><th>Company</th><th>Name</th><th>Email</th><th>Password</th><th>Actions</th></tr></thead>
+                <thead><tr><th>Company</th><th>Name</th><th>Email</th><th>Assign</th><th>Password</th><th>Actions</th></tr></thead>
                 <tbody>
-                  @for (t of (siteList() | paginate: page.sites : pageSize); track t.id) {
+                  @for (t of (sitesCache | paginate: page.sites : pageSize); track t.id) {
                   <tr [hidden]="(search.sites && !(t.name + ' ' + t.email + ' ' + companyName(t.companyId)).toLowerCase().includes(search.sites.toLowerCase())) || (filter.siteCompanyId && t.companyId !== filter.siteCompanyId)">
                     <td>{{ companyName(t.companyId) }}</td>
                     <td>{{ t.name }}</td>
                     <td>{{ t.email }}</td>
-                    <td class="small text-muted">{{ t.password ? 'set' : 'not set' }}</td>
+                    <td>
+                      @if (t.companyId) {
+                        <span class="badge text-bg-success">Assigned</span>
+                      } @else {
+                        <div class="position-relative" style="min-width:260px">
+                          <input class="form-control form-control-sm" placeholder="Type company name…"
+                                 [(ngModel)]="siteCompanySearchQuery[t.id]"
+                                 (ngModelChange)="onSiteRowCompanyInput(t.id, $event)"
+                                 (keydown)="onSiteCompanyKeydown(t.id, $event)"
+                                 (focus)="onSiteCompanyFocus(t.id)"
+                                 (blur)="onSiteCompanyBlur(t.id)"
+                                 [name]="'scq' + t.id" />
+                          <div *ngIf="siteDropdownOpen[t.id]" class="dropdown-menu show w-100 shadow" style="max-height: 240px; overflow:auto;">
+                            <div class="px-3 py-1 text-muted small" *ngIf="siteLoading[t.id]">Searching…</div>
+                            <button type="button"
+                                    class="dropdown-item d-flex flex-column align-items-start"
+                                    *ngFor="let c of siteDropdownCompanies[t.id]; let i = index"
+                                    [class.active]="i === siteActiveIndex[t.id]"
+                                    (mousedown)="$event.preventDefault()"
+                                    (click)="selectSiteCompany(t.id, c)">
+                              <span [innerHTML]="highlightName(c.name, siteCompanySearchQuery[t.id])"></span>
+                              <small class="text-muted" *ngIf="c.address">{{ c.address }}</small>
+                            </button>
+                            <div class="px-3 py-2 text-muted small" *ngIf="!siteLoading[t.id] && (!siteDropdownCompanies[t.id] || siteDropdownCompanies[t.id].length===0)">
+                              <span *ngIf="(siteCompanySearchQuery[t.id]||'').length<2">Type 2+ characters to search</span>
+                              <span *ngIf="(siteCompanySearchQuery[t.id]||'').length>=2">No results found</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div class="mt-2">
+                          <button class="btn btn-sm btn-outline-primary" (click)="assignSiteToCompany(t.id)">Assign</button>
+                        </div>
+                      }
+                    </td>
+                    <td class="small text-muted">—</td>
                     <td>
                       <div class="d-flex flex-wrap gap-2 align-items-center">
                         <input class="form-control form-control-sm flex-grow-1 flex-sm-grow-0" style="min-width:140px" placeholder="New password" [(ngModel)]="siteNewPw[t.id]" name="spw{{t.id}}" />
@@ -604,7 +723,7 @@
               </table>
             </div>
             <div class="p-2">
-              <app-paginator [total]="siteList().length" [(page)]="page.sites" [pageSize]="pageSize"></app-paginator>
+              <app-paginator [total]="sitesCache.length" [(page)]="page.sites" [pageSize]="pageSize"></app-paginator>
             </div>
           </div>
         </div>

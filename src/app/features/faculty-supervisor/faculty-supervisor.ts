@@ -6,6 +6,7 @@ import { ToastService } from '../../shared/toast/toast.service';
 import { ActivatedRoute, Router } from '@angular/router';
 import { PaginatePipe } from '../../shared/pagination/paginate.pipe';
 import { PaginatorComponent } from '../../shared/pagination/paginator';
+import { FacultyService, FacultyProfile } from '../../shared/services/faculty.service';
 
 @Component({
   selector: 'app-faculty-supervisor',
@@ -15,12 +16,15 @@ import { PaginatorComponent } from '../../shared/pagination/paginator';
   styleUrl: './faculty-supervisor.css'
 })
 export class FacultySupervisor {
-  constructor(private store: StoreService, private toast: ToastService, private route: ActivatedRoute, private router: Router) {
+  constructor(private store: StoreService, private toast: ToastService, private route: ActivatedRoute, private router: Router, private facultyApi: FacultyService) {
     try {
       this.route.queryParamMap.subscribe(p => {
         const t = (p.get('tab') || '').toLowerCase();
         const allowed = ['students','details','reports','assignments','agreements','profile'] as const;
-        if ((allowed as readonly string[]).includes(t)) this.currentTab = t as any;
+        if ((allowed as readonly string[]).includes(t)) {
+          this.currentTab = t as any;
+          if (this.currentTab === 'profile') this.loadMyProfileFromApi();
+        }
       });
     } catch {}
   }
@@ -35,6 +39,7 @@ export class FacultySupervisor {
   selectTab(tab: FacultySupervisor['currentTab']) {
     this.currentTab = tab;
     try { this.router.navigate([], { relativeTo: this.route, queryParams: { tab }, queryParamsHandling: 'merge' }); } catch {}
+    if (tab === 'profile') this.loadMyProfileFromApi();
   }
   get me() { return this.store.currentUser; }
   myFacultyId = computed(() => this.me()?.facultyId);
@@ -70,10 +75,40 @@ export class FacultySupervisor {
     const id = this.myFacultyId();
     return id ? this.facultyList().find(f => f.id === id) : undefined;
   }
-  updateMyProfile(changes: any) {
+  // Local editable model for Profile tab; includes API-supported fields plus name/email for local store sync
+  editableProfile: Partial<FacultyProfile & { name?: string; email?: string }> = {};
+  savingProfile = false;
+  saveProfile() {
     const id = this.myFacultyId();
     if (!id) return;
-    this.store.updateFacultySupervisor(id, changes);
+    const p = this.editableProfile || {};
+    // Update store for basic identity fields immediately
+    this.store.updateFacultySupervisor(id, {
+      name: (p as any).name,
+      email: (p as any).email,
+      department: p.department
+    });
+    // Prepare payload for backend-supported fields
+    const payload: Partial<FacultyProfile> = {
+      department: p.department,
+      designation: p.designation,
+      phone: p.phone,
+      office: p.office,
+      bio: p.bio,
+      avatarUrl: p.avatarUrl,
+      qualifications: p.qualifications,
+      expertise: p.expertise
+    };
+    this.savingProfile = true;
+    this.facultyApi.updateProfile(payload).then(res => {
+      if (res?.profile) this.apiProfile = res.profile;
+      if (res?.message) this.toast.success(res.message); else this.toast.success('Profile updated');
+    }).catch(err => {
+      const msg = err?.error?.message || err?.message || 'Failed to update profile';
+      this.toast.danger(msg);
+    }).finally(() => {
+      this.savingProfile = false;
+    });
   }
   setAssignmentMark(aid: string) {
     if (!this.selectedId) return;
@@ -148,5 +183,45 @@ export class FacultySupervisor {
     if (!this.selectedId) return;
     this.store.setReportApproved(this.selectedId, rid, approved);
     this.toast.success(approved ? 'Report approved' : 'Report unapproved');
+  }
+  // Faculty profile via API
+  apiProfile?: FacultyProfile;
+  loadingProfile = false;
+  async loadMyProfileFromApi() {
+    if (this.loadingProfile) return;
+    this.loadingProfile = true;
+    try {
+      const res = await this.facultyApi.getProfile();
+      this.apiProfile = res.profile;
+      // Optionally, sync into local store for view binding consistency
+      const id = this.myFacultyId();
+      if (id && res.profile) {
+        const changes: any = {
+          department: res.profile.department,
+          email: this.facultyProfile()?.email, // keep existing email from store
+          name: this.facultyProfile()?.name,
+        };
+        this.store.updateFacultySupervisor(id, changes);
+      }
+      // Populate editable model from store + api profile
+      const fp = this.facultyProfile();
+      this.editableProfile = {
+        name: fp?.name,
+        email: fp?.email,
+        department: res.profile?.department ?? fp?.department,
+        designation: res.profile?.designation,
+        phone: res.profile?.phone,
+        office: res.profile?.office,
+        bio: res.profile?.bio,
+        avatarUrl: res.profile?.avatarUrl,
+        qualifications: res.profile?.qualifications,
+        expertise: res.profile?.expertise
+      };
+    } catch (err: any) {
+      const msg = err?.error?.message || err?.message || 'Failed to load profile';
+      this.toast.danger(msg);
+    } finally {
+      this.loadingProfile = false;
+    }
   }
 }

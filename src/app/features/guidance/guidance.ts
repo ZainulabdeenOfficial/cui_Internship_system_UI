@@ -7,7 +7,8 @@ import { StoreService } from '../../shared/services/store.service';
   selector: 'app-guidance',
   standalone: true,
   imports: [CommonModule, RouterModule],
-  templateUrl: './guidance.html'
+  templateUrl: './guidance.html',
+  styleUrls: ['./guidance.css']
 })
 export class Guidance {
   constructor(public store: StoreService) {}

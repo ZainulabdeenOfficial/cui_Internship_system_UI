@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { RouterLink, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { StoreService } from '../services/store.service';
 
@@ -12,7 +12,7 @@ import { StoreService } from '../services/store.service';
 })
 export class Footer {
   year = new Date().getFullYear();
-  constructor(public store: StoreService) {}
+  constructor(public store: StoreService, private router: Router) {}
 
   // Whether the currently logged-in user is a student with approved status
   get studentApproved(): boolean {
@@ -32,5 +32,11 @@ export class Footer {
     const last = list[list.length - 1];
     if (last?.status === 'rejected') return 'rejected';
     return 'pending';
+  }
+
+  // Whether the footer should be visible on the current route
+  get isVisible(): boolean {
+    // Show footer on all pages
+    return true;
   }
 }

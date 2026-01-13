@@ -43,6 +43,7 @@ function normalizePath(req: HttpRequest<any>): string {
   return raw.split('?')[0];
 }
 
+let isRefreshingGlobally = false;
 export const authTokenInterceptor: HttpInterceptorFn = (req, next) => {
   const auth = inject(AuthService);
   try {
@@ -51,7 +52,19 @@ export const authTokenInterceptor: HttpInterceptorFn = (req, next) => {
     const needsAuth = isApi && NEEDS_BEARER.some(r => r.test(path)) && !PUBLIC_AUTH.some(r => r.test(path));
 
     const token = needsAuth ? getSessionToken() : null;
-    if (token) req = req.clone({ setHeaders: { Authorization: `Bearer ${token}` } });
+    if (needsAuth && !token) {
+      console.warn('⚠️ [authTokenInterceptor] No token found for protected endpoint:', path);
+      // Check if refresh token exists before attempting request
+      const hasRefreshToken = localStorage.getItem('refreshToken');
+      if (!hasRefreshToken) {
+        console.error('❌ [authTokenInterceptor] No refresh token available, redirecting to login');
+        auth.logout({ redirect: true }).catch(() => {});
+      }
+    }
+    if (token) {
+      console.log('✅ [authTokenInterceptor] Adding Bearer token for:', path);
+      req = req.clone({ setHeaders: { Authorization: `Bearer ${token}` } });
+    }
 
     // Ensure JSON headers on write when missing
   if (isApi) {
@@ -71,10 +84,30 @@ export const authTokenInterceptor: HttpInterceptorFn = (req, next) => {
         const isRefresh = /\/api\/auth\/refresh-token$/.test(path);
         const isLogin = /\/api\/auth\/login$/.test(path);
         const eligible = isApi && !isRefresh && !isLogin && err?.status === 401;
+        
+        console.log('🔍 [authTokenInterceptor] Error caught:', {
+          status: err?.status,
+          path,
+          isRefresh,
+          isLogin,
+          eligible
+        });
+        
         if (!eligible) return throwError(() => err);
+        
+        console.log('🔄 [authTokenInterceptor] Attempting token refresh for 401 on:', path);
+        
         // Attempt a single refresh then retry the original request with updated token
+        if (isRefreshingGlobally) {
+          // If another request is already refreshing and we still got 401, logout
+          console.warn('❌ [authTokenInterceptor] Still getting 401 during refresh, logging out');
+          auth.logout({ redirect: true }).catch(() => {});
+          return throwError(() => err);
+        }
+        isRefreshingGlobally = true;
         return from(auth.refreshAccessToken()).pipe(
           switchMap(() => {
+            console.log('✅ [authTokenInterceptor] Token refreshed, retrying request');
             const token = getSessionToken();
             const needsAuth = NEEDS_BEARER.some(r => r.test(path)) && !PUBLIC_AUTH.some(r => r.test(path));
             const retried = (token && needsAuth)
@@ -82,10 +115,17 @@ export const authTokenInterceptor: HttpInterceptorFn = (req, next) => {
               : req;
             return next(retried);
           }),
-          catchError(() => throwError(() => err))
+          catchError(() => {
+            // refresh failed, logout and bubble error
+            console.error('❌ [authTokenInterceptor] Token refresh failed, logging out');
+            auth.logout({ redirect: true }).catch(() => {});
+            return throwError(() => err);
+          })
         );
       } catch {
         return throwError(() => err);
+      } finally {
+        isRefreshingGlobally = false;
       }
     })
   );

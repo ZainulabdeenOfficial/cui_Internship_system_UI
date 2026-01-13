@@ -1,9 +1,11 @@
 import { Injectable, signal } from '@angular/core';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { environment } from '../../../environments/environment';
 
 export type WeeklyLog = { id: string; week: number; note: string; date: string };
 export type Report = { id: string; type: 'proposal'|'progress'|'final'|'mid'|'site-final'|'reflective'; title: string; content: string; date: string; score?: number; approved?: boolean };
 export type StudentProfile = { id: string; name: string; email: string; registrationNo?: string; password?: string; avatarBase64?: string; bio?: string; approved?: boolean; facultyId?: string; siteId?: string; companyId?: string; internshipMode?: 'OnSite'|'Virtual'|'Fiverr'|'Upwork'; marks?: { faculty?: number; admin?: number; site?: number; adminProposal?: number; adminLogs?: number; adminFinal?: number } };
-export type Role = 'student'|'admin'|'faculty'|'site';
+export type Role = 'student'|'admin'|'faculty'|'site'|'site_supervisor';
 
 // Public announcements displayed on Home page (managed by Internship Office)
 export type Announcement = {
@@ -172,7 +174,7 @@ export class StoreService {
     save('adminProfile', this.adminProfile());
   }
 
-  constructor() {
+  constructor(private http: HttpClient) {
     // Seed requested sample faculty supervisor if none exists
     try {
       if (this.facultySupervisors().length === 0) {
@@ -295,7 +297,7 @@ export class StoreService {
   loginSite(email: string, password: string) {
     const s = this.siteSupervisors().find(u => u.email.toLowerCase() === email.toLowerCase() && (u.password ?? '') === password);
     if (!s) throw new Error('Invalid site supervisor credentials');
-    this.currentUser.set({ role: 'site', siteId: s.id });
+    this.currentUser.set({ role: 'site_supervisor', siteId: s.id });
     this.currentStudentId.set(null);
     this.persist();
     return s;
@@ -421,6 +423,221 @@ export class StoreService {
     this.agreements.update(m => ({ ...m, [studentId]: [...(m[studentId] ?? []), entry] }));
     this.persist();
     return entry;
+  }
+  
+  submitAppexA(studentId: string, requestConfig: any) {
+    // Extract auth token and payload from config
+    const { payload, authToken, studentId: configStudentId } = requestConfig;
+    
+    try {
+      if (!authToken) {
+        throw new Error('Authentication required: Auth token missing');
+      }
+
+      if (!payload) {
+        throw new Error('Payload is required');
+      }
+
+      // Validate required fields before sending
+      const requiredFields = [
+        'organization', 'address', 'industrySector', 'contactName',
+        'contactDesignation', 'contactPhone', 'contactEmail',
+        'internshipLocation', 'internshipNature', 'mode', 'numberOfInternship',
+        'startDate', 'endDate', 'workingDays', 'workingHours'
+      ];
+
+      const missingFields = requiredFields.filter(field => {
+        const value = payload[field];
+        return value === null || value === undefined || value === '' || (typeof value === 'string' && value.trim() === '');
+      });
+
+      if (missingFields.length > 0) {
+        throw new Error(`Missing or empty required fields: ${missingFields.join(', ')}`);
+      }
+
+      // Validate date format and logic
+      try {
+        const startDate = new Date(payload.startDate);
+        const endDate = new Date(payload.endDate);
+        if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+          throw new Error('Invalid date format. Use YYYY-MM-DD');
+        }
+        if (startDate >= endDate) {
+          throw new Error('Start date must be before end date');
+        }
+      } catch (dateErr: any) {
+        throw new Error(`Date validation error: ${dateErr.message}`);
+      }
+
+      // Validate numberOfInternship is a positive number
+      const numInternship = Number(payload.numberOfInternship);
+      if (isNaN(numInternship) || numInternship < 1) {
+        throw new Error('Number of Internship must be a positive number');
+      }
+
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(payload.contactEmail)) {
+        throw new Error('Invalid contact email format');
+      }
+
+      const appexAPayload = {
+        ...payload,
+        numberOfInternship: numInternship
+      };
+      
+      // Build Authorization header
+      const headers = new HttpHeaders({
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken}`
+      });
+
+      // Get API base URL from environment
+      const apiBaseUrl = environment.apiBaseUrl.replace(/\/$/, '');
+      const apiUrl = `${apiBaseUrl}/api/student/appex-a`;
+
+      console.log('[Store] Submitting AppEx A to:', apiUrl);
+      console.log('[Store] Payload:', JSON.stringify(appexAPayload, null, 2));
+      console.log('[Store] Auth Token present:', !!authToken);
+
+      // Make actual HTTP POST request to backend
+      this.http.post<any>(apiUrl, appexAPayload, { headers }).subscribe(
+        (response) => {
+          console.log('[Store] ✓ AppEx A submitted successfully:', response);
+        },
+        (error) => {
+          console.error('[Store] ✗ Error submitting AppEx A');
+          console.error('[Store] Status:', error.status);
+          console.error('[Store] Error response:', error.error);
+          console.error('[Store] Full error:', error);
+          
+          // Log specific error details
+          if (error.status === 0) {
+            console.error('[Store] Network error - CORS or connection issue');
+          } else if (error.status === 401) {
+            console.error('[Store] Unauthorized - Token invalid or expired');
+          } else if (error.status === 400) {
+            console.error('[Store] Bad request - Validation error:', error.error?.error || error.error?.message);
+          } else if (error.status === 409) {
+            console.error('[Store] Conflict - AppEx A already exists');
+          } else if (error.status === 500) {
+            console.error('[Store] Server error');
+          }
+        }
+      );
+
+      // Return success indicator (actual response will be handled by subscription)
+      return { 
+        success: true, 
+        message: 'AppEx A submission initiated',
+        studentId: configStudentId || studentId
+      };
+    } catch (err: any) {
+      console.error('[Store] ✗ Error preparing AppEx A submission:', err.message);
+      console.error('[Store] Full error:', err);
+      throw err;
+    }
+  }
+
+  submitAppexB(studentId: string, requestConfig: any) {
+    // Extract auth token and payload from config
+    const { payload, authToken, studentId: configStudentId } = requestConfig;
+    
+    try {
+      if (!authToken) {
+        throw new Error('Authentication required: Auth token missing');
+      }
+
+      if (!payload) {
+        throw new Error('Payload is required');
+      }
+
+      // Validate required fields before sending
+      const requiredFields = [
+        'name', 'degreeProgram', 'email', 'semester', 'contactNo', 'preferredField'
+      ];
+
+      const missingFields = requiredFields.filter(field => {
+        const value = payload[field];
+        return value === null || value === undefined || value === '' || (typeof value === 'string' && value.trim() === '');
+      });
+
+      if (missingFields.length > 0) {
+        throw new Error(`Missing or empty required fields: ${missingFields.join(', ')}`);
+      }
+
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(payload.email)) {
+        throw new Error('Invalid email format');
+      }
+
+      // Validate agreement acceptance
+      if (!payload.agreementAccepted) {
+        throw new Error('Agreement must be accepted');
+      }
+
+      const appexBPayload = {
+        name: payload.name,
+        degreeProgram: payload.degreeProgram,
+        email: payload.email,
+        semester: payload.semester,
+        contactNo: payload.contactNo,
+        preferredField: payload.preferredField,
+        agreementAccepted: !!payload.agreementAccepted
+      };
+      
+      // Build Authorization header
+      const headers = new HttpHeaders({
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken}`
+      });
+
+      // Get API base URL from environment
+      const apiBaseUrl = environment.apiBaseUrl.replace(/\/$/, '');
+      const apiUrl = `${apiBaseUrl}/api/student/appex-b`;
+
+      console.log('[Store] Submitting AppEx B to:', apiUrl);
+      console.log('[Store] Payload:', JSON.stringify(appexBPayload, null, 2));
+      console.log('[Store] Auth Token present:', !!authToken);
+
+      // Make actual HTTP POST request to backend
+      this.http.post<any>(apiUrl, appexBPayload, { headers }).subscribe(
+        (response) => {
+          console.log('[Store] ✓ AppEx B submitted successfully:', response);
+        },
+        (error) => {
+          console.error('[Store] ✗ Error submitting AppEx B');
+          console.error('[Store] Status:', error.status);
+          console.error('[Store] Error response:', error.error);
+          console.error('[Store] Full error:', error);
+          
+          // Log specific error details
+          if (error.status === 0) {
+            console.error('[Store] Network error - CORS or connection issue');
+          } else if (error.status === 401) {
+            console.error('[Store] Unauthorized - Token invalid or expired');
+          } else if (error.status === 400) {
+            console.error('[Store] Bad request - Validation error:', error.error?.error || error.error?.message);
+          } else if (error.status === 409) {
+            console.error('[Store] Conflict - AppEx B already exists');
+          } else if (error.status === 500) {
+            console.error('[Store] Server error');
+          }
+        }
+      );
+
+      // Return success indicator (actual response will be handled by subscription)
+      return { 
+        success: true, 
+        message: 'AppEx B submission initiated',
+        studentId: configStudentId || studentId
+      };
+    } catch (err: any) {
+      console.error('[Store] ✗ Error preparing AppEx B submission:', err.message);
+      console.error('[Store] Full error:', err);
+      throw err;
+    }
   }
   signAgreementByFaculty(studentId: string, signerName: string) {
     const list = this.agreements()[studentId] ?? [];

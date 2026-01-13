@@ -8,7 +8,8 @@ import { StoreService } from '../../shared/services/store.service';
   selector: 'app-complaints',
   standalone: true,
   imports: [CommonModule, FormsModule, RouterLink],
-  templateUrl: './complaints.html'
+  templateUrl: './complaints.html',
+  styleUrls: ['./complaints.css']
 })
 export class Complaints {
   constructor(public store: StoreService) {}

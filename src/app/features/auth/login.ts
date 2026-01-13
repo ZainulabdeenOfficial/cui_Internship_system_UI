@@ -5,6 +5,7 @@ import { Router, RouterLink, ActivatedRoute } from '@angular/router';
 import { StoreService } from '../../shared/services/store.service';
 import { ToastService } from '../../shared/toast/toast.service';
 import { AuthService } from '../../shared/services/auth.service';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-login',
@@ -47,6 +48,31 @@ export class Login implements OnDestroy, OnInit {
         if (p.get('created') === '1') { this.signupMsg = 'Account created. Please login.'; }
       });
     } catch {}
+    // If already logged in, don't show login page — redirect to appropriate dashboard
+    try {
+      const user = this.store.currentUser();
+      if (user && user.role) {
+        if (user.role === 'student' && user.studentId) {
+          this.router.navigate(['/student']);
+          return;
+        }
+        if (user.role === 'admin') { this.router.navigate(['/admin']); return; }
+        if (user.role === 'faculty') { this.router.navigate(['/faculty']); return; }
+        if (user.role === 'site' || user.role === 'site_supervisor') { this.router.navigate(['/site']); return; }
+      }
+    } catch {}
+    // Hit backend API on page load to verify system status
+    this.checkSystemStatus();
+  }
+
+  private async checkSystemStatus(): Promise<void> {
+    try {
+      const res = await this.auth.checkSystemStatus();
+      // System is operational; silently continue
+    } catch (e: any) {
+      // Silent failure - don't disrupt login page on backend check
+      try { if (!environment.production) console.warn('[Login] System status check failed:', e?.message); } catch {}
+    }
   }
 
   ngOnDestroy(): void { if (this.ticker) clearInterval(this.ticker); document.body.classList.remove('auth-light'); }
@@ -116,7 +142,7 @@ export class Login implements OnDestroy, OnInit {
           } catch {}
         }
         if (this.remember) localStorage.setItem('lastStudentEmail', email);
-        // Determine role from API user if provided; do NOT default silently
+    // Determine role from API user if provided; do NOT default silently
   const apiRole = (apiRes.role || apiRes.user?.role || '').toLowerCase();
         if (!apiRole) {
           const msg = 'User not found or role not assigned';
@@ -140,13 +166,13 @@ export class Login implements OnDestroy, OnInit {
           try { localStorage.setItem('currentUser', JSON.stringify({ role: 'faculty', facultyId: f.id })); localStorage.setItem('currentStudentId', JSON.stringify(null)); } catch {}
           this.toast.success('Logged in as Faculty');
           this.router.navigate(['/faculty']);
-        } else if (apiRole === 'site') {
+        } else if (apiRole === 'site' || apiRole === 'site_supervisor') {
           const lower = email.toLowerCase();
           let ssv = this.store.siteSupervisors().find(u => u.email.toLowerCase() === lower);
           if (!ssv) { const companyId = undefined; this.store.addSiteSupervisor(apiRes.user?.name || email.split('@')[0], email, companyId, password); ssv = this.store.siteSupervisors().find(u => u.email.toLowerCase() === lower)!; }
-          this.store.currentUser.set({ role: 'site', siteId: ssv.id });
+          this.store.currentUser.set({ role: 'site_supervisor', siteId: ssv.id });
           this.store.currentStudentId.set(null);
-          try { localStorage.setItem('currentUser', JSON.stringify({ role: 'site', siteId: ssv.id })); localStorage.setItem('currentStudentId', JSON.stringify(null)); } catch {}
+          try { localStorage.setItem('currentUser', JSON.stringify({ role: 'site_supervisor', siteId: ssv.id })); localStorage.setItem('currentStudentId', JSON.stringify(null)); } catch {}
           this.toast.success('Logged in as Site Supervisor');
           this.router.navigate(['/site']);
         } else if (apiRole === 'student') {
@@ -182,7 +208,11 @@ export class Login implements OnDestroy, OnInit {
   try { sessionStorage.setItem('lastLoginMeta', JSON.stringify({ ts: Date.now(), email, role: apiRole || 'student' })); } catch {}
       } else {
         // API login failed: show error and do not fallback to local logins
-        const msg = apiRes?.message || 'Invalid email or password';
+        let msg = apiRes?.message || 'Invalid email or password';
+        // Hide internal server errors from user - show generic message instead
+        if (msg && (msg.includes('500') || msg.includes('Server error') || msg.includes('Internal'))) {
+          msg = 'Server error. Please try again later.';
+        }
         this.error = msg; this.toast.danger(msg);
         // If server indicates email not verified, guide user to verify page
         if (msg.toLowerCase().includes('verify') || msg.toLowerCase().includes('unverified')) {
@@ -199,9 +229,18 @@ export class Login implements OnDestroy, OnInit {
         this.error = 'Server took too long to respond. Please try again.';
         this.toast.warning(this.error);
       } else {
-        // generic error to avoid user enumeration
-        this.error = 'Invalid email or password';
-        this.toast.danger(this.error);
+        // Hide internal server errors (5xx) from user - show generic message instead
+        const status = e?.status ?? e?.error?.status ?? 0;
+        let errMsg = 'Invalid email or password';
+        if (status >= 500) {
+          // Hide specific 5xx errors from user
+          errMsg = 'Server error. Please try again later.';
+        } else if (status >= 400 && status < 500) {
+          // Show 4xx errors as they are client-related
+          errMsg = e?.error?.message || e?.error?.error || e?.message || 'Invalid email or password';
+        }
+        this.error = errMsg;
+  this.toast.danger(this.error);
         this.failedAttempts++;
       }
       if (this.failedAttempts >= 3) {

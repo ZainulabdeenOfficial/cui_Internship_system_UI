@@ -1,0 +1,4 @@
+.container{background:#ffffff;padding:2rem;border-radius:.5rem;box-shadow:0 8px 24px rgba(14,30,37,0.06);color:#111}
+.container h2{color:#0b365f}
+.container p.text-muted{color:#444}
+/* Guidance page uses solid background, no glass/transparency */
