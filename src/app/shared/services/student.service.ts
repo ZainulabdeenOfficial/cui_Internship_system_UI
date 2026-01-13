@@ -86,14 +86,14 @@ export class StudentService {
 
   // POST /api/student/appex-a
   async submitAppExA(payload: any) {
-    // Helper to convert dates to YYYY-MM-DD format
-    const toSimpleDate = (dateStr: string): string => {
+    // Helper to convert dates to ISO 8601 format
+    const toISODate = (dateStr: string): string => {
       if (!dateStr) return '';
       try {
         const date = new Date(dateStr);
         if (isNaN(date.getTime())) return dateStr;
-        // Format as YYYY-MM-DD
-        return date.toISOString().split('T')[0];
+        // Return full ISO 8601 format: YYYY-MM-DDTHH:mm:ss.sssZ
+        return date.toISOString();
       } catch {
         return dateStr;
       }
@@ -129,9 +129,9 @@ export class StudentService {
       internshipLocation: payload.internshipLocation || '',
       internshipNature: buildInternshipField(payload),
       mode: payload.mode || '',
-      numberOfInternship: payload.numberOfPositions || payload.numberOfInternship || 1,
-      startDate: toSimpleDate(payload.startDate) || '',
-      endDate: toSimpleDate(payload.endDate) || '',
+      numberOfInternship: Number(payload.numberOfPositions || payload.numberOfInternship || 1),
+      startDate: toISODate(payload.startDate) || '',
+      endDate: toISODate(payload.endDate) || '',
       workingDays: payload.workingDays || '',
       workingHours: payload.workingHours || ''
     };
@@ -148,13 +148,14 @@ export class StudentService {
 
   // PUT /api/student/appex-a
   async updateAppExA(payload: any) {
-    // Helper to convert dates to YYYY-MM-DD format
-    const toSimpleDate = (dateStr: string): string => {
+    // Helper to convert dates to ISO 8601 format
+    const toISODate = (dateStr: string): string => {
       if (!dateStr) return '';
       try {
         const date = new Date(dateStr);
         if (isNaN(date.getTime())) return dateStr;
-        return date.toISOString().split('T')[0];
+        // Return full ISO 8601 format: YYYY-MM-DDTHH:mm:ss.sssZ
+        return date.toISOString();
       } catch {
         return dateStr;
       }
@@ -190,9 +191,9 @@ export class StudentService {
       internshipLocation: payload.internshipLocation || '',
       internshipNature: buildInternshipField(payload),
       mode: payload.mode || '',
-      numberOfInternship: payload.numberOfPositions || payload.numberOfInternship || 1,
-      startDate: toSimpleDate(payload.startDate) || '',
-      endDate: toSimpleDate(payload.endDate) || '',
+      numberOfInternship: Number(payload.numberOfPositions || payload.numberOfInternship || 1),
+      startDate: toISODate(payload.startDate) || '',
+      endDate: toISODate(payload.endDate) || '',
       workingDays: payload.workingDays || '',
       workingHours: payload.workingHours || ''
     };
