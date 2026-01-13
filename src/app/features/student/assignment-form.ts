@@ -88,23 +88,14 @@ export class AssignmentForm {
         return; 
       }
 
-      // Validate all required fields before submission
+      // Validate all required fields before submission (AppEx-B fields)
       const requiredFields = {
-        organization: this.model.organization,
-        address: this.model.address,
-        industrySector: this.model.industrySector,
-        contactName: this.model.contactName,
-        contactDesignation: this.model.contactDesignation,
-        contactPhone: this.model.contactPhone,
-        contactEmail: this.model.contactEmail,
-        internshipLocation: this.model.internshipLocation,
-        internshipNature: this.model.internshipField || this.model.internshipNature,
-        mode: this.model.mode,
-        numberOfInternship: this.model.numberOfInternship,
-        startDate: this.model.startDate,
-        endDate: this.model.endDate,
-        workingDays: this.model.workingDays,
-        workingHours: this.model.workingHours
+        name: this.model.name,
+        degreeProgram: this.model.degreeProgram,
+        email: this.model.email,
+        semester: this.model.semester,
+        contactNo: this.model.contactNo,
+        preferredField: this.model.preferredField
       };
 
       // Check for empty fields
@@ -117,70 +108,42 @@ export class AssignmentForm {
         return;
       }
 
-      // Validate dates
-      try {
-        const startDate = new Date(this.model.startDate);
-        const endDate = new Date(this.model.endDate);
-        
-        if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
-          this.toast.danger('Invalid date format. Please use YYYY-MM-DD format.');
-          return;
-        }
-
-        if (startDate >= endDate) {
-          this.toast.danger('Start date must be before end date.');
-          return;
-        }
-      } catch (err: any) {
-        this.toast.danger('Date validation error: ' + err.message);
-        return;
-      }
-
-      // Validate number
-      const numInternship = Number(this.model.numberOfInternship);
-      if (isNaN(numInternship) || numInternship < 1) {
-        this.toast.danger('Number of Internship must be a valid positive number.');
-        return;
-      }
-
       // Validate email format
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(this.model.contactEmail)) {
-        this.toast.danger('Please enter a valid contact email address.');
+      if (!emailRegex.test(this.model.email)) {
+        this.toast.danger('Please enter a valid email address.');
+        return;
+      }
+
+      // Validate agreement acceptance
+      if (!this.model.agreementAccepted) {
+        this.toast.danger('You must accept the agreement to submit.');
         return;
       }
       
-      // Build payload for Backend API: /api/student/appex-a with auth
-      const appexAPayload = {
-        organization: this.model.organization.trim(),
-        address: this.model.address.trim(),
-        industrySector: this.model.industrySector.trim(),
-        contactName: this.model.contactName.trim(),
-        contactDesignation: this.model.contactDesignation.trim(),
-        contactPhone: this.model.contactPhone.trim(),
-        contactEmail: this.model.contactEmail.trim(),
-        internshipLocation: this.model.internshipLocation.trim(),
-        internshipNature: (this.model.internshipField || this.model.internshipNature).trim(),
-        mode: this.model.mode,
-        numberOfInternship: numInternship,
-        startDate: this.model.startDate, // ISO format: YYYY-MM-DD
-        endDate: this.model.endDate, // ISO format: YYYY-MM-DD
-        workingDays: this.model.workingDays.trim(),
-        workingHours: this.model.workingHours.trim()
+      // Build payload for Backend API: /api/student/appex-b with auth
+      const appexBPayload = {
+        name: this.model.name.trim(),
+        degreeProgram: this.model.degreeProgram.trim(),
+        email: this.model.email.trim(),
+        semester: this.model.semester.trim(),
+        contactNo: this.model.contactNo.trim(),
+        preferredField: this.model.preferredField.trim(),
+        agreementAccepted: this.model.agreementAccepted
       };
 
-      console.log('[AssignmentForm] Submitting AppEx A with payload:', appexAPayload);
+      console.log('[AssignmentForm] Submitting AppEx B with payload:', appexBPayload);
       
       // Include auth token in payload headers (will be sent by store service)
       const requestConfig = {
-        payload: appexAPayload,
+        payload: appexBPayload,
         authToken: authToken,
         studentId: id
       };
       
       // Submit to backend via store service with auth
-      this.store.submitAppexA(id, requestConfig as any);
-      this.toast.success('Internship Application (AppEx A) submitted successfully');
+      this.store.submitAppexB(id, requestConfig as any);
+      this.toast.success('Student Assignment & Agreement (AppEx B) submitted successfully');
       
       // reset locally
       this.model = { 

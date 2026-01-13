@@ -538,6 +538,107 @@ export class StoreService {
       throw err;
     }
   }
+
+  submitAppexB(studentId: string, requestConfig: any) {
+    // Extract auth token and payload from config
+    const { payload, authToken, studentId: configStudentId } = requestConfig;
+    
+    try {
+      if (!authToken) {
+        throw new Error('Authentication required: Auth token missing');
+      }
+
+      if (!payload) {
+        throw new Error('Payload is required');
+      }
+
+      // Validate required fields before sending
+      const requiredFields = [
+        'name', 'degreeProgram', 'email', 'semester', 'contactNo', 'preferredField'
+      ];
+
+      const missingFields = requiredFields.filter(field => {
+        const value = payload[field];
+        return value === null || value === undefined || value === '' || (typeof value === 'string' && value.trim() === '');
+      });
+
+      if (missingFields.length > 0) {
+        throw new Error(`Missing or empty required fields: ${missingFields.join(', ')}`);
+      }
+
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(payload.email)) {
+        throw new Error('Invalid email format');
+      }
+
+      // Validate agreement acceptance
+      if (!payload.agreementAccepted) {
+        throw new Error('Agreement must be accepted');
+      }
+
+      const appexBPayload = {
+        name: payload.name,
+        degreeProgram: payload.degreeProgram,
+        email: payload.email,
+        semester: payload.semester,
+        contactNo: payload.contactNo,
+        preferredField: payload.preferredField,
+        agreementAccepted: !!payload.agreementAccepted
+      };
+      
+      // Build Authorization header
+      const headers = new HttpHeaders({
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken}`
+      });
+
+      // Get API base URL from environment
+      const apiBaseUrl = environment.apiBaseUrl.replace(/\/$/, '');
+      const apiUrl = `${apiBaseUrl}/api/student/appex-b`;
+
+      console.log('[Store] Submitting AppEx B to:', apiUrl);
+      console.log('[Store] Payload:', JSON.stringify(appexBPayload, null, 2));
+      console.log('[Store] Auth Token present:', !!authToken);
+
+      // Make actual HTTP POST request to backend
+      this.http.post<any>(apiUrl, appexBPayload, { headers }).subscribe(
+        (response) => {
+          console.log('[Store] ✓ AppEx B submitted successfully:', response);
+        },
+        (error) => {
+          console.error('[Store] ✗ Error submitting AppEx B');
+          console.error('[Store] Status:', error.status);
+          console.error('[Store] Error response:', error.error);
+          console.error('[Store] Full error:', error);
+          
+          // Log specific error details
+          if (error.status === 0) {
+            console.error('[Store] Network error - CORS or connection issue');
+          } else if (error.status === 401) {
+            console.error('[Store] Unauthorized - Token invalid or expired');
+          } else if (error.status === 400) {
+            console.error('[Store] Bad request - Validation error:', error.error?.error || error.error?.message);
+          } else if (error.status === 409) {
+            console.error('[Store] Conflict - AppEx B already exists');
+          } else if (error.status === 500) {
+            console.error('[Store] Server error');
+          }
+        }
+      );
+
+      // Return success indicator (actual response will be handled by subscription)
+      return { 
+        success: true, 
+        message: 'AppEx B submission initiated',
+        studentId: configStudentId || studentId
+      };
+    } catch (err: any) {
+      console.error('[Store] ✗ Error preparing AppEx B submission:', err.message);
+      console.error('[Store] Full error:', err);
+      throw err;
+    }
+  }
   signAgreementByFaculty(studentId: string, signerName: string) {
     const list = this.agreements()[studentId] ?? [];
     if (list.length === 0) return;
