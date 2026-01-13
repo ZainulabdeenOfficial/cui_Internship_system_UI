@@ -18,15 +18,12 @@ export class ForgotPassword implements OnInit, OnDestroy {
   sent = false;
   resending = false;
   message: string | null = null;
-  redirectCountdown = 0;
-  private redirectTimer: any;
 
   constructor(private auth: AuthService, private router: Router) {}
 
   ngOnInit(){ document.body.classList.add('auth-light'); }
   ngOnDestroy(){ 
     document.body.classList.remove('auth-light');
-    if (this.redirectTimer) clearInterval(this.redirectTimer);
   }
 
   async submit() {
@@ -35,8 +32,6 @@ export class ForgotPassword implements OnInit, OnDestroy {
     // Immediately show success message without waiting for API response
     this.sent = true;
     this.message = `Reset link sent to ${this.email}. Please check your inbox.`;
-    // Start redirect countdown immediately
-    this.startRedirectCountdown(5);
     
     // Make API call in background (don't wait)
     try {
@@ -51,17 +46,6 @@ export class ForgotPassword implements OnInit, OnDestroy {
     } finally {
       this.loading = false;
     }
-  }
-
-  private startRedirectCountdown(seconds: number) {
-    this.redirectCountdown = seconds;
-    this.redirectTimer = setInterval(() => {
-      this.redirectCountdown--;
-      if (this.redirectCountdown <= 0) {
-        clearInterval(this.redirectTimer);
-        this.router.navigate(['/login']);
-      }
-    }, 1000);
   }
 
   async resend() {
