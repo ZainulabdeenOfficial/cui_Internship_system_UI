@@ -203,4 +203,55 @@ export class StudentService {
     console.log('📤 [updateAppExA] Sending updated payload:', JSON.stringify(cleanPayload, null, 2));
     return await firstValueFrom(this.http.put<any>(url, cleanPayload, { headers }));
   }
+
+  // GET /api/student/appex-b
+  async getAppExB(): Promise<any> {
+    const url = this.abs('/api/student/appex-b');
+    const token = this.getAuthToken();
+    const headers = new HttpHeaders({ 
+      Accept: 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {})
+    });
+    return await firstValueFrom(this.http.get<any>(url, { headers }));
+  }
+
+  // POST /api/student/appex-b
+  async submitAppExB(payload: any) {
+    // Only send fields the backend expects
+    const cleanPayload = {
+      name: payload.name || '',
+      degreeProgram: payload.degreeProgram || '',
+      email: payload.email || '',
+      semester: payload.semester || '',
+      contactNo: payload.contactNo || '',
+      preferredField: payload.preferredField || '',
+      agreementAccepted: !!payload.agreementAccepted
+    };
+    
+    const url = this.abs('/api/student/appex-b');
+    const token = this.getAuthToken();
+    console.log('🔐 [submitAppExB] Token:', token ? `${token.substring(0, 20)}...` : 'NO TOKEN');
+    const headers = this.jsonHeaders();
+    console.log('📦 [submitAppExB] Payload being sent:', JSON.stringify(cleanPayload, null, 2));
+    return await firstValueFrom(this.http.post<any>(url, cleanPayload, { headers }));
+  }
+
+  // PUT /api/student/appex-b
+  async updateAppExB(payload: any) {
+    // Only send fields the backend expects
+    const cleanPayload = {
+      name: payload.name || '',
+      degreeProgram: payload.degreeProgram || '',
+      email: payload.email || '',
+      semester: payload.semester || '',
+      contactNo: payload.contactNo || '',
+      preferredField: payload.preferredField || '',
+      agreementAccepted: !!payload.agreementAccepted
+    };
+    
+    const url = this.abs('/api/student/appex-b');
+    const headers = this.jsonHeaders();
+    console.log('📤 [updateAppExB] Sending updated payload:', JSON.stringify(cleanPayload, null, 2));
+    return await firstValueFrom(this.http.put<any>(url, cleanPayload, { headers }));
+  }
 }
