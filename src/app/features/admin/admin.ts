@@ -1387,15 +1387,21 @@ export class Admin {
 
   async updateApexAStatus(formId: string, status: 'approved' | 'rejected') {
     if (this.updatingApexA) return;
+    
+    const form = this.apexAForms.find(f => f.id === formId);
+    if (!form || !form.student?.id) {
+      this.toast.danger('Student information not found');
+      return;
+    }
+    
     if (!confirm(`Are you sure you want to ${status} this APEX A form?`)) return;
     
     this.updatingApexA = true;
     try {
-      await this.adminApi.updateApexAStatus(formId, status);
+      await this.adminApi.updateApexAStatus(formId, form.student.id, status);
       this.toast.success(`APEX A form ${status} successfully`);
       // Update local state instead of full reload for better performance
-      const form = this.apexAForms.find(f => f.id === formId);
-      if (form) form.status = status;
+      form.status = status;
       this.selectedApexAIds.delete(formId);
     } catch (err: any) {
       const msg = err?.error?.message || err?.message || `Failed to ${status} APEX A form`;
@@ -1417,11 +1423,15 @@ export class Admin {
     try {
       for (const id of ids) {
         try {
-          await this.adminApi.updateApexAStatus(id, 'approved');
           const form = this.apexAForms.find(f => f.id === id);
-          if (form) form.status = 'approved';
-          this.selectedApexAIds.delete(id);
-          successCount++;
+          if (form && form.student?.id) {
+            await this.adminApi.updateApexAStatus(id, form.student.id, 'approved');
+            form.status = 'approved';
+            this.selectedApexAIds.delete(id);
+            successCount++;
+          } else {
+            failCount++;
+          }
         } catch {
           failCount++;
         }
@@ -1440,15 +1450,21 @@ export class Admin {
 
   async updateApexBStatus(formId: string, status: 'approved' | 'rejected') {
     if (this.updatingApexB) return;
+    
+    const form = this.apexBForms.find(f => f.id === formId);
+    if (!form || !form.student?.id) {
+      this.toast.danger('Student information not found');
+      return;
+    }
+    
     if (!confirm(`Are you sure you want to ${status} this APEX B form?`)) return;
     
     this.updatingApexB = true;
     try {
-      await this.adminApi.updateApexBStatus(formId, status);
+      await this.adminApi.updateApexBStatus(formId, form.student.id, status);
       this.toast.success(`APEX B form ${status} successfully`);
       // Update local state instead of full reload for better performance
-      const form = this.apexBForms.find(f => f.id === formId);
-      if (form) form.status = status;
+      form.status = status;
       this.selectedApexBIds.delete(formId);
     } catch (err: any) {
       const msg = err?.error?.message || err?.message || `Failed to ${status} APEX B form`;
@@ -1470,11 +1486,15 @@ export class Admin {
     try {
       for (const id of ids) {
         try {
-          await this.adminApi.updateApexBStatus(id, 'approved');
           const form = this.apexBForms.find(f => f.id === id);
-          if (form) form.status = 'approved';
-          this.selectedApexBIds.delete(id);
-          successCount++;
+          if (form && form.student?.id) {
+            await this.adminApi.updateApexBStatus(id, form.student.id, 'approved');
+            form.status = 'approved';
+            this.selectedApexBIds.delete(id);
+            successCount++;
+          } else {
+            failCount++;
+          }
         } catch {
           failCount++;
         }

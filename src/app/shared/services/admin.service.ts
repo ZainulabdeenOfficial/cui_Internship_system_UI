@@ -339,11 +339,11 @@ export class AdminService {
     }));
   }
 
-  async updateApexAStatus(formId: string, status: 'approved' | 'rejected'): Promise<any> {
+  async updateApexAStatus(formId: string, studentId: string, status: 'approved' | 'rejected'): Promise<any> {
     const base = environment.apiBaseUrl.replace(/\/$/, '');
     const path = '/api/admin/appex-a';
     const url = environment.production ? path : `${base}${path}`;
-    const body = { id: formId, status };
+    const body = { id: formId, studentId, status };
     return await firstValueFrom(this.http.patch<any>(url, body, { headers: await this.authHeaders(true) }));
   }
 
@@ -372,11 +372,11 @@ export class AdminService {
     }));
   }
 
-  async updateApexBStatus(formId: string, status: 'approved' | 'rejected'): Promise<any> {
+  async updateApexBStatus(formId: string, studentId: string, status: 'approved' | 'rejected'): Promise<any> {
     const base = environment.apiBaseUrl.replace(/\/$/, '');
     const path = '/api/admin/appex-b';
     const url = environment.production ? path : `${base}${path}`;
-    const body = { id: formId, status };
+    const body = { id: formId, studentId, status };
     return await firstValueFrom(this.http.patch<any>(url, body, { headers: await this.authHeaders(true) }));
   }
 
