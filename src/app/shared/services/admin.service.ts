@@ -317,4 +317,86 @@ export class AdminService {
     const companies: any[] = Array.isArray(res?.companies) ? res.companies : (Array.isArray(res) ? res : []);
     return companies;
   }
+
+  // APEX Forms Management APIs
+  async getApexAForms(): Promise<Array<{ id: string; startDate?: string; endDate?: string; status?: string; student?: { id: string; name: string; email: string; regNo: string } }>> {
+    const base = environment.apiBaseUrl.replace(/\/$/, '');
+    const path = '/api/admin/appex-a';
+    const url = environment.production ? path : `${base}${path}`;
+    const res = await firstValueFrom(this.http.get<any>(url, { headers: await this.authHeaders() }));
+    const data = Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []);
+    return data.map((item: any) => ({
+      id: item.id || item._id || '',
+      startDate: item.startDate,
+      endDate: item.endDate,
+      status: item.status || 'pending',
+      student: {
+        id: item.student?.id || item.student?._id || '',
+        name: item.student?.name || '',
+        email: item.student?.email || '',
+        regNo: item.student?.regNo || ''
+      }
+    }));
+  }
+
+  async updateApexAStatus(formId: string, status: 'approved' | 'rejected'): Promise<any> {
+    const base = environment.apiBaseUrl.replace(/\/$/, '');
+    const path = '/api/admin/appex-a';
+    const url = environment.production ? path : `${base}${path}`;
+    const body = { id: formId, status };
+    return await firstValueFrom(this.http.patch<any>(url, body, { headers: await this.authHeaders(true) }));
+  }
+
+  async getApexBForms(): Promise<Array<{ id: string; name?: string; degreeProgram?: string; email?: string; semester?: string; contactNo?: string; preferredField?: string; agreementAccepted?: boolean; status?: string; student?: { id: string; name: string; email: string; regNo: string } }>> {
+    const base = environment.apiBaseUrl.replace(/\/$/, '');
+    const path = '/api/admin/appex-b';
+    const url = environment.production ? path : `${base}${path}`;
+    const res = await firstValueFrom(this.http.get<any>(url, { headers: await this.authHeaders() }));
+    const data = Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []);
+    return data.map((item: any) => ({
+      id: item.id || item._id || '',
+      name: item.name,
+      degreeProgram: item.degreeProgram,
+      email: item.email,
+      semester: item.semester,
+      contactNo: item.contactNo,
+      preferredField: item.preferredField,
+      agreementAccepted: item.agreementAccepted,
+      status: item.status || 'pending',
+      student: {
+        id: item.student?.id || item.student?._id || '',
+        name: item.student?.name || '',
+        email: item.student?.email || '',
+        regNo: item.student?.regNo || ''
+      }
+    }));
+  }
+
+  async updateApexBStatus(formId: string, status: 'approved' | 'rejected'): Promise<any> {
+    const base = environment.apiBaseUrl.replace(/\/$/, '');
+    const path = '/api/admin/appex-b';
+    const url = environment.production ? path : `${base}${path}`;
+    const body = { id: formId, status };
+    return await firstValueFrom(this.http.patch<any>(url, body, { headers: await this.authHeaders(true) }));
+  }
+
+  async updateApexBDetails(formId: string, details: {
+    studentId: string;
+    companyName: string;
+    internshipRole: string;
+    facultySupervisorNameDesig: string;
+    siteSupervisorNameDesig: string;
+    durationWeeks: number;
+    startDate: string;
+    endDate: string;
+  }): Promise<any> {
+    const base = environment.apiBaseUrl.replace(/\/$/, '');
+    const path = '/api/admin/appex-b';
+    const url = environment.production ? path : `${base}${path}`;
+    const body = {
+      id: formId,
+      ...details
+    };
+    return await firstValueFrom(this.http.patch<any>(url, body, { headers: await this.authHeaders(true) }));
+  }
 }

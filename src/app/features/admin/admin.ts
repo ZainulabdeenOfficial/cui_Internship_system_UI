@@ -21,7 +21,7 @@ export class Admin {
     try {
       this.route.queryParamMap.subscribe(p => {
         const t = (p.get('tab') || '').toLowerCase();
-        const allowed = ['students','applications','requests','announcements','officers','faculty','companies','sites','compliance','complaints','scheme','evidence'] as const;
+        const allowed = ['students','applications','requests','announcements','officers','faculty','companies','sites','compliance','complaints','scheme','evidence','formsrequest'] as const;
         if ( (allowed as readonly string[]).includes(t) ) {
           this.currentTab = t as any;
           // Auto-load data when navigating directly via URL (no need to click refresh)
@@ -74,7 +74,8 @@ export class Admin {
   facultyId = '';
   siteId = '';
   selectedId: string | null = null;
-  currentTab: 'students'|'applications'|'requests'|'announcements'|'officers'|'faculty'|'companies'|'sites'|'compliance'|'complaints'|'scheme'|'evidence' = 'students';
+  currentTab: 'students'|'applications'|'requests'|'announcements'|'officers'|'faculty'|'companies'|'sites'|'compliance'|'complaints'|'scheme'|'evidence'|'formsRequest' = 'students';
+  currentFormsSubTab: 'apexA'|'apexB'|'apexC' = 'apexA';
   // pagination
   page = { students: 1, requests: 1, complaints: 1, faculty: 1, sites: 1, companies: 1, announcements: 1, officers: 1 };
   pageSize = 10;
@@ -92,6 +93,11 @@ export class Admin {
       this.reviewCompanyFilter.page = 1;
       this.reviewCompanyFilter.search = '';
       this.loadReviewCompany();
+    }
+    if (tab === 'formsRequest') {
+      // Load APEX A forms by default
+      this.currentFormsSubTab = 'apexA';
+      this.loadApexAForms();
     }
   }
   get officers() { return this.store.internshipOfficers; }
@@ -141,6 +147,27 @@ export class Admin {
   // Evidence review state
   evidenceDecision: Record<string, 'approved'|'rejected'|''> = {};
   evidenceComment: Record<string, string> = {};
+  
+  // APEX Forms Request Management
+  apexAForms: Array<{ id: string; startDate?: string; endDate?: string; status?: string; student?: { id: string; name: string; email: string; regNo: string } }> = [];
+  apexBForms: Array<{ id: string; name?: string; degreeProgram?: string; email?: string; semester?: string; contactNo?: string; preferredField?: string; agreementAccepted?: boolean; status?: string; student?: { id: string; name: string; email: string; regNo: string } }> = [];
+  loadingApexA = false;
+  loadingApexB = false;
+  updatingApexA = false;
+  updatingApexB = false;
+  showApexBModal = false;
+  selectedApexBForm: any = null;
+  apexBDetails = {
+    studentId: '',
+    companyName: '',
+    internshipRole: '',
+    facultySupervisorNameDesig: '',
+    siteSupervisorNameDesig: '',
+    durationWeeks: 0,
+    startDate: '',
+    endDate: ''
+  };
+
   latestEvidence(id: string) { const list = this.store.freelance()[id] ?? []; return list.length ? list[list.length - 1] : null; }
   reviewEvidence(id: string) {
     const rec = this.latestEvidence(id);
@@ -1162,5 +1189,129 @@ export class Admin {
     const a = this.latestApproval(id);
     if (!this.showPendingOnly) return true;
     return !!a && (a.status === 'pending' || !a.status);
+  }
+
+  // APEX Forms Management Methods
+  selectFormsSubTab(subTab: 'apexA' | 'apexB' | 'apexC') {
+    this.currentFormsSubTab = subTab;
+    if (subTab === 'apexA') {
+      this.loadApexAForms();
+    } else if (subTab === 'apexB') {
+      this.loadApexBForms();
+    }
+  }
+
+  async loadApexAForms() {
+    if (this.loadingApexA) return;
+    this.loadingApexA = true;
+    try {
+      const result = await this.adminApi.getApexAForms();
+      this.apexAForms = result;
+      this.toast.success('APEX A forms loaded successfully');
+    } catch (err: any) {
+      const msg = err?.error?.message || err?.message || 'Failed to load APEX A forms';
+      this.toast.danger(msg);
+      this.apexAForms = [];
+    } finally {
+      this.loadingApexA = false;
+    }
+  }
+
+  async loadApexBForms() {
+    if (this.loadingApexB) return;
+    this.loadingApexB = true;
+    try {
+      const result = await this.adminApi.getApexBForms();
+      this.apexBForms = result;
+      this.toast.success('APEX B forms loaded successfully');
+    } catch (err: any) {
+      const msg = err?.error?.message || err?.message || 'Failed to load APEX B forms';
+      this.toast.danger(msg);
+      this.apexBForms = [];
+    } finally {
+      this.loadingApexB = false;
+    }
+  }
+
+  async updateApexAStatus(formId: string, status: 'approved' | 'rejected') {
+    if (this.updatingApexA) return;
+    if (!confirm(`Are you sure you want to ${status} this APEX A form?`)) return;
+    
+    this.updatingApexA = true;
+    try {
+      await this.adminApi.updateApexAStatus(formId, status);
+      this.toast.success(`APEX A form ${status} successfully`);
+      await this.loadApexAForms(); // Reload to reflect changes
+    } catch (err: any) {
+      const msg = err?.error?.message || err?.message || `Failed to ${status} APEX A form`;
+      this.toast.danger(msg);
+    } finally {
+      this.updatingApexA = false;
+    }
+  }
+
+  async updateApexBStatus(formId: string, status: 'approved' | 'rejected') {
+    if (this.updatingApexB) return;
+    if (!confirm(`Are you sure you want to ${status} this APEX B form?`)) return;
+    
+    this.updatingApexB = true;
+    try {
+      await this.adminApi.updateApexBStatus(formId, status);
+      this.toast.success(`APEX B form ${status} successfully`);
+      await this.loadApexBForms(); // Reload to reflect changes
+    } catch (err: any) {
+      const msg = err?.error?.message || err?.message || `Failed to ${status} APEX B form`;
+      this.toast.danger(msg);
+    } finally {
+      this.updatingApexB = false;
+    }
+  }
+
+  openApexBDetailsModal(form: any) {
+    this.selectedApexBForm = form;
+    this.apexBDetails = {
+      studentId: form.student?.id || form.id || '',
+      companyName: '',
+      internshipRole: '',
+      facultySupervisorNameDesig: '',
+      siteSupervisorNameDesig: '',
+      durationWeeks: 0,
+      startDate: '',
+      endDate: ''
+    };
+    this.showApexBModal = true;
+  }
+
+  closeApexBModal() {
+    this.showApexBModal = false;
+    this.selectedApexBForm = null;
+    this.apexBDetails = {
+      studentId: '',
+      companyName: '',
+      internshipRole: '',
+      facultySupervisorNameDesig: '',
+      siteSupervisorNameDesig: '',
+      durationWeeks: 0,
+      startDate: '',
+      endDate: ''
+    };
+  }
+
+  async submitApexBDetails() {
+    if (this.updatingApexB) return;
+    if (!this.selectedApexBForm) return;
+    
+    this.updatingApexB = true;
+    try {
+      await this.adminApi.updateApexBDetails(this.selectedApexBForm.id, this.apexBDetails);
+      this.toast.success('APEX B details submitted successfully');
+      this.closeApexBModal();
+      await this.loadApexBForms(); // Reload to reflect changes
+    } catch (err: any) {
+      const msg = err?.error?.message || err?.message || 'Failed to submit APEX B details';
+      this.toast.danger(msg);
+    } finally {
+      this.updatingApexB = false;
+    }
   }
 }
