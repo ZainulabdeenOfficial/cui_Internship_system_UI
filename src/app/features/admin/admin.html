@@ -923,14 +923,14 @@
                           </td>
                           <td>
                             <div class="btn-group btn-group-sm">
-                              <button class="btn btn-outline-info btn-sm" (click)="viewApexADetails(form)" title="View">
-                                <i class="bi bi-eye"></i>
+                              <button class="btn btn-outline-info btn-sm" (click)="viewApexADetails(form)">
+                                <i class="bi bi-eye"></i> View
                               </button>
-                              <button class="btn btn-success btn-sm" (click)="updateApexAStatus(form.id, 'approved')" [disabled]="updatingApexA || form.status === 'approved'" title="Approve">
-                                <i class="bi bi-check"></i>
+                              <button class="btn btn-success btn-sm" (click)="updateApexAStatus(form.id, 'approved')" [disabled]="updatingApexA || form.status === 'approved'">
+                                <i class="bi bi-check"></i> Approve
                               </button>
-                              <button class="btn btn-danger btn-sm" (click)="updateApexAStatus(form.id, 'rejected')" [disabled]="updatingApexA || form.status === 'rejected'" title="Reject">
-                                <i class="bi bi-x"></i>
+                              <button class="btn btn-danger btn-sm" (click)="updateApexAStatus(form.id, 'rejected')" [disabled]="updatingApexA || form.status === 'rejected'">
+                                <i class="bi bi-x"></i> Reject
                               </button>
                             </div>
                           </td>
@@ -1036,17 +1036,17 @@
                           </td>
                           <td>
                             <div class="btn-group btn-group-sm">
-                              <button class="btn btn-outline-info btn-sm" (click)="viewApexBFullDetails(form)" title="View">
-                                <i class="bi bi-eye"></i>
+                              <button class="btn btn-outline-info btn-sm" (click)="viewApexBFullDetails(form)">
+                                <i class="bi bi-eye"></i> View
                               </button>
-                              <button class="btn btn-info btn-sm" (click)="openApexBDetailsModal(form)" [disabled]="updatingApexB" title="Add Details">
-                                <i class="bi bi-plus"></i>
+                              <button class="btn btn-info btn-sm" (click)="openApexBDetailsModal(form)" [disabled]="updatingApexB">
+                                <i class="bi bi-plus"></i> Details
                               </button>
-                              <button class="btn btn-success btn-sm" (click)="updateApexBStatus(form.id, 'approved')" [disabled]="updatingApexB || form.status === 'approved'" title="Approve">
-                                <i class="bi bi-check"></i>
+                              <button class="btn btn-success btn-sm" (click)="updateApexBStatus(form.id, 'approved')" [disabled]="updatingApexB || form.status === 'approved'">
+                                <i class="bi bi-check"></i> Approve
                               </button>
-                              <button class="btn btn-danger btn-sm" (click)="updateApexBStatus(form.id, 'rejected')" [disabled]="updatingApexB || form.status === 'rejected'" title="Reject">
-                                <i class="bi bi-x"></i>
+                              <button class="btn btn-danger btn-sm" (click)="updateApexBStatus(form.id, 'rejected')" [disabled]="updatingApexB || form.status === 'rejected'">
+                                <i class="bi bi-x"></i> Reject
                               </button>
                             </div>
                           </td>
@@ -1150,14 +1150,14 @@
                           </td>
                           <td>
                             <div class="btn-group btn-group-sm">
-                              <button class="btn btn-outline-info btn-sm" (click)="viewApexCDetails(form)" title="View">
-                                <i class="bi bi-eye"></i>
+                              <button class="btn btn-outline-info btn-sm" (click)="viewApexCDetails(form)">
+                                <i class="bi bi-eye"></i> View
                               </button>
-                              <button class="btn btn-success btn-sm" [disabled]="updatingApexC || form.status === 'approved'" title="Approve">
-                                <i class="bi bi-check"></i>
+                              <button class="btn btn-success btn-sm" [disabled]="updatingApexC || form.status === 'approved'">
+                                <i class="bi bi-check"></i> Approve
                               </button>
-                              <button class="btn btn-danger btn-sm" [disabled]="updatingApexC || form.status === 'rejected'" title="Reject">
-                                <i class="bi bi-x"></i>
+                              <button class="btn btn-danger btn-sm" [disabled]="updatingApexC || form.status === 'rejected'">
+                                <i class="bi bi-x"></i> Reject
                               </button>
                             </div>
                           </td>

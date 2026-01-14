@@ -95,8 +95,11 @@ export class Admin {
       this.loadReviewCompany();
     }
     if (tab === 'formsRequest') {
-      // Set default sub-tab but don't auto-load
+      // Set default sub-tab and auto-load APEX A forms
       this.currentFormsSubTab = 'apexA';
+      if (this.apexAForms.length === 0) {
+        this.loadApexAForms();
+      }
     }
   }
   get officers() { return this.store.internshipOfficers; }
