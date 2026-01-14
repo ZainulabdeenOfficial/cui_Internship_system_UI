@@ -95,9 +95,8 @@ export class Admin {
       this.loadReviewCompany();
     }
     if (tab === 'formsRequest') {
-      // Load APEX A forms by default
+      // Set default sub-tab but don't auto-load
       this.currentFormsSubTab = 'apexA';
-      this.loadApexAForms();
     }
   }
   get officers() { return this.store.internshipOfficers; }
@@ -162,7 +161,11 @@ export class Admin {
   approvingAllApexB = false;
   approvingAllApexC = false;
   showApexBModal = false;
+  showApexADetailsModal = false;
+  showApexCDetailsModal = false;
+  selectedApexAForm: any = null;
   selectedApexBForm: any = null;
+  selectedApexCForm: any = null;
   apexBDetails = {
     studentId: '',
     companyName: '',
@@ -1218,13 +1221,7 @@ export class Admin {
   // APEX Forms Management Methods
   selectFormsSubTab(subTab: 'apexA' | 'apexB' | 'apexC') {
     this.currentFormsSubTab = subTab;
-    if (subTab === 'apexA') {
-      this.loadApexAForms();
-    } else if (subTab === 'apexB') {
-      this.loadApexBForms();
-    } else if (subTab === 'apexC') {
-      this.loadApexCForms();
-    }
+    // Don't auto-load - let user click refresh to load forms
   }
 
   // Filtering and pagination helpers
@@ -1518,6 +1515,16 @@ export class Admin {
     }
   }
 
+  viewApexADetails(form: any) {
+    this.selectedApexAForm = form;
+    this.showApexADetailsModal = true;
+  }
+
+  closeApexADetailsModal() {
+    this.showApexADetailsModal = false;
+    this.selectedApexAForm = null;
+  }
+
   openApexBDetailsModal(form: any) {
     this.selectedApexBForm = form;
     this.apexBDetails = {
@@ -1531,6 +1538,32 @@ export class Admin {
       endDate: ''
     };
     this.showApexBModal = true;
+  }
+
+  viewApexBFullDetails(form: any) {
+    this.selectedApexBForm = form;
+    // Clear the details form to show view-only mode
+    this.apexBDetails = {
+      studentId: '',
+      companyName: '',
+      internshipRole: '',
+      facultySupervisorNameDesig: '',
+      siteSupervisorNameDesig: '',
+      durationWeeks: 0,
+      startDate: '',
+      endDate: ''
+    };
+    this.showApexBModal = true;
+  }
+
+  viewApexCDetails(form: any) {
+    this.selectedApexCForm = form;
+    this.showApexCDetailsModal = true;
+  }
+
+  closeApexCDetailsModal() {
+    this.showApexCDetailsModal = false;
+    this.selectedApexCForm = null;
   }
 
   closeApexBModal() {

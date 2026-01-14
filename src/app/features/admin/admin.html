@@ -881,50 +881,66 @@
                     <span class="visually-hidden">Loading...</span>
                   </div>
                 </div>
+              } @else if (apexAForms.length === 0) {
+                <div class="alert alert-info">
+                  <strong>No forms loaded.</strong> Click the <strong>Refresh</strong> button above to load APEX A form submissions.
+                </div>
               } @else if (filteredApexAForms.length === 0) {
-                <div class="alert alert-info">No APEX A forms found.</div>
+                <div class="alert alert-warning">No forms match your current filters.</div>
               } @else {
-                <div class="table-responsive">
-                  <table class="table table-striped table-hover table-sm align-middle">
-                    <thead>
-                      <tr>
-                        <th>
-                          <input type="checkbox" class="form-check-input" 
-                            [checked]="selectedApexAIds.size > 0 && selectedApexAIds.size === filteredApexAForms.length"
-                            [indeterminate]="selectedApexAIds.size > 0 && selectedApexAIds.size < filteredApexAForms.length"
-                            (change)="toggleAllApexASelection()" />
-                        </th>
-                        <th>Student Name</th>
-                        <th>Email</th>
-                        <th>Reg No</th>
-                        <th>Start Date</th>
-                        <th>End Date</th>
-                        <th>Status</th>
-                        <th>Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      @for (form of (filteredApexAForms | paginate: apexAPage : apexAPageSize); track form.id) {
-                        <tr>
-                          <td>
+                <!-- Card Grid Layout -->
+                <div class="row g-3">
+                  @for (form of (filteredApexAForms | paginate: apexAPage : apexAPageSize); track form.id) {
+                    <div class="col-12 col-md-6 col-lg-4">
+                      <div class="card h-100 shadow-sm border" [class.border-success]="form.status === 'approved'" [class.border-warning]="form.status === 'pending'" [class.border-danger]="form.status === 'rejected'">
+                        <div class="card-header d-flex justify-content-between align-items-center py-2" [class.bg-success-subtle]="form.status === 'approved'" [class.bg-warning-subtle]="form.status === 'pending'" [class.bg-danger-subtle]="form.status === 'rejected'">
+                          <div class="form-check mb-0">
                             <input type="checkbox" class="form-check-input" 
                               [checked]="selectedApexAIds.has(form.id)"
-                              (change)="toggleApexASelection(form.id)" />
-                          </td>
-                          <td>{{ form.student?.name || 'N/A' }}</td>
-                          <td>{{ form.student?.email || 'N/A' }}</td>
-                          <td>{{ form.student?.regNo || 'N/A' }}</td>
-                          <td>{{ form.startDate ? (form.startDate | date:'short') : 'N/A' }}</td>
-                          <td>{{ form.endDate ? (form.endDate | date:'short') : 'N/A' }}</td>
-                          <td>
-                            <span class="badge" 
-                              [class.text-bg-warning]="form.status === 'pending'"
-                              [class.text-bg-success]="form.status === 'approved'"
-                              [class.text-bg-danger]="form.status === 'rejected'">
-                              {{ form.status || 'pending' }}
-                            </span>
-                          </td>
-                          <td>
+                              (change)="toggleApexASelection(form.id)"
+                              [id]="'apexA-' + form.id" />
+                            <label class="form-check-label fw-bold small" [for]="'apexA-' + form.id">
+                              Form #{{ form.id.substring(0, 8) }}
+                            </label>
+                          </div>
+                          <span class="badge" 
+                            [class.text-bg-warning]="form.status === 'pending'"
+                            [class.text-bg-success]="form.status === 'approved'"
+                            [class.text-bg-danger]="form.status === 'rejected'">
+                            {{ form.status || 'pending' }}
+                          </span>
+                        </div>
+                        <div class="card-body">
+                          <table class="table table-sm table-borderless mb-2">
+                            <tbody>
+                              <tr>
+                                <td class="text-muted small" style="width: 35%;">Student:</td>
+                                <td class="fw-semibold small">{{ form.student?.name || 'N/A' }}</td>
+                              </tr>
+                              <tr>
+                                <td class="text-muted small">Email:</td>
+                                <td class="small text-break">{{ form.student?.email || 'N/A' }}</td>
+                              </tr>
+                              <tr>
+                                <td class="text-muted small">Reg No:</td>
+                                <td class="small">{{ form.student?.regNo || 'N/A' }}</td>
+                              </tr>
+                              <tr>
+                                <td class="text-muted small">Start Date:</td>
+                                <td class="small">{{ form.startDate ? (form.startDate | date:'mediumDate') : 'N/A' }}</td>
+                              </tr>
+                              <tr>
+                                <td class="text-muted small">End Date:</td>
+                                <td class="small">{{ form.endDate ? (form.endDate | date:'mediumDate') : 'N/A' }}</td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </div>
+                        <div class="card-footer bg-transparent border-top-0 pt-0">
+                          <div class="d-grid gap-2">
+                            <button class="btn btn-sm btn-outline-info" (click)="viewApexADetails(form)">
+                              <i class="bi bi-eye"></i> View Details
+                            </button>
                             <div class="btn-group btn-group-sm">
                               <button class="btn btn-success" (click)="updateApexAStatus(form.id, 'approved')" [disabled]="updatingApexA || form.status === 'approved'">
                                 Approve
@@ -933,11 +949,11 @@
                                 Reject
                               </button>
                             </div>
-                          </td>
-                        </tr>
-                      }
-                    </tbody>
-                  </table>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  }
                 </div>
                 <div class="p-2">
                   <app-paginator [total]="filteredApexAForms.length" [(page)]="apexAPage" [pageSize]="apexAPageSize"></app-paginator>
@@ -990,64 +1006,86 @@
                     <span class="visually-hidden">Loading...</span>
                   </div>
                 </div>
+              } @else if (apexBForms.length === 0) {
+                <div class="alert alert-info">
+                  <strong>No forms loaded.</strong> Click the <strong>Refresh</strong> button above to load APEX B form submissions.
+                </div>
               } @else if (filteredApexBForms.length === 0) {
-                <div class="alert alert-info">No APEX B forms found.</div>
+                <div class="alert alert-warning">No forms match your current filters.</div>
               } @else {
-                <div class="table-responsive">
-                  <table class="table table-striped table-hover table-sm align-middle">
-                    <thead>
-                      <tr>
-                        <th>
-                          <input type="checkbox" class="form-check-input" 
-                            [checked]="selectedApexBIds.size > 0 && selectedApexBIds.size === filteredApexBForms.length"
-                            [indeterminate]="selectedApexBIds.size > 0 && selectedApexBIds.size < filteredApexBForms.length"
-                            (change)="toggleAllApexBSelection()" />
-                        </th>
-                        <th>Student Name</th>
-                        <th>Email</th>
-                        <th>Reg No</th>
-                        <th>Degree Program</th>
-                        <th>Semester</th>
-                        <th>Contact</th>
-                        <th>Preferred Field</th>
-                        <th>Agreement</th>
-                        <th>Status</th>
-                        <th>Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      @for (form of (filteredApexBForms | paginate: apexBPage : apexBPageSize); track form.id) {
-                        <tr>
-                          <td>
+                <!-- Card Grid Layout -->
+                <div class="row g-3">
+                  @for (form of (filteredApexBForms | paginate: apexBPage : apexBPageSize); track form.id) {
+                    <div class="col-12 col-md-6 col-xl-4">
+                      <div class="card h-100 shadow-sm border" [class.border-success]="form.status === 'approved'" [class.border-warning]="form.status === 'pending'" [class.border-danger]="form.status === 'rejected'">
+                        <div class="card-header d-flex justify-content-between align-items-center py-2" [class.bg-success-subtle]="form.status === 'approved'" [class.bg-warning-subtle]="form.status === 'pending'" [class.bg-danger-subtle]="form.status === 'rejected'">
+                          <div class="form-check mb-0">
                             <input type="checkbox" class="form-check-input" 
                               [checked]="selectedApexBIds.has(form.id)"
-                              (change)="toggleApexBSelection(form.id)" />
-                          </td>
-                          <td>{{ form.student?.name || form.name || 'N/A' }}</td>
-                          <td>{{ form.student?.email || form.email || 'N/A' }}</td>
-                          <td>{{ form.student?.regNo || 'N/A' }}</td>
-                          <td>{{ form.degreeProgram || 'N/A' }}</td>
-                          <td>{{ form.semester || 'N/A' }}</td>
-                          <td>{{ form.contactNo || 'N/A' }}</td>
-                          <td>{{ form.preferredField || 'N/A' }}</td>
-                          <td>
-                            <span class="badge" [class.text-bg-success]="form.agreementAccepted" [class.text-bg-secondary]="!form.agreementAccepted">
-                              {{ form.agreementAccepted ? 'Yes' : 'No' }}
-                            </span>
-                          </td>
-                          <td>
-                            <span class="badge" 
-                              [class.text-bg-warning]="form.status === 'pending'"
-                              [class.text-bg-success]="form.status === 'approved'"
-                              [class.text-bg-danger]="form.status === 'rejected'">
-                              {{ form.status || 'pending' }}
-                            </span>
-                          </td>
-                          <td>
+                              (change)="toggleApexBSelection(form.id)"
+                              [id]="'apexB-' + form.id" />
+                            <label class="form-check-label fw-bold small" [for]="'apexB-' + form.id">
+                              Form #{{ form.id.substring(0, 8) }}
+                            </label>
+                          </div>
+                          <span class="badge" 
+                            [class.text-bg-warning]="form.status === 'pending'"
+                            [class.text-bg-success]="form.status === 'approved'"
+                            [class.text-bg-danger]="form.status === 'rejected'">
+                            {{ form.status || 'pending' }}
+                          </span>
+                        </div>
+                        <div class="card-body">
+                          <table class="table table-sm table-borderless mb-2">
+                            <tbody>
+                              <tr>
+                                <td class="text-muted small" style="width: 40%;">Student:</td>
+                                <td class="fw-semibold small">{{ form.student?.name || form.name || 'N/A' }}</td>
+                              </tr>
+                              <tr>
+                                <td class="text-muted small">Email:</td>
+                                <td class="small text-break">{{ form.student?.email || form.email || 'N/A' }}</td>
+                              </tr>
+                              <tr>
+                                <td class="text-muted small">Reg No:</td>
+                                <td class="small">{{ form.student?.regNo || 'N/A' }}</td>
+                              </tr>
+                              <tr>
+                                <td class="text-muted small">Degree:</td>
+                                <td class="small">{{ form.degreeProgram || 'N/A' }}</td>
+                              </tr>
+                              <tr>
+                                <td class="text-muted small">Semester:</td>
+                                <td class="small">{{ form.semester || 'N/A' }}</td>
+                              </tr>
+                              <tr>
+                                <td class="text-muted small">Contact:</td>
+                                <td class="small">{{ form.contactNo || 'N/A' }}</td>
+                              </tr>
+                              <tr>
+                                <td class="text-muted small">Field:</td>
+                                <td class="small">{{ form.preferredField || 'N/A' }}</td>
+                              </tr>
+                              <tr>
+                                <td class="text-muted small">Agreement:</td>
+                                <td>
+                                  <span class="badge badge-sm" [class.text-bg-success]="form.agreementAccepted" [class.text-bg-secondary]="!form.agreementAccepted">
+                                    {{ form.agreementAccepted ? 'Accepted' : 'Not Accepted' }}
+                                  </span>
+                                </td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </div>
+                        <div class="card-footer bg-transparent border-top-0 pt-0">
+                          <div class="d-grid gap-2">
+                            <button class="btn btn-sm btn-outline-info" (click)="viewApexBFullDetails(form)">
+                              <i class="bi bi-eye"></i> View Details
+                            </button>
+                            <button class="btn btn-sm btn-info" (click)="openApexBDetailsModal(form)" [disabled]="updatingApexB">
+                              Add Internship Details
+                            </button>
                             <div class="btn-group btn-group-sm">
-                              <button class="btn btn-info" (click)="openApexBDetailsModal(form)" [disabled]="updatingApexB">
-                                Details
-                              </button>
                               <button class="btn btn-success" (click)="updateApexBStatus(form.id, 'approved')" [disabled]="updatingApexB || form.status === 'approved'">
                                 Approve
                               </button>
@@ -1055,11 +1093,11 @@
                                 Reject
                               </button>
                             </div>
-                          </td>
-                        </tr>
-                      }
-                    </tbody>
-                  </table>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  }
                 </div>
                 <div class="p-2">
                   <app-paginator [total]="filteredApexBForms.length" [(page)]="apexBPage" [pageSize]="apexBPageSize"></app-paginator>
@@ -1116,46 +1154,62 @@
                     <span class="visually-hidden">Loading...</span>
                   </div>
                 </div>
+              } @else if (apexCForms.length === 0) {
+                <div class="alert alert-info">
+                  <strong>No forms loaded.</strong> Click the <strong>Refresh</strong> button above to load APEX C form submissions.
+                </div>
               } @else if (filteredApexCForms.length === 0) {
-                <div class="alert alert-info">No APEX C forms found.</div>
+                <div class="alert alert-warning">No forms match your current filters.</div>
               } @else {
-                <div class="table-responsive">
-                  <table class="table table-striped table-hover table-sm align-middle">
-                    <thead>
-                      <tr>
-                        <th>
-                          <input type="checkbox" class="form-check-input" 
-                            [checked]="selectedApexCIds.size > 0 && selectedApexCIds.size === filteredApexCForms.length"
-                            [indeterminate]="selectedApexCIds.size > 0 && selectedApexCIds.size < filteredApexCForms.length"
-                            (change)="toggleAllApexCSelection()" />
-                        </th>
-                        <th>Student Name</th>
-                        <th>Email</th>
-                        <th>Reg No</th>
-                        <th>Status</th>
-                        <th>Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      @for (form of (filteredApexCForms | paginate: apexCPage : apexCPageSize); track form.id) {
-                        <tr>
-                          <td>
+                <!-- Card Grid Layout -->
+                <div class="row g-3">
+                  @for (form of (filteredApexCForms | paginate: apexCPage : apexCPageSize); track form.id) {
+                    <div class="col-12 col-md-6 col-lg-4">
+                      <div class="card h-100 shadow-sm border" [class.border-success]="form.status === 'approved'" [class.border-warning]="form.status === 'pending'" [class.border-danger]="form.status === 'rejected'">
+                        <div class="card-header d-flex justify-content-between align-items-center py-2" [class.bg-success-subtle]="form.status === 'approved'" [class.bg-warning-subtle]="form.status === 'pending'" [class.bg-danger-subtle]="form.status === 'rejected'">
+                          <div class="form-check mb-0">
                             <input type="checkbox" class="form-check-input" 
                               [checked]="selectedApexCIds.has(form.id)"
-                              (change)="toggleApexCSelection(form.id)" />
-                          </td>
-                          <td>{{ form.student?.name || 'N/A' }}</td>
-                          <td>{{ form.student?.email || 'N/A' }}</td>
-                          <td>{{ form.student?.regNo || 'N/A' }}</td>
-                          <td>
-                            <span class="badge" 
-                              [class.text-bg-warning]="form.status === 'pending'"
-                              [class.text-bg-success]="form.status === 'approved'"
-                              [class.text-bg-danger]="form.status === 'rejected'">
-                              {{ form.status || 'pending' }}
-                            </span>
-                          </td>
-                          <td>
+                              (change)="toggleApexCSelection(form.id)"
+                              [id]="'apexC-' + form.id" />
+                            <label class="form-check-label fw-bold small" [for]="'apexC-' + form.id">
+                              Form #{{ form.id.substring(0, 8) }}
+                            </label>
+                          </div>
+                          <span class="badge" 
+                            [class.text-bg-warning]="form.status === 'pending'"
+                            [class.text-bg-success]="form.status === 'approved'"
+                            [class.text-bg-danger]="form.status === 'rejected'">
+                            {{ form.status || 'pending' }}
+                          </span>
+                        </div>
+                        <div class="card-body">
+                          <table class="table table-sm table-borderless mb-2">
+                            <tbody>
+                              <tr>
+                                <td class="text-muted small" style="width: 35%;">Student:</td>
+                                <td class="fw-semibold small">{{ form.student?.name || 'N/A' }}</td>
+                              </tr>
+                              <tr>
+                                <td class="text-muted small">Email:</td>
+                                <td class="small text-break">{{ form.student?.email || 'N/A' }}</td>
+                              </tr>
+                              <tr>
+                                <td class="text-muted small">Reg No:</td>
+                                <td class="small">{{ form.student?.regNo || 'N/A' }}</td>
+                              </tr>
+                              <tr>
+                                <td class="text-muted small">Student ID:</td>
+                                <td class="small">{{ form.student?.id || 'N/A' }}</td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </div>
+                        <div class="card-footer bg-transparent border-top-0 pt-0">
+                          <div class="d-grid gap-2">
+                            <button class="btn btn-sm btn-outline-info" (click)="viewApexCDetails(form)">
+                              <i class="bi bi-eye"></i> View Details
+                            </button>
                             <div class="btn-group btn-group-sm">
                               <button class="btn btn-success" [disabled]="updatingApexC || form.status === 'approved'">
                                 Approve
@@ -1164,11 +1218,11 @@
                                 Reject
                               </button>
                             </div>
-                          </td>
-                        </tr>
-                      }
-                    </tbody>
-                  </table>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  }
                 </div>
                 <div class="p-2">
                   <app-paginator [total]="filteredApexCForms.length" [(page)]="apexCPage" [pageSize]="apexCPageSize"></app-paginator>
@@ -1181,62 +1235,281 @@
     </div>
     
     <!-- Modal for APEX B Details -->
-    @if (showApexBModal) {
+    @if (showApexBModal && selectedApexBForm) {
       <div class="modal show d-block" tabindex="-1" style="background: rgba(0,0,0,0.5);">
-        <div class="modal-dialog modal-lg">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
           <div class="modal-content">
             <div class="modal-header">
-              <h5 class="modal-title">Add APEX B Internship Details</h5>
+              <h5 class="modal-title">APEX B Form Details</h5>
               <button type="button" class="btn-close" (click)="closeApexBModal()"></button>
             </div>
             <div class="modal-body">
-              <form #apexBForm="ngForm">
-                <div class="mb-3">
-                  <label class="form-label">Company Name <span class="text-danger">*</span></label>
-                  <input type="text" class="form-control" [(ngModel)]="apexBDetails.companyName" name="companyName" required />
-                </div>
-                <div class="mb-3">
-                  <label class="form-label">Internship Role <span class="text-danger">*</span></label>
-                  <input type="text" class="form-control" [(ngModel)]="apexBDetails.internshipRole" name="internshipRole" required />
-                </div>
-                <div class="mb-3">
-                  <label class="form-label">Faculty Supervisor Name & Designation <span class="text-danger">*</span></label>
-                  <input type="text" class="form-control" [(ngModel)]="apexBDetails.facultySupervisorNameDesig" name="facultySupervisor" required />
-                </div>
-                <div class="mb-3">
-                  <label class="form-label">Site Supervisor Name & Designation <span class="text-danger">*</span></label>
-                  <input type="text" class="form-control" [(ngModel)]="apexBDetails.siteSupervisorNameDesig" name="siteSupervisor" required />
-                </div>
-                <div class="row">
-                  <div class="col-md-6 mb-3">
-                    <label class="form-label">Duration (Weeks) <span class="text-danger">*</span></label>
-                    <input type="number" class="form-control" [(ngModel)]="apexBDetails.durationWeeks" name="durationWeeks" required min="1" />
-                  </div>
-                  <div class="col-md-6 mb-3">
-                    <label class="form-label">Start Date <span class="text-danger">*</span></label>
-                    <input type="date" class="form-control" [(ngModel)]="apexBDetails.startDate" name="startDate" required />
+              <!-- Student Information Card -->
+              <div class="card mb-3">
+                <div class="card-header bg-light"><strong>Student Information</strong></div>
+                <div class="card-body">
+                  <div class="row">
+                    <div class="col-md-6 mb-2">
+                      <strong>Name:</strong> {{ selectedApexBForm.student?.name || selectedApexBForm.name || 'N/A' }}
+                    </div>
+                    <div class="col-md-6 mb-2">
+                      <strong>Email:</strong> {{ selectedApexBForm.student?.email || selectedApexBForm.email || 'N/A' }}
+                    </div>
+                    <div class="col-md-6 mb-2">
+                      <strong>Registration No:</strong> {{ selectedApexBForm.student?.regNo || 'N/A' }}
+                    </div>
+                    <div class="col-md-6 mb-2">
+                      <strong>Student ID:</strong> {{ selectedApexBForm.student?.id || 'N/A' }}
+                    </div>
                   </div>
                 </div>
-                <div class="mb-3">
-                  <label class="form-label">End Date <span class="text-danger">*</span></label>
-                  <input type="date" class="form-control" [(ngModel)]="apexBDetails.endDate" name="endDate" required />
+              </div>
+
+              <!-- Application Details Card -->
+              <div class="card mb-3">
+                <div class="card-header bg-light"><strong>Application Details</strong></div>
+                <div class="card-body">
+                  <div class="row">
+                    <div class="col-md-6 mb-2">
+                      <strong>Form ID:</strong> {{ selectedApexBForm.id }}
+                    </div>
+                    <div class="col-md-6 mb-2">
+                      <strong>Status:</strong> 
+                      <span class="badge ms-2" 
+                        [class.text-bg-warning]="selectedApexBForm.status === 'pending'"
+                        [class.text-bg-success]="selectedApexBForm.status === 'approved'"
+                        [class.text-bg-danger]="selectedApexBForm.status === 'rejected'">
+                        {{ selectedApexBForm.status || 'pending' }}
+                      </span>
+                    </div>
+                    <div class="col-md-6 mb-2">
+                      <strong>Degree Program:</strong> {{ selectedApexBForm.degreeProgram || 'N/A' }}
+                    </div>
+                    <div class="col-md-6 mb-2">
+                      <strong>Semester:</strong> {{ selectedApexBForm.semester || 'N/A' }}
+                    </div>
+                    <div class="col-md-6 mb-2">
+                      <strong>Contact No:</strong> {{ selectedApexBForm.contactNo || 'N/A' }}
+                    </div>
+                    <div class="col-md-6 mb-2">
+                      <strong>Preferred Field:</strong> {{ selectedApexBForm.preferredField || 'N/A' }}
+                    </div>
+                    <div class="col-md-6 mb-2">
+                      <strong>Agreement Accepted:</strong> 
+                      <span class="badge ms-2" [class.text-bg-success]="selectedApexBForm.agreementAccepted" [class.text-bg-secondary]="!selectedApexBForm.agreementAccepted">
+                        {{ selectedApexBForm.agreementAccepted ? 'Yes' : 'No' }}
+                      </span>
+                    </div>
+                  </div>
                 </div>
-              </form>
+              </div>
+
+              <!-- Add Internship Details Form (only shown when needed) -->
+              @if (apexBDetails.studentId) {
+                <div class="card mb-3">
+                  <div class="card-header bg-light"><strong>Add Internship Details</strong></div>
+                  <div class="card-body">
+                    <form #apexBForm="ngForm">
+                      <div class="mb-3">
+                        <label class="form-label">Company Name <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" [(ngModel)]="apexBDetails.companyName" name="companyName" required />
+                      </div>
+                      <div class="mb-3">
+                        <label class="form-label">Internship Role <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" [(ngModel)]="apexBDetails.internshipRole" name="internshipRole" required />
+                      </div>
+                      <div class="mb-3">
+                        <label class="form-label">Faculty Supervisor Name & Designation <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" [(ngModel)]="apexBDetails.facultySupervisorNameDesig" name="facultySupervisor" required />
+                      </div>
+                      <div class="mb-3">
+                        <label class="form-label">Site Supervisor Name & Designation <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" [(ngModel)]="apexBDetails.siteSupervisorNameDesig" name="siteSupervisor" required />
+                      </div>
+                      <div class="row">
+                        <div class="col-md-6 mb-3">
+                          <label class="form-label">Duration (Weeks) <span class="text-danger">*</span></label>
+                          <input type="number" class="form-control" [(ngModel)]="apexBDetails.durationWeeks" name="durationWeeks" required min="1" />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                          <label class="form-label">Start Date <span class="text-danger">*</span></label>
+                          <input type="date" class="form-control" [(ngModel)]="apexBDetails.startDate" name="startDate" required />
+                        </div>
+                      </div>
+                      <div class="mb-3">
+                        <label class="form-label">End Date <span class="text-danger">*</span></label>
+                        <input type="date" class="form-control" [(ngModel)]="apexBDetails.endDate" name="endDate" required />
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              }
+
+              <!-- Raw Data Card -->
+              <div class="card" *ngIf="selectedApexBForm | json as formJson">
+                <div class="card-header bg-light"><strong>Raw Data</strong></div>
+                <div class="card-body">
+                  <pre class="mb-0" style="font-size: 0.85rem; max-height: 300px; overflow-y: auto;">{{ formJson }}</pre>
+                </div>
+              </div>
             </div>
             <div class="modal-footer">
-              <button type="button" class="btn btn-secondary" (click)="closeApexBModal()">Cancel</button>
-              <button type="button" class="btn btn-primary" (click)="submitApexBDetails()" [disabled]="!apexBForm.valid || updatingApexB">
-                <span [hidden]="updatingApexB">Submit Details</span>
-                <span [hidden]="!updatingApexB">Submitting...</span>
+              <button type="button" class="btn btn-secondary" (click)="closeApexBModal()">Close</button>
+              @if (apexBDetails.studentId) {
+                <button type="button" class="btn btn-primary" (click)="submitApexBDetails()" [disabled]="updatingApexB">
+                  <span [hidden]="updatingApexB">Submit Details</span>
+                  <span [hidden]="!updatingApexB">Submitting...</span>
+                </button>
+              } @else {
+                <button type="button" class="btn btn-success" (click)="updateApexBStatus(selectedApexBForm.id, 'approved'); closeApexBModal()" [disabled]="updatingApexB || selectedApexBForm.status === 'approved'">
+                  Approve
+                </button>
+                <button type="button" class="btn btn-danger" (click)="updateApexBStatus(selectedApexBForm.id, 'rejected'); closeApexBModal()" [disabled]="updatingApexB || selectedApexBForm.status === 'rejected'">
+                  Reject
+                </button>
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- Modal for APEX A Form Details -->
+    @if (showApexADetailsModal && selectedApexAForm) {
+      <div class="modal show d-block" tabindex="-1" style="background: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title">APEX A Form Details</h5>
+              <button type="button" class="btn-close" (click)="closeApexADetailsModal()"></button>
+            </div>
+            <div class="modal-body">
+              <div class="card mb-3">
+                <div class="card-header bg-light"><strong>Student Information</strong></div>
+                <div class="card-body">
+                  <div class="row">
+                    <div class="col-md-6 mb-2">
+                      <strong>Name:</strong> {{ selectedApexAForm.student?.name || 'N/A' }}
+                    </div>
+                    <div class="col-md-6 mb-2">
+                      <strong>Email:</strong> {{ selectedApexAForm.student?.email || 'N/A' }}
+                    </div>
+                    <div class="col-md-6 mb-2">
+                      <strong>Registration No:</strong> {{ selectedApexAForm.student?.regNo || 'N/A' }}
+                    </div>
+                    <div class="col-md-6 mb-2">
+                      <strong>Student ID:</strong> {{ selectedApexAForm.student?.id || 'N/A' }}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="card mb-3">
+                <div class="card-header bg-light"><strong>Form Details</strong></div>
+                <div class="card-body">
+                  <div class="row">
+                    <div class="col-md-6 mb-2">
+                      <strong>Form ID:</strong> {{ selectedApexAForm.id }}
+                    </div>
+                    <div class="col-md-6 mb-2">
+                      <strong>Status:</strong> 
+                      <span class="badge ms-2" 
+                        [class.text-bg-warning]="selectedApexAForm.status === 'pending'"
+                        [class.text-bg-success]="selectedApexAForm.status === 'approved'"
+                        [class.text-bg-danger]="selectedApexAForm.status === 'rejected'">
+                        {{ selectedApexAForm.status || 'pending' }}
+                      </span>
+                    </div>
+                    <div class="col-md-6 mb-2">
+                      <strong>Start Date:</strong> {{ selectedApexAForm.startDate ? (selectedApexAForm.startDate | date:'full') : 'N/A' }}
+                    </div>
+                    <div class="col-md-6 mb-2">
+                      <strong>End Date:</strong> {{ selectedApexAForm.endDate ? (selectedApexAForm.endDate | date:'full') : 'N/A' }}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="card" *ngIf="selectedApexAForm | json as formJson">
+                <div class="card-header bg-light"><strong>Raw Data</strong></div>
+                <div class="card-body">
+                  <pre class="mb-0" style="font-size: 0.85rem; max-height: 300px; overflow-y: auto;">{{ formJson }}</pre>
+                </div>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" (click)="closeApexADetailsModal()">Close</button>
+              <button type="button" class="btn btn-success" (click)="updateApexAStatus(selectedApexAForm.id, 'approved'); closeApexADetailsModal()" [disabled]="updatingApexA || selectedApexAForm.status === 'approved'">
+                Approve
+              </button>
+              <button type="button" class="btn btn-danger" (click)="updateApexAStatus(selectedApexAForm.id, 'rejected'); closeApexADetailsModal()" [disabled]="updatingApexA || selectedApexAForm.status === 'rejected'">
+                Reject
               </button>
             </div>
           </div>
         </div>
       </div>
     }
+
+    <!-- Modal for APEX C Form Details -->
+    @if (showApexCDetailsModal && selectedApexCForm) {
+      <div class="modal show d-block" tabindex="-1" style="background: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title">APEX C Form Details</h5>
+              <button type="button" class="btn-close" (click)="closeApexCDetailsModal()"></button>
+            </div>
+            <div class="modal-body">
+              <div class="card mb-3">
+                <div class="card-header bg-light"><strong>Student Information</strong></div>
+                <div class="card-body">
+                  <div class="row">
+                    <div class="col-md-6 mb-2">
+                      <strong>Name:</strong> {{ selectedApexCForm.student?.name || 'N/A' }}
+                    </div>
+                    <div class="col-md-6 mb-2">
+                      <strong>Email:</strong> {{ selectedApexCForm.student?.email || 'N/A' }}
+                    </div>
+                    <div class="col-md-6 mb-2">
+                      <strong>Registration No:</strong> {{ selectedApexCForm.student?.regNo || 'N/A' }}
+                    </div>
+                    <div class="col-md-6 mb-2">
+                      <strong>Student ID:</strong> {{ selectedApexCForm.student?.id || 'N/A' }}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="card mb-3">
+                <div class="card-header bg-light"><strong>Form Details</strong></div>
+                <div class="card-body">
+                  <div class="row">
+                    <div class="col-md-6 mb-2">
+                      <strong>Form ID:</strong> {{ selectedApexCForm.id }}
+                    </div>
+                    <div class="col-md-6 mb-2">
+                      <strong>Status:</strong> 
+                      <span class="badge ms-2" 
+                        [class.text-bg-warning]="selectedApexCForm.status === 'pending'"
+                        [class.text-bg-success]="selectedApexCForm.status === 'approved'"
+                        [class.text-bg-danger]="selectedApexCForm.status === 'rejected'">
+                        {{ selectedApexCForm.status || 'pending' }}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="card" *ngIf="selectedApexCForm | json as formJson">
+                <div class="card-header bg-light"><strong>Raw Data</strong></div>
+                <div class="card-body">
+                  <pre class="mb-0" style="font-size: 0.85rem; max-height: 300px; overflow-y: auto;">{{ formJson }}</pre>
+                </div>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" (click)="closeApexCDetailsModal()">Close</button>
+            </div>
+          </div>
+        </div>
+      </div>
     }
-    @default {
-      <div class="text-muted small">Select a tab.</div>
     }
   }
-</div>
