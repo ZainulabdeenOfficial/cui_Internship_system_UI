@@ -1481,7 +1481,14 @@ export class Admin {
     
     this.updatingApexB = true;
     try {
-      await this.adminApi.updateApexBStatus(formId, form.student.id, status);
+      // If approving, check if we have details to send along
+      let details = undefined;
+      if (status === 'approved' && this.selectedApexBForm?.id === formId && this.apexBDetails.studentId) {
+        // Include details if they were filled in the modal
+        details = this.apexBDetails;
+      }
+      
+      await this.adminApi.updateApexBStatus(formId, form.student.id, status, details);
       this.toast.success(`APEX B form ${status} successfully`);
       // Update local state instead of full reload for better performance
       form.status = status;

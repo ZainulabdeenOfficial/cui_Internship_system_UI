@@ -346,7 +346,12 @@ export class AdminService {
     const base = environment.apiBaseUrl.replace(/\/$/, '');
     const path = '/api/admin/appex-a';
     const url = environment.production ? path : `${base}${path}`;
-    const body = { id: formId, studentId, status };
+    const body = { 
+      id: formId, 
+      appexAId: formId,
+      studentId, 
+      status 
+    };
     return await firstValueFrom(this.http.patch<any>(url, body, { headers: await this.authHeaders(true) }));
   }
 
@@ -375,14 +380,40 @@ export class AdminService {
     }));
   }
 
-  async updateApexBStatus(formId: string, studentId: string, status: 'approved' | 'rejected'): Promise<any> {
+  async updateApexBStatus(formId: string, studentId: string, status: 'approved' | 'rejected', details?: {
+    companyName?: string;
+    internshipRole?: string;
+    facultySupervisorNameDesig?: string;
+    siteSupervisorNameDesig?: string;
+    durationWeeks?: number;
+    startDate?: string;
+    endDate?: string;
+  }): Promise<any> {
     if (!formId || !studentId || !status) {
       throw new Error('AppEx B ID, student ID and status are required');
     }
     const base = environment.apiBaseUrl.replace(/\/$/, '');
     const path = '/api/admin/appex-b';
     const url = environment.production ? path : `${base}${path}`;
-    const body = { id: formId, studentId, status };
+    
+    const body: any = { 
+      id: formId, 
+      appexBId: formId,
+      studentId, 
+      status 
+    };
+    
+    // Include details if provided and status is approved
+    if (status === 'approved' && details) {
+      if (details.companyName) body.companyName = details.companyName;
+      if (details.internshipRole) body.internshipRole = details.internshipRole;
+      if (details.facultySupervisorNameDesig) body.facultySupervisorNameDesig = details.facultySupervisorNameDesig;
+      if (details.siteSupervisorNameDesig) body.siteSupervisorNameDesig = details.siteSupervisorNameDesig;
+      if (details.durationWeeks && details.durationWeeks > 0) body.durationWeeks = details.durationWeeks;
+      if (details.startDate) body.startDate = details.startDate;
+      if (details.endDate) body.endDate = details.endDate;
+    }
+    
     return await firstValueFrom(this.http.patch<any>(url, body, { headers: await this.authHeaders(true) }));
   }
 
