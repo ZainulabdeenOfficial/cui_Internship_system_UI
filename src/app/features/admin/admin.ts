@@ -1221,7 +1221,14 @@ export class Admin {
   // APEX Forms Management Methods
   selectFormsSubTab(subTab: 'apexA' | 'apexB' | 'apexC') {
     this.currentFormsSubTab = subTab;
-    // Don't auto-load - let user click refresh to load forms
+    // Auto-load forms when tab is selected
+    if (subTab === 'apexA' && this.apexAForms.length === 0) {
+      this.loadApexAForms();
+    } else if (subTab === 'apexB' && this.apexBForms.length === 0) {
+      this.loadApexBForms();
+    } else if (subTab === 'apexC' && this.apexCForms.length === 0) {
+      this.loadApexCForms();
+    }
   }
 
   // Filtering and pagination helpers
