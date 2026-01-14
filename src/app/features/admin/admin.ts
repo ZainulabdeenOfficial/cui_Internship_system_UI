@@ -1389,8 +1389,18 @@ export class Admin {
     if (this.updatingApexA) return;
     
     const form = this.apexAForms.find(f => f.id === formId);
-    if (!form || !form.student?.id) {
-      this.toast.danger('Student information not found');
+    if (!form) {
+      this.toast.danger('Form not found');
+      return;
+    }
+    
+    if (!form.student?.id) {
+      this.toast.danger('Student ID is missing from form data');
+      return;
+    }
+    
+    if (!formId || !status) {
+      this.toast.danger('Form ID and status are required');
       return;
     }
     
@@ -1452,8 +1462,18 @@ export class Admin {
     if (this.updatingApexB) return;
     
     const form = this.apexBForms.find(f => f.id === formId);
-    if (!form || !form.student?.id) {
-      this.toast.danger('Student information not found');
+    if (!form) {
+      this.toast.danger('Form not found');
+      return;
+    }
+    
+    if (!form.student?.id) {
+      this.toast.danger('Student ID is missing from form data');
+      return;
+    }
+    
+    if (!formId || !status) {
+      this.toast.danger('Form ID and status are required');
       return;
     }
     
@@ -1614,6 +1634,20 @@ export class Admin {
   async submitApexBDetails() {
     if (this.updatingApexB) return;
     if (!this.selectedApexBForm) return;
+    
+    // Validate that at least one field is filled
+    const hasData = this.apexBDetails.companyName ||
+                   this.apexBDetails.internshipRole ||
+                   this.apexBDetails.facultySupervisorNameDesig ||
+                   this.apexBDetails.siteSupervisorNameDesig ||
+                   this.apexBDetails.durationWeeks > 0 ||
+                   this.apexBDetails.startDate ||
+                   this.apexBDetails.endDate;
+    
+    if (!hasData) {
+      this.toast.danger('Please fill at least one field');
+      return;
+    }
     
     this.updatingApexB = true;
     try {

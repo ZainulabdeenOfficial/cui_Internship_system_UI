@@ -340,6 +340,9 @@ export class AdminService {
   }
 
   async updateApexAStatus(formId: string, studentId: string, status: 'approved' | 'rejected'): Promise<any> {
+    if (!formId || !studentId || !status) {
+      throw new Error('AppEx A ID, student ID and status are required');
+    }
     const base = environment.apiBaseUrl.replace(/\/$/, '');
     const path = '/api/admin/appex-a';
     const url = environment.production ? path : `${base}${path}`;
@@ -373,6 +376,9 @@ export class AdminService {
   }
 
   async updateApexBStatus(formId: string, studentId: string, status: 'approved' | 'rejected'): Promise<any> {
+    if (!formId || !studentId || !status) {
+      throw new Error('AppEx B ID, student ID and status are required');
+    }
     const base = environment.apiBaseUrl.replace(/\/$/, '');
     const path = '/api/admin/appex-b';
     const url = environment.production ? path : `${base}${path}`;
@@ -393,10 +399,18 @@ export class AdminService {
     const base = environment.apiBaseUrl.replace(/\/$/, '');
     const path = '/api/admin/appex-b';
     const url = environment.production ? path : `${base}${path}`;
-    const body = {
-      id: formId,
-      ...details
-    };
+    
+    // Only include non-empty fields
+    const body: any = { id: formId };
+    if (details.studentId) body.studentId = details.studentId;
+    if (details.companyName) body.companyName = details.companyName;
+    if (details.internshipRole) body.internshipRole = details.internshipRole;
+    if (details.facultySupervisorNameDesig) body.facultySupervisorNameDesig = details.facultySupervisorNameDesig;
+    if (details.siteSupervisorNameDesig) body.siteSupervisorNameDesig = details.siteSupervisorNameDesig;
+    if (details.durationWeeks > 0) body.durationWeeks = details.durationWeeks;
+    if (details.startDate) body.startDate = details.startDate;
+    if (details.endDate) body.endDate = details.endDate;
+    
     return await firstValueFrom(this.http.patch<any>(url, body, { headers: await this.authHeaders(true) }));
   }
 }
