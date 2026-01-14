@@ -838,12 +838,41 @@
 
             <!-- APEX A Forms -->
             @if (currentFormsSubTab === 'apexA') {
-              <div class="mb-3">
-                <h5>APEX A Form Submissions</h5>
-                <button class="btn btn-sm btn-primary mb-2" (click)="loadApexAForms()">
-                  <span [hidden]="loadingApexA">Refresh</span>
-                  <span [hidden]="!loadingApexA">Loading...</span>
-                </button>
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="mb-0">APEX A Form Submissions</h5>
+                <div class="d-flex gap-2">
+                  <button class="btn btn-sm btn-success" (click)="approveAllApexA()" [disabled]="approvingAllApexA || selectedApexAIds.size === 0">
+                    <span [hidden]="approvingAllApexA">Approve Selected ({{ selectedApexAIds.size }})</span>
+                    <span [hidden]="!approvingAllApexA">Approving...</span>
+                  </button>
+                  <button class="btn btn-sm btn-primary" (click)="loadApexAForms()" [disabled]="loadingApexA">
+                    <span [hidden]="loadingApexA">Refresh</span>
+                    <span [hidden]="!loadingApexA">Loading...</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Filters -->
+              <div class="row g-2 mb-3">
+                <div class="col-12 col-md-6">
+                  <input class="form-control form-control-sm" placeholder="Search by name, email, or reg no..." [(ngModel)]="apexASearch" name="apexASearch" />
+                </div>
+                <div class="col-12 col-md-3">
+                  <select class="form-select form-select-sm" [(ngModel)]="apexAFilter" (ngModelChange)="apexAPage=1" name="apexAFilter">
+                    <option value="all">All Status</option>
+                    <option value="pending">Pending Only</option>
+                    <option value="approved">Approved Only</option>
+                    <option value="rejected">Rejected Only</option>
+                  </select>
+                </div>
+                <div class="col-12 col-md-3">
+                  <select class="form-select form-select-sm" [(ngModel)]="apexAPageSize" (ngModelChange)="apexAPage=1" name="apexAPageSize">
+                    <option [ngValue]="10">10 per page</option>
+                    <option [ngValue]="25">25 per page</option>
+                    <option [ngValue]="50">50 per page</option>
+                    <option [ngValue]="100">100 per page</option>
+                  </select>
+                </div>
               </div>
               
               @if (loadingApexA) {
@@ -852,13 +881,19 @@
                     <span class="visually-hidden">Loading...</span>
                   </div>
                 </div>
-              } @else if (apexAForms.length === 0) {
+              } @else if (filteredApexAForms.length === 0) {
                 <div class="alert alert-info">No APEX A forms found.</div>
               } @else {
                 <div class="table-responsive">
-                  <table class="table table-striped table-hover align-middle">
+                  <table class="table table-striped table-hover table-sm align-middle">
                     <thead>
                       <tr>
+                        <th>
+                          <input type="checkbox" class="form-check-input" 
+                            [checked]="selectedApexAIds.size > 0 && selectedApexAIds.size === filteredApexAForms.length"
+                            [indeterminate]="selectedApexAIds.size > 0 && selectedApexAIds.size < filteredApexAForms.length"
+                            (change)="toggleAllApexASelection()" />
+                        </th>
                         <th>Student Name</th>
                         <th>Email</th>
                         <th>Reg No</th>
@@ -869,8 +904,13 @@
                       </tr>
                     </thead>
                     <tbody>
-                      @for (form of apexAForms; track form.id) {
+                      @for (form of (filteredApexAForms | paginate: apexAPage : apexAPageSize); track form.id) {
                         <tr>
+                          <td>
+                            <input type="checkbox" class="form-check-input" 
+                              [checked]="selectedApexAIds.has(form.id)"
+                              (change)="toggleApexASelection(form.id)" />
+                          </td>
                           <td>{{ form.student?.name || 'N/A' }}</td>
                           <td>{{ form.student?.email || 'N/A' }}</td>
                           <td>{{ form.student?.regNo || 'N/A' }}</td>
@@ -885,29 +925,63 @@
                             </span>
                           </td>
                           <td>
-                            <button class="btn btn-sm btn-success me-1" (click)="updateApexAStatus(form.id, 'approved')" [disabled]="updatingApexA">
-                              Approve
-                            </button>
-                            <button class="btn btn-sm btn-danger" (click)="updateApexAStatus(form.id, 'rejected')" [disabled]="updatingApexA">
-                              Reject
-                            </button>
+                            <div class="btn-group btn-group-sm">
+                              <button class="btn btn-success" (click)="updateApexAStatus(form.id, 'approved')" [disabled]="updatingApexA || form.status === 'approved'">
+                                Approve
+                              </button>
+                              <button class="btn btn-danger" (click)="updateApexAStatus(form.id, 'rejected')" [disabled]="updatingApexA || form.status === 'rejected'">
+                                Reject
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       }
                     </tbody>
                   </table>
                 </div>
+                <div class="p-2">
+                  <app-paginator [total]="filteredApexAForms.length" [(page)]="apexAPage" [pageSize]="apexAPageSize"></app-paginator>
+                </div>
               }
             }
 
             <!-- APEX B Forms -->
             @if (currentFormsSubTab === 'apexB') {
-              <div class="mb-3">
-                <h5>APEX B Form Submissions</h5>
-                <button class="btn btn-sm btn-primary mb-2" (click)="loadApexBForms()">
-                  <span [hidden]="loadingApexB">Refresh</span>
-                  <span [hidden]="!loadingApexB">Loading...</span>
-                </button>
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="mb-0">APEX B Form Submissions</h5>
+                <div class="d-flex gap-2">
+                  <button class="btn btn-sm btn-success" (click)="approveAllApexB()" [disabled]="approvingAllApexB || selectedApexBIds.size === 0">
+                    <span [hidden]="approvingAllApexB">Approve Selected ({{ selectedApexBIds.size }})</span>
+                    <span [hidden]="!approvingAllApexB">Approving...</span>
+                  </button>
+                  <button class="btn btn-sm btn-primary" (click)="loadApexBForms()" [disabled]="loadingApexB">
+                    <span [hidden]="loadingApexB">Refresh</span>
+                    <span [hidden]="!loadingApexB">Loading...</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Filters -->
+              <div class="row g-2 mb-3">
+                <div class="col-12 col-md-6">
+                  <input class="form-control form-control-sm" placeholder="Search by name, email, or reg no..." [(ngModel)]="apexBSearch" name="apexBSearch" />
+                </div>
+                <div class="col-12 col-md-3">
+                  <select class="form-select form-select-sm" [(ngModel)]="apexBFilter" (ngModelChange)="apexBPage=1" name="apexBFilter">
+                    <option value="all">All Status</option>
+                    <option value="pending">Pending Only</option>
+                    <option value="approved">Approved Only</option>
+                    <option value="rejected">Rejected Only</option>
+                  </select>
+                </div>
+                <div class="col-12 col-md-3">
+                  <select class="form-select form-select-sm" [(ngModel)]="apexBPageSize" (ngModelChange)="apexBPage=1" name="apexBPageSize">
+                    <option [ngValue]="10">10 per page</option>
+                    <option [ngValue]="25">25 per page</option>
+                    <option [ngValue]="50">50 per page</option>
+                    <option [ngValue]="100">100 per page</option>
+                  </select>
+                </div>
               </div>
               
               @if (loadingApexB) {
@@ -916,13 +990,19 @@
                     <span class="visually-hidden">Loading...</span>
                   </div>
                 </div>
-              } @else if (apexBForms.length === 0) {
+              } @else if (filteredApexBForms.length === 0) {
                 <div class="alert alert-info">No APEX B forms found.</div>
               } @else {
                 <div class="table-responsive">
-                  <table class="table table-striped table-hover align-middle">
+                  <table class="table table-striped table-hover table-sm align-middle">
                     <thead>
                       <tr>
+                        <th>
+                          <input type="checkbox" class="form-check-input" 
+                            [checked]="selectedApexBIds.size > 0 && selectedApexBIds.size === filteredApexBForms.length"
+                            [indeterminate]="selectedApexBIds.size > 0 && selectedApexBIds.size < filteredApexBForms.length"
+                            (change)="toggleAllApexBSelection()" />
+                        </th>
                         <th>Student Name</th>
                         <th>Email</th>
                         <th>Reg No</th>
@@ -936,8 +1016,13 @@
                       </tr>
                     </thead>
                     <tbody>
-                      @for (form of apexBForms; track form.id) {
+                      @for (form of (filteredApexBForms | paginate: apexBPage : apexBPageSize); track form.id) {
                         <tr>
+                          <td>
+                            <input type="checkbox" class="form-check-input" 
+                              [checked]="selectedApexBIds.has(form.id)"
+                              (change)="toggleApexBSelection(form.id)" />
+                          </td>
                           <td>{{ form.student?.name || form.name || 'N/A' }}</td>
                           <td>{{ form.student?.email || form.email || 'N/A' }}</td>
                           <td>{{ form.student?.regNo || 'N/A' }}</td>
@@ -959,30 +1044,136 @@
                             </span>
                           </td>
                           <td>
-                            <button class="btn btn-sm btn-info me-1" (click)="openApexBDetailsModal(form)" [disabled]="updatingApexB">
-                              Add Details
-                            </button>
-                            <button class="btn btn-sm btn-success me-1" (click)="updateApexBStatus(form.id, 'approved')" [disabled]="updatingApexB">
-                              Approve
-                            </button>
-                            <button class="btn btn-sm btn-danger" (click)="updateApexBStatus(form.id, 'rejected')" [disabled]="updatingApexB">
-                              Reject
-                            </button>
+                            <div class="btn-group btn-group-sm">
+                              <button class="btn btn-info" (click)="openApexBDetailsModal(form)" [disabled]="updatingApexB">
+                                Details
+                              </button>
+                              <button class="btn btn-success" (click)="updateApexBStatus(form.id, 'approved')" [disabled]="updatingApexB || form.status === 'approved'">
+                                Approve
+                              </button>
+                              <button class="btn btn-danger" (click)="updateApexBStatus(form.id, 'rejected')" [disabled]="updatingApexB || form.status === 'rejected'">
+                                Reject
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       }
                     </tbody>
                   </table>
                 </div>
+                <div class="p-2">
+                  <app-paginator [total]="filteredApexBForms.length" [(page)]="apexBPage" [pageSize]="apexBPageSize"></app-paginator>
+                </div>
               }
             }
 
             <!-- APEX C Forms -->
             @if (currentFormsSubTab === 'apexC') {
-              <div class="mb-3">
-                <h5>APEX C Form Submissions</h5>
-                <div class="alert alert-warning">APEX C API integration pending. Contact backend team for endpoint details.</div>
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="mb-0">APEX C Form Submissions</h5>
+                <div class="d-flex gap-2">
+                  <button class="btn btn-sm btn-success" (click)="approveAllApexC()" [disabled]="approvingAllApexC || selectedApexCIds.size === 0">
+                    <span [hidden]="approvingAllApexC">Approve Selected ({{ selectedApexCIds.size }})</span>
+                    <span [hidden]="!approvingAllApexC">Approving...</span>
+                  </button>
+                  <button class="btn btn-sm btn-primary" (click)="loadApexCForms()" [disabled]="loadingApexC">
+                    <span [hidden]="loadingApexC">Refresh</span>
+                    <span [hidden]="!loadingApexC">Loading...</span>
+                  </button>
+                </div>
               </div>
+
+              <div class="alert alert-warning mb-3">
+                <strong>Note:</strong> APEX C API integration is pending. Contact backend team for endpoint details.
+              </div>
+
+              <!-- Filters -->
+              <div class="row g-2 mb-3">
+                <div class="col-12 col-md-6">
+                  <input class="form-control form-control-sm" placeholder="Search by name, email, or reg no..." [(ngModel)]="apexCSearch" name="apexCSearch" />
+                </div>
+                <div class="col-12 col-md-3">
+                  <select class="form-select form-select-sm" [(ngModel)]="apexCFilter" (ngModelChange)="apexCPage=1" name="apexCFilter">
+                    <option value="all">All Status</option>
+                    <option value="pending">Pending Only</option>
+                    <option value="approved">Approved Only</option>
+                    <option value="rejected">Rejected Only</option>
+                  </select>
+                </div>
+                <div class="col-12 col-md-3">
+                  <select class="form-select form-select-sm" [(ngModel)]="apexCPageSize" (ngModelChange)="apexCPage=1" name="apexCPageSize">
+                    <option [ngValue]="10">10 per page</option>
+                    <option [ngValue]="25">25 per page</option>
+                    <option [ngValue]="50">50 per page</option>
+                    <option [ngValue]="100">100 per page</option>
+                  </select>
+                </div>
+              </div>
+
+              @if (loadingApexC) {
+                <div class="text-center py-4">
+                  <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                  </div>
+                </div>
+              } @else if (filteredApexCForms.length === 0) {
+                <div class="alert alert-info">No APEX C forms found.</div>
+              } @else {
+                <div class="table-responsive">
+                  <table class="table table-striped table-hover table-sm align-middle">
+                    <thead>
+                      <tr>
+                        <th>
+                          <input type="checkbox" class="form-check-input" 
+                            [checked]="selectedApexCIds.size > 0 && selectedApexCIds.size === filteredApexCForms.length"
+                            [indeterminate]="selectedApexCIds.size > 0 && selectedApexCIds.size < filteredApexCForms.length"
+                            (change)="toggleAllApexCSelection()" />
+                        </th>
+                        <th>Student Name</th>
+                        <th>Email</th>
+                        <th>Reg No</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (form of (filteredApexCForms | paginate: apexCPage : apexCPageSize); track form.id) {
+                        <tr>
+                          <td>
+                            <input type="checkbox" class="form-check-input" 
+                              [checked]="selectedApexCIds.has(form.id)"
+                              (change)="toggleApexCSelection(form.id)" />
+                          </td>
+                          <td>{{ form.student?.name || 'N/A' }}</td>
+                          <td>{{ form.student?.email || 'N/A' }}</td>
+                          <td>{{ form.student?.regNo || 'N/A' }}</td>
+                          <td>
+                            <span class="badge" 
+                              [class.text-bg-warning]="form.status === 'pending'"
+                              [class.text-bg-success]="form.status === 'approved'"
+                              [class.text-bg-danger]="form.status === 'rejected'">
+                              {{ form.status || 'pending' }}
+                            </span>
+                          </td>
+                          <td>
+                            <div class="btn-group btn-group-sm">
+                              <button class="btn btn-success" [disabled]="updatingApexC || form.status === 'approved'">
+                                Approve
+                              </button>
+                              <button class="btn btn-danger" [disabled]="updatingApexC || form.status === 'rejected'">
+                                Reject
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+                <div class="p-2">
+                  <app-paginator [total]="filteredApexCForms.length" [(page)]="apexCPage" [pageSize]="apexCPageSize"></app-paginator>
+                </div>
+              }
             }
           </div>
         </div>

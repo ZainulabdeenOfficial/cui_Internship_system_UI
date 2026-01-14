@@ -151,10 +151,16 @@ export class Admin {
   // APEX Forms Request Management
   apexAForms: Array<{ id: string; startDate?: string; endDate?: string; status?: string; student?: { id: string; name: string; email: string; regNo: string } }> = [];
   apexBForms: Array<{ id: string; name?: string; degreeProgram?: string; email?: string; semester?: string; contactNo?: string; preferredField?: string; agreementAccepted?: boolean; status?: string; student?: { id: string; name: string; email: string; regNo: string } }> = [];
+  apexCForms: Array<{ id: string; status?: string; student?: { id: string; name: string; email: string; regNo: string } }> = [];
   loadingApexA = false;
   loadingApexB = false;
+  loadingApexC = false;
   updatingApexA = false;
   updatingApexB = false;
+  updatingApexC = false;
+  approvingAllApexA = false;
+  approvingAllApexB = false;
+  approvingAllApexC = false;
   showApexBModal = false;
   selectedApexBForm: any = null;
   apexBDetails = {
@@ -167,6 +173,24 @@ export class Admin {
     startDate: '',
     endDate: ''
   };
+  // Pagination for APEX forms
+  apexAPage = 1;
+  apexBPage = 1;
+  apexCPage = 1;
+  apexAPageSize = 10;
+  apexBPageSize = 10;
+  apexCPageSize = 10;
+  // Filters for APEX forms
+  apexAFilter = 'all' as 'all' | 'pending' | 'approved' | 'rejected';
+  apexBFilter = 'all' as 'all' | 'pending' | 'approved' | 'rejected';
+  apexCFilter = 'all' as 'all' | 'pending' | 'approved' | 'rejected';
+  apexASearch = '';
+  apexBSearch = '';
+  apexCSearch = '';
+  // Selected items for bulk actions
+  selectedApexAIds = new Set<string>();
+  selectedApexBIds = new Set<string>();
+  selectedApexCIds = new Set<string>();
 
   latestEvidence(id: string) { const list = this.store.freelance()[id] ?? []; return list.length ? list[list.length - 1] : null; }
   reviewEvidence(id: string) {
@@ -1198,6 +1222,109 @@ export class Admin {
       this.loadApexAForms();
     } else if (subTab === 'apexB') {
       this.loadApexBForms();
+    } else if (subTab === 'apexC') {
+      this.loadApexCForms();
+    }
+  }
+
+  // Filtering and pagination helpers
+  get filteredApexAForms() {
+    let filtered = this.apexAForms;
+    if (this.apexAFilter !== 'all') {
+      filtered = filtered.filter(f => f.status === this.apexAFilter);
+    }
+    if (this.apexASearch) {
+      const search = this.apexASearch.toLowerCase();
+      filtered = filtered.filter(f => 
+        (f.student?.name || '').toLowerCase().includes(search) ||
+        (f.student?.email || '').toLowerCase().includes(search) ||
+        (f.student?.regNo || '').toLowerCase().includes(search)
+      );
+    }
+    return filtered;
+  }
+
+  get filteredApexBForms() {
+    let filtered = this.apexBForms;
+    if (this.apexBFilter !== 'all') {
+      filtered = filtered.filter(f => f.status === this.apexBFilter);
+    }
+    if (this.apexBSearch) {
+      const search = this.apexBSearch.toLowerCase();
+      filtered = filtered.filter(f => 
+        (f.student?.name || f.name || '').toLowerCase().includes(search) ||
+        (f.student?.email || f.email || '').toLowerCase().includes(search) ||
+        (f.student?.regNo || '').toLowerCase().includes(search)
+      );
+    }
+    return filtered;
+  }
+
+  get filteredApexCForms() {
+    let filtered = this.apexCForms;
+    if (this.apexCFilter !== 'all') {
+      filtered = filtered.filter(f => f.status === this.apexCFilter);
+    }
+    if (this.apexCSearch) {
+      const search = this.apexCSearch.toLowerCase();
+      filtered = filtered.filter(f => 
+        (f.student?.name || '').toLowerCase().includes(search) ||
+        (f.student?.email || '').toLowerCase().includes(search) ||
+        (f.student?.regNo || '').toLowerCase().includes(search)
+      );
+    }
+    return filtered;
+  }
+
+  // Selection helpers
+  toggleApexASelection(id: string) {
+    if (this.selectedApexAIds.has(id)) {
+      this.selectedApexAIds.delete(id);
+    } else {
+      this.selectedApexAIds.add(id);
+    }
+  }
+
+  toggleApexBSelection(id: string) {
+    if (this.selectedApexBIds.has(id)) {
+      this.selectedApexBIds.delete(id);
+    } else {
+      this.selectedApexBIds.add(id);
+    }
+  }
+
+  toggleApexCSelection(id: string) {
+    if (this.selectedApexCIds.has(id)) {
+      this.selectedApexCIds.delete(id);
+    } else {
+      this.selectedApexCIds.add(id);
+    }
+  }
+
+  toggleAllApexASelection() {
+    const visible = this.filteredApexAForms;
+    if (this.selectedApexAIds.size === visible.length) {
+      this.selectedApexAIds.clear();
+    } else {
+      visible.forEach(f => this.selectedApexAIds.add(f.id));
+    }
+  }
+
+  toggleAllApexBSelection() {
+    const visible = this.filteredApexBForms;
+    if (this.selectedApexBIds.size === visible.length) {
+      this.selectedApexBIds.clear();
+    } else {
+      visible.forEach(f => this.selectedApexBIds.add(f.id));
+    }
+  }
+
+  toggleAllApexCSelection() {
+    const visible = this.filteredApexCForms;
+    if (this.selectedApexCIds.size === visible.length) {
+      this.selectedApexCIds.clear();
+    } else {
+      visible.forEach(f => this.selectedApexCIds.add(f.id));
     }
   }
 
@@ -1207,7 +1334,7 @@ export class Admin {
     try {
       const result = await this.adminApi.getApexAForms();
       this.apexAForms = result;
-      this.toast.success('APEX A forms loaded successfully');
+      this.selectedApexAIds.clear();
     } catch (err: any) {
       const msg = err?.error?.message || err?.message || 'Failed to load APEX A forms';
       this.toast.danger(msg);
@@ -1223,13 +1350,31 @@ export class Admin {
     try {
       const result = await this.adminApi.getApexBForms();
       this.apexBForms = result;
-      this.toast.success('APEX B forms loaded successfully');
+      this.selectedApexBIds.clear();
     } catch (err: any) {
       const msg = err?.error?.message || err?.message || 'Failed to load APEX B forms';
       this.toast.danger(msg);
       this.apexBForms = [];
     } finally {
       this.loadingApexB = false;
+    }
+  }
+
+  async loadApexCForms() {
+    if (this.loadingApexC) return;
+    this.loadingApexC = true;
+    try {
+      // TODO: Replace with actual API when available
+      this.apexCForms = [];
+      this.selectedApexCIds.clear();
+      // const result = await this.adminApi.getApexCForms();
+      // this.apexCForms = result;
+    } catch (err: any) {
+      const msg = err?.error?.message || err?.message || 'Failed to load APEX C forms';
+      this.toast.danger(msg);
+      this.apexCForms = [];
+    } finally {
+      this.loadingApexC = false;
     }
   }
 
@@ -1241,12 +1386,48 @@ export class Admin {
     try {
       await this.adminApi.updateApexAStatus(formId, status);
       this.toast.success(`APEX A form ${status} successfully`);
-      await this.loadApexAForms(); // Reload to reflect changes
+      // Update local state instead of full reload for better performance
+      const form = this.apexAForms.find(f => f.id === formId);
+      if (form) form.status = status;
+      this.selectedApexAIds.delete(formId);
     } catch (err: any) {
       const msg = err?.error?.message || err?.message || `Failed to ${status} APEX A form`;
       this.toast.danger(msg);
     } finally {
       this.updatingApexA = false;
+    }
+  }
+
+  async approveAllApexA() {
+    if (this.approvingAllApexA || this.selectedApexAIds.size === 0) return;
+    if (!confirm(`Are you sure you want to approve ${this.selectedApexAIds.size} APEX A form(s)?`)) return;
+    
+    this.approvingAllApexA = true;
+    const ids = Array.from(this.selectedApexAIds);
+    let successCount = 0;
+    let failCount = 0;
+    
+    try {
+      for (const id of ids) {
+        try {
+          await this.adminApi.updateApexAStatus(id, 'approved');
+          const form = this.apexAForms.find(f => f.id === id);
+          if (form) form.status = 'approved';
+          this.selectedApexAIds.delete(id);
+          successCount++;
+        } catch {
+          failCount++;
+        }
+      }
+      
+      if (successCount > 0) {
+        this.toast.success(`${successCount} APEX A form(s) approved successfully`);
+      }
+      if (failCount > 0) {
+        this.toast.danger(`${failCount} APEX A form(s) failed to approve`);
+      }
+    } finally {
+      this.approvingAllApexA = false;
     }
   }
 
@@ -1258,12 +1439,82 @@ export class Admin {
     try {
       await this.adminApi.updateApexBStatus(formId, status);
       this.toast.success(`APEX B form ${status} successfully`);
-      await this.loadApexBForms(); // Reload to reflect changes
+      // Update local state instead of full reload for better performance
+      const form = this.apexBForms.find(f => f.id === formId);
+      if (form) form.status = status;
+      this.selectedApexBIds.delete(formId);
     } catch (err: any) {
       const msg = err?.error?.message || err?.message || `Failed to ${status} APEX B form`;
       this.toast.danger(msg);
     } finally {
       this.updatingApexB = false;
+    }
+  }
+
+  async approveAllApexB() {
+    if (this.approvingAllApexB || this.selectedApexBIds.size === 0) return;
+    if (!confirm(`Are you sure you want to approve ${this.selectedApexBIds.size} APEX B form(s)?`)) return;
+    
+    this.approvingAllApexB = true;
+    const ids = Array.from(this.selectedApexBIds);
+    let successCount = 0;
+    let failCount = 0;
+    
+    try {
+      for (const id of ids) {
+        try {
+          await this.adminApi.updateApexBStatus(id, 'approved');
+          const form = this.apexBForms.find(f => f.id === id);
+          if (form) form.status = 'approved';
+          this.selectedApexBIds.delete(id);
+          successCount++;
+        } catch {
+          failCount++;
+        }
+      }
+      
+      if (successCount > 0) {
+        this.toast.success(`${successCount} APEX B form(s) approved successfully`);
+      }
+      if (failCount > 0) {
+        this.toast.danger(`${failCount} APEX B form(s) failed to approve`);
+      }
+    } finally {
+      this.approvingAllApexB = false;
+    }
+  }
+
+  async approveAllApexC() {
+    if (this.approvingAllApexC || this.selectedApexCIds.size === 0) return;
+    if (!confirm(`Are you sure you want to approve ${this.selectedApexCIds.size} APEX C form(s)?`)) return;
+    
+    this.approvingAllApexC = true;
+    const ids = Array.from(this.selectedApexCIds);
+    let successCount = 0;
+    let failCount = 0;
+    
+    try {
+      for (const id of ids) {
+        try {
+          // TODO: Replace with actual API when available
+          // await this.adminApi.updateApexCStatus(id, 'approved');
+          const form = this.apexCForms.find(f => f.id === id);
+          if (form) form.status = 'approved';
+          this.selectedApexCIds.delete(id);
+          successCount++;
+        } catch {
+          failCount++;
+        }
+      }
+      
+      if (successCount > 0) {
+        this.toast.success(`${successCount} APEX C form(s) approved successfully`);
+      }
+      if (failCount > 0) {
+        this.toast.danger(`${failCount} APEX C form(s) failed to approve`);
+      }
+    } finally {
+      this.approvingAllApexC = false;
     }
   }
 
