@@ -405,13 +405,13 @@ export class AdminService {
     
     // Include details if provided and status is approved
     if (status === 'approved' && details) {
-      if (details.companyName) body.companyName = details.companyName;
-      if (details.internshipRole) body.internshipRole = details.internshipRole;
-      if (details.facultySupervisorNameDesig) body.facultySupervisorNameDesig = details.facultySupervisorNameDesig;
-      if (details.siteSupervisorNameDesig) body.siteSupervisorNameDesig = details.siteSupervisorNameDesig;
+      if (details.companyName?.trim()) body.companyName = details.companyName.trim();
+      if (details.internshipRole?.trim()) body.internshipRole = details.internshipRole.trim();
+      if (details.facultySupervisorNameDesig?.trim()) body.facultySupervisorNameDesig = details.facultySupervisorNameDesig.trim();
+      if (details.siteSupervisorNameDesig?.trim()) body.siteSupervisorNameDesig = details.siteSupervisorNameDesig.trim();
       if (details.durationWeeks && details.durationWeeks > 0) body.durationWeeks = details.durationWeeks;
-      if (details.startDate) body.startDate = details.startDate;
-      if (details.endDate) body.endDate = details.endDate;
+      if (details.startDate?.trim()) body.startDate = details.startDate.trim();
+      if (details.endDate?.trim()) body.endDate = details.endDate.trim();
     }
     
     return await firstValueFrom(this.http.patch<any>(url, body, { headers: await this.authHeaders(true) }));
@@ -432,15 +432,22 @@ export class AdminService {
     const url = environment.production ? path : `${base}${path}`;
     
     // Only include non-empty fields
-    const body: any = { id: formId };
+    const body: any = { id: formId, appexBId: formId };
     if (details.studentId) body.studentId = details.studentId;
-    if (details.companyName) body.companyName = details.companyName;
-    if (details.internshipRole) body.internshipRole = details.internshipRole;
-    if (details.facultySupervisorNameDesig) body.facultySupervisorNameDesig = details.facultySupervisorNameDesig;
-    if (details.siteSupervisorNameDesig) body.siteSupervisorNameDesig = details.siteSupervisorNameDesig;
-    if (details.durationWeeks > 0) body.durationWeeks = details.durationWeeks;
-    if (details.startDate) body.startDate = details.startDate;
-    if (details.endDate) body.endDate = details.endDate;
+    if (details.companyName?.trim()) body.companyName = details.companyName.trim();
+    if (details.internshipRole?.trim()) body.internshipRole = details.internshipRole.trim();
+    if (details.facultySupervisorNameDesig?.trim()) body.facultySupervisorNameDesig = details.facultySupervisorNameDesig.trim();
+    if (details.siteSupervisorNameDesig?.trim()) body.siteSupervisorNameDesig = details.siteSupervisorNameDesig.trim();
+    if (details.durationWeeks && details.durationWeeks > 0) body.durationWeeks = details.durationWeeks;
+    if (details.startDate?.trim()) body.startDate = details.startDate.trim();
+    if (details.endDate?.trim()) body.endDate = details.endDate.trim();
+    
+    // Verify at least one updateable field is provided
+    const updateFields = ['companyName', 'internshipRole', 'facultySupervisorNameDesig', 'siteSupervisorNameDesig', 'durationWeeks', 'startDate', 'endDate'];
+    const hasUpdateField = updateFields.some(field => body.hasOwnProperty(field));
+    if (!hasUpdateField) {
+      throw new Error('At least one field to update must be provided');
+    }
     
     return await firstValueFrom(this.http.patch<any>(url, body, { headers: await this.authHeaders(true) }));
   }
