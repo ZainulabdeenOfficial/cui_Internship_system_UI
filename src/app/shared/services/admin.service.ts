@@ -403,6 +403,8 @@ export class AdminService {
       status 
     };
     
+    console.log('[AdminService] updateApexBStatus payload before details:', body);
+    
     // Include details if provided and status is approved
     if (status === 'approved' && details) {
       if (details.companyName?.trim()) body.companyName = details.companyName.trim();
@@ -414,6 +416,7 @@ export class AdminService {
       if (details.endDate?.trim()) body.endDate = details.endDate.trim();
     }
     
+    console.log('[AdminService] updateApexBStatus final payload:', body);
     return await firstValueFrom(this.http.patch<any>(url, body, { headers: await this.authHeaders(true) }));
   }
 

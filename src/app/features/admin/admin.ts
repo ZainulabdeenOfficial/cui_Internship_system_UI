@@ -1488,13 +1488,16 @@ export class Admin {
         details = this.apexBDetails;
       }
       
+      console.log('[Admin] Updating AppEx B status:', { formId, studentId: form.student.id, status, details });
       await this.adminApi.updateApexBStatus(formId, form.student.id, status, details);
       this.toast.success(`APEX B form ${status} successfully`);
       // Update local state instead of full reload for better performance
       form.status = status;
       this.selectedApexBIds.delete(formId);
     } catch (err: any) {
-      const msg = err?.error?.message || err?.message || `Failed to ${status} APEX B form`;
+      console.error('[Admin] AppEx B update error:', err);
+      console.error('[Admin] Error details:', { status: err?.status, error: err?.error, message: err?.message });
+      const msg = err?.error?.message || err?.error?.error || err?.message || `Failed to ${status} APEX B form`;
       this.toast.danger(msg);
     } finally {
       this.updatingApexB = false;
