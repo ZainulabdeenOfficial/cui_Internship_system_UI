@@ -442,9 +442,9 @@ export class AdminService {
     if (details.startDate?.trim()) body.startDate = details.startDate.trim();
     if (details.endDate?.trim()) body.endDate = details.endDate.trim();
     
-    // Verify at least one updateable field is provided
-    const updateFields = ['companyName', 'internshipRole', 'facultySupervisorNameDesig', 'siteSupervisorNameDesig', 'durationWeeks', 'startDate', 'endDate'];
-    const hasUpdateField = updateFields.some(field => body.hasOwnProperty(field));
+    // Verify at least one updateable field is provided (including status and studentId)
+    const updateFields = ['studentId', 'companyName', 'internshipRole', 'facultySupervisorNameDesig', 'siteSupervisorNameDesig', 'durationWeeks', 'startDate', 'endDate', 'status'];
+    const hasUpdateField = updateFields.some(field => body.hasOwnProperty(field) && body[field] !== undefined && body[field] !== null);
     if (!hasUpdateField) {
       throw new Error('At least one field to update must be provided');
     }
