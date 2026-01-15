@@ -419,13 +419,14 @@ export class AdminService {
 
   async updateApexBDetails(formId: string, details: {
     studentId: string;
-    companyName: string;
-    internshipRole: string;
-    facultySupervisorNameDesig: string;
-    siteSupervisorNameDesig: string;
-    durationWeeks: number;
-    startDate: string;
-    endDate: string;
+    companyName?: string;
+    internshipRole?: string;
+    facultySupervisorNameDesig?: string;
+    siteSupervisorNameDesig?: string;
+    durationWeeks?: number;
+    startDate?: string;
+    endDate?: string;
+    status?: 'approved' | 'rejected' | 'pending';
   }): Promise<any> {
     const base = environment.apiBaseUrl.replace(/\/$/, '');
     const path = '/api/admin/appex-b';
@@ -434,6 +435,7 @@ export class AdminService {
     // Only include non-empty fields
     const body: any = { id: formId, appexBId: formId };
     if (details.studentId) body.studentId = details.studentId;
+    if (details.status) body.status = details.status;
     if (details.companyName?.trim()) body.companyName = details.companyName.trim();
     if (details.internshipRole?.trim()) body.internshipRole = details.internshipRole.trim();
     if (details.facultySupervisorNameDesig?.trim()) body.facultySupervisorNameDesig = details.facultySupervisorNameDesig.trim();
