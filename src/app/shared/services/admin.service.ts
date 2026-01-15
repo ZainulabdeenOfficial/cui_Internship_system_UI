@@ -396,14 +396,11 @@ export class AdminService {
     const path = '/api/admin/appex-b';
     const url = environment.production ? path : `${base}${path}`;
     
+    // Build request body - backend requires at least one extended detail field
     const body: any = { 
-      id: formId, 
-      appexBId: formId,
       studentId, 
       status 
     };
-    
-    console.log('[AdminService] updateApexBStatus payload before details:', body);
     
     // Include details if provided and status is approved
     if (status === 'approved' && details) {
