@@ -1632,6 +1632,8 @@ export class Admin {
       internshipRole: '',
       facultySupervisorNameDesig: '',
       siteSupervisorNameDesig: '',
+      facultyId: '',
+      siteId: '',
       durationWeeks: 0,
       startDate: '',
       endDate: ''
