@@ -105,21 +105,46 @@ export class Form3Form {
         return;
       }
 
-      // Build payload for AppEx-C API
-      const appexCPayload = {
+      // Build base payload for AppEx-C API
+      const appexCPayload: any = {
         organizationOverview: this.model.organizationOverview.trim(),
-        roleDescription: this.model.roleDescription?.trim() || '',
-        keyActivities: this.model.keyActivities,
-        toolsTechnologies: this.model.toolsTechnologies?.trim() || this.model.tools?.trim() || '',
-        expectedDeliverables: this.model.expectedDeliverables?.trim() || ''
+        keyActivities: this.model.keyActivities
       };
+
+      // Only add optional fields if they have values
+      if (this.model.roleDescription?.trim()) {
+        appexCPayload.roleDescription = this.model.roleDescription.trim();
+      }
+      
+      const toolsTech = this.model.toolsTechnologies?.trim() || this.model.tools?.trim();
+      if (toolsTech) {
+        appexCPayload.toolsTechnologies = toolsTech;
+      }
+      
+      if (this.model.expectedDeliverables?.trim()) {
+        appexCPayload.expectedDeliverables = this.model.expectedDeliverables.trim();
+      }
 
       console.log('[Form3Form] Submitting AppEx-C with payload:', appexCPayload);
       
-      // Submit to AppEx-C API
-      await this.studentService.submitAppExC(appexCPayload);
+      // Check if AppExC already exists to determine if we should create or update
+      let existingData: any = null;
+      try {
+        existingData = await this.studentService.getAppExC();
+      } catch (e: any) {
+        console.log('[Form3Form] No existing AppExC data found, will create new');
+      }
       
-      this.toast.success('Organization Overview & Scope of Work (AppEx-C) submitted successfully');
+      // Submit to AppEx-C API
+      if (existingData?.id || existingData?.appexCId) {
+        console.log('[Form3Form] Updating existing AppEx-C');
+        await this.studentService.updateAppExC(appexCPayload);
+        this.toast.success('Organization Overview & Scope of Work (AppEx-C) updated successfully');
+      } else {
+        console.log('[Form3Form] Creating new AppEx-C');
+        await this.studentService.submitAppExC(appexCPayload);
+        this.toast.success('Organization Overview & Scope of Work (AppEx-C) submitted successfully');
+      }
       
       // Reset form
       this.model = { 

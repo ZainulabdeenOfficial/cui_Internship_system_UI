@@ -38,6 +38,44 @@ export class AdminService {
       }))
       .filter(x => !!x.id && !!x.name);
   }
+
+  // Search faculty supervisors by query (name, email, company name, company email)
+  async searchFaculty(query: string): Promise<Array<{ id: string; name: string; email?: string; companyName?: string; companyEmail?: string }>> {
+    const base = environment.apiBaseUrl.replace(/\/$/, '');
+    const path = '/api/admin/search-faculty';
+    const qs = query && query.trim() ? `?q=${encodeURIComponent(query.trim())}` : '';
+    const url = environment.production ? `${path}${qs}` : `${base}${path}${qs}`;
+    const res = await firstValueFrom(this.http.get<any>(url, { headers: await this.authHeaders() }));
+    const list: any[] = Array.isArray(res?.faculty) ? res.faculty : (Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []));
+    return list
+      .map((x: any) => ({
+        id: (x.id ?? x._id ?? '').toString(),
+        name: x.name ?? '',
+        email: x.email,
+        companyName: x.companyName,
+        companyEmail: x.companyEmail
+      }))
+      .filter(x => !!x.id && !!x.name);
+  }
+
+  // Search site supervisors by query (name, email, company name, company email)
+  async searchSiteSupervisors(query: string): Promise<Array<{ id: string; name: string; email?: string; companyName?: string; companyEmail?: string }>> {
+    const base = environment.apiBaseUrl.replace(/\/$/, '');
+    const path = '/api/admin/search-site-supervisors';
+    const qs = query && query.trim() ? `?q=${encodeURIComponent(query.trim())}` : '';
+    const url = environment.production ? `${path}${qs}` : `${base}${path}${qs}`;
+    const res = await firstValueFrom(this.http.get<any>(url, { headers: await this.authHeaders() }));
+    const list: any[] = Array.isArray(res?.siteSupervisors) ? res.siteSupervisors : (Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []));
+    return list
+      .map((x: any) => ({
+        id: (x.id ?? x._id ?? '').toString(),
+        name: x.name ?? '',
+        email: x.email,
+        companyName: x.companyName,
+        companyEmail: x.companyEmail
+      }))
+      .filter(x => !!x.id && !!x.name);
+  }
   private async ensureFreshToken(): Promise<string | null> {
     const get = () => this.getTokenFromStorage();
     let token = get();
@@ -423,6 +461,8 @@ export class AdminService {
     internshipRole?: string;
     facultySupervisorNameDesig?: string;
     siteSupervisorNameDesig?: string;
+    facultyId?: string;
+    siteId?: string;
     durationWeeks?: number;
     startDate?: string;
     endDate?: string;
@@ -435,17 +475,19 @@ export class AdminService {
     // Only include non-empty fields
     const body: any = { id: formId, appexBId: formId };
     if (details.studentId) body.studentId = details.studentId;
-    if (details.status) body.status = details.status;
+    if (details.status) body.status = details.status || 'approved';
     if (details.companyName?.trim()) body.companyName = details.companyName.trim();
     if (details.internshipRole?.trim()) body.internshipRole = details.internshipRole.trim();
     if (details.facultySupervisorNameDesig?.trim()) body.facultySupervisorNameDesig = details.facultySupervisorNameDesig.trim();
     if (details.siteSupervisorNameDesig?.trim()) body.siteSupervisorNameDesig = details.siteSupervisorNameDesig.trim();
+    if (details.facultyId?.trim()) body.facultyId = details.facultyId.trim();
+    if (details.siteId?.trim()) body.siteId = details.siteId.trim();
     if (details.durationWeeks && details.durationWeeks > 0) body.durationWeeks = details.durationWeeks;
     if (details.startDate?.trim()) body.startDate = details.startDate.trim();
     if (details.endDate?.trim()) body.endDate = details.endDate.trim();
     
     // Verify at least one updateable field is provided (including status and studentId)
-    const updateFields = ['studentId', 'companyName', 'internshipRole', 'facultySupervisorNameDesig', 'siteSupervisorNameDesig', 'durationWeeks', 'startDate', 'endDate', 'status'];
+    const updateFields = ['studentId', 'companyName', 'internshipRole', 'facultySupervisorNameDesig', 'siteSupervisorNameDesig', 'facultyId', 'siteId', 'durationWeeks', 'startDate', 'endDate', 'status'];
     const hasUpdateField = updateFields.some(field => body.hasOwnProperty(field) && body[field] !== undefined && body[field] !== null);
     if (!hasUpdateField) {
       throw new Error('At least one field to update must be provided');

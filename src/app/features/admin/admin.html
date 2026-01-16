@@ -1039,14 +1039,8 @@
                               <button class="btn btn-outline-info btn-sm" (click)="viewApexBFullDetails(form)">
                                 <i class="bi bi-eye"></i> View
                               </button>
-                              <button class="btn btn-info btn-sm" (click)="openApexBDetailsModal(form)" [disabled]="updatingApexB">
-                                <i class="bi bi-plus"></i> Details
-                              </button>
-                              <button class="btn btn-success btn-sm" (click)="updateApexBStatus(form.id, 'approved')" [disabled]="updatingApexB || form.status === 'approved'">
-                                <i class="bi bi-check"></i> Approve
-                              </button>
-                              <button class="btn btn-danger btn-sm" (click)="updateApexBStatus(form.id, 'rejected')" [disabled]="updatingApexB || form.status === 'rejected'">
-                                <i class="bi bi-x"></i> Reject
+                              <button class="btn btn-primary btn-sm" (click)="openApexBDetailsModal(form)" [disabled]="updatingApexB || form.status === 'approved'">
+                                <i class="bi bi-plus-circle"></i> Add Details
                               </button>
                             </div>
                           </td>
@@ -1260,14 +1254,109 @@
                         <label class="form-label">Internship Role <span class="text-danger">*</span></label>
                         <input type="text" class="form-control" [(ngModel)]="apexBDetails.internshipRole" name="internshipRole" required />
                       </div>
-                      <div class="mb-3">
-                        <label class="form-label">Faculty Supervisor Name & Designation <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" [(ngModel)]="apexBDetails.facultySupervisorNameDesig" name="facultySupervisor" required />
+                      
+                      <!-- Faculty Supervisor Search -->
+                      <div class="mb-3 position-relative">
+                        <label class="form-label">Faculty Supervisor <span class="text-danger">*</span></label>
+                        <input 
+                          type="text" 
+                          class="form-control" 
+                          [(ngModel)]="facultySearchQuery" 
+                          (ngModelChange)="onFacultySearchInput($event)"
+                          name="facultySearch" 
+                          placeholder="Type to search faculty..."
+                          autocomplete="off"
+                          required />
+                        <small class="form-text text-muted">Search by name, email, company name, or company email</small>
+                        
+                        @if (facultySearchLoading) {
+                          <div class="position-absolute top-50 end-0 translate-middle-y me-2">
+                            <div class="spinner-border spinner-border-sm text-primary" role="status">
+                              <span class="visually-hidden">Loading...</span>
+                            </div>
+                          </div>
+                        }
+                        
+                        @if (showFacultyDropdown && facultySearchResults.length > 0) {
+                          <div class="dropdown-menu show w-100 mt-1" style="max-height: 250px; overflow-y: auto;">
+                            @for (faculty of facultySearchResults; track faculty.id) {
+                              <button type="button" class="dropdown-item" (click)="selectFaculty(faculty)">
+                                <div><strong>{{ faculty.name }}</strong></div>
+                                @if (faculty.email) {
+                                  <div class="small text-muted">{{ faculty.email }}</div>
+                                }
+                                @if (faculty.companyName) {
+                                  <div class="small text-muted">Company: {{ faculty.companyName }}</div>
+                                }
+                              </button>
+                            }
+                          </div>
+                        }
+                        @if (showFacultyDropdown && !facultySearchLoading && facultySearchResults.length === 0 && facultySearchQuery.length >= 2) {
+                          <div class="dropdown-menu show w-100 mt-1">
+                            <div class="dropdown-item text-muted">No faculty found</div>
+                          </div>
+                        }
+                        
+                        @if (apexBDetails.facultyId) {
+                          <input type="hidden" [(ngModel)]="apexBDetails.facultyId" name="facultyId" />
+                          <div class="form-text text-success">
+                            <i class="bi bi-check-circle"></i> Selected: {{ apexBDetails.facultySupervisorNameDesig }}
+                          </div>
+                        }
                       </div>
-                      <div class="mb-3">
-                        <label class="form-label">Site Supervisor Name & Designation <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" [(ngModel)]="apexBDetails.siteSupervisorNameDesig" name="siteSupervisor" required />
+                      
+                      <!-- Site Supervisor Search -->
+                      <div class="mb-3 position-relative">
+                        <label class="form-label">Site Supervisor <span class="text-danger">*</span></label>
+                        <input 
+                          type="text" 
+                          class="form-control" 
+                          [(ngModel)]="siteSearchQuery" 
+                          (ngModelChange)="onSiteSearchInput($event)"
+                          name="siteSearch" 
+                          placeholder="Type to search site supervisors..."
+                          autocomplete="off"
+                          required />
+                        <small class="form-text text-muted">Search by name, email, company name, or company email</small>
+                        
+                        @if (siteSearchLoading) {
+                          <div class="position-absolute top-50 end-0 translate-middle-y me-2">
+                            <div class="spinner-border spinner-border-sm text-primary" role="status">
+                              <span class="visually-hidden">Loading...</span>
+                            </div>
+                          </div>
+                        }
+                        
+                        @if (showSiteDropdown && siteSearchResults.length > 0) {
+                          <div class="dropdown-menu show w-100 mt-1" style="max-height: 250px; overflow-y: auto;">
+                            @for (site of siteSearchResults; track site.id) {
+                              <button type="button" class="dropdown-item" (click)="selectSiteSupervisor(site)">
+                                <div><strong>{{ site.name }}</strong></div>
+                                @if (site.email) {
+                                  <div class="small text-muted">{{ site.email }}</div>
+                                }
+                                @if (site.companyName) {
+                                  <div class="small text-muted">Company: {{ site.companyName }}</div>
+                                }
+                              </button>
+                            }
+                          </div>
+                        }
+                        @if (showSiteDropdown && !siteSearchLoading && siteSearchResults.length === 0 && siteSearchQuery.length >= 2) {
+                          <div class="dropdown-menu show w-100 mt-1">
+                            <div class="dropdown-item text-muted">No site supervisors found</div>
+                          </div>
+                        }
+                        
+                        @if (apexBDetails.siteId) {
+                          <input type="hidden" [(ngModel)]="apexBDetails.siteId" name="siteId" />
+                          <div class="form-text text-success">
+                            <i class="bi bi-check-circle"></i> Selected: {{ apexBDetails.siteSupervisorNameDesig }}
+                          </div>
+                        }
                       </div>
+                      
                       <div class="row">
                         <div class="col-md-6 mb-3">
                           <label class="form-label">Duration (Weeks) <span class="text-danger">*</span></label>
@@ -1298,16 +1387,9 @@
             <div class="modal-footer">
               <button type="button" class="btn btn-secondary" (click)="closeApexBModal()">Close</button>
               @if (apexBDetails.studentId) {
-                <button type="button" class="btn btn-primary" (click)="submitApexBDetails()" [disabled]="updatingApexB">
-                  <span [hidden]="updatingApexB">Submit Details</span>
+                <button type="button" class="btn btn-success" (click)="submitApexBDetails()" [disabled]="updatingApexB">
+                  <span [hidden]="updatingApexB"><i class="bi bi-check-circle"></i> Submit & Approve</span>
                   <span [hidden]="!updatingApexB">Submitting...</span>
-                </button>
-              } @else {
-                <button type="button" class="btn btn-success" (click)="updateApexBStatus(selectedApexBForm.id, 'approved'); closeApexBModal()" [disabled]="updatingApexB || selectedApexBForm.status === 'approved'">
-                  Approve
-                </button>
-                <button type="button" class="btn btn-danger" (click)="updateApexBStatus(selectedApexBForm.id, 'rejected'); closeApexBModal()" [disabled]="updatingApexB || selectedApexBForm.status === 'rejected'">
-                  Reject
                 </button>
               }
             </div>

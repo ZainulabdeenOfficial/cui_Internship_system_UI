@@ -288,14 +288,25 @@ export class StudentService {
       return selected.length > 0 ? selected.join(', ') : '';
     };
 
-    // Only send fields the backend expects
-    const cleanPayload = {
+    // Build clean payload - only include fields that have values
+    const cleanPayload: any = {
       organizationOverview: payload.organizationOverview || '',
-      roleDescription: payload.roleDescription || '',
-      keyActivities: buildKeyActivities(payload),
-      toolsTechnologies: payload.toolsTechnologies || payload.tools || '',
-      expectedDeliverables: payload.expectedDeliverables || ''
+      keyActivities: buildKeyActivities(payload) || ''
     };
+    
+    // Add optional fields only if they have values
+    if (payload.roleDescription) {
+      cleanPayload.roleDescription = payload.roleDescription;
+    }
+    
+    const toolsTech = payload.toolsTechnologies || payload.tools;
+    if (toolsTech) {
+      cleanPayload.toolsTechnologies = toolsTech;
+    }
+    
+    if (payload.expectedDeliverables) {
+      cleanPayload.expectedDeliverables = payload.expectedDeliverables;
+    }
     
     const url = this.abs('/api/student/appex-c');
     const token = this.getAuthToken();
@@ -327,14 +338,37 @@ export class StudentService {
       return selected.length > 0 ? selected.join(', ') : '';
     };
 
-    // Only send fields the backend expects
-    const cleanPayload = {
-      organizationOverview: payload.organizationOverview || '',
-      roleDescription: payload.roleDescription || '',
-      keyActivities: buildKeyActivities(payload),
-      toolsTechnologies: payload.toolsTechnologies || payload.tools || '',
-      expectedDeliverables: payload.expectedDeliverables || ''
-    };
+    // Build payload with only non-empty fields
+    const cleanPayload: any = {};
+    
+    if (payload.organizationOverview) {
+      cleanPayload.organizationOverview = payload.organizationOverview;
+    }
+    
+    if (payload.roleDescription) {
+      cleanPayload.roleDescription = payload.roleDescription;
+    }
+    
+    if (payload.keyActivities) {
+      const keyActivitiesStr = buildKeyActivities(payload);
+      if (keyActivitiesStr) {
+        cleanPayload.keyActivities = keyActivitiesStr;
+      }
+    }
+    
+    const toolsTech = payload.toolsTechnologies || payload.tools;
+    if (toolsTech) {
+      cleanPayload.toolsTechnologies = toolsTech;
+    }
+    
+    if (payload.expectedDeliverables) {
+      cleanPayload.expectedDeliverables = payload.expectedDeliverables;
+    }
+    
+    // Ensure at least one field is being updated
+    if (Object.keys(cleanPayload).length === 0) {
+      throw new Error('At least one field to update must be provided');
+    }
     
     const url = this.abs('/api/student/appex-c');
     const headers = this.jsonHeaders();

@@ -175,6 +175,8 @@ export class Admin {
     internshipRole: '',
     facultySupervisorNameDesig: '',
     siteSupervisorNameDesig: '',
+    facultyId: '',
+    siteId: '',
     durationWeeks: 0,
     startDate: '',
     endDate: ''
@@ -197,6 +199,18 @@ export class Admin {
   selectedApexAIds = new Set<string>();
   selectedApexBIds = new Set<string>();
   selectedApexCIds = new Set<string>();
+
+  // APEX B Faculty and Site Supervisor Search
+  facultySearchResults: Array<{ id: string; name: string; email?: string; companyName?: string; companyEmail?: string }> = [];
+  siteSearchResults: Array<{ id: string; name: string; email?: string; companyName?: string; companyEmail?: string }> = [];
+  facultySearchQuery = '';
+  siteSearchQuery = '';
+  facultySearchLoading = false;
+  siteSearchLoading = false;
+  facultySearchDebounce: any;
+  siteSearchDebounce: any;
+  showFacultyDropdown = false;
+  showSiteDropdown = false;
 
   latestEvidence(id: string) { const list = this.store.freelance()[id] ?? []; return list.length ? list[list.length - 1] : null; }
   reviewEvidence(id: string) {
@@ -1593,10 +1607,19 @@ export class Admin {
       internshipRole: '',
       facultySupervisorNameDesig: '',
       siteSupervisorNameDesig: '',
+      facultyId: '',
+      siteId: '',
       durationWeeks: 0,
       startDate: '',
       endDate: ''
     };
+    // Initialize search queries
+    this.facultySearchQuery = '';
+    this.siteSearchQuery = '';
+    this.facultySearchResults = [];
+    this.siteSearchResults = [];
+    this.showFacultyDropdown = false;
+    this.showSiteDropdown = false;
     this.showApexBModal = true;
   }
 
@@ -1635,10 +1658,93 @@ export class Admin {
       internshipRole: '',
       facultySupervisorNameDesig: '',
       siteSupervisorNameDesig: '',
+      facultyId: '',
+      siteId: '',
       durationWeeks: 0,
       startDate: '',
       endDate: ''
     };
+    // Clear search states
+    this.facultySearchResults = [];
+    this.siteSearchResults = [];
+    this.facultySearchQuery = '';
+    this.siteSearchQuery = '';
+    this.showFacultyDropdown = false;
+    this.showSiteDropdown = false;
+  }
+
+  // Faculty Search for APEX B
+  onFacultySearchInput(value: string) {
+    const q = (value || '').trim();
+    this.facultySearchQuery = q;
+    
+    if (this.facultySearchDebounce) clearTimeout(this.facultySearchDebounce);
+    
+    if (!q || q.length < 2) {
+      this.facultySearchResults = [];
+      this.showFacultyDropdown = false;
+      this.facultySearchLoading = false;
+      return;
+    }
+    
+    this.facultySearchDebounce = setTimeout(async () => {
+      try {
+        this.facultySearchLoading = true;
+        this.showFacultyDropdown = true;
+        this.facultySearchResults = await this.adminApi.searchFaculty(q);
+      } catch (err: any) {
+        this.facultySearchResults = [];
+        const msg = err?.error?.message || err?.message || 'Failed to search faculty';
+        console.error('Faculty search error:', msg);
+      } finally {
+        this.facultySearchLoading = false;
+      }
+    }, 300);
+  }
+
+  selectFaculty(faculty: { id: string; name: string; email?: string }) {
+    this.apexBDetails.facultyId = faculty.id;
+    this.apexBDetails.facultySupervisorNameDesig = faculty.name;
+    this.facultySearchQuery = faculty.name;
+    this.showFacultyDropdown = false;
+    this.facultySearchResults = [];
+  }
+
+  // Site Supervisor Search for APEX B
+  onSiteSearchInput(value: string) {
+    const q = (value || '').trim();
+    this.siteSearchQuery = q;
+    
+    if (this.siteSearchDebounce) clearTimeout(this.siteSearchDebounce);
+    
+    if (!q || q.length < 2) {
+      this.siteSearchResults = [];
+      this.showSiteDropdown = false;
+      this.siteSearchLoading = false;
+      return;
+    }
+    
+    this.siteSearchDebounce = setTimeout(async () => {
+      try {
+        this.siteSearchLoading = true;
+        this.showSiteDropdown = true;
+        this.siteSearchResults = await this.adminApi.searchSiteSupervisors(q);
+      } catch (err: any) {
+        this.siteSearchResults = [];
+        const msg = err?.error?.message || err?.message || 'Failed to search site supervisors';
+        console.error('Site search error:', msg);
+      } finally {
+        this.siteSearchLoading = false;
+      }
+    }, 300);
+  }
+
+  selectSiteSupervisor(site: { id: string; name: string; email?: string }) {
+    this.apexBDetails.siteId = site.id;
+    this.apexBDetails.siteSupervisorNameDesig = site.name;
+    this.siteSearchQuery = site.name;
+    this.showSiteDropdown = false;
+    this.siteSearchResults = [];
   }
 
   async submitApexBDetails() {
@@ -1650,6 +1756,8 @@ export class Admin {
                    this.apexBDetails.internshipRole ||
                    this.apexBDetails.facultySupervisorNameDesig ||
                    this.apexBDetails.siteSupervisorNameDesig ||
+                   this.apexBDetails.facultyId ||
+                   this.apexBDetails.siteId ||
                    this.apexBDetails.durationWeeks > 0 ||
                    this.apexBDetails.startDate ||
                    this.apexBDetails.endDate;
@@ -1661,10 +1769,22 @@ export class Admin {
     
     this.updatingApexB = true;
     try {
-      await this.adminApi.updateApexBDetails(this.selectedApexBForm.id, this.apexBDetails);
-      this.toast.success('APEX B details submitted successfully');
+      // Set status to approved when submitting details
+      const detailsWithStatus = {
+        ...this.apexBDetails,
+        status: 'approved' as 'approved'
+      };
+      
+      await this.adminApi.updateApexBDetails(this.selectedApexBForm.id, detailsWithStatus);
+      this.toast.success('APEX B details submitted successfully and form approved');
+      
+      // Update local state to reflect approval
+      const form = this.apexBForms.find(f => f.id === this.selectedApexBForm.id);
+      if (form) {
+        form.status = 'approved';
+      }
+      
       this.closeApexBModal();
-      await this.loadApexBForms(); // Reload to reflect changes
     } catch (err: any) {
       const msg = err?.error?.message || err?.message || 'Failed to submit APEX B details';
       this.toast.danger(msg);
