@@ -20,10 +20,11 @@ export class FacultySupervisor {
     try {
       this.route.queryParamMap.subscribe(p => {
         const t = (p.get('tab') || '').toLowerCase();
-        const allowed = ['students','details','reports','assignments','agreements','profile'] as const;
+        const allowed = ['students','details','reports','assignments','agreements','profile','requests'] as const;
         if ((allowed as readonly string[]).includes(t)) {
           this.currentTab = t as any;
           if (this.currentTab === 'profile') this.loadMyProfileFromApi();
+          if (this.currentTab === 'requests') this.loadStudentRequests();
         }
       });
     } catch {}
@@ -33,13 +34,14 @@ export class FacultySupervisor {
   get siteList() { return this.store.siteSupervisors; }
   get companyList() { return this.store.companies; }
   selectedId: string | null = null;
-  currentTab: 'students'|'details'|'reports'|'assignments'|'agreements'|'profile' = 'students';
-  page = { students: 1 };
+  currentTab: 'students'|'details'|'reports'|'assignments'|'agreements'|'profile'|'requests' = 'students';
+  page = { students: 1, appexA: 1, appexB: 1 };
   pageSize = 10;
   selectTab(tab: FacultySupervisor['currentTab']) {
     this.currentTab = tab;
     try { this.router.navigate([], { relativeTo: this.route, queryParams: { tab }, queryParamsHandling: 'merge' }); } catch {}
     if (tab === 'profile') this.loadMyProfileFromApi();
+    if (tab === 'requests') this.loadStudentRequests();
   }
   get me() { return this.store.currentUser; }
   myFacultyId = computed(() => this.me()?.facultyId);
@@ -223,5 +225,59 @@ export class FacultySupervisor {
     } finally {
       this.loadingProfile = false;
     }
+
+  // Student Requests (Appex A & B)
+  appexARequests: any[] = [];
+  appexBRequests: any[] = [];
+  loadingRequests = false;
+  requestFilter: 'all' | 'pending' | 'approved' | 'rejected' = 'all';
+  
+  async loadStudentRequests() {
+    if (this.loadingRequests) return;
+    this.loadingRequests = true;
+    try {
+      // Load Appex A requests
+      const statusFilter = this.requestFilter === 'all' ? undefined : this.requestFilter;
+      const resA = await this.facultyApi.getAppexAApprovals(statusFilter, this.page.appexA, this.pageSize);
+      this.appexARequests = resA?.approvals || resA?.data || [];
+      
+      // Load Appex B requests
+      const resB = await this.facultyApi.getAppexBVerifications(statusFilter, this.page.appexB, this.pageSize);
+      this.appexBRequests = resB?.verifications || resB?.data || [];
+    } catch (err: any) {
+      const msg = err?.error?.message || err?.message || 'Failed to load student requests';
+      this.toast.danger(msg);
+    } finally {
+      this.loadingRequests = false;
+    }
+  }
+
+  async approveAppexA(item: any, status: 'approved' | 'rejected', comments?: string) {
+    try {
+      const res = await this.facultyApi.updateAppexAApproval(item.id || item.appexAId, status, comments);
+      this.toast.success(res?.message || `Appex A ${status}`);
+      await this.loadStudentRequests();
+    } catch (err: any) {
+      const msg = err?.error?.message || err?.message || 'Failed to update approval';
+      this.toast.danger(msg);
+    }
+  }
+
+  async approveAppexB(item: any, action: 'approve' | 'reject', comments?: string) {
+    try {
+      const res = await this.facultyApi.updateAppexBVerification(item.id || item.assignmentId, action, comments);
+      this.toast.success(res?.message || `Appex B ${action}d`);
+      await this.loadStudentRequests();
+    } catch (err: any) {
+      const msg = err?.error?.message || err?.message || 'Failed to update verification';
+      this.toast.danger(msg);
+    }
+  }
+
+  onRequestFilterChange() {
+    this.page.appexA = 1;
+    this.page.appexB = 1;
+    this.loadStudentRequests();
+  }
   }
 }

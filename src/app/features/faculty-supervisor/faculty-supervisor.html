@@ -2,6 +2,7 @@
   <h2 class="mb-3">Faculty Supervisor</h2>
   <ul class="nav nav-tabs mb-3">
     <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='students'" (click)="selectTab('students')">Students</button></li>
+    <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='requests'" (click)="selectTab('requests')">Student Requests</button></li>
     <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='details'" (click)="selectTab('details')">Details</button></li>
     <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='reports'" (click)="selectTab('reports')">Reports</button></li>
     <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='assignments'" (click)="selectTab('assignments')">Assignments</button></li>
@@ -125,6 +126,132 @@
     <app-paginator [total]="filteredStudents().length" [(page)]="page.students" [pageSize]="pageSize"></app-paginator>
   </div>
   }
+
+  @if (currentTab==='requests') {
+  <div class="card mb-4">
+    <div class="card-body">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="mb-0">Student Requests</h5>
+        <div>
+          <label class="me-2">Filter:</label>
+          <select class="form-select form-select-sm d-inline-block w-auto" [(ngModel)]="requestFilter" (ngModelChange)="onRequestFilterChange()">
+            <option value="all">All</option>
+            <option value="pending">Pending</option>
+            <option value="approved">Approved</option>
+            <option value="rejected">Rejected</option>
+          </select>
+        </div>
+      </div>
+      
+      @if (loadingRequests) {
+        <div class="text-center py-4">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+        </div>
+      }
+      
+      @if (!loadingRequests) {
+        <h6 class="mt-4">Appex A Approvals</h6>
+        @if (appexARequests.length > 0) {
+          <div class="table-responsive">
+            <table class="table table-hover align-middle shadow-sm table-card">
+              <thead>
+                <tr>
+                  <th>Student</th>
+                  <th>Company</th>
+                  <th>Start Date</th>
+                  <th>End Date</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (item of (appexARequests | paginate: page.appexA : pageSize); track item.id || $index) {
+                  <tr>
+                    <td>{{ item.studentInfo?.name || item.student?.name || '-' }}</td>
+                    <td>{{ item.company?.name || item.companyName || '-' }}</td>
+                    <td>{{ item.internship?.startDate || item.startDate || '-' }}</td>
+                    <td>{{ item.internship?.endDate || item.endDate || '-' }}</td>
+                    <td>
+                      <span class="badge" 
+                        [class.text-bg-warning]="item.status==='pending'"
+                        [class.text-bg-success]="item.status==='approved'"
+                        [class.text-bg-danger]="item.status==='rejected'">
+                        {{ item.status || 'pending' }}
+                      </span>
+                    </td>
+                    <td>
+                      @if (item.status === 'pending' || !item.status) {
+                        <div class="btn-group btn-group-sm">
+                          <button class="btn btn-success" (click)="approveAppexA(item, 'approved')">Approve</button>
+                          <button class="btn btn-danger" (click)="approveAppexA(item, 'rejected')">Reject</button>
+                        </div>
+                      } @else {
+                        <span class="text-muted">{{ item.status }}</span>
+                      }
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+            <app-paginator [total]="appexARequests.length" [(page)]="page.appexA" [pageSize]="pageSize"></app-paginator>
+          </div>
+        } @else {
+          <div class="alert alert-info">No Appex A requests found.</div>
+        }
+
+        <h6 class="mt-4">Appex B Verifications</h6>
+        @if (appexBRequests.length > 0) {
+          <div class="table-responsive">
+            <table class="table table-hover align-middle shadow-sm table-card">
+              <thead>
+                <tr>
+                  <th>Student</th>
+                  <th>Assignment</th>
+                  <th>Submitted</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (item of (appexBRequests | paginate: page.appexB : pageSize); track item.id || $index) {
+                  <tr>
+                    <td>{{ item.student?.name || item.studentName || '-' }}</td>
+                    <td>{{ item.assignment?.title || item.assignmentTitle || item.title || '-' }}</td>
+                    <td>{{ item.submittedAt || item.createdAt || '-' | date:'short' }}</td>
+                    <td>
+                      <span class="badge" 
+                        [class.text-bg-warning]="item.status==='pending'"
+                        [class.text-bg-success]="item.status==='approved'"
+                        [class.text-bg-danger]="item.status==='rejected'">
+                        {{ item.status || 'pending' }}
+                      </span>
+                    </td>
+                    <td>
+                      @if (item.status === 'pending' || !item.status) {
+                        <div class="btn-group btn-group-sm">
+                          <button class="btn btn-success" (click)="approveAppexB(item, 'approve')">Approve</button>
+                          <button class="btn btn-danger" (click)="approveAppexB(item, 'reject')">Reject</button>
+                        </div>
+                      } @else {
+                        <span class="text-muted">{{ item.status }}</span>
+                      }
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+            <app-paginator [total]="appexBRequests.length" [(page)]="page.appexB" [pageSize]="pageSize"></app-paginator>
+          </div>
+        } @else {
+          <div class="alert alert-info">No Appex B requests found.</div>
+        }
+      }
+    </div>
+  </div>
+  }
+
   @if (selectedId) {
     @if (currentTab==='details') {
     <div class="row g-3">

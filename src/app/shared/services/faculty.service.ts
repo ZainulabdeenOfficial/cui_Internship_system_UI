@@ -84,4 +84,40 @@ export class FacultyService {
     const res = await firstValueFrom(this.http.post<any>(url, body, { headers: await this.authHeaders(true) }));
     return { message: res?.message, profile: res?.profile as FacultyProfile };
   }
+
+  async getAppexAApprovals(status?: string, page?: number, limit?: number): Promise<any> {
+    let url = `${this.base}/api/faculty/appex-a-approval`;
+    const params: string[] = [];
+    if (status) params.push(`status=${encodeURIComponent(status)}`);
+    if (page !== undefined) params.push(`page=${page}`);
+    if (limit !== undefined) params.push(`limit=${limit}`);
+    if (params.length) url += '?' + params.join('&');
+    const res = await firstValueFrom(this.http.get<any>(url, { headers: await this.authHeaders(false) }));
+    return res;
+  }
+
+  async updateAppexAApproval(appexAId: string, status: 'approved' | 'rejected', comments?: string): Promise<any> {
+    const url = `${this.base}/api/faculty/appex-a-approval`;
+    const body = { appexAId, status, comments: comments || '' };
+    const res = await firstValueFrom(this.http.patch<any>(url, body, { headers: await this.authHeaders(true) }));
+    return res;
+  }
+
+  async getAppexBVerifications(status?: string, page?: number, limit?: number): Promise<any> {
+    let url = `${this.base}/api/faculty/appex-b-verification`;
+    const params: string[] = [];
+    if (status) params.push(`status=${encodeURIComponent(status)}`);
+    if (page !== undefined) params.push(`page=${page}`);
+    if (limit !== undefined) params.push(`limit=${limit}`);
+    if (params.length) url += '?' + params.join('&');
+    const res = await firstValueFrom(this.http.get<any>(url, { headers: await this.authHeaders(false) }));
+    return res;
+  }
+
+  async updateAppexBVerification(assignmentId: string, action: 'approve' | 'reject', comments?: string): Promise<any> {
+    const url = `${this.base}/api/faculty/appex-b-verification`;
+    const body = { assignmentId, action, comments: comments || '' };
+    const res = await firstValueFrom(this.http.patch<any>(url, body, { headers: await this.authHeaders(true) }));
+    return res;
+  }
 }
