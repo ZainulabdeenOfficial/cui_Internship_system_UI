@@ -246,10 +246,6 @@
                 {{ appexBSubmitted ? 'Updating...' : 'Submitting...' }}
               </span>
             </button>
-            <button type="button" class="btn btn-secondary ms-2" (click)="loadAppexBVerification()" [disabled]="loadingAppexB">
-              <span *ngIf="!loadingAppexB">Load Existing</span>
-              <span *ngIf="loadingAppexB">Loading...</span>
-            </button>
           </div>
         </form>
       </div>

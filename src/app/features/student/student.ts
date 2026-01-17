@@ -354,6 +354,15 @@ export class Student {
         });
       } catch {}
 
+    // Auto-load APEX B verification when student is selected
+    try {
+      effect(() => {
+        const sid = this.selectedId;
+        if (!sid) return;
+        this.loadAppexBVerification();
+      });
+    } catch {}
+
     // Persist drafts to localStorage as the student edits the AppEx-A form (debounced via effect trigger)
     try {
       effect(() => {
@@ -1080,13 +1089,9 @@ export class Student {
           agreementAccepted: data.agreementAccepted || false
         };
         this.appexBSubmitted = true;
-        this.toast.success('APEX B verification loaded');
       }
     } catch (err: any) {
-      if (err?.status !== 404) {
-        const msg = err?.error?.message || err?.message || 'Failed to load APEX B verification';
-        this.toast.danger(msg);
-      }
+      // Silently ignore errors (no existing data)
     } finally {
       this.loadingAppexB = false;
     }
