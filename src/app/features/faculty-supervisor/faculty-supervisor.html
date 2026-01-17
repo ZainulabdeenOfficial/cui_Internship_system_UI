@@ -329,15 +329,22 @@
                         <td>{{ item.assignment?.title || item.assignmentTitle || item.title || '-' }}</td>
                         <td>{{ (item.submittedAt || item.createdAt) ? ((item.submittedAt || item.createdAt) | date:'short') : 'N/A' }}</td>
                         <td>
-                          <span class="badge" 
-                            [class.bg-warning]="item.status==='pending'"
-                            [class.bg-success]="item.status==='approved'"
-                            [class.bg-danger]="item.status==='rejected'">
-                            {{ item.status || 'pending' }}
-                          </span>
+                          @if (item.calculatedStatus === 'PENDING_VERIFICATION' || item.status === 'pending' || !item.status) {
+                            <span class="badge bg-warning">Pending Verification</span>
+                          } @else if (item.calculatedStatus === 'FACULTY_VERIFIED') {
+                            <span class="badge bg-info">Faculty Verified</span>
+                          } @else if (item.calculatedStatus === 'STUDENT_VERIFIED') {
+                            <span class="badge bg-primary">Student Verified</span>
+                          } @else if (item.calculatedStatus === 'BOTH_VERIFIED' || item.status === 'approved') {
+                            <span class="badge bg-success">Fully Approved</span>
+                          } @else if (item.calculatedStatus === 'CHANGES_REQUESTED' || item.status === 'changes_requested') {
+                            <span class="badge bg-danger">Changes Requested</span>
+                          } @else {
+                            <span class="badge bg-secondary">{{ item.calculatedStatus || item.status || 'Unknown' }}</span>
+                          }
                         </td>
                         <td>
-                          @if (item.status === 'pending' || !item.status) {
+                          @if (item.calculatedStatus === 'PENDING_VERIFICATION' || item.status === 'pending' || !item.status) {
                             <div class="btn-group btn-group-sm">
                               <button class="btn btn-outline-info btn-sm" (click)="viewApexADetails(item)">
                                 <i class="bi bi-eye"></i> View
