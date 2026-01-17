@@ -441,12 +441,8 @@ export class StudentService {
     return await firstValueFrom(this.http.post<any>(url, payload, { headers: this.jsonHeaders() }));
   }
 
-  // PATCH /api/student/appex-b-verification - Student verifies their APEX B after admin/faculty completion
-  async verifyAppexB(): Promise<any> {
-    const url = this.abs('/api/student/appex-b-verification');
-    const payload = { action: 'approve' };
-    return await firstValueFrom(this.http.patch<any>(url, payload, { headers: this.jsonHeaders() }));
-  }
+  // Note: PATCH /api/student/appex-b-verification is for verification actions (approve/request_changes) only
+  // Students cannot update their APEX B submission after submitting
 
   // GET /api/student/appex-b-verification
   async getAppexBVerification(): Promise<any> {

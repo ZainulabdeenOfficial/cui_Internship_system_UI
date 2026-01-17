@@ -1106,11 +1106,15 @@ export class Student {
           agreementAccepted: data.agreementAccepted || false
         };
         this.appexBSubmitted = true;
-        // Store verification status
+        // Store verification status - check both direct fields and nested assignment fields
+        const facultyVerified = data.facultyVerified || data.assignment?.facultyVerified || false;
+        const studentVerified = data.studentVerified || data.assignment?.studentVerified || false;
+        const calculatedStatus = data.calculatedStatus || data.assignment?.calculatedStatus || '';
+        
         this.appexBVerificationStatus = {
-          facultyVerified: data.facultyVerified || false,
-          studentVerified: data.studentVerified || false,
-          calculatedStatus: data.calculatedStatus || ''
+          facultyVerified: facultyVerified,
+          studentVerified: studentVerified,
+          calculatedStatus: calculatedStatus
         };
       }
     } catch (err: any) {
