@@ -709,7 +709,7 @@ export class Student {
                     this.appexBForm.durationWeeks > 0;
     
     // If API provides facultyVerified flag, use it; otherwise check if data is populated
-    return this.appexBVerificationStatus.facultyVerified || hasData;
+    return !!this.appexBVerificationStatus.facultyVerified || !!hasData;
   }
 
   // Student Assignment & Agreement form (from provided PDF)
