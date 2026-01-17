@@ -1117,7 +1117,6 @@ export class Student {
     this.loadingAppexB = true;
     try {
       const payload = {
-        action: 'submit',
         name: form.name,
         degreeProgram: form.degreeProgram,
         email: form.email,

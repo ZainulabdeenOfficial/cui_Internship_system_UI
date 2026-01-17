@@ -422,7 +422,6 @@ export class StudentService {
 
   // POST /api/student/appex-b-verification
   async submitAppexBVerification(payload: {
-    action: string;
     name: string;
     degreeProgram: string;
     email: string;
