@@ -158,8 +158,51 @@
         <div class="alert alert-info">
           <strong>Purpose:</strong> This form is used to verify your internship details and get approval from faculty and site supervisors.
         </div>
+
+        <!-- Show approval status when form is submitted -->
+        <div *ngIf="appexBSubmitted">
+          <div class="alert" [class.alert-warning]="appexBStatus.facultyStatus === 'pending' || appexBStatus.adminStatus === 'pending'"
+               [class.alert-success]="appexBStatus.facultyStatus === 'approved' && appexBStatus.adminStatus === 'approved'"
+               [class.alert-danger]="appexBStatus.facultyStatus === 'rejected' || appexBStatus.adminStatus === 'rejected'">
+            <div class="row g-2">
+              <div class="col-md-6">
+                <strong>Faculty Approval:</strong> 
+                <span class="badge ms-2" 
+                      [class.bg-warning]="appexBStatus.facultyStatus === 'pending'"
+                      [class.bg-success]="appexBStatus.facultyStatus === 'approved'"
+                      [class.bg-danger]="appexBStatus.facultyStatus === 'rejected'">
+                  {{ appexBStatus.facultyStatus | uppercase }}
+                </span>
+                <div *ngIf="appexBStatus.facultyComments" class="small text-muted mt-1">
+                  {{ appexBStatus.facultyComments }}
+                </div>
+              </div>
+              <div class="col-md-6">
+                <strong>Admin Approval:</strong> 
+                <span class="badge ms-2" 
+                      [class.bg-warning]="appexBStatus.adminStatus === 'pending'"
+                      [class.bg-success]="appexBStatus.adminStatus === 'approved'"
+                      [class.bg-danger]="appexBStatus.adminStatus === 'rejected'">
+                  {{ appexBStatus.adminStatus | uppercase }}
+                </span>
+                <div *ngIf="appexBStatus.adminComments" class="small text-muted mt-1">
+                  {{ appexBStatus.adminComments }}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Show waiting message if not approved by both -->
+        <div *ngIf="appexBSubmitted && (appexBStatus.facultyStatus !== 'approved' || appexBStatus.adminStatus !== 'approved')" class="alert alert-warning text-center py-4">
+          <i class="bi bi-clock-history" style="font-size: 2rem;"></i>
+          <h5 class="mt-3">Waiting for Approval</h5>
+          <p class="mb-0">Your APEX B verification form has been submitted and is pending approval from faculty and admin. You can view the details once both approvals are received.</p>
+        </div>
         
-        <form (ngSubmit)="appexBSubmitted ? updateAppexBVerification() : submitAppexBVerification()" #appexbf="ngForm" class="row g-3">
+        <!-- Show form only if approved by both faculty and admin, or if not yet submitted -->
+        <form *ngIf="!appexBSubmitted || (appexBStatus.facultyStatus === 'approved' && appexBStatus.adminStatus === 'approved')" 
+              (ngSubmit)="appexBSubmitted ? updateAppexBVerification() : submitAppexBVerification()" #appexbf="ngForm" class="row g-3">
           <div class="col-12"><h6>Student Information</h6></div>
           
           <div class="col-md-6">
@@ -248,6 +291,14 @@
             </button>
           </div>
         </form>
+
+        <!-- Show readonly details if approved -->
+        <div *ngIf="appexBSubmitted && appexBStatus.facultyStatus === 'approved' && appexBStatus.adminStatus === 'approved'" class="mt-4">
+          <div class="alert alert-success">
+            <i class="bi bi-check-circle-fill me-2"></i>
+            <strong>Approved!</strong> Your APEX B verification has been approved by both faculty and admin.
+          </div>
+        </div>
       </div>
     </div>
   </div>
