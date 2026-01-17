@@ -232,18 +232,23 @@ export class FacultySupervisor {
   appexBRequests: any[] = [];
   loadingRequests = false;
   requestFilter: 'all' | 'pending' | 'approved' | 'rejected' = 'all';
+  requestSearch = '';
+  currentFormsSubTab: 'apexA' | 'apexB' = 'apexA';
+  processingItems = new Set<string>(); // Track which items are being processed
   
   async loadStudentRequests() {
     if (this.loadingRequests) return;
     this.loadingRequests = true;
     try {
-      // Load Appex A requests
       const statusFilter = this.requestFilter === 'all' ? undefined : this.requestFilter;
-      const resA = await this.facultyApi.getAppexAApprovals(statusFilter, this.page.appexA, this.pageSize);
-      this.appexARequests = resA?.approvals || resA?.data || [];
       
-      // Load Appex B requests
-      const resB = await this.facultyApi.getAppexBVerifications(statusFilter, this.page.appexB, this.pageSize);
+      // Load both requests in parallel for faster performance
+      const [resA, resB] = await Promise.all([
+        this.facultyApi.getAppexAApprovals(statusFilter, this.page.appexA, this.pageSize),
+        this.facultyApi.getAppexBVerifications(statusFilter, this.page.appexB, this.pageSize)
+      ]);
+      
+      this.appexARequests = resA?.approvals || resA?.data || [];
       this.appexBRequests = resB?.verifications || resB?.data || [];
     } catch (err: any) {
       const msg = err?.error?.message || err?.message || 'Failed to load student requests';
@@ -254,26 +259,102 @@ export class FacultySupervisor {
   }
 
   async approveAppexA(item: any, status: 'approved' | 'rejected', comments?: string) {
+    const itemId = item.id || item.appexAId;
+    if (this.processingItems.has(itemId)) return; // Prevent double-click
+    
+    this.processingItems.add(itemId);
     try {
-      const res = await this.facultyApi.updateAppexAApproval(item.id || item.appexAId, status, comments);
+      const res = await this.facultyApi.updateAppexAApproval(itemId, status, comments);
       this.toast.success(res?.message || `Appex A ${status}`);
-      await this.loadStudentRequests();
+      
+      // Optimistically update local state instead of full reload
+      const index = this.appexARequests.findIndex(r => (r.id || r.appexAId) === itemId);
+      if (index !== -1) {
+        this.appexARequests[index] = { ...this.appexARequests[index], status };
+      }
     } catch (err: any) {
       const msg = err?.error?.message || err?.message || 'Failed to update approval';
       this.toast.danger(msg);
+    } finally {
+      this.processingItems.delete(itemId);
     }
   }
 
   async approveAppexB(item: any, action: 'approve' | 'reject', comments?: string) {
+    const itemId = item.id || item.assignmentId;
+    if (this.processingItems.has(itemId)) return; // Prevent double-click
+    
+    this.processingItems.add(itemId);
     try {
-      const res = await this.facultyApi.updateAppexBVerification(item.id || item.assignmentId, action, comments);
+      const res = await this.facultyApi.updateAppexBVerification(itemId, action, comments);
       this.toast.success(res?.message || `Appex B ${action}d`);
-      await this.loadStudentRequests();
+      
+      // Optimistically update local state instead of full reload
+      const status = action === 'approve' ? 'approved' : 'rejected';
+      const index = this.appexBRequests.findIndex(r => (r.id || r.assignmentId) === itemId);
+      if (index !== -1) {
+        this.appexBRequests[index] = { ...this.appexBRequests[index], status };
+      }
     } catch (err: any) {
       const msg = err?.error?.message || err?.message || 'Failed to update verification';
       this.toast.danger(msg);
+    } finally {
+      this.processingItems.delete(itemId);
     }
   }
+
+  isProcessingItem(item: any): boolean {
+    const itemId = item.id || item.appexAId || item.assignmentId;
+    return this.processingItems.has(itemId);
+  }
+
+  filteredAppexARequests = computed(() => {
+    const search = this.requestSearch.trim().toLowerCase();
+    const filter = this.requestFilter;
+    
+    return this.appexARequests.filter(item => {
+      // Status filter
+      const status = item.status || 'pending';
+      if (filter !== 'all' && status !== filter) return false;
+      
+      // Search filter
+      if (search) {
+        const studentName = (item.studentInfo?.name || item.student?.name || '').toLowerCase();
+        const studentEmail = (item.studentInfo?.email || item.student?.email || '').toLowerCase();
+        const companyName = (item.company?.name || item.companyName || '').toLowerCase();
+        
+        if (!studentName.includes(search) && !studentEmail.includes(search) && !companyName.includes(search)) {
+          return false;
+        }
+      }
+      
+      return true;
+    });
+  });
+
+  filteredAppexBRequests = computed(() => {
+    const search = this.requestSearch.trim().toLowerCase();
+    const filter = this.requestFilter;
+    
+    return this.appexBRequests.filter(item => {
+      // Status filter
+      const status = item.status || 'pending';
+      if (filter !== 'all' && status !== filter) return false;
+      
+      // Search filter
+      if (search) {
+        const studentName = (item.student?.name || item.studentName || '').toLowerCase();
+        const studentEmail = (item.student?.email || item.studentEmail || '').toLowerCase();
+        const assignmentTitle = (item.assignment?.title || item.assignmentTitle || item.title || '').toLowerCase();
+        
+        if (!studentName.includes(search) && !studentEmail.includes(search) && !assignmentTitle.includes(search)) {
+          return false;
+        }
+      }
+      
+      return true;
+    });
+  });
 
   onRequestFilterChange() {
     this.page.appexA = 1;
