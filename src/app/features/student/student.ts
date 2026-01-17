@@ -691,6 +691,11 @@ export class Student {
   };
   appexBSubmitted = false;
   loadingAppexB = false;
+  appexBVerificationStatus = {
+    facultyVerified: false,
+    studentVerified: false,
+    calculatedStatus: ''
+  };
 
   // Student Assignment & Agreement form (from provided PDF)
   studentAgreementForm = {
@@ -1101,6 +1106,12 @@ export class Student {
           agreementAccepted: data.agreementAccepted || false
         };
         this.appexBSubmitted = true;
+        // Store verification status
+        this.appexBVerificationStatus = {
+          facultyVerified: data.facultyVerified || false,
+          studentVerified: data.studentVerified || false,
+          calculatedStatus: data.calculatedStatus || ''
+        };
       }
     } catch (err: any) {
       // Silently ignore errors (no existing data)
@@ -1150,9 +1161,28 @@ export class Student {
         agreementAccepted: form.agreementAccepted
       };
 
-      const res = await this.studentApi.submitAppexBVerification(payload);
-      this.toast.success(res?.message || 'APEX B verification submitted successfully');
-      this.appexBSubmitted = true;
+      let res;
+      // If already submitted and faculty verified, this is student verification (PATCH)
+      if (this.appexBSubmitted && this.appexBVerificationStatus.facultyVerified && !this.appexBVerificationStatus.studentVerified) {
+        res = await this.studentApi.verifyAppexB();
+        this.toast.success(res?.message || 'APEX B verified successfully');
+        this.appexBVerificationStatus.studentVerified = true;
+        if (res?.data?.calculatedStatus) {
+          this.appexBVerificationStatus.calculatedStatus = res.data.calculatedStatus;
+        }
+      } else {
+        // Initial submission (POST)
+        res = await this.studentApi.submitAppexBVerification(payload);
+        this.toast.success(res?.message || 'APEX B verification submitted successfully');
+        this.appexBSubmitted = true;
+        if (res?.data) {
+          this.appexBVerificationStatus = {
+            facultyVerified: res.data.facultyVerified || false,
+            studentVerified: res.data.studentVerified || false,
+            calculatedStatus: res.data.calculatedStatus || ''
+          };
+        }
+      }
     } catch (err: any) {
       const msg = err?.error?.message || err?.message || 'Failed to submit APEX B verification';
       this.toast.danger(msg);

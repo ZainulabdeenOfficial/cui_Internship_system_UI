@@ -8,13 +8,11 @@
 
   <!-- Tabs: separate tabs for each student form and Complaints -->
   <ul class="nav nav-tabs mb-3">
-    <!-- Show APEX forms only if not all approved -->
-    <li class="nav-item" *ngIf="!allApexFormsApproved()"><button type="button" class="nav-link" [class.active]="isCurrentTab('appex')" (click)="selectTab('appex')">Internship Approval (AppEx‑A)</button></li>
-    <li class="nav-item" *ngIf="!allApexFormsApproved()"><button type="button" class="nav-link" [class.active]="isCurrentTab('assignment')" (click)="selectTab('assignment')">Assignment & Agreement</button></li>
-    <li class="nav-item" *ngIf="!allApexFormsApproved()"><button type="button" class="nav-link" [class.active]="isCurrentTab('appexb')" (click)="selectTab('appexb')">APEX B Verification</button></li>
-    <li class="nav-item" *ngIf="!allApexFormsApproved()"><button type="button" class="nav-link" [class.active]="isCurrentTab('form3')" (click)="selectTab('form3')">Organization Overview &amp; Scope of Work</button></li>
-    <!-- Show Weekly Logs when approved -->
-    <li class="nav-item" *ngIf="allApexFormsApproved()"><button type="button" class="nav-link" [class.active]="isCurrentTab('weeklylogs')" (click)="selectTab('weeklylogs')">Weekly Logs</button></li>
+    <li class="nav-item"><button type="button" class="nav-link" [class.active]="isCurrentTab('appex')" (click)="selectTab('appex')">Internship Approval (AppEx‑A)</button></li>
+    <li class="nav-item"><button type="button" class="nav-link" [class.active]="isCurrentTab('assignment')" (click)="selectTab('assignment')">Assignment & Agreement</button></li>
+    <li class="nav-item"><button type="button" class="nav-link" [class.active]="isCurrentTab('appexb')" (click)="selectTab('appexb')">APEX B Verification</button></li>
+    <li class="nav-item"><button type="button" class="nav-link" [class.active]="isCurrentTab('form3')" (click)="selectTab('form3')">Organization Overview &amp; Scope of Work</button></li>
+    <li class="nav-item"><button type="button" class="nav-link" [class.active]="isCurrentTab('weeklylogs')" (click)="selectTab('weeklylogs')">Weekly Logs</button></li>
     <li class="nav-item ms-auto"><button type="button" class="nav-link" [class.active]="isCurrentTab('complaints')" (click)="selectTab('complaints')">Complaints</button></li>
   </ul>
 
@@ -245,16 +243,26 @@
           </div>
           
           <div class="col-12 mt-3">
-            <button type="submit" class="btn btn-primary" [disabled]="!appexbf.valid || loadingAppexB || appexBSubmitted">
-              <span *ngIf="!loadingAppexB">Submit APEX B Verification</span>
+            <button type="submit" class="btn btn-primary" [disabled]="!appexbf.valid || loadingAppexB || (appexBSubmitted && !appexBVerificationStatus.facultyVerified) || appexBVerificationStatus.studentVerified">
+              <span *ngIf="!loadingAppexB">
+                {{ appexBSubmitted && appexBVerificationStatus.facultyVerified && !appexBVerificationStatus.studentVerified ? 'Verify APEX B' : 'Submit APEX B Verification' }}
+              </span>
               <span *ngIf="loadingAppexB">
                 <span class="spinner-border spinner-border-sm me-1" role="status"></span>
-                Submitting...
+                {{ appexBSubmitted && appexBVerificationStatus.facultyVerified && !appexBVerificationStatus.studentVerified ? 'Verifying...' : 'Submitting...' }}
               </span>
             </button>
-            <div *ngIf="appexBSubmitted" class="alert alert-success mt-3">
+            <div *ngIf="appexBSubmitted && !appexBVerificationStatus.facultyVerified" class="alert alert-info mt-3">
+              <i class="bi bi-info-circle-fill me-2"></i>
+              APEX B submitted successfully. Waiting for admin to add company details and faculty to verify.
+            </div>
+            <div *ngIf="appexBSubmitted && appexBVerificationStatus.facultyVerified && !appexBVerificationStatus.studentVerified" class="alert alert-warning mt-3">
+              <i class="bi bi-exclamation-circle-fill me-2"></i>
+              Admin and faculty have completed their verification. Please review the information above and click "Verify APEX B" to approve.
+            </div>
+            <div *ngIf="appexBVerificationStatus.studentVerified" class="alert alert-success mt-3">
               <i class="bi bi-check-circle-fill me-2"></i>
-              APEX B verification has been submitted successfully. Waiting for faculty and admin approval.
+              APEX B verification completed! Internship is fully approved and ready to start.
             </div>
           </div>
         </form>
