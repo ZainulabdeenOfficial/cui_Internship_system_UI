@@ -216,24 +216,36 @@
                           </span>
                         </td>
                         <td>
-                          <div class="btn-group btn-group-sm">
-                            <button class="btn btn-success btn-sm" 
-                              (click)="approveAppexA(item, 'approved')" 
-                              [disabled]="isProcessingItem(item) || item.status === 'approved'">
-                              @if (isProcessingItem(item)) {
-                                <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+                          @if (item.status === 'pending' || !item.status) {
+                            <div class="btn-group btn-group-sm">
+                              <button class="btn btn-success btn-sm" 
+                                (click)="approveAppexA(item, 'approved')" 
+                                [disabled]="isProcessingItem(item)">
+                                @if (isProcessingItem(item)) {
+                                  <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+                                }
+                                <i class="bi bi-check"></i> Approve
+                              </button>
+                              <button class="btn btn-danger btn-sm" 
+                                (click)="approveAppexA(item, 'rejected')" 
+                                [disabled]="isProcessingItem(item)">
+                                @if (isProcessingItem(item)) {
+                                  <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+                                }
+                                <i class="bi bi-x"></i> Reject
+                              </button>
+                            </div>
+                          } @else {
+                            <span class="text-muted fst-italic">
+                              @if (item.status === 'approved') {
+                                <i class="bi bi-check-circle-fill text-success"></i> Approved
+                              } @else if (item.status === 'rejected') {
+                                <i class="bi bi-x-circle-fill text-danger"></i> Rejected
+                              } @else {
+                                {{ item.status }}
                               }
-                              <i class="bi bi-check"></i> Approve
-                            </button>
-                            <button class="btn btn-danger btn-sm" 
-                              (click)="approveAppexA(item, 'rejected')" 
-                              [disabled]="isProcessingItem(item) || item.status === 'rejected'">
-                              @if (isProcessingItem(item)) {
-                                <span class="spinner-border spinner-border-sm me-1" role="status"></span>
-                              }
-                              <i class="bi bi-x"></i> Reject
-                            </button>
-                          </div>
+                            </span>
+                          }
                         </td>
                       </tr>
                     }
@@ -317,24 +329,36 @@
                           </span>
                         </td>
                         <td>
-                          <div class="btn-group btn-group-sm">
-                            <button class="btn btn-success btn-sm" 
-                              (click)="approveAppexB(item, 'approve')" 
-                              [disabled]="isProcessingItem(item) || item.status === 'approved'">
-                              @if (isProcessingItem(item)) {
-                                <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+                          @if (item.status === 'pending' || !item.status) {
+                            <div class="btn-group btn-group-sm">
+                              <button class="btn btn-success btn-sm" 
+                                (click)="approveAppexB(item, 'approve')" 
+                                [disabled]="isProcessingItem(item)">
+                                @if (isProcessingItem(item)) {
+                                  <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+                                }
+                                <i class="bi bi-check"></i> Approve
+                              </button>
+                              <button class="btn btn-danger btn-sm" 
+                                (click)="approveAppexB(item, 'reject')" 
+                                [disabled]="isProcessingItem(item)">
+                                @if (isProcessingItem(item)) {
+                                  <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+                                }
+                                <i class="bi bi-x"></i> Reject
+                              </button>
+                            </div>
+                          } @else {
+                            <span class="text-muted fst-italic">
+                              @if (item.status === 'approved') {
+                                <i class="bi bi-check-circle-fill text-success"></i> Approved
+                              } @else if (item.status === 'rejected') {
+                                <i class="bi bi-x-circle-fill text-danger"></i> Rejected
+                              } @else {
+                                {{ item.status }}
                               }
-                              <i class="bi bi-check"></i> Approve
-                            </button>
-                            <button class="btn btn-danger btn-sm" 
-                              (click)="approveAppexB(item, 'reject')" 
-                              [disabled]="isProcessingItem(item) || item.status === 'rejected'">
-                              @if (isProcessingItem(item)) {
-                                <span class="spinner-border spinner-border-sm me-1" role="status"></span>
-                              }
-                              <i class="bi bi-x"></i> Reject
-                            </button>
-                          </div>
+                            </span>
+                          }
                         </td>
                       </tr>
                     }
