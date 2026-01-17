@@ -679,12 +679,6 @@ export class Student {
   };
   appexBSubmitted = false;
   loadingAppexB = false;
-  appexBStatus = {
-    facultyStatus: 'pending' as 'pending' | 'approved' | 'rejected',
-    adminStatus: 'pending' as 'pending' | 'approved' | 'rejected',
-    facultyComments: '',
-    adminComments: ''
-  };
 
   // Student Assignment & Agreement form (from provided PDF)
   studentAgreementForm = {
@@ -1093,12 +1087,6 @@ export class Student {
           startDate: (data.startDate || '').slice(0, 10),
           endDate: (data.endDate || '').slice(0, 10),
           agreementAccepted: data.agreementAccepted || false
-        };
-        this.appexBStatus = {
-          facultyStatus: data.facultyStatus || 'pending',
-          adminStatus: data.adminStatus || 'pending',
-          facultyComments: data.facultyComments || '',
-          adminComments: data.adminComments || ''
         };
         this.appexBSubmitted = true;
       }
