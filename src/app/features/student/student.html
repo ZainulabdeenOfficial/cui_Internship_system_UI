@@ -168,74 +168,74 @@
           
           <div class="col-md-6">
             <label class="form-label">Full Name *</label>
-            <input class="form-control" [(ngModel)]="appexBForm.name" name="bName" required />
+            <input class="form-control" [(ngModel)]="appexBForm.name" name="bName" required [readonly]="appexBSubmitted" />
           </div>
           
           <div class="col-md-6">
             <label class="form-label">Degree Program *</label>
-            <input class="form-control" [(ngModel)]="appexBForm.degreeProgram" name="bDegree" required placeholder="e.g., BS Computer Science" />
+            <input class="form-control" [(ngModel)]="appexBForm.degreeProgram" name="bDegree" required placeholder="e.g., BS Computer Science" [readonly]="appexBSubmitted" />
           </div>
           
           <div class="col-md-6">
             <label class="form-label">Email *</label>
-            <input type="email" class="form-control" [(ngModel)]="appexBForm.email" name="bEmail" required />
+            <input type="email" class="form-control" [(ngModel)]="appexBForm.email" name="bEmail" required [readonly]="appexBSubmitted" />
           </div>
           
           <div class="col-md-6">
             <label class="form-label">Semester *</label>
-            <input class="form-control" [(ngModel)]="appexBForm.semester" name="bSemester" required placeholder="e.g., 7th" />
+            <input class="form-control" [(ngModel)]="appexBForm.semester" name="bSemester" required placeholder="e.g., 7th" [readonly]="appexBSubmitted" />
           </div>
           
           <div class="col-md-6">
             <label class="form-label">Contact Number *</label>
-            <input class="form-control" [(ngModel)]="appexBForm.contactNo" name="bContact" required />
+            <input class="form-control" [(ngModel)]="appexBForm.contactNo" name="bContact" required [readonly]="appexBSubmitted" />
           </div>
           
           <div class="col-md-6">
             <label class="form-label">Preferred Field *</label>
-            <input class="form-control" [(ngModel)]="appexBForm.preferredField" name="bField" required placeholder="e.g., Web Development" />
+            <input class="form-control" [(ngModel)]="appexBForm.preferredField" name="bField" required placeholder="e.g., Web Development" [readonly]="appexBSubmitted" />
           </div>
           
-          <div class="col-12"><h6 class="mt-3">Internship Details</h6></div>
+          <div class="col-12"><h6 class="mt-3">Internship Details <span class="text-muted small" *ngIf="appexBSubmitted && !appexBVerificationStatus.facultyVerified">(Admin will add/update company details)</span></h6></div>
           
           <div class="col-md-6">
             <label class="form-label">Company/Organization Name *</label>
-            <input class="form-control" [(ngModel)]="appexBForm.companyName" name="bCompany" required />
+            <input class="form-control" [(ngModel)]="appexBForm.companyName" name="bCompany" required [readonly]="appexBSubmitted" />
           </div>
           
           <div class="col-md-6">
             <label class="form-label">Internship Role *</label>
-            <input class="form-control" [(ngModel)]="appexBForm.internshipRole" name="bRole" required placeholder="e.g., Software Engineer Intern" />
+            <input class="form-control" [(ngModel)]="appexBForm.internshipRole" name="bRole" required placeholder="e.g., Software Engineer Intern" [readonly]="appexBSubmitted" />
           </div>
           
           <div class="col-md-6">
             <label class="form-label">Faculty Supervisor (Name & Designation)</label>
-            <input class="form-control" [(ngModel)]="appexBForm.facultySupervisorNameDesig" name="bFaculty" placeholder="e.g., Dr. John Doe, Assistant Professor" />
+            <input class="form-control" [(ngModel)]="appexBForm.facultySupervisorNameDesig" name="bFaculty" placeholder="e.g., Dr. John Doe, Assistant Professor" [readonly]="appexBSubmitted" />
           </div>
           
           <div class="col-md-6">
             <label class="form-label">Site Supervisor (Name & Designation)</label>
-            <input class="form-control" [(ngModel)]="appexBForm.siteSupervisorNameDesig" name="bSite" placeholder="e.g., Jane Smith, Senior Developer" />
+            <input class="form-control" [(ngModel)]="appexBForm.siteSupervisorNameDesig" name="bSite" placeholder="e.g., Jane Smith, Senior Developer" [readonly]="appexBSubmitted" />
           </div>
           
           <div class="col-md-4">
             <label class="form-label">Duration (Weeks) *</label>
-            <input type="number" min="1" class="form-control" [(ngModel)]="appexBForm.durationWeeks" name="bDuration" required />
+            <input type="number" min="1" class="form-control" [(ngModel)]="appexBForm.durationWeeks" name="bDuration" required [readonly]="appexBSubmitted" />
           </div>
           
           <div class="col-md-4">
             <label class="form-label">Start Date *</label>
-            <input type="date" class="form-control" [(ngModel)]="appexBForm.startDate" name="bStart" required />
+            <input type="date" class="form-control" [(ngModel)]="appexBForm.startDate" name="bStart" required [readonly]="appexBSubmitted" />
           </div>
           
           <div class="col-md-4">
             <label class="form-label">End Date *</label>
-            <input type="date" class="form-control" [(ngModel)]="appexBForm.endDate" name="bEnd" required />
+            <input type="date" class="form-control" [(ngModel)]="appexBForm.endDate" name="bEnd" required [readonly]="appexBSubmitted" />
           </div>
           
           <div class="col-12 mt-4">
             <div class="form-check">
-              <input type="checkbox" class="form-check-input" [(ngModel)]="appexBForm.agreementAccepted" name="bAgreement" id="appexbAgreement" required />
+              <input type="checkbox" class="form-check-input" [(ngModel)]="appexBForm.agreementAccepted" name="bAgreement" id="appexbAgreement" required [disabled]="appexBSubmitted" />
               <label class="form-check-label" for="appexbAgreement">
                 <strong>I hereby certify that all information provided is accurate and I agree to the terms and conditions of the internship program.</strong>
               </label>
