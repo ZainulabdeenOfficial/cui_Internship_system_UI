@@ -280,5 +280,4 @@ export class FacultySupervisor {
     this.page.appexB = 1;
     this.loadStudentRequests();
   }
-  }
 }
