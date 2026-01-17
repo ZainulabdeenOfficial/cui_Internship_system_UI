@@ -472,10 +472,9 @@ export class AdminService {
     const path = '/api/admin/appex-b';
     const url = environment.production ? path : `${base}${path}`;
     
-    // Only include non-empty fields
-    const body: any = { id: formId, appexBId: formId };
+    // Build clean payload - only include fields that match the API schema
+    const body: any = {};
     if (details.studentId) body.studentId = details.studentId;
-    if (details.status) body.status = details.status || 'approved';
     if (details.companyName?.trim()) body.companyName = details.companyName.trim();
     if (details.internshipRole?.trim()) body.internshipRole = details.internshipRole.trim();
     if (details.facultySupervisorNameDesig?.trim()) body.facultySupervisorNameDesig = details.facultySupervisorNameDesig.trim();
@@ -486,13 +485,14 @@ export class AdminService {
     if (details.startDate?.trim()) body.startDate = details.startDate.trim();
     if (details.endDate?.trim()) body.endDate = details.endDate.trim();
     
-    // Verify at least one updateable field is provided (including status and studentId)
-    const updateFields = ['studentId', 'companyName', 'internshipRole', 'facultySupervisorNameDesig', 'siteSupervisorNameDesig', 'facultyId', 'siteId', 'durationWeeks', 'startDate', 'endDate', 'status'];
+    // Verify at least one updateable field is provided
+    const updateFields = ['studentId', 'companyName', 'internshipRole', 'facultySupervisorNameDesig', 'siteSupervisorNameDesig', 'facultyId', 'siteId', 'durationWeeks', 'startDate', 'endDate'];
     const hasUpdateField = updateFields.some(field => body.hasOwnProperty(field) && body[field] !== undefined && body[field] !== null);
     if (!hasUpdateField) {
       throw new Error('At least one field to update must be provided');
     }
     
+    console.log('[AdminService] updateApexBDetails final payload:', body);
     return await firstValueFrom(this.http.patch<any>(url, body, { headers: await this.authHeaders(true) }));
   }
 }
