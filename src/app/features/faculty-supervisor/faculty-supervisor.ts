@@ -236,6 +236,10 @@ export class FacultySupervisor {
   currentFormsSubTab: 'apexA' | 'apexB' = 'apexA';
   processingItems = new Set<string>(); // Track which items are being processed
   
+  // Modal for viewing APEX A details
+  showApexADetailsModal = false;
+  selectedApexAForm: any = null;
+  
   async loadStudentRequests() {
     if (this.loadingRequests) return;
     this.loadingRequests = true;
@@ -265,12 +269,18 @@ export class FacultySupervisor {
     this.processingItems.add(itemId);
     try {
       const res = await this.facultyApi.updateAppexAApproval(itemId, status, comments);
-      this.toast.success(res?.message || `Appex A ${status}`);
+      this.toast.success(res?.message || `APEX A ${status}`);
       
-      // Optimistically update local state instead of full reload
+      // Update local state with new status
       const index = this.appexARequests.findIndex(r => (r.id || r.appexAId) === itemId);
       if (index !== -1) {
-        this.appexARequests[index] = { ...this.appexARequests[index], status };
+        // Create a new object to trigger change detection
+        this.appexARequests[index] = { 
+          ...this.appexARequests[index], 
+          status: status 
+        };
+        // Force array update to trigger change detection
+        this.appexARequests = [...this.appexARequests];
       }
     } catch (err: any) {
       const msg = err?.error?.message || err?.message || 'Failed to update approval';
@@ -287,13 +297,19 @@ export class FacultySupervisor {
     this.processingItems.add(itemId);
     try {
       const res = await this.facultyApi.updateAppexBVerification(itemId, action, comments);
-      this.toast.success(res?.message || `Appex B ${action}d`);
+      this.toast.success(res?.message || `APEX B ${action}d`);
       
-      // Optimistically update local state instead of full reload
+      // Update local state with new status
       const status = action === 'approve' ? 'approved' : 'rejected';
       const index = this.appexBRequests.findIndex(r => (r.id || r.assignmentId) === itemId);
       if (index !== -1) {
-        this.appexBRequests[index] = { ...this.appexBRequests[index], status };
+        // Create a new object to trigger change detection
+        this.appexBRequests[index] = { 
+          ...this.appexBRequests[index], 
+          status: status 
+        };
+        // Force array update to trigger change detection
+        this.appexBRequests = [...this.appexBRequests];
       }
     } catch (err: any) {
       const msg = err?.error?.message || err?.message || 'Failed to update verification';
@@ -360,5 +376,15 @@ export class FacultySupervisor {
     this.page.appexA = 1;
     this.page.appexB = 1;
     this.loadStudentRequests();
+  }
+
+  viewApexADetails(form: any) {
+    this.selectedApexAForm = form;
+    this.showApexADetailsModal = true;
+  }
+
+  closeApexADetailsModal() {
+    this.showApexADetailsModal = false;
+    this.selectedApexAForm = null;
   }
 }

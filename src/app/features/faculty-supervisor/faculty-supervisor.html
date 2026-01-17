@@ -218,6 +218,9 @@
                         <td>
                           @if (item.status === 'pending' || !item.status) {
                             <div class="btn-group btn-group-sm">
+                              <button class="btn btn-outline-info btn-sm" (click)="viewApexADetails(item)">
+                                <i class="bi bi-eye"></i> View
+                              </button>
                               <button class="btn btn-success btn-sm" 
                                 (click)="approveAppexA(item, 'approved')" 
                                 [disabled]="isProcessingItem(item)">
@@ -236,15 +239,20 @@
                               </button>
                             </div>
                           } @else {
-                            <span class="text-muted fst-italic">
-                              @if (item.status === 'approved') {
-                                <i class="bi bi-check-circle-fill text-success"></i> Approved
-                              } @else if (item.status === 'rejected') {
-                                <i class="bi bi-x-circle-fill text-danger"></i> Rejected
-                              } @else {
-                                {{ item.status }}
-                              }
-                            </span>
+                            <div class="d-flex gap-1 align-items-center">
+                              <button class="btn btn-outline-info btn-sm" (click)="viewApexADetails(item)">
+                                <i class="bi bi-eye"></i> View
+                              </button>
+                              <span class="text-muted fst-italic">
+                                @if (item.status === 'approved') {
+                                  <i class="bi bi-check-circle-fill text-success"></i> Approved
+                                } @else if (item.status === 'rejected') {
+                                  <i class="bi bi-x-circle-fill text-danger"></i> Rejected
+                                } @else {
+                                  {{ item.status }}
+                                }
+                              </span>
+                            </div>
                           }
                         </td>
                       </tr>
@@ -331,6 +339,9 @@
                         <td>
                           @if (item.status === 'pending' || !item.status) {
                             <div class="btn-group btn-group-sm">
+                              <button class="btn btn-outline-info btn-sm" (click)="viewApexADetails(item)">
+                                <i class="bi bi-eye"></i> View
+                              </button>
                               <button class="btn btn-success btn-sm" 
                                 (click)="approveAppexB(item, 'approve')" 
                                 [disabled]="isProcessingItem(item)">
@@ -349,15 +360,20 @@
                               </button>
                             </div>
                           } @else {
-                            <span class="text-muted fst-italic">
-                              @if (item.status === 'approved') {
-                                <i class="bi bi-check-circle-fill text-success"></i> Approved
-                              } @else if (item.status === 'rejected') {
-                                <i class="bi bi-x-circle-fill text-danger"></i> Rejected
-                              } @else {
-                                {{ item.status }}
-                              }
-                            </span>
+                            <div class="d-flex gap-1 align-items-center">
+                              <button class="btn btn-outline-info btn-sm" (click)="viewApexADetails(item)">
+                                <i class="bi bi-eye"></i> View
+                              </button>
+                              <span class="text-muted fst-italic">
+                                @if (item.status === 'approved') {
+                                  <i class="bi bi-check-circle-fill text-success"></i> Approved
+                                } @else if (item.status === 'rejected') {
+                                  <i class="bi bi-x-circle-fill text-danger"></i> Rejected
+                                } @else {
+                                  {{ item.status }}
+                                }
+                              </span>
+                            </div>
                           }
                         </td>
                       </tr>
@@ -580,3 +596,115 @@
     </div>
   } }
 </div>
+
+<!-- Modal for APEX A Form Details -->
+@if (showApexADetailsModal && selectedApexAForm) {
+  <div class="modal show d-block" tabindex="-1" style="background: rgba(0,0,0,0.5);">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">APEX A Form Details</h5>
+          <button type="button" class="btn-close" (click)="closeApexADetailsModal()"></button>
+        </div>
+        <div class="modal-body">
+          <div class="card mb-3">
+            <div class="card-header bg-light"><strong>Student Information</strong></div>
+            <div class="card-body">
+              <div class="row">
+                <div class="col-md-6 mb-2">
+                  <strong>Name:</strong> {{ selectedApexAForm.studentInfo?.name || selectedApexAForm.student?.name || 'N/A' }}
+                </div>
+                <div class="col-md-6 mb-2">
+                  <strong>Email:</strong> {{ selectedApexAForm.studentInfo?.email || selectedApexAForm.student?.email || 'N/A' }}
+                </div>
+                <div class="col-md-6 mb-2">
+                  <strong>Registration No:</strong> {{ selectedApexAForm.studentInfo?.regNo || selectedApexAForm.student?.regNo || 'N/A' }}
+                </div>
+                <div class="col-md-6 mb-2">
+                  <strong>Student ID:</strong> {{ selectedApexAForm.studentInfo?.studentId || selectedApexAForm.student?.id || 'N/A' }}
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="card mb-3">
+            <div class="card-header bg-light"><strong>Company Information</strong></div>
+            <div class="card-body">
+              <div class="row">
+                <div class="col-md-6 mb-2">
+                  <strong>Company Name:</strong> {{ selectedApexAForm.company?.name || selectedApexAForm.companyName || 'N/A' }}
+                </div>
+                <div class="col-md-6 mb-2">
+                  <strong>Address:</strong> {{ selectedApexAForm.company?.address || selectedApexAForm.companyAddress || 'N/A' }}
+                </div>
+                <div class="col-md-6 mb-2">
+                  <strong>Supervisor Name:</strong> {{ selectedApexAForm.company?.supervisorName || selectedApexAForm.supervisorName || 'N/A' }}
+                </div>
+                <div class="col-md-6 mb-2">
+                  <strong>Supervisor Email:</strong> {{ selectedApexAForm.company?.supervisorEmail || selectedApexAForm.supervisorEmail || 'N/A' }}
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="card mb-3">
+            <div class="card-header bg-light"><strong>Internship Details</strong></div>
+            <div class="card-body">
+              <div class="row">
+                <div class="col-md-6 mb-2">
+                  <strong>Form ID:</strong> {{ selectedApexAForm.id || 'N/A' }}
+                </div>
+                <div class="col-md-6 mb-2">
+                  <strong>Status:</strong> 
+                  <span class="badge ms-2" 
+                    [class.bg-warning]="selectedApexAForm.status === 'pending'"
+                    [class.bg-success]="selectedApexAForm.status === 'approved'"
+                    [class.bg-danger]="selectedApexAForm.status === 'rejected'">
+                    {{ selectedApexAForm.status || 'pending' }}
+                  </span>
+                </div>
+                <div class="col-md-6 mb-2">
+                  <strong>Start Date:</strong> {{ (selectedApexAForm.internship?.startDate || selectedApexAForm.startDate) ? ((selectedApexAForm.internship?.startDate || selectedApexAForm.startDate) | date:'full') : 'N/A' }}
+                </div>
+                <div class="col-md-6 mb-2">
+                  <strong>End Date:</strong> {{ (selectedApexAForm.internship?.endDate || selectedApexAForm.endDate) ? ((selectedApexAForm.internship?.endDate || selectedApexAForm.endDate) | date:'full') : 'N/A' }}
+                </div>
+                <div class="col-md-6 mb-2">
+                  <strong>Hours Per Week:</strong> {{ selectedApexAForm.internship?.hoursPerWeek || selectedApexAForm.hoursPerWeek || 'N/A' }}
+                </div>
+                <div class="col-md-6 mb-2">
+                  <strong>Paid:</strong> {{ selectedApexAForm.internship?.paid || selectedApexAForm.paid || 'N/A' }}
+                </div>
+                <div class="col-md-12 mb-2">
+                  <strong>Objectives:</strong> {{ selectedApexAForm.objectives || 'N/A' }}
+                </div>
+                <div class="col-md-12 mb-2">
+                  <strong>Outcomes:</strong> {{ selectedApexAForm.outcomes || 'N/A' }}
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header bg-light"><strong>Raw Data</strong></div>
+            <div class="card-body">
+              <pre class="mb-0" style="font-size: 0.85rem; max-height: 300px; overflow-y: auto;">{{ selectedApexAForm | json }}</pre>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" (click)="closeApexADetailsModal()">Close</button>
+          @if (selectedApexAForm.status === 'pending' || !selectedApexAForm.status) {
+            <button type="button" class="btn btn-success" 
+              (click)="approveAppexA(selectedApexAForm, 'approved'); closeApexADetailsModal()" 
+              [disabled]="isProcessingItem(selectedApexAForm)">
+              <i class="bi bi-check"></i> Approve
+            </button>
+            <button type="button" class="btn btn-danger" 
+              (click)="approveAppexA(selectedApexAForm, 'rejected'); closeApexADetailsModal()" 
+              [disabled]="isProcessingItem(selectedApexAForm)">
+              <i class="bi bi-x"></i> Reject
+            </button>
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+}
