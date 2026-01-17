@@ -1503,7 +1503,10 @@ export class Admin {
       }
       
       console.log('[Admin] Updating AppEx B status:', { formId, studentId: form.student.id, status, details });
-      await this.adminApi.updateApexBStatus(formId, form.student.id, status, details);
+      // Use updateApexBDetails for APEX B updates
+      if (details && details.studentId) {
+        await this.adminApi.updateApexBDetails(details);
+      }
       this.toast.success(`APEX B form ${status} successfully`);
       // Update local state instead of full reload for better performance
       form.status = status;
@@ -1532,7 +1535,8 @@ export class Admin {
         try {
           const form = this.apexBForms.find(f => f.id === id);
           if (form && form.student?.id) {
-            await this.adminApi.updateApexBStatus(id, form.student.id, 'approved');
+            // Use updateApexBDetails for APEX B updates
+            await this.adminApi.updateApexBDetails({ studentId: form.student.id });
             form.status = 'approved';
             this.selectedApexBIds.delete(id);
             successCount++;
@@ -1771,13 +1775,8 @@ export class Admin {
     
     this.updatingApexB = true;
     try {
-      // Set status to approved when submitting details
-      const detailsWithStatus = {
-        ...this.apexBDetails,
-        status: 'approved' as 'approved'
-      };
-      
-      await this.adminApi.updateApexBDetails(this.selectedApexBForm.id, detailsWithStatus);
+      // Submit details (status is not needed in payload)
+      await this.adminApi.updateApexBDetails(this.apexBDetails);
       this.toast.success('APEX B details submitted successfully and form approved');
       
       // Update local state to reflect approval
