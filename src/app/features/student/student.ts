@@ -1149,39 +1149,7 @@ export class Student {
     }
   }
 
-  async updateAppexBVerification() {
-    if (!this.selectedId) return;
-    if (!this.ensureMine()) return;
-
-    this.loadingAppexB = true;
-    try {
-      const form = this.appexBForm;
-      const payload: any = {};
-      
-      if (form.name) payload.name = form.name;
-      if (form.degreeProgram) payload.degreeProgram = form.degreeProgram;
-      if (form.email) payload.email = form.email;
-      if (form.semester) payload.semester = form.semester;
-      if (form.contactNo) payload.contactNo = form.contactNo;
-      if (form.preferredField) payload.preferredField = form.preferredField;
-      if (form.companyName) payload.companyName = form.companyName;
-      if (form.internshipRole) payload.internshipRole = form.internshipRole;
-      if (form.facultySupervisorNameDesig) payload.facultySupervisorNameDesig = form.facultySupervisorNameDesig;
-      if (form.siteSupervisorNameDesig) payload.siteSupervisorNameDesig = form.siteSupervisorNameDesig;
-      if (form.durationWeeks) payload.durationWeeks = Number(form.durationWeeks);
-      if (form.startDate) payload.startDate = form.startDate;
-      if (form.endDate) payload.endDate = form.endDate;
-      if (form.agreementAccepted) payload.agreementAccepted = form.agreementAccepted;
-
-      const res = await this.studentApi.updateAppexBVerification(payload);
-      this.toast.success(res?.message || 'APEX B verification updated successfully');
-    } catch (err: any) {
-      const msg = err?.error?.message || err?.message || 'Failed to update APEX B verification';
-      this.toast.danger(msg);
-    } finally {
-      this.loadingAppexB = false;
-    }
-  }
+  // Update removed - Students can only submit APEX B once, cannot update after submission
 
   // Weekly logs functionality
   weeklyLogs: any[] = [];

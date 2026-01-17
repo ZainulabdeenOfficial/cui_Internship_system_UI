@@ -159,7 +159,7 @@
           <strong>Purpose:</strong> This form is used to verify your internship details and get approval from faculty and site supervisors.
         </div>
         
-        <form (ngSubmit)="appexBSubmitted ? updateAppexBVerification() : submitAppexBVerification()" #appexbf="ngForm" class="row g-3">
+        <form (ngSubmit)="submitAppexBVerification()" #appexbf="ngForm" class="row g-3">
           <div class="col-12"><h6>Student Information</h6></div>
           
           <div class="col-md-6">
@@ -239,13 +239,17 @@
           </div>
           
           <div class="col-12 mt-3">
-            <button type="submit" class="btn btn-primary" [disabled]="!appexbf.valid || loadingAppexB">
-              <span *ngIf="!loadingAppexB">{{ appexBSubmitted ? 'Update' : 'Submit' }} APEX B Verification</span>
+            <button type="submit" class="btn btn-primary" [disabled]="!appexbf.valid || loadingAppexB || appexBSubmitted">
+              <span *ngIf="!loadingAppexB">Submit APEX B Verification</span>
               <span *ngIf="loadingAppexB">
                 <span class="spinner-border spinner-border-sm me-1" role="status"></span>
-                {{ appexBSubmitted ? 'Updating...' : 'Submitting...' }}
+                Submitting...
               </span>
             </button>
+            <div *ngIf="appexBSubmitted" class="alert alert-success mt-3">
+              <i class="bi bi-check-circle-fill me-2"></i>
+              APEX B verification has been submitted successfully. Waiting for faculty and admin approval.
+            </div>
           </div>
         </form>
       </div>
