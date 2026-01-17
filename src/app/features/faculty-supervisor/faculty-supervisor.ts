@@ -225,6 +225,7 @@ export class FacultySupervisor {
     } finally {
       this.loadingProfile = false;
     }
+  }
 
   // Student Requests (Appex A & B)
   appexARequests: any[] = [];
