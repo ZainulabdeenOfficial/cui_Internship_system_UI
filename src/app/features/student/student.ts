@@ -697,6 +697,21 @@ export class Student {
     calculatedStatus: ''
   };
 
+  // Check if APEX B is ready for student verification
+  // If form has data (especially admin-added fields), it means admin and faculty have verified
+  isAppexBReadyForStudentVerification(): boolean {
+    if (!this.appexBSubmitted) return false;
+    if (this.appexBVerificationStatus.studentVerified) return false;
+    
+    // Check if form has data populated (especially fields that admin adds)
+    const hasData = this.appexBForm.companyName && 
+                    this.appexBForm.internshipRole && 
+                    this.appexBForm.durationWeeks > 0;
+    
+    // If API provides facultyVerified flag, use it; otherwise check if data is populated
+    return this.appexBVerificationStatus.facultyVerified || hasData;
+  }
+
   // Student Assignment & Agreement form (from provided PDF)
   studentAgreementForm = {
     fullName: '',
@@ -1166,8 +1181,8 @@ export class Student {
       };
 
       let res;
-      // If already submitted and faculty verified, this is student verification (PATCH)
-      if (this.appexBSubmitted && this.appexBVerificationStatus.facultyVerified && !this.appexBVerificationStatus.studentVerified) {
+      // If already submitted and ready for student verification, this is student verification (PATCH)
+      if (this.appexBSubmitted && this.isAppexBReadyForStudentVerification() && !this.appexBVerificationStatus.studentVerified) {
         res = await this.studentApi.verifyAppexB();
         this.toast.success(res?.message || 'APEX B verified successfully');
         this.appexBVerificationStatus.studentVerified = true;

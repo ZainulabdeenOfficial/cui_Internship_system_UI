@@ -243,20 +243,20 @@
           </div>
           
           <div class="col-12 mt-3">
-            <button type="submit" class="btn btn-primary" [disabled]="!appexbf.valid || loadingAppexB || (appexBSubmitted && !appexBVerificationStatus.facultyVerified) || appexBVerificationStatus.studentVerified">
+            <button type="submit" class="btn btn-primary" [disabled]="!appexbf.valid || loadingAppexB || (appexBSubmitted && !isAppexBReadyForStudentVerification()) || appexBVerificationStatus.studentVerified">
               <span *ngIf="!loadingAppexB">
-                {{ appexBSubmitted && appexBVerificationStatus.facultyVerified && !appexBVerificationStatus.studentVerified ? 'Verify APEX B' : 'Submit APEX B Verification' }}
+                {{ appexBSubmitted && isAppexBReadyForStudentVerification() && !appexBVerificationStatus.studentVerified ? 'Verify APEX B' : 'Submit APEX B Verification' }}
               </span>
               <span *ngIf="loadingAppexB">
                 <span class="spinner-border spinner-border-sm me-1" role="status"></span>
-                {{ appexBSubmitted && appexBVerificationStatus.facultyVerified && !appexBVerificationStatus.studentVerified ? 'Verifying...' : 'Submitting...' }}
+                {{ appexBSubmitted && isAppexBReadyForStudentVerification() && !appexBVerificationStatus.studentVerified ? 'Verifying...' : 'Submitting...' }}
               </span>
             </button>
-            <div *ngIf="appexBSubmitted && !appexBVerificationStatus.facultyVerified" class="alert alert-info mt-3">
+            <div *ngIf="appexBSubmitted && !isAppexBReadyForStudentVerification()" class="alert alert-info mt-3">
               <i class="bi bi-info-circle-fill me-2"></i>
               APEX B submitted successfully. Waiting for admin to add company details and faculty to verify.
             </div>
-            <div *ngIf="appexBSubmitted && appexBVerificationStatus.facultyVerified && !appexBVerificationStatus.studentVerified" class="alert alert-warning mt-3">
+            <div *ngIf="appexBSubmitted && isAppexBReadyForStudentVerification() && !appexBVerificationStatus.studentVerified" class="alert alert-warning mt-3">
               <i class="bi bi-exclamation-circle-fill me-2"></i>
               Admin and faculty have completed their verification. Please review the information above and click "Verify APEX B" to approve.
             </div>
