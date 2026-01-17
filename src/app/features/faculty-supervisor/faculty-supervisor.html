@@ -350,13 +350,13 @@
                                 }
                                 <i class="bi bi-check"></i> Approve
                               </button>
-                              <button class="btn btn-danger btn-sm" 
-                                (click)="approveAppexB(item, 'reject')" 
+                              <button class="btn btn-warning btn-sm" 
+                                (click)="approveAppexB(item, 'request_changes')" 
                                 [disabled]="isProcessingItem(item)">
                                 @if (isProcessingItem(item)) {
                                   <span class="spinner-border spinner-border-sm me-1" role="status"></span>
                                 }
-                                <i class="bi bi-x"></i> Reject
+                                <i class="bi bi-exclamation-triangle"></i> Request Changes
                               </button>
                             </div>
                           } @else {
@@ -365,12 +365,12 @@
                                 <i class="bi bi-eye"></i> View
                               </button>
                               <span class="text-muted fst-italic">
-                                @if (item.status === 'approved') {
+                                @if (item.status === 'approved' || item.calculatedStatus === 'BOTH_VERIFIED' || item.calculatedStatus === 'FACULTY_VERIFIED') {
                                   <i class="bi bi-check-circle-fill text-success"></i> Approved
-                                } @else if (item.status === 'rejected') {
-                                  <i class="bi bi-x-circle-fill text-danger"></i> Rejected
+                                } @else if (item.status === 'changes_requested' || item.calculatedStatus === 'CHANGES_REQUESTED') {
+                                  <i class="bi bi-exclamation-circle-fill text-warning"></i> Changes Requested
                                 } @else {
-                                  {{ item.status }}
+                                  {{ item.calculatedStatus || item.status || 'Pending' }}
                                 }
                               </span>
                             </div>

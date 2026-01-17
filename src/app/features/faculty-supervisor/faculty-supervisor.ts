@@ -290,23 +290,24 @@ export class FacultySupervisor {
     }
   }
 
-  async approveAppexB(item: any, action: 'approve' | 'reject', comments?: string) {
+  async approveAppexB(item: any, action: 'approve' | 'request_changes', comments?: string) {
     const itemId = item.id || item.assignmentId;
     if (this.processingItems.has(itemId)) return; // Prevent double-click
     
     this.processingItems.add(itemId);
     try {
       const res = await this.facultyApi.updateAppexBVerification(itemId, action, comments);
-      this.toast.success(res?.message || `APEX B ${action}d`);
+      this.toast.success(res?.message || `APEX B ${action === 'approve' ? 'approved' : 'changes requested'} successfully`);
       
       // Update local state with new status
-      const status = action === 'approve' ? 'approved' : 'rejected';
+      const status = action === 'approve' ? 'approved' : 'changes_requested';
       const index = this.appexBRequests.findIndex(r => (r.id || r.assignmentId) === itemId);
       if (index !== -1) {
         // Create a new object to trigger change detection
         this.appexBRequests[index] = { 
           ...this.appexBRequests[index], 
-          status: status 
+          status: status,
+          calculatedStatus: res?.data?.status || status
         };
         // Force array update to trigger change detection
         this.appexBRequests = [...this.appexBRequests];

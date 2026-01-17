@@ -114,7 +114,7 @@ export class FacultyService {
     return res;
   }
 
-  async updateAppexBVerification(assignmentId: string, action: 'approve' | 'reject', comments?: string): Promise<any> {
+  async updateAppexBVerification(assignmentId: string, action: 'approve' | 'request_changes', comments?: string): Promise<any> {
     const url = `${this.base}/api/faculty/appex-b-verification`;
     const body = { assignmentId, action, comments: comments || '' };
     const res = await firstValueFrom(this.http.patch<any>(url, body, { headers: await this.authHeaders(true) }));

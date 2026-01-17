@@ -393,11 +393,25 @@ export class AdminService {
     return await firstValueFrom(this.http.patch<any>(url, body, { headers: await this.authHeaders(true) }));
   }
 
-  async getApexBForms(): Promise<Array<{ id: string; name?: string; degreeProgram?: string; email?: string; semester?: string; contactNo?: string; preferredField?: string; agreementAccepted?: boolean; status?: string; student?: { id: string; name: string; email: string; regNo: string } }>> {
+  async getApexBForms(params?: { id?: string; status?: string }): Promise<any> {
     const base = environment.apiBaseUrl.replace(/\/$/, '');
     const path = '/api/admin/appex-b';
-    const url = environment.production ? path : `${base}${path}`;
+    
+    // Build query string
+    const queryParams = [];
+    if (params?.id) queryParams.push(`id=${encodeURIComponent(params.id)}`);
+    if (params?.status) queryParams.push(`status=${encodeURIComponent(params.status)}`);
+    const qs = queryParams.length > 0 ? `?${queryParams.join('&')}` : '';
+    
+    const url = environment.production ? `${path}${qs}` : `${base}${path}${qs}`;
     const res = await firstValueFrom(this.http.get<any>(url, { headers: await this.authHeaders() }));
+    
+    // If fetching single record by ID, return it directly
+    if (params?.id) {
+      return res?.data || res;
+    }
+    
+    // Otherwise return array
     const data = Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []);
     return data.map((item: any) => ({
       id: item.id || item._id || '',
@@ -407,80 +421,59 @@ export class AdminService {
       semester: item.semester,
       contactNo: item.contactNo,
       preferredField: item.preferredField,
+      companyName: item.companyName,
+      internshipRole: item.internshipRole,
+      facultySupervisorNameDesig: item.facultySupervisorNameDesig,
+      siteSupervisorNameDesig: item.siteSupervisorNameDesig,
+      durationWeeks: item.durationWeeks,
+      startDate: item.startDate,
+      endDate: item.endDate,
       agreementAccepted: item.agreementAccepted,
-      status: item.status || 'pending',
-      student: {
-        id: item.student?.id || item.student?._id || '',
-        name: item.student?.name || '',
-        email: item.student?.email || '',
-        regNo: item.student?.regNo || ''
-      }
+      status: item.status || 'PENDING_VERIFICATION',
+      facultyVerified: item.facultyVerified,
+      facultyVerifiedAt: item.facultyVerifiedAt,
+      facultyVerificationComments: item.facultyVerificationComments,
+      studentVerified: item.studentVerified,
+      studentVerifiedAt: item.studentVerifiedAt,
+      studentVerificationComments: item.studentVerificationComments,
+      student: item.student ? {
+        id: item.student.id || item.student._id || '',
+        name: item.student.name || '',
+        email: item.student.email || '',
+        regNo: item.student.regNo || ''
+      } : undefined,
+      faculty: item.faculty ? {
+        id: item.faculty.id || '',
+        name: item.faculty.name || '',
+        email: item.faculty.email || ''
+      } : undefined,
+      site: item.site ? {
+        id: item.site.id || '',
+        name: item.site.name || '',
+        email: item.site.email || ''
+      } : undefined
     }));
   }
 
-  async updateApexBStatus(formId: string, studentId: string, status: 'approved' | 'rejected', details?: {
-    companyName?: string;
-    internshipRole?: string;
-    facultySupervisorNameDesig?: string;
-    siteSupervisorNameDesig?: string;
-    durationWeeks?: number;
-    startDate?: string;
-    endDate?: string;
-  }): Promise<any> {
-    if (!formId || !studentId || !status) {
-      throw new Error('AppEx B ID, student ID and status are required');
-    }
-    const base = environment.apiBaseUrl.replace(/\/$/, '');
-    const path = '/api/admin/appex-b';
-    const url = environment.production ? path : `${base}${path}`;
-    
-    // Helper to convert dates to ISO 8601 format
-    const toISODate = (dateStr: string): string => {
-      if (!dateStr) return '';
-      try {
-        const date = new Date(dateStr);
-        if (isNaN(date.getTime())) return dateStr;
-        // Return full ISO 8601 format: YYYY-MM-DDTHH:mm:ss.sssZ
-        return date.toISOString();
-      } catch {
-        return dateStr;
-      }
-    };
-    
-    // Build request body - backend requires at least one extended detail field
-    const body: any = { 
-      studentId, 
-      status 
-    };
-    
-    // Include details if provided and status is approved
-    if (status === 'approved' && details) {
-      if (details.companyName?.trim()) body.companyName = details.companyName.trim();
-      if (details.internshipRole?.trim()) body.internshipRole = details.internshipRole.trim();
-      if (details.facultySupervisorNameDesig?.trim()) body.facultySupervisorNameDesig = details.facultySupervisorNameDesig.trim();
-      if (details.siteSupervisorNameDesig?.trim()) body.siteSupervisorNameDesig = details.siteSupervisorNameDesig.trim();
-      if (details.durationWeeks && details.durationWeeks > 0) body.durationWeeks = details.durationWeeks;
-      if (details.startDate?.trim()) body.startDate = toISODate(details.startDate.trim());
-      if (details.endDate?.trim()) body.endDate = toISODate(details.endDate.trim());
-    }
-    
-    console.log('[AdminService] updateApexBStatus final payload:', body);
-    return await firstValueFrom(this.http.patch<any>(url, body, { headers: await this.authHeaders(true) }));
-  }
+  // Admin updates APEX B extended details (company, role, supervisors, dates, IDs)
+  // This PATCH endpoint is for updating internship details, not approval status
 
-  async updateApexBDetails(formId: string, details: {
+  async updateApexBDetails(details: {
     studentId: string;
     companyName?: string;
     internshipRole?: string;
     facultySupervisorNameDesig?: string;
     siteSupervisorNameDesig?: string;
-    facultyId?: string;
-    siteId?: string;
+    facultyId?: string | null;
+    siteId?: string | null;
     durationWeeks?: number;
     startDate?: string;
     endDate?: string;
-    status?: 'approved' | 'rejected' | 'pending';
   }): Promise<any> {
+    if (!details.studentId) {
+      throw new Error('studentId is required');
+    }
+    
     const base = environment.apiBaseUrl.replace(/\/$/, '');
     const path = '/api/admin/appex-b';
     const url = environment.production ? path : `${base}${path}`;
@@ -491,36 +484,34 @@ export class AdminService {
       try {
         const date = new Date(dateStr);
         if (isNaN(date.getTime())) return dateStr;
-        // Return full ISO 8601 format: YYYY-MM-DDTHH:mm:ss.sssZ
         return date.toISOString();
       } catch {
         return dateStr;
       }
     };
     
-    // Build clean payload - only include fields that match the API schema
-    const body: any = {};
-    if (details.studentId) body.studentId = details.studentId;
-    if (details.companyName?.trim()) body.companyName = details.companyName.trim();
-    if (details.internshipRole?.trim()) body.internshipRole = details.internshipRole.trim();
-    if (details.facultySupervisorNameDesig?.trim()) body.facultySupervisorNameDesig = details.facultySupervisorNameDesig.trim();
-    if (details.siteSupervisorNameDesig?.trim()) body.siteSupervisorNameDesig = details.siteSupervisorNameDesig.trim();
-    if (details.facultyId?.trim()) body.facultyId = details.facultyId.trim();
-    if (details.siteId?.trim()) body.siteId = details.siteId.trim();
-    if (details.durationWeeks && details.durationWeeks > 0) body.durationWeeks = details.durationWeeks;
-    if (details.startDate?.trim()) body.startDate = toISODate(details.startDate.trim());
-    if (details.endDate?.trim()) body.endDate = toISODate(details.endDate.trim());
-    if (details.status) body.status = details.status;
+    // Build clean payload matching API expectations
+    const body: any = {
+      studentId: details.studentId
+    };
     
-    // Verify at least one updateable field is provided
-    const updateFields = ['studentId', 'companyName', 'internshipRole', 'facultySupervisorNameDesig', 'siteSupervisorNameDesig', 'facultyId', 'siteId', 'durationWeeks', 'startDate', 'endDate'];
-    const hasUpdateField = updateFields.some(field => body.hasOwnProperty(field) && body[field] !== undefined && body[field] !== null);
+    if (details.companyName !== undefined) body.companyName = details.companyName;
+    if (details.internshipRole !== undefined) body.internshipRole = details.internshipRole;
+    if (details.facultySupervisorNameDesig !== undefined) body.facultySupervisorNameDesig = details.facultySupervisorNameDesig;
+    if (details.siteSupervisorNameDesig !== undefined) body.siteSupervisorNameDesig = details.siteSupervisorNameDesig;
+    if (details.durationWeeks !== undefined) body.durationWeeks = details.durationWeeks;
+    if (details.startDate !== undefined) body.startDate = toISODate(details.startDate);
+    if (details.endDate !== undefined) body.endDate = toISODate(details.endDate);
+    if (details.facultyId !== undefined) body.facultyId = details.facultyId;
+    if (details.siteId !== undefined) body.siteId = details.siteId;
+    
+    // Verify at least one updateable field beyond studentId is provided
+    const updateFields = ['companyName', 'internshipRole', 'facultySupervisorNameDesig', 'siteSupervisorNameDesig', 'facultyId', 'siteId', 'durationWeeks', 'startDate', 'endDate'];
+    const hasUpdateField = updateFields.some(field => body.hasOwnProperty(field));
     if (!hasUpdateField) {
       throw new Error('At least one field to update must be provided');
     }
     
-    console.log('[AdminService] updateApexBDetails URL:', url);
-    console.log('[AdminService] updateApexBDetails formId:', formId);
     console.log('[AdminService] updateApexBDetails final payload:', JSON.stringify(body, null, 2));
     return await firstValueFrom(this.http.patch<any>(url, body, { headers: await this.authHeaders(true) }));
   }
