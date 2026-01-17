@@ -375,4 +375,101 @@ export class StudentService {
     console.log('📤 [updateAppExC] Sending updated payload:', JSON.stringify(cleanPayload, null, 2));
     return await firstValueFrom(this.http.put<any>(url, cleanPayload, { headers }));
   }
+
+  // POST /api/student/appex-a (organization/company details)
+  async submitAppexA(payload: {
+    organization: string;
+    address: string;
+    industrySector: string;
+    contactName: string;
+    contactDesignation: string;
+    contactPhone: string;
+    contactEmail: string;
+    internshipLocation: string;
+    internshipNature: string;
+    mode: string;
+    numberOfInternship: string;
+    startDate: string;
+    endDate: string;
+    workingDays: string;
+    workingHours: string;
+  }) {
+    const url = this.abs('/api/student/appex-a');
+    return await firstValueFrom(this.http.post<any>(url, payload, { headers: this.jsonHeaders() }));
+  }
+
+  // PATCH /api/student/appex-a (update organization/company details)
+  async updateAppexA(payload: Partial<{
+    organization: string;
+    address: string;
+    industrySector: string;
+    contactName: string;
+    contactDesignation: string;
+    contactPhone: string;
+    contactEmail: string;
+    internshipLocation: string;
+    internshipNature: string;
+    mode: string;
+    numberOfInternship: string;
+    startDate: string;
+    endDate: string;
+    workingDays: string;
+    workingHours: string;
+  }>) {
+    const url = this.abs('/api/student/appex-a');
+    return await firstValueFrom(this.http.patch<any>(url, payload, { headers: this.jsonHeaders() }));
+  }
+
+  // POST /api/student/appex-b-verification
+  async submitAppexBVerification(payload: {
+    name: string;
+    degreeProgram: string;
+    email: string;
+    semester: string;
+    contactNo: string;
+    preferredField: string;
+    companyName: string;
+    internshipRole: string;
+    facultySupervisorNameDesig: string;
+    siteSupervisorNameDesig: string;
+    durationWeeks: number;
+    startDate: string;
+    endDate: string;
+    agreementAccepted?: boolean;
+  }) {
+    const url = this.abs('/api/student/appex-b-verification');
+    return await firstValueFrom(this.http.post<any>(url, payload, { headers: this.jsonHeaders() }));
+  }
+
+  // PATCH /api/student/appex-b-verification
+  async updateAppexBVerification(payload: Partial<{
+    name: string;
+    degreeProgram: string;
+    email: string;
+    semester: string;
+    contactNo: string;
+    preferredField: string;
+    companyName: string;
+    internshipRole: string;
+    facultySupervisorNameDesig: string;
+    siteSupervisorNameDesig: string;
+    durationWeeks: number;
+    startDate: string;
+    endDate: string;
+    agreementAccepted: boolean;
+  }>) {
+    const url = this.abs('/api/student/appex-b-verification');
+    return await firstValueFrom(this.http.patch<any>(url, payload, { headers: this.jsonHeaders() }));
+  }
+
+  // GET /api/student/appex-b-verification
+  async getAppexBVerification(): Promise<any> {
+    const url = this.abs('/api/student/appex-b-verification');
+    const token = this.getAuthToken();
+    const headers = new HttpHeaders({ 
+      Accept: 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {})
+    });
+    return await firstValueFrom(this.http.get<any>(url, { headers }));
+  }
 }

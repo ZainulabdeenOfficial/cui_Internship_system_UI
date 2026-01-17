@@ -54,7 +54,7 @@ export class Student {
   isApproved = computed(() => !!this.selectedStudent()?.approved);
   private lockSelection: any;
   // tabs: make each form an explicit tab so AppEx-A is first
-  currentTab: 'appex'|'assignment'|'form3'|'evidence'|'logs'|'reports'|'assignments'|'complaints'|'marks' = 'appex';
+  currentTab: 'appex'|'appexb'|'assignment'|'form3'|'evidence'|'logs'|'reports'|'assignments'|'complaints'|'marks' = 'appex';
   // Raw query param value (for debugging why a tab may be set but UI not rendering)
   lastQueryTab: string | null = null;
   // pagination state per tab/list
@@ -154,7 +154,7 @@ export class Student {
     try {
       this.route.queryParamMap.subscribe(p => {
           const tabParam = p.get('tab');
-          const allowed = ['appex','assignment','form3','evidence','logs','reports','assignments','complaints','marks'] as const;
+          const allowed = ['appex','appexb','assignment','form3','evidence','logs','reports','assignments','complaints','marks'] as const;
           if (tabParam) {
             // record raw value for diagnostics
             this.lastQueryTab = tabParam;
@@ -194,7 +194,7 @@ export class Student {
           }
         // guard: if not approved, restrict to core forms/evidence/complaints
         const isOk = this.isApproved();
-        const visibleWhenPending = new Set(['appex','assignment','form3','evidence','complaints']);
+        const visibleWhenPending = new Set(['appex','appexb','assignment','form3','evidence','complaints']);
         if (!isOk && !visibleWhenPending.has(this.currentTab)) {
           this.currentTab = 'appex';
           try { this.router.navigate([], { relativeTo: this.route, queryParams: { tab: 'appex' }, queryParamsHandling: 'merge' }); } catch {}
@@ -651,6 +651,26 @@ export class Student {
     mode: 'On-Site' as 'On-Site'|'Virtual'|'Freelancing'
   };
 
+  // APEX B Verification Form
+  appexBForm = {
+    name: '',
+    degreeProgram: '',
+    email: '',
+    semester: '',
+    contactNo: '',
+    preferredField: '',
+    companyName: '',
+    internshipRole: '',
+    facultySupervisorNameDesig: '',
+    siteSupervisorNameDesig: '',
+    durationWeeks: 0,
+    startDate: '',
+    endDate: '',
+    agreementAccepted: false
+  };
+  appexBSubmitted = false;
+  loadingAppexB = false;
+
   // Student Assignment & Agreement form (from provided PDF)
   studentAgreementForm = {
     fullName: '',
@@ -1028,5 +1048,128 @@ export class Student {
       document.body.appendChild(link); link.click(); document.body.removeChild(link);
       URL.revokeObjectURL(url);
     } catch {}
+  }
+
+  // APEX B Verification Methods
+  async loadAppexBVerification() {
+    if (this.loadingAppexB) return;
+    this.loadingAppexB = true;
+    try {
+      const res = await this.studentApi.getAppexBVerification();
+      const data = res?.data || res;
+      if (data && data.id) {
+        this.appexBForm = {
+          name: data.name || '',
+          degreeProgram: data.degreeProgram || '',
+          email: data.email || '',
+          semester: data.semester || '',
+          contactNo: data.contactNo || '',
+          preferredField: data.preferredField || '',
+          companyName: data.companyName || '',
+          internshipRole: data.internshipRole || '',
+          facultySupervisorNameDesig: data.facultySupervisorNameDesig || '',
+          siteSupervisorNameDesig: data.siteSupervisorNameDesig || '',
+          durationWeeks: data.durationWeeks || 0,
+          startDate: (data.startDate || '').slice(0, 10),
+          endDate: (data.endDate || '').slice(0, 10),
+          agreementAccepted: data.agreementAccepted || false
+        };
+        this.appexBSubmitted = true;
+        this.toast.success('APEX B verification loaded');
+      }
+    } catch (err: any) {
+      if (err?.status !== 404) {
+        const msg = err?.error?.message || err?.message || 'Failed to load APEX B verification';
+        this.toast.danger(msg);
+      }
+    } finally {
+      this.loadingAppexB = false;
+    }
+  }
+
+  async submitAppexBVerification() {
+    if (!this.selectedId) return;
+    if (!this.ensureMine()) return;
+    
+    const form = this.appexBForm;
+    if (!form.name || !form.degreeProgram || !form.email || !form.semester || 
+        !form.contactNo || !form.preferredField || !form.companyName || 
+        !form.internshipRole || !form.startDate || !form.endDate) {
+      this.toast.warning('Please fill all required fields');
+      return;
+    }
+
+    if (form.durationWeeks <= 0) {
+      this.toast.warning('Duration in weeks must be greater than 0');
+      return;
+    }
+
+    if (!form.agreementAccepted) {
+      this.toast.warning('You must accept the agreement to submit');
+      return;
+    }
+
+    this.loadingAppexB = true;
+    try {
+      const payload = {
+        name: form.name,
+        degreeProgram: form.degreeProgram,
+        email: form.email,
+        semester: form.semester,
+        contactNo: form.contactNo,
+        preferredField: form.preferredField,
+        companyName: form.companyName,
+        internshipRole: form.internshipRole,
+        facultySupervisorNameDesig: form.facultySupervisorNameDesig,
+        siteSupervisorNameDesig: form.siteSupervisorNameDesig,
+        durationWeeks: Number(form.durationWeeks),
+        startDate: form.startDate,
+        endDate: form.endDate,
+        agreementAccepted: form.agreementAccepted
+      };
+
+      const res = await this.studentApi.submitAppexBVerification(payload);
+      this.toast.success(res?.message || 'APEX B verification submitted successfully');
+      this.appexBSubmitted = true;
+    } catch (err: any) {
+      const msg = err?.error?.message || err?.message || 'Failed to submit APEX B verification';
+      this.toast.danger(msg);
+    } finally {
+      this.loadingAppexB = false;
+    }
+  }
+
+  async updateAppexBVerification() {
+    if (!this.selectedId) return;
+    if (!this.ensureMine()) return;
+
+    this.loadingAppexB = true;
+    try {
+      const form = this.appexBForm;
+      const payload: any = {};
+      
+      if (form.name) payload.name = form.name;
+      if (form.degreeProgram) payload.degreeProgram = form.degreeProgram;
+      if (form.email) payload.email = form.email;
+      if (form.semester) payload.semester = form.semester;
+      if (form.contactNo) payload.contactNo = form.contactNo;
+      if (form.preferredField) payload.preferredField = form.preferredField;
+      if (form.companyName) payload.companyName = form.companyName;
+      if (form.internshipRole) payload.internshipRole = form.internshipRole;
+      if (form.facultySupervisorNameDesig) payload.facultySupervisorNameDesig = form.facultySupervisorNameDesig;
+      if (form.siteSupervisorNameDesig) payload.siteSupervisorNameDesig = form.siteSupervisorNameDesig;
+      if (form.durationWeeks) payload.durationWeeks = Number(form.durationWeeks);
+      if (form.startDate) payload.startDate = form.startDate;
+      if (form.endDate) payload.endDate = form.endDate;
+      if (form.agreementAccepted) payload.agreementAccepted = form.agreementAccepted;
+
+      const res = await this.studentApi.updateAppexBVerification(payload);
+      this.toast.success(res?.message || 'APEX B verification updated successfully');
+    } catch (err: any) {
+      const msg = err?.error?.message || err?.message || 'Failed to update APEX B verification';
+      this.toast.danger(msg);
+    } finally {
+      this.loadingAppexB = false;
+    }
   }
 }

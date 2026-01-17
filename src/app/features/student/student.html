@@ -9,6 +9,7 @@
   <!-- Tabs: separate tabs for each student form and Complaints -->
   <ul class="nav nav-tabs mb-3">
     <li class="nav-item"><button type="button" class="nav-link" [class.active]="isCurrentTab('appex')" (click)="selectTab('appex')">Internship Approval (AppEx‑A)</button></li>
+    <li class="nav-item"><button type="button" class="nav-link" [class.active]="isCurrentTab('appexb')" (click)="selectTab('appexb')">APEX B Verification</button></li>
     <li class="nav-item"><button type="button" class="nav-link" [class.active]="isCurrentTab('assignment')" (click)="selectTab('assignment')">Assignment & Agreement</button></li>
     <li class="nav-item"><button type="button" class="nav-link" [class.active]="isCurrentTab('form3')" (click)="selectTab('form3')">Organization Overview &amp; Scope of Work</button></li>
     <li class="nav-item ms-auto"><button type="button" class="nav-link" [class.active]="isCurrentTab('complaints')" (click)="selectTab('complaints')">Complaints</button></li>
@@ -146,6 +147,112 @@
 
   <div *ngIf="isCurrentTab('assignment')">
     <app-assignment-form [selectedId]="selectedId"></app-assignment-form>
+  </div>
+
+  <!-- APEX B Verification Form -->
+  <div *ngIf="isCurrentTab('appexb')">
+    <div class="card mb-3">
+      <div class="card-header bg-light">APEX B - Student Internship Verification Form</div>
+      <div class="card-body">
+        <div class="alert alert-info">
+          <strong>Purpose:</strong> This form is used to verify your internship details and get approval from faculty and site supervisors.
+        </div>
+        
+        <form (ngSubmit)="appexBSubmitted ? updateAppexBVerification() : submitAppexBVerification()" #appexbf="ngForm" class="row g-3">
+          <div class="col-12"><h6>Student Information</h6></div>
+          
+          <div class="col-md-6">
+            <label class="form-label">Full Name *</label>
+            <input class="form-control" [(ngModel)]="appexBForm.name" name="bName" required />
+          </div>
+          
+          <div class="col-md-6">
+            <label class="form-label">Degree Program *</label>
+            <input class="form-control" [(ngModel)]="appexBForm.degreeProgram" name="bDegree" required placeholder="e.g., BS Computer Science" />
+          </div>
+          
+          <div class="col-md-6">
+            <label class="form-label">Email *</label>
+            <input type="email" class="form-control" [(ngModel)]="appexBForm.email" name="bEmail" required />
+          </div>
+          
+          <div class="col-md-6">
+            <label class="form-label">Semester *</label>
+            <input class="form-control" [(ngModel)]="appexBForm.semester" name="bSemester" required placeholder="e.g., 7th" />
+          </div>
+          
+          <div class="col-md-6">
+            <label class="form-label">Contact Number *</label>
+            <input class="form-control" [(ngModel)]="appexBForm.contactNo" name="bContact" required />
+          </div>
+          
+          <div class="col-md-6">
+            <label class="form-label">Preferred Field *</label>
+            <input class="form-control" [(ngModel)]="appexBForm.preferredField" name="bField" required placeholder="e.g., Web Development" />
+          </div>
+          
+          <div class="col-12"><h6 class="mt-3">Internship Details</h6></div>
+          
+          <div class="col-md-6">
+            <label class="form-label">Company/Organization Name *</label>
+            <input class="form-control" [(ngModel)]="appexBForm.companyName" name="bCompany" required />
+          </div>
+          
+          <div class="col-md-6">
+            <label class="form-label">Internship Role *</label>
+            <input class="form-control" [(ngModel)]="appexBForm.internshipRole" name="bRole" required placeholder="e.g., Software Engineer Intern" />
+          </div>
+          
+          <div class="col-md-6">
+            <label class="form-label">Faculty Supervisor (Name & Designation)</label>
+            <input class="form-control" [(ngModel)]="appexBForm.facultySupervisorNameDesig" name="bFaculty" placeholder="e.g., Dr. John Doe, Assistant Professor" />
+          </div>
+          
+          <div class="col-md-6">
+            <label class="form-label">Site Supervisor (Name & Designation)</label>
+            <input class="form-control" [(ngModel)]="appexBForm.siteSupervisorNameDesig" name="bSite" placeholder="e.g., Jane Smith, Senior Developer" />
+          </div>
+          
+          <div class="col-md-4">
+            <label class="form-label">Duration (Weeks) *</label>
+            <input type="number" min="1" class="form-control" [(ngModel)]="appexBForm.durationWeeks" name="bDuration" required />
+          </div>
+          
+          <div class="col-md-4">
+            <label class="form-label">Start Date *</label>
+            <input type="date" class="form-control" [(ngModel)]="appexBForm.startDate" name="bStart" required />
+          </div>
+          
+          <div class="col-md-4">
+            <label class="form-label">End Date *</label>
+            <input type="date" class="form-control" [(ngModel)]="appexBForm.endDate" name="bEnd" required />
+          </div>
+          
+          <div class="col-12 mt-4">
+            <div class="form-check">
+              <input type="checkbox" class="form-check-input" [(ngModel)]="appexBForm.agreementAccepted" name="bAgreement" id="appexbAgreement" required />
+              <label class="form-check-label" for="appexbAgreement">
+                <strong>I hereby certify that all information provided is accurate and I agree to the terms and conditions of the internship program.</strong>
+              </label>
+            </div>
+          </div>
+          
+          <div class="col-12 mt-3">
+            <button type="submit" class="btn btn-primary" [disabled]="!appexbf.valid || loadingAppexB">
+              <span *ngIf="!loadingAppexB">{{ appexBSubmitted ? 'Update' : 'Submit' }} APEX B Verification</span>
+              <span *ngIf="loadingAppexB">
+                <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+                {{ appexBSubmitted ? 'Updating...' : 'Submitting...' }}
+              </span>
+            </button>
+            <button type="button" class="btn btn-secondary ms-2" (click)="loadAppexBVerification()" [disabled]="loadingAppexB">
+              <span *ngIf="!loadingAppexB">Load Existing</span>
+              <span *ngIf="loadingAppexB">Loading...</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
   </div>
 
   <!-- Form 3: Organization Overview & Scope of Work -->
