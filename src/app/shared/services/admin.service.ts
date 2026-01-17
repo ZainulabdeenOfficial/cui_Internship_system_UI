@@ -434,6 +434,19 @@ export class AdminService {
     const path = '/api/admin/appex-b';
     const url = environment.production ? path : `${base}${path}`;
     
+    // Helper to convert dates to ISO 8601 format
+    const toISODate = (dateStr: string): string => {
+      if (!dateStr) return '';
+      try {
+        const date = new Date(dateStr);
+        if (isNaN(date.getTime())) return dateStr;
+        // Return full ISO 8601 format: YYYY-MM-DDTHH:mm:ss.sssZ
+        return date.toISOString();
+      } catch {
+        return dateStr;
+      }
+    };
+    
     // Build request body - backend requires at least one extended detail field
     const body: any = { 
       studentId, 
@@ -447,8 +460,8 @@ export class AdminService {
       if (details.facultySupervisorNameDesig?.trim()) body.facultySupervisorNameDesig = details.facultySupervisorNameDesig.trim();
       if (details.siteSupervisorNameDesig?.trim()) body.siteSupervisorNameDesig = details.siteSupervisorNameDesig.trim();
       if (details.durationWeeks && details.durationWeeks > 0) body.durationWeeks = details.durationWeeks;
-      if (details.startDate?.trim()) body.startDate = details.startDate.trim();
-      if (details.endDate?.trim()) body.endDate = details.endDate.trim();
+      if (details.startDate?.trim()) body.startDate = toISODate(details.startDate.trim());
+      if (details.endDate?.trim()) body.endDate = toISODate(details.endDate.trim());
     }
     
     console.log('[AdminService] updateApexBStatus final payload:', body);
@@ -472,6 +485,19 @@ export class AdminService {
     const path = '/api/admin/appex-b';
     const url = environment.production ? path : `${base}${path}`;
     
+    // Helper to convert dates to ISO 8601 format
+    const toISODate = (dateStr: string): string => {
+      if (!dateStr) return '';
+      try {
+        const date = new Date(dateStr);
+        if (isNaN(date.getTime())) return dateStr;
+        // Return full ISO 8601 format: YYYY-MM-DDTHH:mm:ss.sssZ
+        return date.toISOString();
+      } catch {
+        return dateStr;
+      }
+    };
+    
     // Build clean payload - only include fields that match the API schema
     const body: any = {};
     if (details.studentId) body.studentId = details.studentId;
@@ -482,8 +508,9 @@ export class AdminService {
     if (details.facultyId?.trim()) body.facultyId = details.facultyId.trim();
     if (details.siteId?.trim()) body.siteId = details.siteId.trim();
     if (details.durationWeeks && details.durationWeeks > 0) body.durationWeeks = details.durationWeeks;
-    if (details.startDate?.trim()) body.startDate = details.startDate.trim();
-    if (details.endDate?.trim()) body.endDate = details.endDate.trim();
+    if (details.startDate?.trim()) body.startDate = toISODate(details.startDate.trim());
+    if (details.endDate?.trim()) body.endDate = toISODate(details.endDate.trim());
+    if (details.status) body.status = details.status;
     
     // Verify at least one updateable field is provided
     const updateFields = ['studentId', 'companyName', 'internshipRole', 'facultySupervisorNameDesig', 'siteSupervisorNameDesig', 'facultyId', 'siteId', 'durationWeeks', 'startDate', 'endDate'];
@@ -492,7 +519,9 @@ export class AdminService {
       throw new Error('At least one field to update must be provided');
     }
     
-    console.log('[AdminService] updateApexBDetails final payload:', body);
+    console.log('[AdminService] updateApexBDetails URL:', url);
+    console.log('[AdminService] updateApexBDetails formId:', formId);
+    console.log('[AdminService] updateApexBDetails final payload:', JSON.stringify(body, null, 2));
     return await firstValueFrom(this.http.patch<any>(url, body, { headers: await this.authHeaders(true) }));
   }
 }
