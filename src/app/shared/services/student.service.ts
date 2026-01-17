@@ -422,6 +422,7 @@ export class StudentService {
 
   // POST /api/student/appex-b-verification
   async submitAppexBVerification(payload: {
+    action: string;
     name: string;
     degreeProgram: string;
     email: string;
@@ -465,6 +466,28 @@ export class StudentService {
   // GET /api/student/appex-b-verification
   async getAppexBVerification(): Promise<any> {
     const url = this.abs('/api/student/appex-b-verification');
+    const token = this.getAuthToken();
+    const headers = new HttpHeaders({ 
+      Accept: 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {})
+    });
+    return await firstValueFrom(this.http.get<any>(url, { headers }));
+  }
+
+  // POST /api/student/weekly-logs
+  async submitWeeklyLog(payload: {
+    weekNo: number;
+    activitiesDone: string;
+    skillsLearned: string;
+    challenges: string;
+  }) {
+    const url = this.abs('/api/student/weekly-logs');
+    return await firstValueFrom(this.http.post<any>(url, payload, { headers: this.jsonHeaders() }));
+  }
+
+  // GET /api/student/weekly-logs
+  async getWeeklyLogs(): Promise<any> {
+    const url = this.abs('/api/student/weekly-logs');
     const token = this.getAuthToken();
     const headers = new HttpHeaders({ 
       Accept: 'application/json',

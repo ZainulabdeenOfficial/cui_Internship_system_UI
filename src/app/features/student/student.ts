@@ -54,7 +54,7 @@ export class Student {
   isApproved = computed(() => !!this.selectedStudent()?.approved);
   private lockSelection: any;
   // tabs: make each form an explicit tab so AppEx-A is first
-  currentTab: 'appex'|'appexb'|'assignment'|'form3'|'evidence'|'logs'|'reports'|'assignments'|'complaints'|'marks' = 'appex';
+  currentTab: 'appex'|'appexb'|'assignment'|'form3'|'evidence'|'logs'|'reports'|'assignments'|'complaints'|'marks'|'weeklylogs' = 'appex';
   // Raw query param value (for debugging why a tab may be set but UI not rendering)
   lastQueryTab: string | null = null;
   // pagination state per tab/list
@@ -154,7 +154,7 @@ export class Student {
     try {
       this.route.queryParamMap.subscribe(p => {
           const tabParam = p.get('tab');
-          const allowed = ['appex','appexb','assignment','form3','evidence','logs','reports','assignments','complaints','marks'] as const;
+          const allowed = ['appex','appexb','assignment','form3','evidence','logs','reports','assignments','complaints','marks','weeklylogs'] as const;
           if (tabParam) {
             // record raw value for diagnostics
             this.lastQueryTab = tabParam;
@@ -194,7 +194,7 @@ export class Student {
           }
         // guard: if not approved, restrict to core forms/evidence/complaints
         const isOk = this.isApproved();
-        const visibleWhenPending = new Set(['appex','appexb','assignment','form3','evidence','complaints']);
+        const visibleWhenPending = new Set(['appex','appexb','assignment','form3','evidence','complaints','weeklylogs']);
         if (!isOk && !visibleWhenPending.has(this.currentTab)) {
           this.currentTab = 'appex';
           try { this.router.navigate([], { relativeTo: this.route, queryParams: { tab: 'appex' }, queryParamsHandling: 'merge' }); } catch {}
@@ -774,6 +774,11 @@ export class Student {
     this.currentTab = tab;
     // Reflect in URL for deep links
     try { this.router.navigate([], { relativeTo: this.route, queryParams: { tab }, queryParamsHandling: 'merge' }); } catch {}
+    
+    // Auto-load weekly logs when weekly logs tab is selected
+    if (tab === 'weeklylogs' && this.weeklyLogs.length === 0) {
+      this.loadWeeklyLogs();
+    }
   }
 
   isCurrentTab(tab: string): boolean {
@@ -1112,6 +1117,7 @@ export class Student {
     this.loadingAppexB = true;
     try {
       const payload = {
+        action: 'submit',
         name: form.name,
         degreeProgram: form.degreeProgram,
         email: form.email,
@@ -1170,6 +1176,96 @@ export class Student {
       this.toast.danger(msg);
     } finally {
       this.loadingAppexB = false;
+    }
+  }
+
+  // Weekly logs functionality
+  weeklyLogs: any[] = [];
+  weeklyLogStatus: any = {};
+  loadingWeeklyLogs = false;
+  submittingWeeklyLog = false;
+  weeklyLogForm = {
+    weekNo: 1,
+    activitiesDone: '',
+    skillsLearned: '',
+    challenges: ''
+  };
+
+  async loadWeeklyLogs() {
+    if (!this.selectedId) return;
+    if (!this.ensureMine()) return;
+
+    this.loadingWeeklyLogs = true;
+    try {
+      const res = await this.studentApi.getWeeklyLogs();
+      this.weeklyLogs = res?.weeklyLogs || [];
+      this.weeklyLogStatus = res?.weeklyLogStatus || {};
+      
+      // Set default week number to current week if available
+      if (this.weeklyLogStatus.currentWeek) {
+        this.weeklyLogForm.weekNo = this.weeklyLogStatus.currentWeek;
+      }
+    } catch (err: any) {
+      const msg = err?.error?.message || err?.message || 'Failed to load weekly logs';
+      this.toast.danger(msg);
+    } finally {
+      this.loadingWeeklyLogs = false;
+    }
+  }
+
+  async submitWeeklyLog() {
+    if (!this.selectedId) return;
+    if (!this.ensureMine()) return;
+
+    const form = this.weeklyLogForm;
+
+    // Validation
+    if (!form.weekNo || form.weekNo < 1) {
+      this.toast.warning('Please enter a valid week number');
+      return;
+    }
+
+    if (!form.activitiesDone || form.activitiesDone.trim().length < 10) {
+      this.toast.warning('Please describe activities done (at least 10 characters)');
+      return;
+    }
+
+    if (!form.skillsLearned || form.skillsLearned.trim().length < 10) {
+      this.toast.warning('Please describe skills learned (at least 10 characters)');
+      return;
+    }
+
+    if (!form.challenges || form.challenges.trim().length < 10) {
+      this.toast.warning('Please describe challenges faced (at least 10 characters)');
+      return;
+    }
+
+    this.submittingWeeklyLog = true;
+    try {
+      const payload = {
+        weekNo: Number(form.weekNo),
+        activitiesDone: form.activitiesDone.trim(),
+        skillsLearned: form.skillsLearned.trim(),
+        challenges: form.challenges.trim()
+      };
+
+      const res = await this.studentApi.submitWeeklyLog(payload);
+      this.toast.success(res?.message || 'Weekly log submitted successfully');
+      
+      // Reset form and reload logs
+      this.weeklyLogForm = {
+        weekNo: this.weeklyLogStatus.currentWeek || 1,
+        activitiesDone: '',
+        skillsLearned: '',
+        challenges: ''
+      };
+      
+      await this.loadWeeklyLogs();
+    } catch (err: any) {
+      const msg = err?.error?.message || err?.message || 'Failed to submit weekly log';
+      this.toast.danger(msg);
+    } finally {
+      this.submittingWeeklyLog = false;
     }
   }
 }

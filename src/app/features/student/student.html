@@ -9,9 +9,10 @@
   <!-- Tabs: separate tabs for each student form and Complaints -->
   <ul class="nav nav-tabs mb-3">
     <li class="nav-item"><button type="button" class="nav-link" [class.active]="isCurrentTab('appex')" (click)="selectTab('appex')">Internship Approval (AppEx‑A)</button></li>
-    <li class="nav-item"><button type="button" class="nav-link" [class.active]="isCurrentTab('appexb')" (click)="selectTab('appexb')">APEX B Verification</button></li>
     <li class="nav-item"><button type="button" class="nav-link" [class.active]="isCurrentTab('assignment')" (click)="selectTab('assignment')">Assignment & Agreement</button></li>
+    <li class="nav-item"><button type="button" class="nav-link" [class.active]="isCurrentTab('appexb')" (click)="selectTab('appexb')">APEX B Verification</button></li>
     <li class="nav-item"><button type="button" class="nav-link" [class.active]="isCurrentTab('form3')" (click)="selectTab('form3')">Organization Overview &amp; Scope of Work</button></li>
+    <li class="nav-item"><button type="button" class="nav-link" [class.active]="isCurrentTab('weeklylogs')" (click)="selectTab('weeklylogs')">Weekly Logs</button></li>
     <li class="nav-item ms-auto"><button type="button" class="nav-link" [class.active]="isCurrentTab('complaints')" (click)="selectTab('complaints')">Complaints</button></li>
   </ul>
 
@@ -372,6 +373,100 @@
         <div class="col-12 small text-muted">Internship Office breakdown: Proposal {{ ss2.marks?.adminProposal ?? 0 }}/5, Activity Log {{ ss2.marks?.adminLogs ?? 0 }}/5, Final Report {{ ss2.marks?.adminFinal ?? 0 }}/10</div>
       </div>
       <!-- Agreement signatures removed from student view -->
+    </div>
+  </div>
+
+  <!-- Weekly Logs tab content -->
+  <div *ngIf="isCurrentTab('weeklylogs')">
+    <div class="card mb-3">
+      <div class="card-header">
+        <span>Weekly Logs</span>
+      </div>
+      <div class="card-body">
+        <!-- Weekly log status -->
+        <div *ngIf="weeklyLogStatus && weeklyLogStatus.hasStarted" class="alert alert-info mb-3">
+          <div class="row g-2">
+            <div class="col-md-3"><strong>Total Weeks:</strong> {{ weeklyLogStatus.totalWeeks }}</div>
+            <div class="col-md-3"><strong>Current Week:</strong> {{ weeklyLogStatus.currentWeek }}</div>
+            <div class="col-md-3"><strong>Submitted:</strong> {{ weeklyLogStatus.submittedWeeks?.length || 0 }}</div>
+            <div class="col-md-3"><strong>Pending:</strong> {{ weeklyLogStatus.pendingWeeks?.length || 0 }}</div>
+          </div>
+          <div class="mt-2" *ngIf="weeklyLogStatus.pendingWeeks && weeklyLogStatus.pendingWeeks.length > 0">
+            <small class="text-muted">Pending weeks: {{ weeklyLogStatus.pendingWeeks.join(', ') }}</small>
+          </div>
+        </div>
+
+        <div *ngIf="!weeklyLogStatus || !weeklyLogStatus.hasStarted" class="alert alert-warning">
+          Weekly logs will be available once your internship has started and APEX A & B forms are approved.
+        </div>
+
+        <!-- Submit new weekly log -->
+        <div *ngIf="weeklyLogStatus && weeklyLogStatus.hasStarted && !weeklyLogStatus.hasEnded">
+          <h6>Submit Weekly Log</h6>
+          <form (ngSubmit)="submitWeeklyLog()" #wlf="ngForm" class="row g-3 mb-4">
+            <div class="col-md-2">
+              <label class="form-label">Week Number</label>
+              <input type="number" min="1" [max]="weeklyLogStatus.totalWeeks" class="form-control" 
+                     [(ngModel)]="weeklyLogForm.weekNo" name="weekNo" required />
+            </div>
+            <div class="col-md-10">
+              <label class="form-label">Activities Done</label>
+              <textarea class="form-control" rows="2" [(ngModel)]="weeklyLogForm.activitiesDone" 
+                        name="activities" required minlength="10" 
+                        placeholder="Describe the activities you completed this week..."></textarea>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Skills Learned</label>
+              <textarea class="form-control" rows="2" [(ngModel)]="weeklyLogForm.skillsLearned" 
+                        name="skills" required minlength="10"
+                        placeholder="What new skills or knowledge did you gain?"></textarea>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Challenges Faced</label>
+              <textarea class="form-control" rows="2" [(ngModel)]="weeklyLogForm.challenges" 
+                        name="challenges" required minlength="10"
+                        placeholder="What challenges or obstacles did you encounter?"></textarea>
+            </div>
+            <div class="col-12">
+              <button class="btn btn-primary" [disabled]="!wlf.form.valid || submittingWeeklyLog" type="submit">
+                <span *ngIf="submittingWeeklyLog" class="spinner-border spinner-border-sm me-1"></span>
+                Submit Weekly Log
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Display submitted weekly logs -->
+        <div *ngIf="weeklyLogs && weeklyLogs.length > 0">
+          <h6 class="mt-3">Submitted Logs</h6>
+          <div class="table-responsive">
+            <table class="table table-hover">
+              <thead>
+                <tr>
+                  <th>Week</th>
+                  <th>Activities Done</th>
+                  <th>Skills Learned</th>
+                  <th>Challenges</th>
+                  <th>Submitted At</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let log of weeklyLogs">
+                  <td><span class="badge bg-primary">Week {{ log.weekNo }}</span></td>
+                  <td><small>{{ log.activitiesDone }}</small></td>
+                  <td><small>{{ log.skillsLearned }}</small></td>
+                  <td><small>{{ log.challenges }}</small></td>
+                  <td><small class="text-muted">{{ log.submittedAt | date:'short' }}</small></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div *ngIf="!loadingWeeklyLogs && (!weeklyLogs || weeklyLogs.length === 0)" class="text-muted text-center py-3">
+          No weekly logs submitted yet.
+        </div>
+      </div>
     </div>
   </div>
   
