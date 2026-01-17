@@ -13,6 +13,7 @@ import { AuthService } from '../../shared/services/auth.service';
 })
 export class AssignmentForm {
   selectedId = input<string | null>(null);
+  submitted = signal<boolean>(false);
 
   model = {
     // Appendix-B: Student Information
@@ -75,6 +76,12 @@ export class AssignmentForm {
 
   submit() {
     try {
+      // Prevent resubmission
+      if (this.submitted()) {
+        this.toast.warning('Assignment & Agreement already submitted');
+        return;
+      }
+
       // Auth barrier: Check if user is authenticated
       const authToken = this.getAuthToken();
       if (!authToken) {
@@ -143,6 +150,7 @@ export class AssignmentForm {
       
       // Submit to backend via store service with auth
       this.store.submitAppexB(id, requestConfig as any);
+      this.submitted.set(true);
       this.toast.success('Student Assignment & Agreement (AppEx B) submitted successfully');
       
       // reset locally

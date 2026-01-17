@@ -52,6 +52,13 @@ export class Student {
   selectedStudent = computed(() => this.selectedId ? this.students().find(s => s.id === this.selectedId!) : undefined);
   myStudentId = computed(() => this.me()?.studentId ?? null);
   isApproved = computed(() => !!this.selectedStudent()?.approved);
+  
+  // Check if all APEX forms are approved to determine which tabs to show
+  allApexFormsApproved(): boolean {
+    // Check if APEX A, Assignment, and APEX B are all submitted and approved
+    return this.appexASubmitted && this.appexBSubmitted && this.isApproved();
+  }
+  
   private lockSelection: any;
   // tabs: make each form an explicit tab so AppEx-A is first
   currentTab: 'appex'|'appexb'|'assignment'|'form3'|'evidence'|'logs'|'reports'|'assignments'|'complaints'|'marks'|'weeklylogs' = 'appex';
@@ -189,8 +196,8 @@ export class Student {
               this.currentTab = 'appex';
             }
           } else {
-            // No explicit tab requested: default students to the AppEx-A tab so Internship Approval shows first
-            this.currentTab = 'appex';
+            // No explicit tab requested: default to weekly logs if approved, otherwise AppEx-A
+            this.currentTab = this.allApexFormsApproved() ? 'weeklylogs' : 'appex';
           }
         // guard: if not approved, restrict to core forms/evidence/complaints
         const isOk = this.isApproved();
@@ -198,6 +205,11 @@ export class Student {
         if (!isOk && !visibleWhenPending.has(this.currentTab)) {
           this.currentTab = 'appex';
           try { this.router.navigate([], { relativeTo: this.route, queryParams: { tab: 'appex' }, queryParamsHandling: 'merge' }); } catch {}
+        }
+        // If all APEX forms approved, redirect from APEX tabs to weekly logs
+        if (this.allApexFormsApproved() && ['appex', 'appexb', 'assignment', 'form3'].includes(this.currentTab)) {
+          this.currentTab = 'weeklylogs';
+          try { this.router.navigate([], { relativeTo: this.route, queryParams: { tab: 'weeklylogs' }, queryParamsHandling: 'merge' }); } catch {}
         }
       });
     } catch {}

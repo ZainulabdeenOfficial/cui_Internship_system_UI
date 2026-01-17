@@ -64,9 +64,13 @@
       </div>
       
       <div class="col-12 d-flex gap-2 mt-3">
-        <button class="btn btn-success" [disabled]="!f.form.valid || !model.agreementAccepted" type="submit">
+        <button class="btn btn-success" [disabled]="!f.form.valid || !model.agreementAccepted || submitted()" type="submit">
           Submit Assignment & Agreement
         </button>
+      </div>
+      <div *ngIf="submitted()" class="alert alert-success mt-3">
+        <i class="bi bi-check-circle-fill me-2"></i>
+        Assignment & Agreement submitted successfully. Waiting for approval.
       </div>
     </form>
   </div>

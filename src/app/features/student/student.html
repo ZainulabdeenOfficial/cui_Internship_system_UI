@@ -8,11 +8,13 @@
 
   <!-- Tabs: separate tabs for each student form and Complaints -->
   <ul class="nav nav-tabs mb-3">
-    <li class="nav-item"><button type="button" class="nav-link" [class.active]="isCurrentTab('appex')" (click)="selectTab('appex')">Internship Approval (AppEx‑A)</button></li>
-    <li class="nav-item"><button type="button" class="nav-link" [class.active]="isCurrentTab('assignment')" (click)="selectTab('assignment')">Assignment & Agreement</button></li>
-    <li class="nav-item"><button type="button" class="nav-link" [class.active]="isCurrentTab('appexb')" (click)="selectTab('appexb')">APEX B Verification</button></li>
-    <li class="nav-item"><button type="button" class="nav-link" [class.active]="isCurrentTab('form3')" (click)="selectTab('form3')">Organization Overview &amp; Scope of Work</button></li>
-    <li class="nav-item"><button type="button" class="nav-link" [class.active]="isCurrentTab('weeklylogs')" (click)="selectTab('weeklylogs')">Weekly Logs</button></li>
+    <!-- Show APEX forms only if not all approved -->
+    <li class="nav-item" *ngIf="!allApexFormsApproved()"><button type="button" class="nav-link" [class.active]="isCurrentTab('appex')" (click)="selectTab('appex')">Internship Approval (AppEx‑A)</button></li>
+    <li class="nav-item" *ngIf="!allApexFormsApproved()"><button type="button" class="nav-link" [class.active]="isCurrentTab('assignment')" (click)="selectTab('assignment')">Assignment & Agreement</button></li>
+    <li class="nav-item" *ngIf="!allApexFormsApproved()"><button type="button" class="nav-link" [class.active]="isCurrentTab('appexb')" (click)="selectTab('appexb')">APEX B Verification</button></li>
+    <li class="nav-item" *ngIf="!allApexFormsApproved()"><button type="button" class="nav-link" [class.active]="isCurrentTab('form3')" (click)="selectTab('form3')">Organization Overview &amp; Scope of Work</button></li>
+    <!-- Show Weekly Logs when approved -->
+    <li class="nav-item" *ngIf="allApexFormsApproved()"><button type="button" class="nav-link" [class.active]="isCurrentTab('weeklylogs')" (click)="selectTab('weeklylogs')">Weekly Logs</button></li>
     <li class="nav-item ms-auto"><button type="button" class="nav-link" [class.active]="isCurrentTab('complaints')" (click)="selectTab('complaints')">Complaints</button></li>
   </ul>
 
@@ -139,7 +141,11 @@
         </div>
 
         <div class="col-12 d-flex gap-2 mt-2">
-          <button class="btn btn-success" [disabled]="!iapf.form.valid" type="submit">Submit Internship Approval</button>
+          <button class="btn btn-success" [disabled]="!iapf.form.valid || appexASubmitted" type="submit">Submit Internship Approval</button>
+          <div *ngIf="appexASubmitted" class="alert alert-success mb-0 ms-2">
+            <i class="bi bi-check-circle-fill me-2"></i>
+            Internship Approval (AppEx-A) submitted successfully. Waiting for review.
+          </div>
         </div>
       </form>
     </div>
