@@ -1537,11 +1537,19 @@ export class Admin {
         await this.adminApi.updateApexBDetails(details);
       }
       this.toast.success(`APEX B form ${status} successfully`);
-      // Update local state instead of full reload for better performance
+      // Update local state
       form.status = status;
       this.selectedApexBIds.delete(formId);
       
       console.log('✅ [Admin - Update APEX B] Status updated successfully to:', status);
+      
+      // Close modal if open
+      if (this.showApexBModal) {
+        this.closeApexBModal();
+      }
+      
+      // Reload forms list to get updated data
+      await this.loadApexBForms();
     } catch (err: any) {
       console.error('❌ [Admin - Update APEX B] Error:', err);
       console.error('   Error details:', { status: err?.status, error: err?.error, message: err?.message });
@@ -1806,7 +1814,9 @@ export class Admin {
     
     this.updatingApexB = true;
     try {
-      // Submit details (status is not needed in payload)
+      console.log('📤 [Admin - Submit APEX B Details] Sending details:', this.apexBDetails);
+      
+      // Submit details - when admin adds details, it means the form is approved
       await this.adminApi.updateApexBDetails(this.apexBDetails);
       this.toast.success('APEX B details submitted successfully and form approved');
       
@@ -1814,12 +1824,19 @@ export class Admin {
       const form = this.apexBForms.find(f => f.id === this.selectedApexBForm.id);
       if (form) {
         form.status = 'approved';
+        console.log('✅ [Admin - Submit APEX B Details] Form status updated to approved');
       }
       
+      // Close modal
       this.closeApexBModal();
+      
+      // Reload the forms list to get updated data from server
+      await this.loadApexBForms();
+      
     } catch (err: any) {
       const msg = err?.error?.message || err?.message || 'Failed to submit APEX B details';
       this.toast.danger(msg);
+      console.error('❌ [Admin - Submit APEX B Details] Error:', err);
     } finally {
       this.updatingApexB = false;
     }

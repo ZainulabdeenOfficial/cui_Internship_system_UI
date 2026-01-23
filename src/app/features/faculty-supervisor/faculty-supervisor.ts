@@ -296,6 +296,8 @@ export class FacultySupervisor {
     
     this.processingItems.add(itemId);
     try {
+      console.log('📤 [Faculty - Approve APEX B] Sending request:', { itemId, action, comments });
+      
       const res = await this.facultyApi.updateAppexBVerification(itemId, action, comments);
       this.toast.success(res?.message || `APEX B ${action === 'approve' ? 'approved' : 'changes requested'} successfully`);
       
@@ -303,18 +305,25 @@ export class FacultySupervisor {
       const status = action === 'approve' ? 'approved' : 'changes_requested';
       const index = this.appexBRequests.findIndex(r => (r.id || r.assignmentId) === itemId);
       if (index !== -1) {
-        // Create a new object to trigger change detection
+        // Create a new object to trigger change detection and mark facultyVerified as true
         this.appexBRequests[index] = { 
           ...this.appexBRequests[index], 
           status: status,
+          facultyVerified: action === 'approve' ? true : this.appexBRequests[index].facultyVerified,
           calculatedStatus: res?.data?.status || status
         };
         // Force array update to trigger change detection
         this.appexBRequests = [...this.appexBRequests];
+        
+        console.log('✅ [Faculty - Approve APEX B] Status updated:', {
+          status,
+          facultyVerified: this.appexBRequests[index].facultyVerified
+        });
       }
     } catch (err: any) {
       const msg = err?.error?.message || err?.message || 'Failed to update verification';
       this.toast.danger(msg);
+      console.error('❌ [Faculty - Approve APEX B] Error:', err);
     } finally {
       this.processingItems.delete(itemId);
     }
