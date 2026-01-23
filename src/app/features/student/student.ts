@@ -1129,18 +1129,39 @@ export class Student {
         const studentVerified = data.studentVerified || data.assignment?.studentVerified || false;
         const calculatedStatus = data.calculatedStatus || data.assignment?.calculatedStatus || '';
         
+        // Check for admin approval in various possible fields
+        const adminApproved = data.adminApproved || 
+                             data.adminVerified || 
+                             data.assignment?.adminApproved || 
+                             data.assignment?.adminVerified ||
+                             (data.status === 'approved') ||
+                             (data.assignment?.status === 'approved') ||
+                             false;
+        
         console.log('✅ [APEX B Verification Status Check]');
+        console.log('  🔍 All Available Fields in Response:', Object.keys(data));
+        console.log('  🔍 Assignment Fields:', data.assignment ? Object.keys(data.assignment) : 'No assignment object');
         console.log('  Faculty Supervisor Approved:', facultyVerified);
-        console.log('  Admin Approved:', this.isApproved());
+        console.log('  Admin Approved (from APEX B data.adminApproved):', data.adminApproved || false);
+        console.log('  Admin Approved (from APEX B data.adminVerified):', data.adminVerified || false);
+        console.log('  Admin Approved (from assignment.adminApproved):', data.assignment?.adminApproved || false);
+        console.log('  Admin Approved (from assignment.adminVerified):', data.assignment?.adminVerified || false);
+        console.log('  Admin Approved (from data.status):', data.status);
+        console.log('  Admin Approved (from assignment.status):', data.assignment?.status);
+        console.log('  Admin Approved (General student.approved):', this.isApproved());
+        console.log('  Admin Approved (Combined Check):', adminApproved);
         console.log('  Student Verified:', studentVerified);
         console.log('  Calculated Status:', calculatedStatus);
         console.log('  Student Approval Status (from store):', this.selectedStudent()?.approved);
+        console.log('  Selected Student Full Data:', this.selectedStudent());
         
         this.appexBVerificationStatus = {
           facultyVerified: facultyVerified,
           studentVerified: studentVerified,
           calculatedStatus: calculatedStatus
         };
+      } else {
+        console.log('⚠️ [APEX B Verification] No data with ID found in response');
       }
     } catch (err: any) {
       // Silently ignore errors (no existing data)
