@@ -1847,24 +1847,28 @@ export class Admin {
         console.log('✅ [Admin - Submit APEX B Details] Form status updated to approved');
       }
       
+      // Reset the updating flag first
+      this.updatingApexB = false;
+      
       // Show success message
       this.toast.success('APEX B details submitted successfully and form approved');
       
-      // Close modal immediately after success
-      console.log('🔄 [Admin - Submit APEX B Details] Closing modal...');
-      this.closeApexBModal();
-      
-      // Reload the forms list to get updated data from server (in background)
-      console.log('🔄 [Admin - Submit APEX B Details] Reloading forms list...');
-      this.loadApexBForms().then(() => {
-        console.log('✅ [Admin - Submit APEX B Details] Forms list reloaded');
-      });
+      // Close modal with a slight delay to ensure UI updates
+      setTimeout(() => {
+        console.log('🔄 [Admin - Submit APEX B Details] Closing modal...');
+        this.closeApexBModal();
+        
+        // Reload the forms list to get updated data from server (in background)
+        console.log('🔄 [Admin - Submit APEX B Details] Reloading forms list...');
+        this.loadApexBForms().then(() => {
+          console.log('✅ [Admin - Submit APEX B Details] Forms list reloaded');
+        });
+      }, 100);
       
     } catch (err: any) {
       const msg = err?.error?.message || err?.message || 'Failed to submit APEX B details';
       this.toast.danger(msg);
       console.error('❌ [Admin - Submit APEX B Details] Error:', err);
-    } finally {
       this.updatingApexB = false;
     }
   }
