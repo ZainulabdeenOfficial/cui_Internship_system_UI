@@ -1370,12 +1370,29 @@ export class Admin {
     this.loadingApexB = true;
     try {
       const result = await this.adminApi.getApexBForms();
+      
+      console.log('🔍 [Admin - APEX B Forms] Full API Response:', JSON.stringify(result, null, 2));
+      
+      // Check each form for student verification status
+      if (Array.isArray(result) && result.length > 0) {
+        console.log('📊 [Admin - APEX B Student Verification Status Check]');
+        result.forEach((form: any, index: number) => {
+          console.log(`\n  Form ${index + 1}:`);
+          console.log(`    Student: ${form.student?.name || form.name || 'N/A'} (${form.student?.email || form.email || 'N/A'})`);
+          console.log(`    Student Verified: ${form.studentVerified || false}`);
+          console.log(`    Faculty Verified: ${form.facultyVerified || false}`);
+          console.log(`    Status: ${form.status || 'N/A'}`);
+          console.log(`    Agreement Accepted: ${form.agreementAccepted || false}`);
+        });
+      }
+      
       this.apexBForms = result;
       this.selectedApexBIds.clear();
     } catch (err: any) {
       const msg = err?.error?.message || err?.message || 'Failed to load APEX B forms';
       this.toast.danger(msg);
       this.apexBForms = [];
+      console.log('❌ [Admin - APEX B Forms] Error loading:', err?.message || err);
     } finally {
       this.loadingApexB = false;
     }
@@ -1481,6 +1498,18 @@ export class Admin {
       return;
     }
     
+    console.log('🔄 [Admin - Update APEX B Status] Form Details:', {
+      formId: formId,
+      studentName: form.student?.name || form.name || 'N/A',
+      studentId: form.student?.id,
+      studentEmail: form.student?.email || form.email,
+      currentStatus: form.status,
+      newStatus: status,
+      studentVerified: (form as any).studentVerified || false,
+      facultyVerified: (form as any).facultyVerified || false,
+      agreementAccepted: form.agreementAccepted || false
+    });
+    
     if (!form.student?.id) {
       this.toast.danger('Student ID is missing from form data');
       return;
@@ -1502,7 +1531,7 @@ export class Admin {
         details = this.apexBDetails;
       }
       
-      console.log('[Admin] Updating AppEx B status:', { formId, studentId: form.student.id, status, details });
+      console.log('📤 [Admin - Update APEX B] Sending request:', { formId, studentId: form.student.id, status, details });
       // Use updateApexBDetails for APEX B updates
       if (details && details.studentId) {
         await this.adminApi.updateApexBDetails(details);
@@ -1511,9 +1540,11 @@ export class Admin {
       // Update local state instead of full reload for better performance
       form.status = status;
       this.selectedApexBIds.delete(formId);
+      
+      console.log('✅ [Admin - Update APEX B] Status updated successfully to:', status);
     } catch (err: any) {
-      console.error('[Admin] AppEx B update error:', err);
-      console.error('[Admin] Error details:', { status: err?.status, error: err?.error, message: err?.message });
+      console.error('❌ [Admin - Update APEX B] Error:', err);
+      console.error('   Error details:', { status: err?.status, error: err?.error, message: err?.message });
       const msg = err?.error?.message || err?.error?.error || err?.message || `Failed to ${status} APEX B form`;
       this.toast.danger(msg);
     } finally {
