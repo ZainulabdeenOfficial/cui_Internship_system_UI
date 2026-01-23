@@ -266,6 +266,13 @@ export class FacultySupervisor {
     const itemId = item.id || item.appexAId;
     if (this.processingItems.has(itemId)) return; // Prevent double-click
     
+    // Check if already approved by faculty
+    if (status === 'approved' && (item.status === 'approved' || item.facultyVerified === true)) {
+      this.toast.warning('This APEX A has already been approved by you');
+      console.log('⚠️ [Faculty - Approve APEX A] Already approved, preventing duplicate submission');
+      return;
+    }
+    
     this.processingItems.add(itemId);
     try {
       const res = await this.facultyApi.updateAppexAApproval(itemId, status, comments);
@@ -293,6 +300,13 @@ export class FacultySupervisor {
   async approveAppexB(item: any, action: 'approve' | 'request_changes', comments?: string) {
     const itemId = item.id || item.assignmentId;
     if (this.processingItems.has(itemId)) return; // Prevent double-click
+    
+    // Check if already approved by faculty
+    if (action === 'approve' && (item.status === 'approved' || item.facultyVerified === true)) {
+      this.toast.warning('This APEX B has already been approved by you');
+      console.log('⚠️ [Faculty - Approve APEX B] Already approved, preventing duplicate submission');
+      return;
+    }
     
     this.processingItems.add(itemId);
     try {
@@ -332,6 +346,14 @@ export class FacultySupervisor {
   isProcessingItem(item: any): boolean {
     const itemId = item.id || item.appexAId || item.assignmentId;
     return this.processingItems.has(itemId);
+  }
+
+  isApexBAlreadyApproved(item: any): boolean {
+    return item.status === 'approved' || item.facultyVerified === true;
+  }
+
+  isApexAAlreadyApproved(item: any): boolean {
+    return item.status === 'approved' || item.facultyVerified === true;
   }
 
   filteredAppexARequests = computed(() => {

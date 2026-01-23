@@ -1386,11 +1386,16 @@
             </div>
             <div class="modal-footer">
               <button type="button" class="btn btn-secondary" (click)="closeApexBModal()">Close</button>
-              @if (apexBDetails.studentId) {
+              @if (apexBDetails.studentId && !isApexBFormAlreadyApproved()) {
                 <button type="button" class="btn btn-success" (click)="submitApexBDetails()" [disabled]="updatingApexB">
                   <span [hidden]="updatingApexB"><i class="bi bi-check-circle"></i> Submit & Approve</span>
                   <span [hidden]="!updatingApexB">Submitting...</span>
                 </button>
+              }
+              @if (isApexBFormAlreadyApproved()) {
+                <span class="text-muted fst-italic">
+                  <i class="bi bi-check-circle-fill text-success"></i> Already Approved
+                </span>
               }
             </div>
           </div>

@@ -1644,6 +1644,13 @@ export class Admin {
 
   openApexBDetailsModal(form: any) {
     this.selectedApexBForm = form;
+    
+    // Check if already approved and show warning
+    if (form.status === 'approved') {
+      console.log('⚠️ [Admin - Open APEX B Modal] Form already approved for student:', form.student?.name);
+      this.toast.info('This form has already been approved. You can view details but cannot submit again.');
+    }
+    
     this.apexBDetails = {
       studentId: form.student?.id || form.id || '',
       companyName: '',
@@ -1692,6 +1699,11 @@ export class Admin {
   closeApexCDetailsModal() {
     this.showApexCDetailsModal = false;
     this.selectedApexCForm = null;
+  }
+
+  isApexBFormAlreadyApproved(form?: any): boolean {
+    const targetForm = form || this.selectedApexBForm;
+    return targetForm?.status === 'approved';
   }
 
   closeApexBModal() {
@@ -1795,6 +1807,13 @@ export class Admin {
   async submitApexBDetails() {
     if (this.updatingApexB) return;
     if (!this.selectedApexBForm) return;
+    
+    // Check if details were already submitted for this student (status is approved)
+    if (this.selectedApexBForm.status === 'approved') {
+      this.toast.warning('Details have already been submitted for this student');
+      console.log('⚠️ [Admin - Submit APEX B Details] Already approved, preventing duplicate submission');
+      return;
+    }
     
     // Validate that at least one field is filled
     const hasData = this.apexBDetails.companyName ||
