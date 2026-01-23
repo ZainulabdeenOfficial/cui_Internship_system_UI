@@ -1837,20 +1837,28 @@ export class Admin {
       
       // Submit details - when admin adds details, it means the form is approved
       await this.adminApi.updateApexBDetails(this.apexBDetails);
-      this.toast.success('APEX B details submitted successfully and form approved');
       
-      // Update local state to reflect approval
+      console.log('✅ [Admin - Submit APEX B Details] API call successful');
+      
+      // Update local state to reflect approval BEFORE closing modal
       const form = this.apexBForms.find(f => f.id === this.selectedApexBForm.id);
       if (form) {
         form.status = 'approved';
         console.log('✅ [Admin - Submit APEX B Details] Form status updated to approved');
       }
       
-      // Close modal
+      // Show success message
+      this.toast.success('APEX B details submitted successfully and form approved');
+      
+      // Close modal immediately after success
+      console.log('🔄 [Admin - Submit APEX B Details] Closing modal...');
       this.closeApexBModal();
       
-      // Reload the forms list to get updated data from server
-      await this.loadApexBForms();
+      // Reload the forms list to get updated data from server (in background)
+      console.log('🔄 [Admin - Submit APEX B Details] Reloading forms list...');
+      this.loadApexBForms().then(() => {
+        console.log('✅ [Admin - Submit APEX B Details] Forms list reloaded');
+      });
       
     } catch (err: any) {
       const msg = err?.error?.message || err?.message || 'Failed to submit APEX B details';
