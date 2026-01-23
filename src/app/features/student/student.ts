@@ -1103,6 +1103,9 @@ export class Student {
     try {
       const res = await this.studentApi.getAppexBVerification();
       const data = res?.data || res;
+      
+      console.log('📋 [APEX B Verification] Full API Response:', JSON.stringify(res, null, 2));
+      
       if (data && data.id) {
         this.appexBForm = {
           name: data.name || '',
@@ -1126,6 +1129,13 @@ export class Student {
         const studentVerified = data.studentVerified || data.assignment?.studentVerified || false;
         const calculatedStatus = data.calculatedStatus || data.assignment?.calculatedStatus || '';
         
+        console.log('✅ [APEX B Verification Status Check]');
+        console.log('  Faculty Supervisor Approved:', facultyVerified);
+        console.log('  Admin Approved:', this.isApproved());
+        console.log('  Student Verified:', studentVerified);
+        console.log('  Calculated Status:', calculatedStatus);
+        console.log('  Student Approval Status (from store):', this.selectedStudent()?.approved);
+        
         this.appexBVerificationStatus = {
           facultyVerified: facultyVerified,
           studentVerified: studentVerified,
@@ -1134,6 +1144,7 @@ export class Student {
       }
     } catch (err: any) {
       // Silently ignore errors (no existing data)
+      console.log('❌ [APEX B Verification] Error loading:', err?.message || err);
     } finally {
       this.loadingAppexB = false;
     }
