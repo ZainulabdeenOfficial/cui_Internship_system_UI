@@ -315,7 +315,7 @@ export class FacultySupervisor {
       const res = await this.facultyApi.updateAppexBVerification(itemId, action, comments);
       this.toast.success(res?.message || `APEX B ${action === 'approve' ? 'approved' : 'changes requested'} successfully`);
       
-      // Update local state with new status
+      // Update local state with new status immediately to reflect button state change
       const status = action === 'approve' ? 'approved' : 'changes_requested';
       const index = this.appexBRequests.findIndex(r => (r.id || r.assignmentId) === itemId);
       if (index !== -1) {
@@ -324,14 +324,15 @@ export class FacultySupervisor {
           ...this.appexBRequests[index], 
           status: status,
           facultyVerified: action === 'approve' ? true : this.appexBRequests[index].facultyVerified,
-          calculatedStatus: res?.data?.status || status
+          calculatedStatus: res?.data?.status || (action === 'approve' ? 'FACULTY_VERIFIED' : 'CHANGES_REQUESTED')
         };
-        // Force array update to trigger change detection
+        // Force array update and signal to trigger immediate change detection
         this.appexBRequests = [...this.appexBRequests];
         
-        console.log('✅ [Faculty - Approve APEX B] Status updated:', {
+        console.log('✅ [Faculty - Approve APEX B] Status updated, UI will reflect immediately:', {
           status,
-          facultyVerified: this.appexBRequests[index].facultyVerified
+          facultyVerified: this.appexBRequests[index].facultyVerified,
+          calculatedStatus: this.appexBRequests[index].calculatedStatus
         });
       }
     } catch (err: any) {
@@ -385,8 +386,11 @@ export class FacultySupervisor {
     const filter = this.requestFilter;
     
     return this.appexBRequests.filter(item => {
-      // Status filter
+      // Only show approved APEX B forms
       const status = item.status || 'pending';
+      if (status !== 'approved') return false;
+      
+      // Status filter (only for approved forms)
       if (filter !== 'all' && status !== filter) return false;
       
       // Search filter

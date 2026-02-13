@@ -71,14 +71,20 @@ export class TokenRefreshService {
 
   private async refreshAndReschedule() {
     try {
-      await this.auth.refreshAccessToken();
-    } catch {
+      const result = await this.auth.refreshAccessToken();
+      // Verify we got a valid response with token
+      if (result && (result.accessToken || (result as any).token)) {
+        console.log('✅ [TokenRefresh] Token refreshed successfully before expiry');
+      }
+    } catch (err) {
       // on failure, try again in 60s
+      console.warn('⚠️ [TokenRefresh] Failed to refresh token, retrying in 60s', err);
       this.timer = setTimeout(() => this.refreshAndReschedule(), 60_000);
       return;
     }
-    // token saved by AuthService.refreshAccessToken; reschedule
+    // token saved by AuthService.refreshAccessToken; reschedule with new token
     this.timer = null;
+    this.lastTokenHash = ''; // Force re-evaluation
     this.ensureSchedule();
   }
 }

@@ -107,6 +107,7 @@ export const authTokenInterceptor: HttpInterceptorFn = (req, next) => {
         isRefreshingGlobally = true;
         return from(auth.refreshAccessToken()).pipe(
           switchMap(() => {
+            isRefreshingGlobally = false;
             console.log('✅ [authTokenInterceptor] Token refreshed, retrying request');
             const token = getSessionToken();
             const needsAuth = NEEDS_BEARER.some(r => r.test(path)) && !PUBLIC_AUTH.some(r => r.test(path));
@@ -115,9 +116,10 @@ export const authTokenInterceptor: HttpInterceptorFn = (req, next) => {
               : req;
             return next(retried);
           }),
-          catchError(() => {
+          catchError((refreshErr) => {
+            isRefreshingGlobally = false;
             // refresh failed, logout and bubble error
-            console.error('❌ [authTokenInterceptor] Token refresh failed, logging out');
+            console.error('❌ [authTokenInterceptor] Token refresh failed, logging out', refreshErr);
             auth.logout({ redirect: true }).catch(() => {});
             return throwError(() => err);
           })

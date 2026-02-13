@@ -133,143 +133,12 @@
       <div class="card">
         <div class="card-header bg-light">Student Forms Request Management</div>
         <div class="card-body">
-          <!-- Sub-tabs for different form types -->
-          <ul class="nav nav-pills mb-3">
-            <li class="nav-item">
-              <button class="nav-link" [class.active]="currentFormsSubTab==='apexA'" (click)="currentFormsSubTab='apexA'">APEX A</button>
-            </li>
-            <li class="nav-item">
-              <button class="nav-link" [class.active]="currentFormsSubTab==='apexB'" (click)="currentFormsSubTab='apexB'">APEX B</button>
-            </li>
-          </ul>
-
-          <!-- APEX A Forms -->
-          @if (currentFormsSubTab === 'apexA') {
+          <!-- APEX navigation removed as per requirements -->
+          
+          <!-- APEX B Forms - Only showing approved ones -->
+          @if (true) {
             <div class="d-flex justify-content-between align-items-center mb-3">
-              <h5 class="mb-0">APEX A Form Submissions</h5>
-              <button class="btn btn-sm btn-primary" (click)="loadStudentRequests()" [disabled]="loadingRequests">
-                <span [hidden]="loadingRequests">Refresh</span>
-                <span [hidden]="!loadingRequests">Loading...</span>
-              </button>
-            </div>
-
-            <!-- Filters -->
-            <div class="row g-2 mb-3">
-              <div class="col-12 col-md-6">
-                <input class="form-control form-control-sm" placeholder="Search by name, email, or company..." [(ngModel)]="requestSearch" name="requestSearch" />
-              </div>
-              <div class="col-12 col-md-3">
-                <select class="form-select form-select-sm" [(ngModel)]="requestFilter" (ngModelChange)="onRequestFilterChange()" name="requestFilter">
-                  <option value="all">All Status</option>
-                  <option value="pending">Pending Only</option>
-                  <option value="approved">Approved Only</option>
-                  <option value="rejected">Rejected Only</option>
-                </select>
-              </div>
-              <div class="col-12 col-md-3">
-                <select class="form-select form-select-sm" [(ngModel)]="pageSize" (ngModelChange)="page.appexA=1" name="pageSize">
-                  <option [ngValue]="10">10 per page</option>
-                  <option [ngValue]="25">25 per page</option>
-                  <option [ngValue]="50">50 per page</option>
-                </select>
-              </div>
-            </div>
-            
-            @if (loadingRequests) {
-              <div class="text-center py-4">
-                <div class="spinner-border text-primary" role="status">
-                  <span class="visually-hidden">Loading...</span>
-                </div>
-              </div>
-            } @else if (appexARequests.length === 0) {
-              <div class="alert alert-info">No APEX A forms available.</div>
-            } @else if (filteredAppexARequests().length === 0) {
-              <div class="alert alert-warning">No forms match your current filters.</div>
-            } @else {
-              <div class="table-responsive">
-                <table class="table table-striped table-hover table-sm align-middle">
-                  <thead class="table-light">
-                    <tr>
-                      <th>Student Name</th>
-                      <th>Email</th>
-                      <th>Company</th>
-                      <th>Start Date</th>
-                      <th>End Date</th>
-                      <th>Status</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    @for (item of (filteredAppexARequests() | paginate: page.appexA : pageSize); track item.id || $index) {
-                      <tr>
-                        <td>{{ item.studentInfo?.name || item.student?.name || '-' }}</td>
-                        <td>{{ item.studentInfo?.email || item.student?.email || '-' }}</td>
-                        <td>{{ item.company?.name || item.companyName || '-' }}</td>
-                        <td>{{ (item.internship?.startDate || item.startDate) ? ((item.internship?.startDate || item.startDate) | date:'mediumDate') : 'N/A' }}</td>
-                        <td>{{ (item.internship?.endDate || item.endDate) ? ((item.internship?.endDate || item.endDate) | date:'mediumDate') : 'N/A' }}</td>
-                        <td>
-                          <span class="badge" 
-                            [class.bg-warning]="item.status==='pending'"
-                            [class.bg-success]="item.status==='approved'"
-                            [class.bg-danger]="item.status==='rejected'">
-                            {{ item.status || 'pending' }}
-                          </span>
-                        </td>
-                        <td>
-                          @if (item.status === 'pending' || !item.status) {
-                            <div class="btn-group btn-group-sm">
-                              <button class="btn btn-outline-info btn-sm" (click)="viewApexADetails(item)">
-                                <i class="bi bi-eye"></i> View
-                              </button>
-                              <button class="btn btn-success btn-sm" 
-                                (click)="approveAppexA(item, 'approved')" 
-                                [disabled]="isProcessingItem(item) || isApexAAlreadyApproved(item)">
-                                @if (isProcessingItem(item)) {
-                                  <span class="spinner-border spinner-border-sm me-1" role="status"></span>
-                                }
-                                <i class="bi bi-check"></i> Approve
-                              </button>
-                              <button class="btn btn-danger btn-sm" 
-                                (click)="approveAppexA(item, 'rejected')" 
-                                [disabled]="isProcessingItem(item)">
-                                @if (isProcessingItem(item)) {
-                                  <span class="spinner-border spinner-border-sm me-1" role="status"></span>
-                                }
-                                <i class="bi bi-x"></i> Reject
-                              </button>
-                            </div>
-                          } @else {
-                            <div class="d-flex gap-1 align-items-center">
-                              <button class="btn btn-outline-info btn-sm" (click)="viewApexADetails(item)">
-                                <i class="bi bi-eye"></i> View
-                              </button>
-                              <span class="text-muted fst-italic">
-                                @if (item.status === 'approved') {
-                                  <i class="bi bi-check-circle-fill text-success"></i> Approved
-                                } @else if (item.status === 'rejected') {
-                                  <i class="bi bi-x-circle-fill text-danger"></i> Rejected
-                                } @else {
-                                  {{ item.status }}
-                                }
-                              </span>
-                            </div>
-                          }
-                        </td>
-                      </tr>
-                    }
-                  </tbody>
-                </table>
-              </div>
-              <div class="p-2">
-                <app-paginator [total]="filteredAppexARequests().length" [(page)]="page.appexA" [pageSize]="pageSize"></app-paginator>
-              </div>
-            }
-          }
-
-          <!-- APEX B Forms -->
-          @if (currentFormsSubTab === 'apexB') {
-            <div class="d-flex justify-content-between align-items-center mb-3">
-              <h5 class="mb-0">APEX B Form Submissions</h5>
+              <h5 class="mb-0">APEX B Form Submissions (Approved Only)</h5>
               <button class="btn btn-sm btn-primary" (click)="loadStudentRequests()" [disabled]="loadingRequests">
                 <span [hidden]="loadingRequests">Refresh</span>
                 <span [hidden]="!loadingRequests">Loading...</span>
@@ -280,14 +149,6 @@
             <div class="row g-2 mb-3">
               <div class="col-12 col-md-6">
                 <input class="form-control form-control-sm" placeholder="Search by name, email, or assignment..." [(ngModel)]="requestSearch" name="requestSearch" />
-              </div>
-              <div class="col-12 col-md-3">
-                <select class="form-select form-select-sm" [(ngModel)]="requestFilter" (ngModelChange)="onRequestFilterChange()" name="requestFilter">
-                  <option value="all">All Status</option>
-                  <option value="pending">Pending Only</option>
-                  <option value="approved">Approved Only</option>
-                  <option value="rejected">Rejected Only</option>
-                </select>
               </div>
               <div class="col-12 col-md-3">
                 <select class="form-select form-select-sm" [(ngModel)]="pageSize" (ngModelChange)="page.appexB=1" name="pageSize">
@@ -307,7 +168,7 @@
             } @else if (appexBRequests.length === 0) {
               <div class="alert alert-info">No APEX B forms available.</div>
             } @else if (filteredAppexBRequests().length === 0) {
-              <div class="alert alert-warning">No forms match your current filters.</div>
+              <div class="alert alert-warning">No approved forms available or no forms match your current filters.</div>
             } @else {
               <div class="table-responsive">
                 <table class="table table-striped table-hover table-sm align-middle">
@@ -329,59 +190,12 @@
                         <td>{{ item.assignment?.title || item.assignmentTitle || item.title || '-' }}</td>
                         <td>{{ (item.submittedAt || item.createdAt) ? ((item.submittedAt || item.createdAt) | date:'short') : 'N/A' }}</td>
                         <td>
-                          @if (item.calculatedStatus === 'PENDING_VERIFICATION' || item.status === 'pending' || !item.status) {
-                            <span class="badge bg-warning">Pending Verification</span>
-                          } @else if (item.calculatedStatus === 'FACULTY_VERIFIED') {
-                            <span class="badge bg-info">Faculty Verified</span>
-                          } @else if (item.calculatedStatus === 'STUDENT_VERIFIED') {
-                            <span class="badge bg-primary">Student Verified</span>
-                          } @else if (item.calculatedStatus === 'BOTH_VERIFIED' || item.status === 'approved') {
-                            <span class="badge bg-success">Fully Approved</span>
-                          } @else if (item.calculatedStatus === 'CHANGES_REQUESTED' || item.status === 'changes_requested') {
-                            <span class="badge bg-danger">Changes Requested</span>
-                          } @else {
-                            <span class="badge bg-secondary">{{ item.calculatedStatus || item.status || 'Unknown' }}</span>
-                          }
+                          <span class="badge bg-success">Approved</span>
                         </td>
                         <td>
-                          @if (item.calculatedStatus === 'PENDING_VERIFICATION' || item.status === 'pending' || !item.status) {
-                            <div class="btn-group btn-group-sm">
-                              <button class="btn btn-outline-info btn-sm" (click)="viewApexADetails(item)">
-                                <i class="bi bi-eye"></i> View
-                              </button>
-                              <button class="btn btn-success btn-sm" 
-                                (click)="approveAppexB(item, 'approve')" 
-                                [disabled]="isProcessingItem(item) || isApexBAlreadyApproved(item)">
-                                @if (isProcessingItem(item)) {
-                                  <span class="spinner-border spinner-border-sm me-1" role="status"></span>
-                                }
-                                <i class="bi bi-check"></i> Approve
-                              </button>
-                              <button class="btn btn-warning btn-sm" 
-                                (click)="approveAppexB(item, 'request_changes')" 
-                                [disabled]="isProcessingItem(item)">
-                                @if (isProcessingItem(item)) {
-                                  <span class="spinner-border spinner-border-sm me-1" role="status"></span>
-                                }
-                                <i class="bi bi-exclamation-triangle"></i> Request Changes
-                              </button>
-                            </div>
-                          } @else {
-                            <div class="d-flex gap-1 align-items-center">
-                              <button class="btn btn-outline-info btn-sm" (click)="viewApexADetails(item)">
-                                <i class="bi bi-eye"></i> View
-                              </button>
-                              <span class="text-muted fst-italic">
-                                @if (item.status === 'approved' || item.calculatedStatus === 'BOTH_VERIFIED' || item.calculatedStatus === 'FACULTY_VERIFIED') {
-                                  <i class="bi bi-check-circle-fill text-success"></i> Approved
-                                } @else if (item.status === 'changes_requested' || item.calculatedStatus === 'CHANGES_REQUESTED') {
-                                  <i class="bi bi-exclamation-circle-fill text-warning"></i> Changes Requested
-                                } @else {
-                                  {{ item.calculatedStatus || item.status || 'Pending' }}
-                                }
-                              </span>
-                            </div>
-                          }
+                          <button class="btn btn-outline-info btn-sm" (click)="viewApexADetails(item)">
+                            <i class="bi bi-eye"></i> View
+                          </button>
                         </td>
                       </tr>
                     }

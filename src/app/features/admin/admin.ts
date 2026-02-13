@@ -21,7 +21,7 @@ export class Admin {
     try {
       this.route.queryParamMap.subscribe(p => {
         const t = (p.get('tab') || '').toLowerCase();
-        const allowed = ['students','applications','requests','announcements','officers','faculty','companies','sites','compliance','complaints','scheme','evidence','formsrequest'] as const;
+        const allowed = ['requests','announcements','officers','faculty','companies','sites','compliance','complaints','scheme','formsrequest'] as const;
         if ( (allowed as readonly string[]).includes(t) ) {
           this.currentTab = t as any;
           // Auto-load data when navigating directly via URL (no need to click refresh)
@@ -74,7 +74,7 @@ export class Admin {
   facultyId = '';
   siteId = '';
   selectedId: string | null = null;
-  currentTab: 'students'|'applications'|'requests'|'announcements'|'officers'|'faculty'|'companies'|'sites'|'compliance'|'complaints'|'scheme'|'evidence'|'formsRequest' = 'students';
+  currentTab: 'requests'|'announcements'|'officers'|'faculty'|'companies'|'sites'|'compliance'|'complaints'|'scheme'|'formsRequest' = 'requests';
   currentFormsSubTab: 'apexA'|'apexB'|'apexC' = 'apexA';
   // pagination
   page = { students: 1, requests: 1, complaints: 1, faculty: 1, sites: 1, companies: 1, announcements: 1, officers: 1 };
@@ -112,7 +112,9 @@ export class Admin {
   creatingAdmin = false;
   // forms for adding supervisors/company
   faculty = { name: '', email: '', department: '', password: '' };
+  addingFaculty = false;
   company = { name: '', email: '', phone: '', address: '', website: '', industry: '', description: '' };
+  addingCompany = false;
   site = { name: '', email: '', companyId: '', password: '' };
   // Dynamic company dropdown for Sites tab
   dropdownCompanies: Array<{ id: string; name: string }> = [];
@@ -856,6 +858,8 @@ export class Admin {
     }, 250);
   }
   async addFaculty() {
+    if (this.addingFaculty) return; // Prevent duplicate submissions
+    
     const name = this.faculty.name?.trim() || '';
     const email = this.faculty.email?.trim() || '';
     const dept = this.faculty.department?.trim() || '';
@@ -875,6 +879,8 @@ export class Admin {
       this.toast.warning('Email already exists. Choose a suggestion below or edit the email.');
       return;
     }
+    
+    this.addingFaculty = true;
     try {
       await this.adminApi.createAccount({ name, email, password: pass, role: 'FACULTY' } as any);
       this.store.addFacultySupervisor(name, email, dept, pass);
@@ -883,6 +889,8 @@ export class Admin {
     } catch (err: any) {
       const msg = err?.error?.message || err?.message || 'Failed to add faculty supervisor';
       this.toast.danger(msg);
+    } finally {
+      this.addingFaculty = false;
     }
   }
   onFacultyNameBlur() {
@@ -983,12 +991,16 @@ export class Admin {
     this.facultySuggestIndex = -1;
   }
   async addCompany() {
+    if (this.addingCompany) return; // Prevent duplicate submissions
+    
     const { name, email, phone, address, website, industry, description } = this.company;
     if (!name?.trim()) { this.toast.warning('Company name is required'); return; }
     if (!email?.trim()) { this.toast.warning('Company email is required'); return; }
     // Duplicate validation by name (case-insensitive)
   const exists = (this.companyList() || []).some(c => (c.name || '').trim().toLowerCase() === name.trim().toLowerCase());
     if (exists) { this.toast.warning('This company is already listed'); return; }
+    
+    this.addingCompany = true;
     try {
     const res = await this.adminApi.addCompany({ name, email, phone, address, website, industry, description });
     // Refresh from server instead of adding locally
@@ -1000,6 +1012,8 @@ export class Admin {
     } catch (err: any) {
       const msg = err?.error?.message || err?.message || 'Failed to add company';
       this.toast.danger(msg);
+    } finally {
+      this.addingCompany = false;
     }
   }
   startEditCompany(id: string) {
@@ -1028,6 +1042,8 @@ export class Admin {
     this.toast.success('Company updated');
   }
   async addSite() {
+    if (this.siteLoading['add']) return; // Prevent duplicate submissions
+    
     const name = this.site.name?.trim() || '';
     const email = this.site.email?.trim() || '';
     const cid = this.site.companyId?.trim() || '';
@@ -1039,6 +1055,8 @@ export class Admin {
     if (!pass) { this.toast.warning('Set a temporary password for the site supervisor'); return; }
     // No domain restriction for site; still check duplicates
     if (this.allEmails().includes(email.toLowerCase())) { this.toast.warning('Email already exists. Try a different one.'); return; }
+    
+    this.siteLoading['add'] = true;
     try {
       await this.adminApi.createAccount({ name, email, password: pass, role: 'SITE_SUPERVISOR' } as any);
       this.store.addSiteSupervisor(name, email, cid || undefined, pass);
@@ -1050,6 +1068,8 @@ export class Admin {
       const backendDetail = err?.error?.details || err?.error?.error || err?.error?.reason;
       const msg = unauthorized || backendDetail || err?.error?.message || err?.message || 'Failed to add site supervisor';
       this.toast.danger(msg);
+    } finally {
+      this.siteLoading['add'] = false;
     }
   }
   companyName(id?: string) {

@@ -135,12 +135,26 @@ export class AuthService {
       const absUrl = `${this.absBase}${rel}`;
       res = await firstValueFrom(post(absUrl));
     }
+    // Validate and save tokens from response
     try {
       const tok = (res as any)?.accessToken || (res as any)?.token;
       const rtk = (res as any)?.refreshToken;
-      if (tok) { sessionStorage.setItem('authToken', tok); sessionStorage.setItem('accessToken', tok); }
-      if (rtk) { localStorage.setItem('refreshToken', rtk); }
-    } catch {}
+      if (!tok) {
+        console.error('[Auth] Token refresh response missing accessToken');
+        throw new Error('Invalid refresh response: missing access token');
+      }
+      // Save both access token and refresh token (if new one provided)
+      sessionStorage.setItem('authToken', tok);
+      sessionStorage.setItem('accessToken', tok);
+      if (rtk) {
+        localStorage.setItem('refreshToken', rtk);
+        console.log('✅ [Auth] Refresh token updated from response');
+      }
+      console.log('✅ [Auth] Access token refreshed and saved');
+    } catch (saveErr) {
+      console.error('[Auth] Failed to save refreshed tokens:', saveErr);
+      throw saveErr;
+    }
     return res;
   }
 
