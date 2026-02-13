@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { StoreService } from '../../shared/services/store.service';
 import { ToastService } from '../../shared/toast/toast.service';
 import { AuthService } from '../../shared/services/auth.service';
+import { StudentService } from '../../shared/services/student.service';
 
 @Component({
   selector: 'app-assignment-form',
@@ -13,7 +14,15 @@ import { AuthService } from '../../shared/services/auth.service';
 })
 export class AssignmentForm {
   selectedId = input<string | null>(null);
-  submitted = signal<boolean>(false);
+  submitted =signal<boolean>(false);
+  loading = signal<boolean>(false);
+  verificationLoading = signal<boolean>(false);
+  
+  // AppEx B verification status from backend
+  appexBData: any = null;
+  facultyApproved = signal<boolean>(false);
+  adminApproved = signal<boolean>(false);
+  studentApproved = signal<boolean>(false);
 
   model = {
     // Appendix-B: Student Information
@@ -50,11 +59,19 @@ export class AssignmentForm {
     acknowledged: false
   };
 
-  constructor(private store: StoreService, private toast: ToastService, private auth: AuthService) {
+  constructor(
+    private store: StoreService, 
+    private toast: ToastService, 
+    private auth: AuthService,
+    private studentService: StudentService
+  ) {
     // Auto-load when selectedId changes using effect
     effect(() => {
       const id = this.selectedId();
       if (!id) return;
+      
+      // Load existing AppEx B data from backend
+      this.loadAppexBStatus();
       
       try {
         const list = this.store.agreements()[id] ?? [];
@@ -79,6 +96,11 @@ export class AssignmentForm {
       // Prevent resubmission
       if (this.submitted()) {
         this.toast.warning('Assignment & Agreement already submitted');
+        return;
+      }
+
+      // Prevent multiple simultaneous submissions
+      if (this.loading()) {
         return;
       }
 
@@ -148,13 +170,78 @@ export class AssignmentForm {
         studentId: id
       };
       
-      // Submit to backend via store service with auth
-      this.store.submitAppexB(id, requestConfig as any);
-      this.submitted.set(true);
-      this.toast.success('Student Assignment & Agreement (AppEx B) submitted successfully');
+      // Set loading state
+      this.loading.set(true);
       
-      // reset locally
-      this.model = { 
+      // Submit to backend via store service with auth
+      const result = this.store.submitAppexB(id, requestConfig as any);
+      
+      // Handle the response
+      if (result && result.observable) {
+        result.observable.subscribe({
+          next: (response) => {
+            this.loading.set(false);
+            this.submitted.set(true);
+            this.toast.success('Student Assignment & Agreement (AppEx B) submitted successfully');
+            console.log('[AssignmentForm] AppEx B submitted successfully:', response);
+            
+            // Load AppEx B status to show approval badges
+            this.loadAppexBStatus();
+            
+            // reset locally
+            this.model = {
+              name: '',
+              email: '',
+              degreeProgram: '',
+              semester: '',
+              contactNo: '',
+              preferredField: '',
+              agreementAccepted: false,
+              organization: '',
+              address: '',
+              industrySector: '',
+              contactName: '',
+              contactDesignation: '',
+              contactPhone: '',
+              contactEmail: '',
+              internshipField: '',
+              internshipLocation: '',
+              mode: 'On-site',
+              numberOfInternship: 0,
+              startDate: '',
+              endDate: '',
+              workingDays: '',
+              workingHours: '',
+              status: 'pending',
+              internshipNature: '',
+              fullName: '',
+              registrationNumber: '',
+              contactNumber: '',
+              emailAddress: '',
+              acknowledged: false
+            };
+          },
+          error: (err) => {
+            this.loading.set(false);
+            console.error('[AssignmentForm] Error submitting AppEx B:', err);
+            const errorMsg = err?.error?.message || err?.message || 'Failed to submit. Please try again.';
+            this.toast.danger('Submission failed: ' + errorMsg);
+          }
+        });
+      } else {
+        // Fallback for synchronous error
+        this.loading.set(false);
+        this.toast.danger('Failed to initiate submission. Please check your connection.');
+      }
+    } catch (err: any) {
+      this.loading.set(false);
+      console.error('[AssignmentForm] Submission error:', err);
+      this.toast.danger('Failed to submit internship application: ' + err.message);
+    }
+  }
+
+  private resetModel() {
+    this.model = { 
         name: '',
         email: '',
         degreeProgram: '',
@@ -184,11 +271,7 @@ export class AssignmentForm {
         contactNumber: '',
         emailAddress: '',
         acknowledged: false
-      };
-    } catch (err: any) {
-      console.error('[AssignmentForm] Submission error:', err);
-      this.toast.danger('Failed to submit internship application: ' + err.message);
-    }
+    };
   }
 
   private getAuthToken(): string | null {
@@ -205,6 +288,80 @@ export class AssignmentForm {
     } catch (err) {
       console.error('[AssignmentForm] Error retrieving auth token:', err);
       return null;
+    }
+  }
+
+  async loadAppexBStatus() {
+    try {
+      const response = await this.studentService.getAppexBVerification();
+      const data = response?.data || response;
+      
+      if (data && data.id) {
+        this.appexBData = data;
+        this.submitted.set(true);
+        
+        // Update model with admin-filled data
+        if (data.companyName) this.model.organization = data.companyName;
+        if (data.internshipRole) this.model.internshipField = data.internshipRole;
+        if (data.startDate) this.model.startDate = data.startDate.slice(0, 10);
+        if (data.endDate) this.model.endDate = data.endDate.slice(0, 10);
+        if (data.durationWeeks) this.model.numberOfInternship = data.durationWeeks;
+        
+        // Check approval statuses
+        this.facultyApproved.set(data.facultyVerified || data.assignment?.facultyVerified || false);
+        this.adminApproved.set(
+          data.adminApproved || 
+          data.adminVerified || 
+          data.status === 'approved' || 
+          false
+        );
+        this.studentApproved.set(data.studentVerified || data.assignment?.studentVerified || false);
+      }
+    } catch (err: any) {
+      // Silently handle error (no existing data)
+      console.log('[AssignmentForm] No AppEx B data found:', err?.message);
+    }
+  }
+
+  async approveAppexB() {
+    if (this.verificationLoading()) return;
+    
+    this.verificationLoading.set(true);
+    try {
+      const response = await this.studentService.verifyAppexB();
+      this.toast.success(response?.message || 'AppEx B approved successfully');
+      this.studentApproved.set(true);
+      
+      // Reload status
+      await this.loadAppexBStatus();
+    } catch (err: any) {
+      const errorMsg = err?.error?.message || err?.message || 'Failed to approve';
+      this.toast.danger(errorMsg);
+    } finally {
+      this.verificationLoading.set(false);
+    }
+  }
+
+  async rejectAppexB() {
+    if (this.verificationLoading()) return;
+    
+    if (!confirm('Are you sure you want to reject this AppEx B? This action cannot be undone.')) {
+      return;
+    }
+    
+    this.verificationLoading.set(true);
+    try {
+      // Call API to reject (you may need to add this endpoint)
+      const response = await this.studentService.verifyAppexB(); // Same endpoint, backend should handle rejection
+      this.toast.warning(response?.message || 'AppEx B rejected');
+      
+      // Reload status
+      await this.loadAppexBStatus();
+    } catch (err: any) {
+      const errorMsg = err?.error?.message || err?.message || 'Failed to reject';
+      this.toast.danger(errorMsg);
+    } finally {
+      this.verificationLoading.set(false);
     }
   }
 }

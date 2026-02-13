@@ -1,4 +1,4 @@
-import { Component, input, effect } from '@angular/core';
+import { Component, input, effect, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { StoreService } from '../../shared/services/store.service';
@@ -13,6 +13,7 @@ import { ToastService } from '../../shared/toast/toast.service';
 })
 export class Form3Form {
   selectedId = input<string | null>(null);
+  loading = signal<boolean>(false);
 
   model = {
     organizationOverview: '',
@@ -93,6 +94,11 @@ export class Form3Form {
 
   async submit() {
     try {
+      // Prevent multiple simultaneous submissions
+      if (this.loading()) {
+        return;
+      }
+
       const id = this.selectedId();
       if (!id) { 
         this.toast.warning('Please select or sign-in as a student to submit.'); 
@@ -104,6 +110,9 @@ export class Form3Form {
         this.toast.warning('Organization Overview is required');
         return;
       }
+
+      // Set loading state
+      this.loading.set(true);
 
       // Build base payload for AppEx-C API
       const appexCPayload: any = {
@@ -139,10 +148,12 @@ export class Form3Form {
       if (existingData?.id || existingData?.appexCId) {
         console.log('[Form3Form] Updating existing AppEx-C');
         await this.studentService.updateAppExC(appexCPayload);
+        this.loading.set(false);
         this.toast.success('Organization Overview & Scope of Work (AppEx-C) updated successfully');
       } else {
         console.log('[Form3Form] Creating new AppEx-C');
         await this.studentService.submitAppExC(appexCPayload);
+        this.loading.set(false);
         this.toast.success('Organization Overview & Scope of Work (AppEx-C) submitted successfully');
       }
       
@@ -167,6 +178,7 @@ export class Form3Form {
         toolsTechnologies: ''
       };
     } catch (err: any) {
+      this.loading.set(false);
       console.error('[Form3Form] Submission error:', err);
       this.toast.danger('Failed to submit AppEx-C: ' + (err?.error?.message || err?.message || 'Unknown error'));
     }

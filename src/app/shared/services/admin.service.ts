@@ -456,7 +456,7 @@ export class AdminService {
   }
 
   // Admin updates APEX B extended details (company, role, supervisors, dates, IDs)
-  // This PATCH endpoint is for updating internship details, not approval status
+  // This PATCH endpoint is for updating internship details and admin approval
 
   async updateApexBDetails(details: {
     studentId: string;
@@ -469,6 +469,7 @@ export class AdminService {
     durationWeeks?: number;
     startDate?: string;
     endDate?: string;
+    adminApprovalAction?: 'approve' | 'reject';
   }): Promise<any> {
     if (!details.studentId) {
       throw new Error('studentId is required');
@@ -504,9 +505,10 @@ export class AdminService {
     if (details.endDate !== undefined) body.endDate = toISODate(details.endDate);
     if (details.facultyId !== undefined) body.facultyId = details.facultyId;
     if (details.siteId !== undefined) body.siteId = details.siteId;
+    if (details.adminApprovalAction !== undefined) body.adminApprovalAction = details.adminApprovalAction;
     
     // Verify at least one updateable field beyond studentId is provided
-    const updateFields = ['companyName', 'internshipRole', 'facultySupervisorNameDesig', 'siteSupervisorNameDesig', 'facultyId', 'siteId', 'durationWeeks', 'startDate', 'endDate'];
+    const updateFields = ['companyName', 'internshipRole', 'facultySupervisorNameDesig', 'siteSupervisorNameDesig', 'facultyId', 'siteId', 'durationWeeks', 'startDate', 'endDate', 'adminApprovalAction'];
     const hasUpdateField = updateFields.some(field => body.hasOwnProperty(field));
     if (!hasUpdateField) {
       throw new Error('At least one field to update must be provided');

@@ -41,7 +41,11 @@
       </div>
 
       <div class="col-12 d-flex gap-2 mt-3">
-        <button class="btn btn-success" [disabled]="!f.form.valid" type="submit"> Submit </button>
+        <button class="btn btn-success" [disabled]="!f.form.valid || loading()" type="submit">
+          <span *ngIf="loading()" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+          <span *ngIf="loading()">Submitting...</span>
+          <span *ngIf="!loading()">Submit</span>
+        </button>
       </div>
     </form>
   </div>

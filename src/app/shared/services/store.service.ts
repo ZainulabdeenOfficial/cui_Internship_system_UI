@@ -1,6 +1,7 @@
 import { Injectable, signal } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
+import { Observable } from 'rxjs';
 
 export type WeeklyLog = { id: string; week: number; note: string; date: string };
 export type Report = { id: string; type: 'proposal'|'progress'|'final'|'mid'|'site-final'|'reflective'; title: string; content: string; date: string; score?: number; approved?: boolean };
@@ -500,37 +501,15 @@ export class StoreService {
       console.log('[Store] Payload:', JSON.stringify(appexAPayload, null, 2));
       console.log('[Store] Auth Token present:', !!authToken);
 
-      // Make actual HTTP POST request to backend
-      this.http.post<any>(apiUrl, appexAPayload, { headers }).subscribe(
-        (response) => {
-          console.log('[Store] ✓ AppEx A submitted successfully:', response);
-        },
-        (error) => {
-          console.error('[Store] ✗ Error submitting AppEx A');
-          console.error('[Store] Status:', error.status);
-          console.error('[Store] Error response:', error.error);
-          console.error('[Store] Full error:', error);
-          
-          // Log specific error details
-          if (error.status === 0) {
-            console.error('[Store] Network error - CORS or connection issue');
-          } else if (error.status === 401) {
-            console.error('[Store] Unauthorized - Token invalid or expired');
-          } else if (error.status === 400) {
-            console.error('[Store] Bad request - Validation error:', error.error?.error || error.error?.message);
-          } else if (error.status === 409) {
-            console.error('[Store] Conflict - AppEx A already exists');
-          } else if (error.status === 500) {
-            console.error('[Store] Server error');
-          }
-        }
-      );
+      // Make actual HTTP POST request to backend and return the observable
+      const request$ = this.http.post<any>(apiUrl, appexAPayload, { headers });
 
-      // Return success indicator (actual response will be handled by subscription)
-      return { 
-        success: true, 
+      // Return an object containing the observable for the component to subscribe
+      return {
+        success: true,
         message: 'AppEx A submission initiated',
-        studentId: configStudentId || studentId
+        studentId: configStudentId || studentId,
+        observable: request$
       };
     } catch (err: any) {
       console.error('[Store] ✗ Error preparing AppEx A submission:', err.message);
@@ -601,37 +580,15 @@ export class StoreService {
       console.log('[Store] Payload:', JSON.stringify(appexBPayload, null, 2));
       console.log('[Store] Auth Token present:', !!authToken);
 
-      // Make actual HTTP POST request to backend
-      this.http.post<any>(apiUrl, appexBPayload, { headers }).subscribe(
-        (response) => {
-          console.log('[Store] ✓ AppEx B submitted successfully:', response);
-        },
-        (error) => {
-          console.error('[Store] ✗ Error submitting AppEx B');
-          console.error('[Store] Status:', error.status);
-          console.error('[Store] Error response:', error.error);
-          console.error('[Store] Full error:', error);
-          
-          // Log specific error details
-          if (error.status === 0) {
-            console.error('[Store] Network error - CORS or connection issue');
-          } else if (error.status === 401) {
-            console.error('[Store] Unauthorized - Token invalid or expired');
-          } else if (error.status === 400) {
-            console.error('[Store] Bad request - Validation error:', error.error?.error || error.error?.message);
-          } else if (error.status === 409) {
-            console.error('[Store] Conflict - AppEx B already exists');
-          } else if (error.status === 500) {
-            console.error('[Store] Server error');
-          }
-        }
-      );
+      // Make actual HTTP POST request to backend and return the observable
+      const request$ = this.http.post<any>(apiUrl, appexBPayload, { headers });
 
-      // Return success indicator (actual response will be handled by subscription)
-      return { 
-        success: true, 
+      // Return an object containing the observable for the component to subscribe
+      return {
+        success: true,
         message: 'AppEx B submission initiated',
-        studentId: configStudentId || studentId
+        studentId: configStudentId || studentId,
+        observable: request$
       };
     } catch (err: any) {
       console.error('[Store] ✗ Error preparing AppEx B submission:', err.message);

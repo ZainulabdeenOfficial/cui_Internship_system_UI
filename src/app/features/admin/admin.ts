@@ -1835,8 +1835,13 @@ export class Admin {
     try {
       console.log('📤 [Admin - Submit APEX B Details] Sending details:', this.apexBDetails);
       
-      // Submit details - when admin adds details, it means the form is approved
-      await this.adminApi.updateApexBDetails(this.apexBDetails);
+      // Submit details with admin approval action
+      const payload = {
+        ...this.apexBDetails,
+        adminApprovalAction: 'approve' as 'approve'
+      };
+      
+      await this.adminApi.updateApexBDetails(payload);
       
       console.log('✅ [Admin - Submit APEX B Details] API call successful');
       

@@ -1,7 +1,85 @@
 <div class="card mb-3">
   <div class="card-header">Assignment & Student Agreement Form (Appendix B)</div>
   <div class="card-body">
-    <form (ngSubmit)="submit()" #f="ngForm" class="row g-3">
+    <!-- Status Badges (shown after submission) -->
+    <div *ngIf="submitted()" class="mb-4">
+      <h5 class="mb-3">Approval Status</h5>
+      <div class="d-flex gap-2 flex-wrap">
+        <span class="badge" [class.bg-success]="facultyApproved()" [class.bg-secondary]="!facultyApproved()">
+          <i class="bi" [class.bi-check-circle-fill]="facultyApproved()" [class.bi-clock-fill]="!facultyApproved()"></i>
+          Faculty: {{ facultyApproved() ? 'Approved' : 'Pending' }}
+        </span>
+        <span class="badge" [class.bg-success]="adminApproved()" [class.bg-secondary]="!adminApproved()">
+          <i class="bi" [class.bi-check-circle-fill]="adminApproved()" [class.bi-clock-fill]="!adminApproved()"></i>
+          Admin: {{ adminApproved() ? 'Approved' : 'Pending' }}
+        </span>
+        <span class="badge" [class.bg-success]="studentApproved()" [class.bg-secondary]="!studentApproved()">
+          <i class="bi" [class.bi-check-circle-fill]="studentApproved()" [class.bi-clock-fill]="!studentApproved()"></i>
+          Student: {{ studentApproved() ? 'Approved' : 'Pending' }}
+        </span>
+      </div>
+
+      <!-- Admin-filled details (read-only) -->
+      <div *ngIf="appexBData" class="mt-4">
+        <h5 class="mb-3">Admin-Completed Details</h5>
+        <div class="row g-3">
+          <div class="col-md-6" *ngIf="appexBData.companyName">
+            <label class="form-label fw-bold">Company Name</label>
+            <p class="form-control-plaintext border rounded px-3 py-2 bg-light">{{ appexBData.companyName }}</p>
+          </div>
+          <div class="col-md-6" *ngIf="appexBData.internshipRole">
+            <label class="form-label fw-bold">Internship Role</label>
+            <p class="form-control-plaintext border rounded px-3 py-2 bg-light">{{ appexBData.internshipRole }}</p>
+          </div>
+          <div class="col-md-6" *ngIf="appexBData.facultySupervisorNameDesig">
+            <label class="form-label fw-bold">Faculty Supervisor</label>
+            <p class="form-control-plaintext border rounded px-3 py-2 bg-light">{{ appexBData.facultySupervisorNameDesig }}</p>
+          </div>
+          <div class="col-md-6" *ngIf="appexBData.siteSupervisorNameDesig">
+            <label class="form-label fw-bold">Site Supervisor</label>
+            <p class="form-control-plaintext border rounded px-3 py-2 bg-light">{{ appexBData.siteSupervisorNameDesig }}</p>
+          </div>
+          <div class="col-md-4" *ngIf="appexBData.durationWeeks">
+            <label class="form-label fw-bold">Duration (Weeks)</label>
+            <p class="form-control-plaintext border rounded px-3 py-2 bg-light">{{ appexBData.durationWeeks }}</p>
+          </div>
+          <div class="col-md-4" *ngIf="appexBData.startDate">
+            <label class="form-label fw-bold">Start Date</label>
+            <p class="form-control-plaintext border rounded px-3 py-2 bg-light">{{ appexBData.startDate | date:'mediumDate' }}</p>
+          </div>
+          <div class="col-md-4" *ngIf="appexBData.endDate">
+            <label class="form-label fw-bold">End Date</label>
+            <p class="form-control-plaintext border rounded px-3 py-2 bg-light">{{ appexBData.endDate | date:'mediumDate' }}</p>
+          </div>
+        </div>
+
+        <!-- Student Verification Actions -->
+        <div *ngIf="facultyApproved() && adminApproved() && !studentApproved()" class="mt-4">
+          <div class="alert alert-info">
+            <i class="bi bi-info-circle-fill me-2"></i>
+            Faculty and Admin have approved your internship details. Please review and approve to proceed.
+          </div>
+          <div class="d-flex gap-2">
+            <button class="btn btn-success" (click)="approveAppexB()" [disabled]="verificationLoading()">
+              <span *ngIf="verificationLoading()" class="spinner-border spinner-border-sm me-2"></span>
+              <i *ngIf="!verificationLoading()" class="bi bi-check-circle me-2"></i>
+              Approve
+            </button>
+            <button class="btn btn-outline-danger" (click)="rejectAppexB()" [disabled]="verificationLoading()">
+              <i class="bi bi-x-circle me-2"></i>
+              Request Changes
+            </button>
+          </div>
+        </div>
+
+        <div *ngIf="studentApproved()" class="alert alert-success mt-4">
+          <i class="bi bi-check-circle-fill me-2"></i>
+          You have approved this AppEx B. All approvals complete!
+        </div>
+      </div>
+    </div>
+
+    <form (ngSubmit)="submit()" #f="ngForm" class="row g-3" [class.d-none]="submitted()">
       <!-- Student Information -->
       <div class="col-12"><h5 class="mb-3">Student Information</h5></div>
       
@@ -64,13 +142,11 @@
       </div>
       
       <div class="col-12 d-flex gap-2 mt-3">
-        <button class="btn btn-success" [disabled]="!f.form.valid || !model.agreementAccepted || submitted()" type="submit">
-          Submit Assignment & Agreement
+        <button class="btn btn-success" [disabled]="!f.form.valid || !model.agreementAccepted || submitted() || loading()" type="submit">
+          <span *ngIf="loading()" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+          <span *ngIf="loading()">Submitting...</span>
+          <span *ngIf="!loading()">Submit Assignment & Agreement</span>
         </button>
-      </div>
-      <div *ngIf="submitted()" class="alert alert-success mt-3">
-        <i class="bi bi-check-circle-fill me-2"></i>
-        Assignment & Agreement submitted successfully. Waiting for approval.
       </div>
     </form>
   </div>
