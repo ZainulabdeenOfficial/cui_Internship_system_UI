@@ -12,6 +12,7 @@
     <li class="nav-item"><button type="button" class="nav-link" [class.active]="isCurrentTab('assignment')" (click)="selectTab('assignment')">Assignment & Agreement</button></li>
     <li class="nav-item"><button type="button" class="nav-link" [class.active]="isCurrentTab('form3')" (click)="selectTab('form3')">Organization Overview &amp; Scope of Work</button></li>
     <li class="nav-item"><button type="button" class="nav-link" [class.active]="isCurrentTab('weeklylogs')" (click)="selectTab('weeklylogs')">Weekly Logs</button></li>
+    <li class="nav-item"><button type="button" class="nav-link" [class.active]="isCurrentTab('company-requests')" (click)="selectTab('company-requests')">Company Requests</button></li>
     <li class="nav-item ms-auto"><button type="button" class="nav-link" [class.active]="isCurrentTab('complaints')" (click)="selectTab('complaints')">Complaints</button></li>
   </ul>
 
@@ -397,6 +398,101 @@
             <li class="list-group-item" *ngFor="let c of myComplaints()">{{ c.category }} — {{ c.message }} <span class="text-muted">— {{ c.createdAt | date:'short' }}</span></li>
           </ul>
           <div class="text-muted" *ngIf="myComplaints().length === 0">No complaints yet.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Company Requests Tab -->
+  <div *ngIf="isCurrentTab('company-requests')">
+    <div class="card mb-3">
+      <div class="card-header">Request to Add Company</div>
+      <div class="card-body">
+        <form (ngSubmit)="submitCompanyRequest()" #crf="ngForm" class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label">Company Name <span class="text-danger">*</span></label>
+            <input class="form-control" [(ngModel)]="companyRequestForm.name" name="crName" required />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Company Email <span class="text-danger">*</span></label>
+            <input type="email" class="form-control" [(ngModel)]="companyRequestForm.email" name="crEmail" required />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Phone</label>
+            <input class="form-control" [(ngModel)]="companyRequestForm.phone" name="crPhone" />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Website</label>
+            <input class="form-control" [(ngModel)]="companyRequestForm.website" name="crWebsite" />
+          </div>
+          <div class="col-md-12">
+            <label class="form-label">Address</label>
+            <input class="form-control" [(ngModel)]="companyRequestForm.address" name="crAddress" />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Industry</label>
+            <input class="form-control" [(ngModel)]="companyRequestForm.industry" name="crIndustry" />
+          </div>
+          <div class="col-md-12">
+            <label class="form-label">Description</label>
+            <textarea class="form-control" rows="3" [(ngModel)]="companyRequestForm.description" name="crDescription"></textarea>
+          </div>
+          <div class="col-md-12">
+            <label class="form-label">Justification (Why should this company be added?) <span class="text-danger">*</span></label>
+            <textarea class="form-control" rows="3" [(ngModel)]="companyRequestForm.justification" name="crJustification" required minlength="20"></textarea>
+            <small class="form-text text-muted">Minimum 20 characters</small>
+          </div>
+          <div class="col-12">
+            <button class="btn btn-primary" [disabled]="!crf.form.valid || submittingCompanyRequest" type="submit">
+              {{ submittingCompanyRequest ? 'Submitting...' : 'Submit Request' }}
+            </button>
+          </div>
+        </form>
+
+        <div class="mt-4">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="mb-0">Your Company Requests</h6>
+            <button class="btn btn-sm btn-outline-secondary" (click)="loadCompanyRequests()" [disabled]="loadingCompanyRequests">
+              {{ loadingCompanyRequests ? 'Loading...' : 'Refresh' }}
+            </button>
+          </div>
+          
+          <div *ngIf="loadingCompanyRequests" class="text-center py-3">
+            <div class="spinner-border spinner-border-sm text-primary" role="status">
+              <span class="visually-hidden">Loading...</span>
+            </div>
+          </div>
+
+          <div *ngIf="!loadingCompanyRequests && companyRequests.length === 0" class="alert alert-info">
+            No company requests yet. Submit a request above to add a new company.
+          </div>
+
+          <div *ngIf="!loadingCompanyRequests && companyRequests.length > 0" class="table-responsive">
+            <table class="table table-hover">
+              <thead>
+                <tr>
+                  <th>Company Name</th>
+                  <th>Email</th>
+                  <th>Industry</th>
+                  <th>Status</th>
+                  <th>Submitted</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let req of companyRequests">
+                  <td>{{ req.name }}</td>
+                  <td>{{ req.email }}</td>
+                  <td>{{ req.industry || '-' }}</td>
+                  <td>
+                    <span class="badge" [ngClass]="getStatusBadgeClass(req.status)">
+                      {{ getStatusText(req.status) }}
+                    </span>
+                  </td>
+                  <td>{{ req.createdAt | date:'short' }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>

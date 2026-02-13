@@ -61,7 +61,7 @@ export class Student {
   
   private lockSelection: any;
   // tabs: make each form an explicit tab so AppEx-A is first
-  currentTab: 'appex'|'assignment'|'form3'|'evidence'|'logs'|'reports'|'assignments'|'complaints'|'marks'|'weeklylogs' = 'appex';
+  currentTab: 'appex'|'assignment'|'form3'|'evidence'|'logs'|'reports'|'assignments'|'complaints'|'marks'|'weeklylogs'|'company-requests' = 'appex';
   // Raw query param value (for debugging why a tab may be set but UI not rendering)
   lastQueryTab: string | null = null;
   // pagination state per tab/list
@@ -104,6 +104,21 @@ export class Student {
     tools: '',
     expectedDeliverables: ''
   };
+
+  // Company Request Form
+  companyRequestForm = {
+    name: '',
+    email: '',
+    phone: '',
+    address: '',
+    website: '',
+    industry: '',
+    description: '',
+    justification: ''
+  };
+  companyRequests: any[] = [];
+  loadingCompanyRequests = false;
+  submittingCompanyRequest = false;
 
   // New comprehensive forms based on handbook
   // Approval/Agreement forms removed; AppEx-A (appexAForm) is the canonical internship approval
@@ -464,9 +479,9 @@ export class Student {
     const typedName = (this.appexAForm?.organization || '').trim();
     const typedAddr = (this.appexAForm?.address || '').trim();
     const previewAddr = (this.companyPreview?.address || '').trim();
-    this.companyRequest.name = typedName;
+    this.companyRequestForm.name = typedName;
     // Prefer the typed address; else use preview address if available
-    this.companyRequest.address = typedAddr || previewAddr || '';
+    this.companyRequestForm.address = typedAddr || previewAddr || '';
     this.showRequestCompanyForm = true;
   }
 
@@ -652,8 +667,6 @@ export class Student {
 
   // Forms for new API integrations
   createInternshipModel: { type: 'ONSITE'|'REMOTE'|'VIRTUAL'|'HYBRID'; siteId?: string; facultyId?: string } = { type: 'ONSITE', siteId: '', facultyId: '' };
-  companyRequest = { name: '', email: '', phone: '', address: '', website: '', industry: '', description: '', justification: '' };
-  companyRequestsList: any[] = [];
   appexAForm = {
     organization: '', address: '', industrySector: '', contactName: '', contactDesignation: '', contactPhone: '', contactEmail: '',
     internshipField: '', internshipLocation: '', startDate: '', endDate: '', workingDays: '', workingHours: '',
@@ -687,41 +700,6 @@ export class Student {
     await this.apiCreateInternship(type, siteId, facultyId);
   }
   
-  async submitCompanyRequest() {
-    const p = this.companyRequest;
-    if (!p.name?.trim() || !p.email?.trim()) { 
-      this.toast.warning('Name and email are required'); 
-      return; 
-    }
-    try {
-      await this.studentApi.requestToAddCompany({
-        name: p.name.trim(), 
-        email: p.email.trim(), 
-        phone: p.phone?.trim(), 
-        address: p.address?.trim(),
-        website: p.website?.trim(), 
-        industry: p.industry?.trim(), 
-        description: p.description?.trim(), 
-        justification: p.justification?.trim()
-      });
-      this.toast.success('Company request submitted');
-      this.companyRequest = { name: '', email: '', phone: '', address: '', website: '', industry: '', description: '', justification: '' };
-      await this.loadMyCompanyRequests();
-    } catch (err: any) {
-      const msg = err?.error?.message || err?.message || 'Failed to submit company request';
-      this.toast.danger(msg);
-    }
-  }
-  
-  async loadMyCompanyRequests() {
-    try {
-      const res = await this.studentApi.getMyCompanyRequests({ page: 1, limit: 10 });
-      this.companyRequestsList = Array.isArray((res as any)?.companyRequests) ? (res as any).companyRequests : [];
-    } catch (err: any) {
-      // just warn silently in UI
-      this.companyRequestsList = [];
-    }
-  }
   async loadAppExA() {
     try {
       const res = await this.apiGetAppExA();
@@ -773,6 +751,11 @@ export class Student {
     // Auto-load weekly logs when weekly logs tab is selected
     if (tab === 'weeklylogs' && this.weeklyLogs.length === 0) {
       this.loadWeeklyLogs();
+    }
+    
+    // Auto-load company requests when company requests tab is selected
+    if (tab === 'company-requests' && this.companyRequests.length === 0) {
+      this.loadCompanyRequests();
     }
   }
 
@@ -1142,5 +1125,89 @@ export class Student {
     } finally {
       this.submittingWeeklyLog = false;
     }
+  }
+
+  // Company Request Methods
+  async loadCompanyRequests() {
+    if (this.loadingCompanyRequests) return;
+    this.loadingCompanyRequests = true;
+    try {
+      const result = await this.studentApi.getMyCompanyRequests({ page: 1, limit: 10 });
+      this.companyRequests = result.companyRequests || [];
+    } catch (err: any) {
+      const msg = err?.error?.message || err?.message || 'Failed to load company requests';
+      this.toast.danger(msg);
+      this.companyRequests = [];
+    } finally {
+      this.loadingCompanyRequests = false;
+    }
+  }
+
+  async submitCompanyRequest() {
+    if (this.submittingCompanyRequest) return;
+
+    // Validation
+    if (!this.companyRequestForm.name?.trim()) {
+      this.toast.warning('Company name is required');
+      return;
+    }
+    if (!this.companyRequestForm.email?.trim()) {
+      this.toast.warning('Company email is required');
+      return;
+    }
+    if (!this.companyRequestForm.justification?.trim() || this.companyRequestForm.justification.trim().length < 20) {
+      this.toast.warning('Please provide a justification (at least 20 characters)');
+      return;
+    }
+
+    this.submittingCompanyRequest = true;
+    try {
+      const payload = {
+        name: this.companyRequestForm.name.trim(),
+        email: this.companyRequestForm.email.trim(),
+        phone: this.companyRequestForm.phone?.trim(),
+        address: this.companyRequestForm.address?.trim(),
+        website: this.companyRequestForm.website?.trim(),
+        industry: this.companyRequestForm.industry?.trim(),
+        description: this.companyRequestForm.description?.trim(),
+        justification: this.companyRequestForm.justification.trim()
+      };
+
+      const res = await this.studentApi.requestToAddCompany(payload);
+      this.toast.success(res?.message || 'Company request submitted successfully');
+      
+      // Reset form and reload requests
+      this.companyRequestForm = {
+        name: '',
+        email: '',
+        phone: '',
+        address: '',
+        website: '',
+        industry: '',
+        description: '',
+        justification: ''
+      };
+      
+      await this.loadCompanyRequests();
+    } catch (err: any) {
+      const msg = err?.error?.message || err?.message || 'Failed to submit company request';
+      this.toast.danger(msg);
+    } finally {
+      this.submittingCompanyRequest = false;
+    }
+  }
+
+  getStatusBadgeClass(status: string): string {
+    const s = (status || '').toUpperCase();
+    if (s.includes('APPROVED') || s === 'APPROVED') return 'bg-success';
+    if (s.includes('REJECT') || s === 'REJECTED') return 'bg-danger';
+    return 'bg-warning';
+  }
+
+  getStatusText(status: string): string {
+    const s = (status || 'PENDING').toUpperCase();
+    if (s.includes('APPROVED')) return 'APPROVED';
+    if (s.includes('REJECT')) return 'REJECTED';
+    return 'PENDING';
   }
 }

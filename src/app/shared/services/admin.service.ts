@@ -357,10 +357,18 @@ export class AdminService {
   }
 
   // APEX Forms Management APIs
-  async getApexAForms(): Promise<Array<{ id: string; startDate?: string; endDate?: string; status?: string; student?: { id: string; name: string; email: string; regNo: string } }>> {
+  async getApexAForms(params?: { page?: number; limit?: number; status?: string }): Promise<Array<{ id: string; startDate?: string; endDate?: string; status?: string; student?: { id: string; name: string; email: string; regNo: string } }>> {
     const base = environment.apiBaseUrl.replace(/\/$/, '');
     const path = '/api/admin/appex-a';
-    const url = environment.production ? path : `${base}${path}`;
+    
+    // Build query string with pagination
+    const queryParams = [];
+    if (params?.page !== undefined) queryParams.push(`page=${params.page}`);
+    if (params?.limit !== undefined) queryParams.push(`limit=${params.limit}`);
+    if (params?.status) queryParams.push(`status=${encodeURIComponent(params.status)}`);
+    const qs = queryParams.length > 0 ? `?${queryParams.join('&')}` : '';
+    
+    const url = environment.production ? `${path}${qs}` : `${base}${path}${qs}`;
     const res = await firstValueFrom(this.http.get<any>(url, { headers: await this.authHeaders() }));
     const data = Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []);
     return data.map((item: any) => ({
@@ -393,14 +401,16 @@ export class AdminService {
     return await firstValueFrom(this.http.patch<any>(url, body, { headers: await this.authHeaders(true) }));
   }
 
-  async getApexBForms(params?: { id?: string; status?: string }): Promise<any> {
+  async getApexBForms(params?: { id?: string; status?: string; page?: number; limit?: number }): Promise<any> {
     const base = environment.apiBaseUrl.replace(/\/$/, '');
     const path = '/api/admin/appex-b';
     
-    // Build query string
+    // Build query string with pagination
     const queryParams = [];
     if (params?.id) queryParams.push(`id=${encodeURIComponent(params.id)}`);
     if (params?.status) queryParams.push(`status=${encodeURIComponent(params.status)}`);
+    if (params?.page !== undefined) queryParams.push(`page=${params.page}`);
+    if (params?.limit !== undefined) queryParams.push(`limit=${params.limit}`);
     const qs = queryParams.length > 0 ? `?${queryParams.join('&')}` : '';
     
     const url = environment.production ? `${path}${qs}` : `${base}${path}${qs}`;

@@ -1373,7 +1373,7 @@ export class Admin {
     if (this.loadingApexA) return;
     this.loadingApexA = true;
     try {
-      const result = await this.adminApi.getApexAForms();
+      const result = await this.adminApi.getApexAForms({ page: 1, limit: 10 });
       this.apexAForms = result;
       this.selectedApexAIds.clear();
     } catch (err: any) {
@@ -1389,7 +1389,7 @@ export class Admin {
     if (this.loadingApexB) return;
     this.loadingApexB = true;
     try {
-      const result = await this.adminApi.getApexBForms();
+      const result = await this.adminApi.getApexBForms({ page: 1, limit: 10 });
       
       console.log('🔍 [Admin - APEX B Forms] Full API Response:', JSON.stringify(result, null, 2));
       
