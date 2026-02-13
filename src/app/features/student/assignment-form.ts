@@ -317,20 +317,29 @@ export class AssignmentForm {
           false
         );
         
-        // Admin approval - check all possible variations
+        // Admin approval - check all possible variations including adminApprovalAction
         const adminStatus = data.adminApproved || 
                            data.adminVerified || 
+                           data.adminApprovalAction === 'approve' ||
                            data.adminApprovalStatus === 'approved' ||
                            data.status === 'approved' || 
                            data.assignment?.adminApproved || 
                            data.assignment?.adminVerified ||
+                           data.assignment?.adminApprovalAction === 'approve' ||
+                           // Also check if admin has filled details (indicates approval)
+                           (data.companyName && data.internshipRole && data.durationWeeks > 0) ||
                            false;
         
-        console.log('[AssignmentForm] Admin Approval Status:', {
+        console.log('[AssignmentForm] Admin Approval Status Check:', {
           adminApproved: data.adminApproved,
           adminVerified: data.adminVerified,
+          adminApprovalAction: data.adminApprovalAction,
           adminApprovalStatus: data.adminApprovalStatus,
           status: data.status,
+          assignmentAdminApproved: data.assignment?.adminApproved,
+          assignmentAdminVerified: data.assignment?.adminVerified,
+          assignmentAdminApprovalAction: data.assignment?.adminApprovalAction,
+          hasAdminFilledDetails: !!(data.companyName && data.internshipRole && data.durationWeeks > 0),
           computed: adminStatus
         });
         
