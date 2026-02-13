@@ -296,6 +296,8 @@ export class AssignmentForm {
       const response = await this.studentService.getAppexBVerification();
       const data = response?.data || response;
       
+      console.log('[AssignmentForm] AppEx B Status Response:', data);
+      
       if (data && data.id) {
         this.appexBData = data;
         this.submitted.set(true);
@@ -307,14 +309,32 @@ export class AssignmentForm {
         if (data.endDate) this.model.endDate = data.endDate.slice(0, 10);
         if (data.durationWeeks) this.model.numberOfInternship = data.durationWeeks;
         
-        // Check approval statuses
-        this.facultyApproved.set(data.facultyVerified || data.assignment?.facultyVerified || false);
-        this.adminApproved.set(
-          data.adminApproved || 
-          data.adminVerified || 
-          data.status === 'approved' || 
+        // Check approval statuses - check multiple possible field names
+        this.facultyApproved.set(
+          data.facultyVerified || 
+          data.facultyApproved ||
+          data.assignment?.facultyVerified || 
           false
         );
+        
+        // Admin approval - check all possible variations
+        const adminStatus = data.adminApproved || 
+                           data.adminVerified || 
+                           data.adminApprovalStatus === 'approved' ||
+                           data.status === 'approved' || 
+                           data.assignment?.adminApproved || 
+                           data.assignment?.adminVerified ||
+                           false;
+        
+        console.log('[AssignmentForm] Admin Approval Status:', {
+          adminApproved: data.adminApproved,
+          adminVerified: data.adminVerified,
+          adminApprovalStatus: data.adminApprovalStatus,
+          status: data.status,
+          computed: adminStatus
+        });
+        
+        this.adminApproved.set(adminStatus);
         this.studentApproved.set(data.studentVerified || data.assignment?.studentVerified || false);
       }
     } catch (err: any) {

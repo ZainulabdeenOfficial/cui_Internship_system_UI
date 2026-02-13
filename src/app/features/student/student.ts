@@ -55,13 +55,13 @@ export class Student {
   
   // Check if all APEX forms are approved to determine which tabs to show
   allApexFormsApproved(): boolean {
-    // Check if APEX A, Assignment, and APEX B are all submitted and approved
-    return this.appexASubmitted && this.appexBSubmitted && this.isApproved();
+    // Check if APEX A and Assignment are submitted and approved
+    return this.appexASubmitted && this.isApproved();
   }
   
   private lockSelection: any;
   // tabs: make each form an explicit tab so AppEx-A is first
-  currentTab: 'appex'|'appexb'|'assignment'|'form3'|'evidence'|'logs'|'reports'|'assignments'|'complaints'|'marks'|'weeklylogs' = 'appex';
+  currentTab: 'appex'|'assignment'|'form3'|'evidence'|'logs'|'reports'|'assignments'|'complaints'|'marks'|'weeklylogs' = 'appex';
   // Raw query param value (for debugging why a tab may be set but UI not rendering)
   lastQueryTab: string | null = null;
   // pagination state per tab/list
@@ -161,7 +161,7 @@ export class Student {
     try {
       this.route.queryParamMap.subscribe(p => {
           const tabParam = p.get('tab');
-          const allowed = ['appex','appexb','assignment','form3','evidence','logs','reports','assignments','complaints','marks','weeklylogs'] as const;
+          const allowed = ['appex','assignment','form3','evidence','logs','reports','assignments','complaints','marks','weeklylogs'] as const;
           if (tabParam) {
             // record raw value for diagnostics
             this.lastQueryTab = tabParam;
@@ -201,13 +201,13 @@ export class Student {
           }
         // guard: if not approved, restrict to core forms/evidence/complaints
         const isOk = this.isApproved();
-        const visibleWhenPending = new Set(['appex','appexb','assignment','form3','evidence','complaints','weeklylogs']);
+        const visibleWhenPending = new Set(['appex','assignment','form3','evidence','complaints','weeklylogs']);
         if (!isOk && !visibleWhenPending.has(this.currentTab)) {
           this.currentTab = 'appex';
           try { this.router.navigate([], { relativeTo: this.route, queryParams: { tab: 'appex' }, queryParamsHandling: 'merge' }); } catch {}
         }
         // If all APEX forms approved, redirect from APEX tabs to weekly logs
-        if (this.allApexFormsApproved() && ['appex', 'appexb', 'assignment', 'form3'].includes(this.currentTab)) {
+        if (this.allApexFormsApproved() && ['appex', 'assignment', 'form3'].includes(this.currentTab)) {
           this.currentTab = 'weeklylogs';
           try { this.router.navigate([], { relativeTo: this.route, queryParams: { tab: 'weeklylogs' }, queryParamsHandling: 'merge' }); } catch {}
         }
@@ -365,15 +365,6 @@ export class Student {
           } catch {}
         });
       } catch {}
-
-    // Auto-load APEX B verification when student is selected
-    try {
-      effect(() => {
-        const sid = this.selectedId;
-        if (!sid) return;
-        this.loadAppexBVerification();
-      });
-    } catch {}
 
     // Persist drafts to localStorage as the student edits the AppEx-A form (debounced via effect trigger)
     try {
@@ -673,44 +664,7 @@ export class Student {
   };
 
   // APEX B Verification Form
-  appexBForm = {
-    name: '',
-    degreeProgram: '',
-    email: '',
-    semester: '',
-    contactNo: '',
-    preferredField: '',
-    companyName: '',
-    internshipRole: '',
-    facultySupervisorNameDesig: '',
-    siteSupervisorNameDesig: '',
-    durationWeeks: 0,
-    startDate: '',
-    endDate: '',
-    agreementAccepted: false
-  };
-  appexBSubmitted = false;
-  loadingAppexB = false;
-  appexBVerificationStatus = {
-    facultyVerified: false,
-    studentVerified: false,
-    calculatedStatus: ''
-  };
-
-  // Check if APEX B is ready for student verification
-  // If form has data (especially admin-added fields), it means admin and faculty have verified
-  isAppexBReadyForStudentVerification(): boolean {
-    if (!this.appexBSubmitted) return false;
-    if (this.appexBVerificationStatus.studentVerified) return false;
-    
-    // Check if form has data populated (especially fields that admin adds)
-    const hasData = this.appexBForm.companyName && 
-                    this.appexBForm.internshipRole && 
-                    this.appexBForm.durationWeeks > 0;
-    
-    // If API provides facultyVerified flag, use it; otherwise check if data is populated
-    return !!this.appexBVerificationStatus.facultyVerified || !!hasData;
-  }
+  // AppEx B verification removed - approve/reject buttons now directly in assignment form
 
   // Student Assignment & Agreement form (from provided PDF)
   studentAgreementForm = {
@@ -1096,151 +1050,7 @@ export class Student {
     } catch {}
   }
 
-  // APEX B Verification Methods
-  async loadAppexBVerification() {
-    if (this.loadingAppexB) return;
-    this.loadingAppexB = true;
-    try {
-      const res = await this.studentApi.getAppexBVerification();
-      const data = res?.data || res;
-      
-      console.log('📋 [APEX B Verification] Full API Response:', JSON.stringify(res, null, 2));
-      
-      if (data && data.id) {
-        this.appexBForm = {
-          name: data.name || '',
-          degreeProgram: data.degreeProgram || '',
-          email: data.email || '',
-          semester: data.semester || '',
-          contactNo: data.contactNo || '',
-          preferredField: data.preferredField || '',
-          companyName: data.companyName || '',
-          internshipRole: data.internshipRole || '',
-          facultySupervisorNameDesig: data.facultySupervisorNameDesig || '',
-          siteSupervisorNameDesig: data.siteSupervisorNameDesig || '',
-          durationWeeks: data.durationWeeks || 0,
-          startDate: (data.startDate || '').slice(0, 10),
-          endDate: (data.endDate || '').slice(0, 10),
-          agreementAccepted: data.agreementAccepted || false
-        };
-        this.appexBSubmitted = true;
-        // Store verification status - check both direct fields and nested assignment fields
-        const facultyVerified = data.facultyVerified || data.assignment?.facultyVerified || false;
-        const studentVerified = data.studentVerified || data.assignment?.studentVerified || false;
-        const calculatedStatus = data.calculatedStatus || data.assignment?.calculatedStatus || '';
-        
-        // Check for admin approval in various possible fields
-        const adminApproved = data.adminApproved || 
-                             data.adminVerified || 
-                             data.assignment?.adminApproved || 
-                             data.assignment?.adminVerified ||
-                             (data.status === 'approved') ||
-                             (data.assignment?.status === 'approved') ||
-                             false;
-        
-        console.log('✅ [APEX B Verification Status Check]');
-        console.log('  🔍 All Available Fields in Response:', Object.keys(data));
-        console.log('  🔍 Assignment Fields:', data.assignment ? Object.keys(data.assignment) : 'No assignment object');
-        console.log('  Faculty Supervisor Approved:', facultyVerified);
-        console.log('  Admin Approved (from APEX B data.adminApproved):', data.adminApproved || false);
-        console.log('  Admin Approved (from APEX B data.adminVerified):', data.adminVerified || false);
-        console.log('  Admin Approved (from assignment.adminApproved):', data.assignment?.adminApproved || false);
-        console.log('  Admin Approved (from assignment.adminVerified):', data.assignment?.adminVerified || false);
-        console.log('  Admin Approved (from data.status):', data.status);
-        console.log('  Admin Approved (from assignment.status):', data.assignment?.status);
-        console.log('  Admin Approved (General student.approved):', this.isApproved());
-        console.log('  Admin Approved (Combined Check):', adminApproved);
-        console.log('  Student Verified:', studentVerified);
-        console.log('  Calculated Status:', calculatedStatus);
-        console.log('  Student Approval Status (from store):', this.selectedStudent()?.approved);
-        console.log('  Selected Student Full Data:', this.selectedStudent());
-        
-        this.appexBVerificationStatus = {
-          facultyVerified: facultyVerified,
-          studentVerified: studentVerified,
-          calculatedStatus: calculatedStatus
-        };
-      } else {
-        console.log('⚠️ [APEX B Verification] No data with ID found in response');
-      }
-    } catch (err: any) {
-      // Silently ignore errors (no existing data)
-      console.log('❌ [APEX B Verification] Error loading:', err?.message || err);
-    } finally {
-      this.loadingAppexB = false;
-    }
-  }
-
-  async submitAppexBVerification() {
-    if (!this.selectedId) return;
-    if (!this.ensureMine()) return;
-    
-    const form = this.appexBForm;
-    if (!form.name || !form.degreeProgram || !form.email || !form.semester || 
-        !form.contactNo || !form.preferredField || !form.companyName || 
-        !form.internshipRole || !form.startDate || !form.endDate) {
-      this.toast.warning('Please fill all required fields');
-      return;
-    }
-
-    if (form.durationWeeks <= 0) {
-      this.toast.warning('Duration in weeks must be greater than 0');
-      return;
-    }
-
-    if (!form.agreementAccepted) {
-      this.toast.warning('You must accept the agreement to submit');
-      return;
-    }
-
-    this.loadingAppexB = true;
-    try {
-      const payload = {
-        name: form.name,
-        degreeProgram: form.degreeProgram,
-        email: form.email,
-        semester: form.semester,
-        contactNo: form.contactNo,
-        preferredField: form.preferredField,
-        companyName: form.companyName,
-        internshipRole: form.internshipRole,
-        facultySupervisorNameDesig: form.facultySupervisorNameDesig,
-        siteSupervisorNameDesig: form.siteSupervisorNameDesig,
-        durationWeeks: Number(form.durationWeeks),
-        startDate: form.startDate,
-        endDate: form.endDate,
-        agreementAccepted: form.agreementAccepted
-      };
-
-      let res;
-      // If already submitted and ready for student verification, this is student verification (PATCH)
-      if (this.appexBSubmitted && this.isAppexBReadyForStudentVerification() && !this.appexBVerificationStatus.studentVerified) {
-        res = await this.studentApi.verifyAppexB();
-        this.toast.success(res?.message || 'APEX B verified successfully');
-        this.appexBVerificationStatus.studentVerified = true;
-        if (res?.data?.calculatedStatus) {
-          this.appexBVerificationStatus.calculatedStatus = res.data.calculatedStatus;
-        }
-      } else {
-        // Initial submission (POST)
-        res = await this.studentApi.submitAppexBVerification(payload);
-        this.toast.success(res?.message || 'APEX B verification submitted successfully');
-        this.appexBSubmitted = true;
-        if (res?.data) {
-          this.appexBVerificationStatus = {
-            facultyVerified: res.data.facultyVerified || false,
-            studentVerified: res.data.studentVerified || false,
-            calculatedStatus: res.data.calculatedStatus || ''
-          };
-        }
-      }
-    } catch (err: any) {
-      const msg = err?.error?.message || err?.message || 'Failed to submit APEX B verification';
-      this.toast.danger(msg);
-    } finally {
-      this.loadingAppexB = false;
-    }
-  }
+  // APEX B Verification Methods removed - approve/reject now in assignment-form component
 
   // Update removed - Students can only submit APEX B once, cannot update after submission
 

@@ -1706,9 +1706,20 @@ export class Admin {
     return targetForm?.status === 'approved';
   }
 
+  canAddApexBDetails(form: any): boolean {
+    // Can add details if:
+    // 1. Not currently updating
+    // 2. Status is not 'approved' (pending or rejected forms can be edited)
+    // 3. OR status is 'rejected' (can resubmit after rejection)
+    if (this.updatingApexB) return false;
+    const status = form?.status || 'pending';
+    return status !== 'approved';
+  }
+
   closeApexBModal() {
     this.showApexBModal = false;
     this.selectedApexBForm = null;
+    this.updatingApexB = false; // Reset loading state when closing modal
     this.apexBDetails = {
       studentId: '',
       companyName: '',
@@ -1841,39 +1852,41 @@ export class Admin {
         adminApprovalAction: 'approve' as 'approve'
       };
       
-      await this.adminApi.updateApexBDetails(payload);
+      const response = await this.adminApi.updateApexBDetails(payload);
       
-      console.log('✅ [Admin - Submit APEX B Details] API call successful');
+      console.log('✅ [Admin - Submit APEX B Details] API call successful', response);
       
-      // Update local state to reflect approval BEFORE closing modal
+      // Update local state to reflect approval
       const form = this.apexBForms.find(f => f.id === this.selectedApexBForm.id);
       if (form) {
         form.status = 'approved';
+        // Update with response data if available
+        if (response?.data) {
+          Object.assign(form, response.data);
+        }
         console.log('✅ [Admin - Submit APEX B Details] Form status updated to approved');
       }
-      
-      // Reset the updating flag first
-      this.updatingApexB = false;
       
       // Show success message
       this.toast.success('APEX B details submitted successfully and form approved');
       
-      // Close modal with a slight delay to ensure UI updates
-      setTimeout(() => {
-        console.log('🔄 [Admin - Submit APEX B Details] Closing modal...');
-        this.closeApexBModal();
-        
-        // Reload the forms list to get updated data from server (in background)
-        console.log('🔄 [Admin - Submit APEX B Details] Reloading forms list...');
-        this.loadApexBForms().then(() => {
-          console.log('✅ [Admin - Submit APEX B Details] Forms list reloaded');
-        });
-      }, 100);
+      // Auto-close modal immediately
+      this.closeApexBModal();
+      
+      // Reload the forms list to get updated data from server (in background)
+      console.log('🔄 [Admin - Submit APEX B Details] Reloading forms list...');
+      this.loadApexBForms().then(() => {
+        console.log('✅ [Admin - Submit APEX B Details] Forms list reloaded');
+      }).catch(err => {
+        console.error('❌ [Admin - Submit APEX B Details] Error reloading forms:', err);
+      });
       
     } catch (err: any) {
       const msg = err?.error?.message || err?.message || 'Failed to submit APEX B details';
       this.toast.danger(msg);
       console.error('❌ [Admin - Submit APEX B Details] Error:', err);
+    } finally {
+      // Always reset loading state in finally block
       this.updatingApexB = false;
     }
   }

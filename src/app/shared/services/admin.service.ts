@@ -430,6 +430,8 @@ export class AdminService {
       endDate: item.endDate,
       agreementAccepted: item.agreementAccepted,
       status: item.status || 'PENDING_VERIFICATION',
+      adminApproved: item.adminApproved || item.adminVerified || item.status === 'approved' || false,
+      adminApprovalStatus: item.adminApprovalStatus || item.status,
       facultyVerified: item.facultyVerified,
       facultyVerifiedAt: item.facultyVerifiedAt,
       facultyVerificationComments: item.facultyVerificationComments,

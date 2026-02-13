@@ -1039,7 +1039,10 @@
                               <button class="btn btn-outline-info btn-sm" (click)="viewApexBFullDetails(form)">
                                 <i class="bi bi-eye"></i> View
                               </button>
-                              <button class="btn btn-primary btn-sm" (click)="openApexBDetailsModal(form)" [disabled]="updatingApexB || form.status === 'approved'">
+                              <button class="btn btn-primary btn-sm" 
+                                (click)="openApexBDetailsModal(form)" 
+                                [disabled]="!canAddApexBDetails(form)"
+                                [title]="form.status === 'approved' ? 'Details already submitted and approved' : 'Add internship details'">
                                 <i class="bi bi-plus-circle"></i> Add Details
                               </button>
                             </div>
@@ -1388,8 +1391,11 @@
               <button type="button" class="btn btn-secondary" (click)="closeApexBModal()">Close</button>
               @if (apexBDetails.studentId && !isApexBFormAlreadyApproved()) {
                 <button type="button" class="btn btn-success" (click)="submitApexBDetails()" [disabled]="updatingApexB">
-                  <span [hidden]="updatingApexB"><i class="bi bi-check-circle"></i> Submit & Approve</span>
-                  <span [hidden]="!updatingApexB">Submitting...</span>
+                  <span *ngIf="!updatingApexB"><i class="bi bi-check-circle"></i> Submit & Approve</span>
+                  <span *ngIf="updatingApexB">
+                    <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                    Submitting...
+                  </span>
                 </button>
               }
               @if (isApexBFormAlreadyApproved()) {
