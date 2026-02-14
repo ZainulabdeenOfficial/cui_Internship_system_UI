@@ -70,21 +70,42 @@ export class TokenRefreshService {
   }
 
   private async refreshAndReschedule() {
+    console.log('🔄 [TokenRefresh] Attempting scheduled token refresh...');
+    
     try {
+      // Check if refresh token exists before attempting
+      const hasRefreshToken = localStorage.getItem('refreshToken');
+      if (!hasRefreshToken) {
+        console.error('❌ [TokenRefresh] No refresh token found, stopping scheduler');
+        if (this.timer) { clearTimeout(this.timer); this.timer = null; }
+        return;
+      }
+      
       const result = await this.auth.refreshAccessToken();
+      
       // Verify we got a valid response with token
       if (result && (result.accessToken || (result as any).token)) {
-        console.log('✅ [TokenRefresh] Token refreshed successfully before expiry');
+        console.log('✅ [TokenRefresh] Token refreshed successfully before expiry:', {
+          accessToken: !!(result.accessToken || (result as any).token),
+          refreshToken: !!(result.refreshToken || (result as any).refreshToken)
+        });
+        
+        // token saved by AuthService.refreshAccessToken; reschedule with new token
+        this.timer = null;
+        this.lastTokenHash = ''; // Force re-evaluation
+        this.ensureSchedule();
+      } else {
+        console.warn('⚠️ [TokenRefresh] Invalid refresh response, retrying in 60s');
+        this.timer = setTimeout(() => this.refreshAndReschedule(), 60_000);
       }
-    } catch (err) {
+    } catch (err: any) {
       // on failure, try again in 60s
-      console.warn('⚠️ [TokenRefresh] Failed to refresh token, retrying in 60s', err);
+      console.warn('⚠️ [TokenRefresh] Failed to refresh token, retrying in 60s:', {
+        error: err,
+        message: err?.message,
+        status: err?.status
+      });
       this.timer = setTimeout(() => this.refreshAndReschedule(), 60_000);
-      return;
     }
-    // token saved by AuthService.refreshAccessToken; reschedule with new token
-    this.timer = null;
-    this.lastTokenHash = ''; // Force re-evaluation
-    this.ensureSchedule();
   }
 }

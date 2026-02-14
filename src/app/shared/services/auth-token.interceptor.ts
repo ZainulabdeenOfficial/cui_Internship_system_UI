@@ -90,25 +90,51 @@ export const authTokenInterceptor: HttpInterceptorFn = (req, next) => {
           path,
           isRefresh,
           isLogin,
-          eligible
+          eligible,
+          isRefreshingGlobally
         });
         
         if (!eligible) return throwError(() => err);
         
-        console.log('🔄 [authTokenInterceptor] Attempting token refresh for 401 on:', path);
-        
-        // Attempt a single refresh then retry the original request with updated token
-        if (isRefreshingGlobally) {
-          // If another request is already refreshing and we still got 401, logout
-          console.warn('❌ [authTokenInterceptor] Still getting 401 during refresh, logging out');
+        // Check if we have a refresh token before attempting refresh
+        const hasRefreshToken = localStorage.getItem('refreshToken');
+        if (!hasRefreshToken) {
+          console.error('❌ [authTokenInterceptor] No refresh token available for 401 retry');
           auth.logout({ redirect: true }).catch(() => {});
           return throwError(() => err);
         }
+        
+        // If another request is already refreshing, wait a bit and retry once
+        if (isRefreshingGlobally) {
+          console.warn('⚠️ [authTokenInterceptor] Already refreshing, waiting 1s before retry');
+          return from(new Promise<void>((resolve) => {
+            setTimeout(() => resolve(), 1000);
+          })).pipe(
+            switchMap(() => {
+              const newToken = getSessionToken();
+              if (newToken) {
+                console.log('✅ [authTokenInterceptor] Token refreshed by another request, retrying');
+                const needsAuth = NEEDS_BEARER.some(r => r.test(path)) && !PUBLIC_AUTH.some(r => r.test(path));
+                const retried = needsAuth
+                  ? req.clone({ setHeaders: { Authorization: `Bearer ${newToken}` } })
+                  : req;
+                return next(retried);
+              } else {
+                console.error('❌ [authTokenInterceptor] Still no token after wait, logging out');
+                auth.logout({ redirect: true }).catch(() => {});
+                return throwError(() => err);
+              }
+            })
+          );
+        }
+        
+        console.log('🔄 [authTokenInterceptor] Attempting token refresh for 401 on:', path);
         isRefreshingGlobally = true;
+        
         return from(auth.refreshAccessToken()).pipe(
           switchMap(() => {
             isRefreshingGlobally = false;
-            console.log('✅ [authTokenInterceptor] Token refreshed, retrying request');
+            console.log('✅ [authTokenInterceptor] Token refreshed successfully, retrying request');
             const token = getSessionToken();
             const needsAuth = NEEDS_BEARER.some(r => r.test(path)) && !PUBLIC_AUTH.some(r => r.test(path));
             const retried = (token && needsAuth)
@@ -119,15 +145,18 @@ export const authTokenInterceptor: HttpInterceptorFn = (req, next) => {
           catchError((refreshErr) => {
             isRefreshingGlobally = false;
             // refresh failed, logout and bubble error
-            console.error('❌ [authTokenInterceptor] Token refresh failed, logging out', refreshErr);
+            console.error('❌ [authTokenInterceptor] Token refresh failed, logging out:', {
+              error: refreshErr,
+              message: refreshErr?.message,
+              status: refreshErr?.status
+            });
             auth.logout({ redirect: true }).catch(() => {});
             return throwError(() => err);
           })
         );
-      } catch {
+      } catch (interceptErr) {
+        console.error('❌ [authTokenInterceptor] Interceptor error:', interceptErr);
         return throwError(() => err);
-      } finally {
-        isRefreshingGlobally = false;
       }
     })
   );

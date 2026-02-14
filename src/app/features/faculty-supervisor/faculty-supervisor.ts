@@ -17,6 +17,9 @@ import { FacultyService, FacultyProfile } from '../../shared/services/faculty.se
 })
 export class FacultySupervisor {
   constructor(private store: StoreService, private toast: ToastService, private route: ActivatedRoute, private router: Router, private facultyApi: FacultyService) {
+    // Pre-load APEX B requests on initialization for instant display
+    this.loadStudentRequests();
+    
     try {
       this.route.queryParamMap.subscribe(p => {
         const t = (p.get('tab') || '').toLowerCase();
@@ -24,7 +27,7 @@ export class FacultySupervisor {
         if ((allowed as readonly string[]).includes(t)) {
           this.currentTab = t as any;
           if (this.currentTab === 'profile') this.loadMyProfileFromApi();
-          if (this.currentTab === 'requests') this.loadStudentRequests();
+          // No need to reload requests here since we pre-loaded them
         }
       });
     } catch {}
@@ -41,7 +44,7 @@ export class FacultySupervisor {
     this.currentTab = tab;
     try { this.router.navigate([], { relativeTo: this.route, queryParams: { tab }, queryParamsHandling: 'merge' }); } catch {}
     if (tab === 'profile') this.loadMyProfileFromApi();
-    if (tab === 'requests') this.loadStudentRequests();
+    // Requests are pre-loaded on init, no need to reload on tab click
   }
   get me() { return this.store.currentUser; }
   myFacultyId = computed(() => this.me()?.facultyId);

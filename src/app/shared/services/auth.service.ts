@@ -121,41 +121,81 @@ export class AuthService {
   async refreshAccessToken(): Promise<RefreshTokenResponse> {
     const rel = '/api/auth/refresh-token';
     let refreshToken: string | null = null;
+    
     try { refreshToken = localStorage.getItem('refreshToken'); } catch {}
+    
+    console.log('🔄 [Auth - Refresh Token] Starting refresh process:', {
+      hasRefreshToken: !!refreshToken,
+      refreshTokenLength: refreshToken?.length || 0
+    });
+    
     if (!refreshToken) {
+      console.error('❌ [Auth - Refresh Token] No refresh token found in localStorage');
       try { if (!environment.production) console.warn('[Auth] No refreshToken found; skipping refresh'); } catch {}
       throw new Error('No refresh token found');
     }
-    const post = (u: string) => this.http.post<RefreshTokenResponse>(u, { refreshToken }, { headers: new HttpHeaders({ 'Content-Type': 'application/json' }) });
+    
+    const post = (u: string) => this.http.post<RefreshTokenResponse>(
+      u, 
+      { refreshToken }, 
+      { headers: new HttpHeaders({ 'Content-Type': 'application/json' }) }
+    );
+    
     let res: RefreshTokenResponse;
+    
     try {
+      console.log('📤 [Auth - Refresh Token] Sending refresh request to:', rel);
       // Prefer same-origin (rewrites/proxy) then fallback to absolute
       res = await firstValueFrom(post(rel));
+      console.log('✅ [Auth - Refresh Token] Response received from relative URL:', res);
     } catch (err: any) {
       const absUrl = `${this.absBase}${rel}`;
-      res = await firstValueFrom(post(absUrl));
+      console.log('⚠️ [Auth - Refresh Token] Relative URL failed, trying absolute:', absUrl);
+      try {
+        res = await firstValueFrom(post(absUrl));
+        console.log('✅ [Auth - Refresh Token] Response received from absolute URL:', res);
+      } catch (absErr: any) {
+        console.error('❌ [Auth - Refresh Token] Both relative and absolute URLs failed:', {
+          relativeError: err,
+          absoluteError: absErr
+        });
+        throw absErr;
+      }
     }
+    
     // Validate and save tokens from response
     try {
-      const tok = (res as any)?.accessToken || (res as any)?.token;
-      const rtk = (res as any)?.refreshToken;
+      const tok = (res as any)?.accessToken || (res as any)?.token || (res as any)?.data?.accessToken || (res as any)?.data?.token;
+      const rtk = (res as any)?.refreshToken || (res as any)?.data?.refreshToken;
+      
+      console.log('🔍 [Auth - Refresh Token] Parsing response:', {
+        hasAccessToken: !!tok,
+        hasRefreshToken: !!rtk,
+        responseKeys: Object.keys(res || {})
+      });
+      
       if (!tok) {
-        console.error('[Auth] Token refresh response missing accessToken');
+        console.error('❌ [Auth - Refresh Token] Token refresh response missing accessToken:', res);
         throw new Error('Invalid refresh response: missing access token');
       }
+      
       // Save both access token and refresh token (if new one provided)
       sessionStorage.setItem('authToken', tok);
       sessionStorage.setItem('accessToken', tok);
+      console.log('✅ [Auth - Refresh Token] Access token saved to sessionStorage');
+      
       if (rtk) {
         localStorage.setItem('refreshToken', rtk);
-        console.log('✅ [Auth] Refresh token updated from response');
+        console.log('✅ [Auth - Refresh Token] New refresh token saved to localStorage');
       }
-      console.log('✅ [Auth] Access token refreshed and saved');
+      
+      console.log('✅ [Auth - Refresh Token] Access token refreshed and saved successfully');
+      
+      return res;
     } catch (saveErr) {
-      console.error('[Auth] Failed to save refreshed tokens:', saveErr);
+      console.error('❌ [Auth - Refresh Token] Failed to save refreshed tokens:', saveErr);
       throw saveErr;
     }
-    return res;
   }
 
   async generatePassword(): Promise<GeneratePasswordResponse> {
