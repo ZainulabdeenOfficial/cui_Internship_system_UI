@@ -1665,6 +1665,9 @@ export class Admin {
   openApexBDetailsModal(form: any) {
     this.selectedApexBForm = form;
     
+    // Reset loading state to ensure clean modal open
+    this.updatingApexB = false;
+    
     // Check if already approved and show warning
     if (form.status === 'approved') {
       console.log('⚠️ [Admin - Open APEX B Modal] Form already approved for student:', form.student?.name);
@@ -1863,6 +1866,8 @@ export class Admin {
     }
     
     this.updatingApexB = true;
+    let success = false;
+    
     try {
       console.log('📤 [Admin - Submit APEX B Details] Sending details:', this.apexBDetails);
       
@@ -1875,6 +1880,9 @@ export class Admin {
       const response = await this.adminApi.updateApexBDetails(payload);
       
       console.log('✅ [Admin - Submit APEX B Details] API call successful', response);
+      
+      // Mark success to trigger modal close
+      success = true;
       
       // Update local state to reflect approval
       const form = this.apexBForms.find(f => f.id === this.selectedApexBForm.id);
@@ -1890,9 +1898,6 @@ export class Admin {
       // Show success message
       this.toast.success('APEX B details submitted successfully and form approved');
       
-      // Auto-close modal immediately
-      this.closeApexBModal();
-      
       // Reload the forms list to get updated data from server (in background)
       console.log('🔄 [Admin - Submit APEX B Details] Reloading forms list...');
       this.loadApexBForms().then(() => {
@@ -1906,8 +1911,17 @@ export class Admin {
       this.toast.danger(msg);
       console.error('❌ [Admin - Submit APEX B Details] Error:', err);
     } finally {
-      // Always reset loading state in finally block
+      // Reset loading state first
       this.updatingApexB = false;
+      
+      // Close modal only on success (in finally to ensure it always runs after state reset)
+      if (success) {
+        console.log('✅ [Admin - Submit APEX B Details] Closing modal after successful submission');
+        // Use setTimeout to ensure state is fully updated before closing
+        setTimeout(() => {
+          this.closeApexBModal();
+        }, 100);
+      }
     }
   }
 }
