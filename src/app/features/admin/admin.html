@@ -1200,14 +1200,6 @@
                   </div>
                 </div>
               }
-
-              <!-- Raw Data Card - Only show when editing existing form, not when adding new -->
-              <div class="card" *ngIf="selectedApexBForm && selectedApexBForm.id && (selectedApexBForm | json) as formJson">
-                <div class="card-header bg-light"><strong>Raw Data</strong></div>
-                <div class="card-body">
-                  <pre class="mb-0" style="font-size: 0.85rem; max-height: 300px; overflow-y: auto;">{{ formJson }}</pre>
-                </div>
-              </div>
             </div>
             <div class="modal-footer">
               <button type="button" class="btn btn-secondary" (click)="closeApexBModal()">Close</button>
