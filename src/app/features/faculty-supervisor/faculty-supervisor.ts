@@ -443,27 +443,66 @@ export class FacultySupervisor {
     const search = this.requestSearch.trim().toLowerCase();
     const filter = this.requestFilter;
     
-    return this.appexBRequests.filter(item => {
-      // Only show approved APEX B forms
-      const status = item.status || 'pending';
-      if (status !== 'approved') return false;
+    console.log('🔍 [Faculty - Filter APEX B] Filtering requests:', {
+      totalRequests: this.appexBRequests.length,
+      searchTerm: search,
+      filter: filter,
+      rawRequests: this.appexBRequests
+    });
+    
+    const filtered = this.appexBRequests.filter(item => {
+      // Show items that need faculty verification (pending, not yet faculty-verified)
+      // Include items where:
+      // 1. adminApprovalStatus is 'APPROVED' (admin has added details)
+      // 2. facultyVerified is null or false (faculty hasn't verified yet)
+      // OR status is 'PENDING_VERIFICATION' or 'pending'
+      const needsVerification = 
+        (item.adminApprovalStatus === 'APPROVED' && !item.facultyVerified) ||
+        item.status === 'PENDING_VERIFICATION' ||
+        item.calculatedStatus === 'PENDING_VERIFICATION' ||
+        (item.status === 'pending' && !item.facultyVerified);
       
-      // Status filter (only for approved forms)
-      if (filter !== 'all' && status !== filter) return false;
+      console.log('🔍 [Faculty - Filter APEX B] Checking item:', {
+        itemId: item.id,
+        status: item.status,
+        calculatedStatus: item.calculatedStatus,
+        adminApprovalStatus: item.adminApprovalStatus,
+        facultyVerified: item.facultyVerified,
+        needsVerification,
+        studentName: item.student?.name || item.name
+      });
+      
+      if (!needsVerification) return false;
+      
+      // Status filter (only applicable if filter is set)
+      if (filter !== 'all') {
+        const status = item.status || item.calculatedStatus || 'pending';
+        if (filter === 'pending' && status !== 'PENDING_VERIFICATION' && status !== 'pending') return false;
+        if (filter === 'approved' && item.facultyVerified !== true) return false;
+        if (filter === 'rejected' && item.status !== 'rejected' && item.status !== 'changes_requested') return false;
+      }
       
       // Search filter
       if (search) {
-        const studentName = (item.student?.name || item.studentName || '').toLowerCase();
-        const studentEmail = (item.student?.email || item.studentEmail || '').toLowerCase();
-        const assignmentTitle = (item.assignment?.title || item.assignmentTitle || item.title || '').toLowerCase();
+        const studentName = (item.student?.name || item.studentName || item.name || '').toLowerCase();
+        const studentEmail = (item.student?.email || item.studentEmail || item.email || '').toLowerCase();
+        const companyName = (item.companyName || '').toLowerCase();
+        const role = (item.internshipRole || '').toLowerCase();
         
-        if (!studentName.includes(search) && !studentEmail.includes(search) && !assignmentTitle.includes(search)) {
+        if (!studentName.includes(search) && !studentEmail.includes(search) && !companyName.includes(search) && !role.includes(search)) {
           return false;
         }
       }
       
       return true;
     });
+    
+    console.log('✅ [Faculty - Filter APEX B] Filtered results:', {
+      filteredCount: filtered.length,
+      filteredItems: filtered
+    });
+    
+    return filtered;
   });
 
   onRequestFilterChange() {
@@ -480,5 +519,20 @@ export class FacultySupervisor {
   closeApexADetailsModal() {
     this.showApexADetailsModal = false;
     this.selectedApexAForm = null;
+  }
+
+  // APEX B Details Modal
+  showApexBDetailsModal = false;
+  selectedApexBForm: any = null;
+
+  viewApexBDetails(form: any) {
+    console.log('👁️ [Faculty - View APEX B Details] Opening modal for:', form);
+    this.selectedApexBForm = form;
+    this.showApexBDetailsModal = true;
+  }
+
+  closeApexBDetailsModal() {
+    this.showApexBDetailsModal = false;
+    this.selectedApexBForm = null;
   }
 }

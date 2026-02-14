@@ -135,10 +135,10 @@
         <div class="card-body">
           <!-- APEX navigation removed as per requirements -->
           
-          <!-- APEX B Forms - Only showing approved ones -->
+          <!-- APEX B Forms - Pending Faculty Verification -->
           @if (true) {
             <div class="d-flex justify-content-between align-items-center mb-3">
-              <h5 class="mb-0">APEX B Form Submissions (Approved Only)</h5>
+              <h5 class="mb-0">APEX B Forms - Pending Your Verification</h5>
               <button class="btn btn-sm btn-primary" (click)="loadStudentRequests()" [disabled]="loadingRequests">
                 <span [hidden]="loadingRequests">Refresh</span>
                 <span [hidden]="!loadingRequests">Loading...</span>
@@ -166,9 +166,9 @@
                 </div>
               </div>
             } @else if (appexBRequests.length === 0) {
-              <div class="alert alert-info">No APEX B forms available.</div>
+              <div class="alert alert-info">No APEX B forms available for verification.</div>
             } @else if (filteredAppexBRequests().length === 0) {
-              <div class="alert alert-warning">No approved forms available or no forms match your current filters.</div>
+              <div class="alert alert-warning">No pending forms available or no forms match your current filters.</div>
             } @else {
               <div class="table-responsive">
                 <table class="table table-striped table-hover table-sm align-middle">
@@ -176,8 +176,9 @@
                     <tr>
                       <th>Student Name</th>
                       <th>Email</th>
-                      <th>Assignment</th>
-                      <th>Submitted</th>
+                      <th>Company</th>
+                      <th>Role</th>
+                      <th>Duration</th>
                       <th>Status</th>
                       <th>Actions</th>
                     </tr>
@@ -185,17 +186,42 @@
                   <tbody>
                     @for (item of (filteredAppexBRequests() | paginate: page.appexB : pageSize); track item.id || $index) {
                       <tr>
-                        <td>{{ item.student?.name || item.studentName || '-' }}</td>
-                        <td>{{ item.student?.email || item.studentEmail || '-' }}</td>
-                        <td>{{ item.assignment?.title || item.assignmentTitle || item.title || '-' }}</td>
-                        <td>{{ (item.submittedAt || item.createdAt) ? ((item.submittedAt || item.createdAt) | date:'short') : 'N/A' }}</td>
+                        <td>{{ item.student?.name || item.name || '-' }}</td>
+                        <td>{{ item.student?.email || item.email || '-' }}</td>
+                        <td>{{ item.companyName || '-' }}</td>
+                        <td>{{ item.internshipRole || '-' }}</td>
+                        <td>{{ item.durationWeeks ? item.durationWeeks + ' weeks' : '-' }}</td>
                         <td>
-                          <span class="badge bg-success">Approved</span>
+                          @if (item.facultyVerified === true) {
+                            <span class="badge bg-success">Faculty Approved</span>
+                          } @else if (item.status === 'rejected' || item.status === 'changes_requested') {
+                            <span class="badge bg-warning">Changes Requested</span>
+                          } @else {
+                            <span class="badge bg-info">Pending Verification</span>
+                          }
                         </td>
                         <td>
-                          <button class="btn btn-outline-info btn-sm" (click)="viewApexADetails(item)">
-                            <i class="bi bi-eye"></i> View
-                          </button>
+                          <div class="btn-group btn-group-sm" role="group">
+                            @if (!item.facultyVerified && item.status !== 'approved') {
+                              <button class="btn btn-success" (click)="approveAppexB(item, 'approve')" [disabled]="isProcessingItem(item)" title="Approve">
+                                @if (isProcessingItem(item)) {
+                                  <span class="spinner-border spinner-border-sm"></span>
+                                } @else {
+                                  <i class="bi bi-check-circle"></i>
+                                }
+                              </button>
+                              <button class="btn btn-warning" (click)="approveAppexB(item, 'request_changes', 'Please review and update')" [disabled]="isProcessingItem(item)" title="Request Changes">
+                                @if (isProcessingItem(item)) {
+                                  <span class="spinner-border spinner-border-sm"></span>
+                                } @else {
+                                  <i class="bi bi-exclamation-circle"></i>
+                                }
+                              </button>
+                            }
+                            <button class="btn btn-outline-info" (click)="viewApexBDetails(item)" title="View Details">
+                              <i class="bi bi-eye"></i>
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     }
@@ -529,3 +555,139 @@
     </div>
   </div>
 }
+
+<!-- Modal for APEX B Form Details -->
+@if (showApexBDetailsModal && selectedApexBForm) {
+  <div class="modal show d-block" tabindex="-1" style="background: rgba(0,0,0,0.5);">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">APEX B Form Details</h5>
+          <button type="button" class="btn-close" (click)="closeApexBDetailsModal()"></button>
+        </div>
+        <div class="modal-body">
+          <!-- Student Information -->
+          <div class="card mb-3">
+            <div class="card-header bg-light"><strong>Student Information</strong></div>
+            <div class="card-body">
+              <div class="row">
+                <div class="col-md-6 mb-2">
+                  <strong>Name:</strong> {{ selectedApexBForm.student?.name || selectedApexBForm.name || 'N/A' }}
+                </div>
+                <div class="col-md-6 mb-2">
+                  <strong>Email:</strong> {{ selectedApexBForm.student?.email || selectedApexBForm.email || 'N/A' }}
+                </div>
+                <div class="col-md-6 mb-2">
+                  <strong>Registration No:</strong> {{ selectedApexBForm.student?.regNo || 'N/A' }}
+                </div>
+                <div class="col-md-6 mb-2">
+                  <strong>Degree Program:</strong> {{ selectedApexBForm.degreeProgram || 'N/A' }}
+                </div>
+                <div class="col-md-6 mb-2">
+                  <strong>Semester:</strong> {{ selectedApexBForm.semester || 'N/A' }}
+                </div>
+                <div class="col-md-6 mb-2">
+                  <strong>Contact:</strong> {{ selectedApexBForm.contactNo || 'N/A' }}
+                </div>
+                <div class="col-md-6 mb-2">
+                  <strong>Preferred Field:</strong> {{ selectedApexBForm.preferredField || 'N/A' }}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Internship Details -->
+          <div class="card mb-3">
+            <div class="card-header bg-light"><strong>Internship Details</strong></div>
+            <div class="card-body">
+              <div class="row">
+                <div class="col-md-6 mb-2">
+                  <strong>Company:</strong> {{ selectedApexBForm.companyName || 'N/A' }}
+                </div>
+                <div class="col-md-6 mb-2">
+                  <strong>Role:</strong> {{ selectedApexBForm.internshipRole || 'N/A' }}
+                </div>
+                <div class="col-md-6 mb-2">
+                  <strong>Duration:</strong> {{ selectedApexBForm.durationWeeks ? selectedApexBForm.durationWeeks + ' weeks' : 'N/A' }}
+                </div>
+                <div class="col-md-6 mb-2">
+                  <strong>Start Date:</strong> {{ selectedApexBForm.startDate ? (selectedApexBForm.startDate | date:'mediumDate') : 'N/A' }}
+                </div>
+                <div class="col-md-6 mb-2">
+                  <strong>End Date:</strong> {{ selectedApexBForm.endDate ? (selectedApexBForm.endDate | date:'mediumDate') : 'N/A' }}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Supervisors -->
+          <div class="card mb-3">
+            <div class="card-header bg-light"><strong>Supervisors</strong></div>
+            <div class="card-body">
+              <div class="row">
+                <div class="col-md-6 mb-2">
+                  <strong>Faculty Supervisor:</strong> {{ selectedApexBForm.facultySupervisorNameDesig || 'N/A' }}
+                </div>
+                <div class="col-md-6 mb-2">
+                  <strong>Site Supervisor:</strong> {{ selectedApexBForm.siteSupervisorNameDesig || 'N/A' }}
+                </div>
+                @if (selectedApexBForm.site) {
+                  <div class="col-md-6 mb-2">
+                    <strong>Site Email:</strong> {{ selectedApexBForm.site.email || 'N/A' }}
+                  </div>
+                }
+              </div>
+            </div>
+          </div>
+
+          <!-- Verification Status -->
+          <div class="card">
+            <div class="card-header bg-light"><strong>Verification Status</strong></div>
+            <div class="card-body">
+              <div class="row">
+                <div class="col-md-6 mb-2">
+                  <strong>Admin Status:</strong> 
+                  <span class="badge ms-2" [class.bg-success]="selectedApexBForm.adminApprovalStatus === 'APPROVED'" [class.bg-secondary]="selectedApexBForm.adminApprovalStatus !== 'APPROVED'">
+                    {{ selectedApexBForm.adminApprovalStatus || 'Pending' }}
+                  </span>
+                </div>
+                <div class="col-md-6 mb-2">
+                  <strong>Faculty Verified:</strong> 
+                  <span class="badge ms-2" [class.bg-success]="selectedApexBForm.facultyVerified === true" [class.bg-warning]="selectedApexBForm.facultyVerified === false" [class.bg-secondary]="selectedApexBForm.facultyVerified === null">
+                    {{ selectedApexBForm.facultyVerified === true ? 'Yes' : selectedApexBForm.facultyVerified === false ? 'Rejected' : 'Pending' }}
+                  </span>
+                </div>
+                <div class="col-md-6 mb-2">
+                  <strong>Student Verified:</strong> 
+                  <span class="badge ms-2" [class.bg-success]="selectedApexBForm.studentVerified === true" [class.bg-warning]="selectedApexBForm.studentVerified === false" [class.bg-secondary]="selectedApexBForm.studentVerified === null">
+                    {{ selectedApexBForm.studentVerified === true ? 'Yes' : selectedApexBForm.studentVerified === false ? 'No' : 'Pending' }}
+                  </span>
+                </div>
+                <div class="col-md-6 mb-2">
+                  <strong>Overall Status:</strong> 
+                  <span class="badge ms-2 bg-info">{{ selectedApexBForm.calculatedStatus || selectedApexBForm.status || 'Pending' }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" (click)="closeApexBDetailsModal()">Close</button>
+          @if (!selectedApexBForm.facultyVerified && selectedApexBForm.status !== 'approved') {
+            <button type="button" class="btn btn-success" 
+              (click)="approveAppexB(selectedApexBForm, 'approve'); closeApexBDetailsModal()" 
+              [disabled]="isProcessingItem(selectedApexBForm)">
+              <i class="bi bi-check-circle"></i> Approve
+            </button>
+            <button type="button" class="btn btn-warning" 
+              (click)="approveAppexB(selectedApexBForm, 'request_changes', 'Please review and update'); closeApexBDetailsModal()" 
+              [disabled]="isProcessingItem(selectedApexBForm)">
+              <i class="bi bi-exclamation-circle"></i> Request Changes
+            </button>
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+}
+
