@@ -110,14 +110,39 @@ export class FacultyService {
     if (page !== undefined) params.push(`page=${page}`);
     if (limit !== undefined) params.push(`limit=${limit}`);
     if (params.length) url += '?' + params.join('&');
+    
+    console.log('🔍 [Faculty Service - Get APEX B Verifications] Request:', { url, status, page, limit });
+    
     const res = await firstValueFrom(this.http.get<any>(url, { headers: await this.authHeaders(false) }));
+    
+    console.log('✅ [Faculty Service - Get APEX B Verifications] Response:', {
+      total: res?.total || res?.verifications?.length || 0,
+      verifications: res?.verifications || res?.data || [],
+      page: res?.page,
+      totalPages: res?.totalPages
+    });
+    
     return res;
   }
 
   async updateAppexBVerification(assignmentId: string, action: 'approve' | 'request_changes', comments?: string): Promise<any> {
     const url = `${this.base}/api/faculty/appex-b-verification`;
     const body = { assignmentId, action, comments: comments || '' };
+    
+    console.log('📤 [Faculty Service - Update APEX B Verification] Request:', {
+      url,
+      payload: body
+    });
+    
     const res = await firstValueFrom(this.http.patch<any>(url, body, { headers: await this.authHeaders(true) }));
+    
+    console.log('✅ [Faculty Service - Update APEX B Verification] Response:', {
+      success: !!res,
+      message: res?.message,
+      data: res?.data,
+      status: res?.status
+    });
+    
     return res;
   }
 }

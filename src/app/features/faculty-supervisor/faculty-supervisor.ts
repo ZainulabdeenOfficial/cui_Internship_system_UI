@@ -243,6 +243,14 @@ export class FacultySupervisor {
   async loadStudentRequests() {
     if (this.loadingRequests) return;
     this.loadingRequests = true;
+    
+    console.log('🔄 [Faculty - Load Student Requests] Starting...', {
+      filter: this.requestFilter,
+      pageAppexA: this.page.appexA,
+      pageAppexB: this.page.appexB,
+      pageSize: this.pageSize
+    });
+    
     try {
       const statusFilter = this.requestFilter === 'all' ? undefined : this.requestFilter;
       
@@ -254,9 +262,17 @@ export class FacultySupervisor {
       
       this.appexARequests = resA?.approvals || resA?.data || [];
       this.appexBRequests = resB?.verifications || resB?.data || [];
+      
+      console.log('✅ [Faculty - Load Student Requests] Loaded successfully:', {
+        appexACount: this.appexARequests.length,
+        appexBCount: this.appexBRequests.length,
+        appexARequests: this.appexARequests,
+        appexBRequests: this.appexBRequests
+      });
     } catch (err: any) {
       const msg = err?.error?.message || err?.message || 'Failed to load student requests';
       this.toast.danger(msg);
+      console.error('❌ [Faculty - Load Student Requests] Error:', err);
     } finally {
       this.loadingRequests = false;
     }
@@ -299,7 +315,20 @@ export class FacultySupervisor {
 
   async approveAppexB(item: any, action: 'approve' | 'request_changes', comments?: string) {
     const itemId = item.id || item.assignmentId;
-    if (this.processingItems.has(itemId)) return; // Prevent double-click
+    
+    console.log('🎯 [Faculty - Approve APEX B] Starting verification:', {
+      itemId,
+      action,
+      comments,
+      currentItemStatus: item.status,
+      currentFacultyVerified: item.facultyVerified,
+      fullItem: item
+    });
+    
+    if (this.processingItems.has(itemId)) {
+      console.log('⚠️ [Faculty - Approve APEX B] Already processing, preventing duplicate');
+      return; // Prevent double-click
+    }
     
     // Check if already approved by faculty
     if (action === 'approve' && (item.status === 'approved' || item.facultyVerified === true)) {
@@ -310,14 +339,32 @@ export class FacultySupervisor {
     
     this.processingItems.add(itemId);
     try {
-      console.log('📤 [Faculty - Approve APEX B] Sending request:', { itemId, action, comments });
+      console.log('📤 [Faculty - Approve APEX B] Calling API with:', {
+        assignmentId: itemId,
+        action,
+        comments: comments || ''
+      });
       
       const res = await this.facultyApi.updateAppexBVerification(itemId, action, comments);
+      
+      console.log('✅ [Faculty - Approve APEX B] API Response received:', {
+        success: !!res,
+        message: res?.message,
+        data: res?.data,
+        fullResponse: res
+      });
+      
       this.toast.success(res?.message || `APEX B ${action === 'approve' ? 'approved' : 'changes requested'} successfully`);
       
       // Update local state with new status immediately to reflect button state change
       const status = action === 'approve' ? 'approved' : 'changes_requested';
       const index = this.appexBRequests.findIndex(r => (r.id || r.assignmentId) === itemId);
+      
+      console.log('🔍 [Faculty - Approve APEX B] Finding item in local array:', {
+        index,
+        foundItem: index !== -1 ? this.appexBRequests[index] : null
+      });
+      
       if (index !== -1) {
         // Create a new object to trigger change detection and mark facultyVerified as true
         this.appexBRequests[index] = { 
@@ -329,18 +376,29 @@ export class FacultySupervisor {
         // Force array update and signal to trigger immediate change detection
         this.appexBRequests = [...this.appexBRequests];
         
-        console.log('✅ [Faculty - Approve APEX B] Status updated, UI will reflect immediately:', {
-          status,
+        console.log('✅ [Faculty - Approve APEX B] Local state updated, UI will reflect immediately:', {
+          itemIndex: index,
+          newStatus: status,
           facultyVerified: this.appexBRequests[index].facultyVerified,
-          calculatedStatus: this.appexBRequests[index].calculatedStatus
+          calculatedStatus: this.appexBRequests[index].calculatedStatus,
+          updatedItem: this.appexBRequests[index]
         });
+      } else {
+        console.warn('⚠️ [Faculty - Approve APEX B] Item not found in local array for update');
       }
     } catch (err: any) {
       const msg = err?.error?.message || err?.message || 'Failed to update verification';
       this.toast.danger(msg);
-      console.error('❌ [Faculty - Approve APEX B] Error:', err);
+      console.error('❌ [Faculty - Approve APEX B] Error details:', {
+        error: err,
+        message: msg,
+        status: err?.status,
+        statusText: err?.statusText,
+        errorObject: err?.error
+      });
     } finally {
       this.processingItems.delete(itemId);
+      console.log('🏁 [Faculty - Approve APEX B] Processing completed, removed from processing set');
     }
   }
 
