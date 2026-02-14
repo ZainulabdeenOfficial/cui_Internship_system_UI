@@ -357,7 +357,7 @@ export class FacultySupervisor {
       this.toast.success(res?.message || `APEX B ${action === 'approve' ? 'approved' : 'changes requested'} successfully`);
       
       // Update local state with new status immediately to reflect button state change
-      const status = action === 'approve' ? 'approved' : 'changes_requested';
+      const newStatus = action === 'approve' ? 'approved' : 'changes_requested';
       const index = this.appexBRequests.findIndex(r => (r.id || r.assignmentId) === itemId);
       
       console.log('🔍 [Faculty - Approve APEX B] Finding item in local array:', {
@@ -366,23 +366,39 @@ export class FacultySupervisor {
       });
       
       if (index !== -1) {
-        // Create a new object to trigger change detection and mark facultyVerified as true
-        this.appexBRequests[index] = { 
+        // Create a new object to trigger change detection and mark facultyVerified as true/false
+        const updatedItem = { 
           ...this.appexBRequests[index], 
-          status: status,
-          facultyVerified: action === 'approve' ? true : this.appexBRequests[index].facultyVerified,
-          calculatedStatus: res?.data?.status || (action === 'approve' ? 'FACULTY_VERIFIED' : 'CHANGES_REQUESTED')
+          status: newStatus,
+          facultyVerified: action === 'approve' ? true : false,
+          calculatedStatus: res?.data?.status || res?.data?.calculatedStatus || (action === 'approve' ? 'FACULTY_VERIFIED' : 'CHANGES_REQUESTED'),
+          facultyVerificationComments: comments || null,
+          facultyVerifiedAt: new Date().toISOString()
         };
-        // Force array update and signal to trigger immediate change detection
+        
+        // Update the item in the array
+        this.appexBRequests[index] = updatedItem;
+        
+        // Force array update to trigger immediate change detection
         this.appexBRequests = [...this.appexBRequests];
         
         console.log('✅ [Faculty - Approve APEX B] Local state updated, UI will reflect immediately:', {
           itemIndex: index,
-          newStatus: status,
-          facultyVerified: this.appexBRequests[index].facultyVerified,
-          calculatedStatus: this.appexBRequests[index].calculatedStatus,
-          updatedItem: this.appexBRequests[index]
+          newStatus,
+          facultyVerified: updatedItem.facultyVerified,
+          calculatedStatus: updatedItem.calculatedStatus,
+          updatedItem
         });
+        
+        // Reload the list to get latest data from server (don't await to avoid blocking UI)
+        setTimeout(() => {
+          console.log('🔄 [Faculty - Approve APEX B] Reloading requests in background...');
+          this.loadStudentRequests().then(() => {
+            console.log('✅ [Faculty - Approve APEX B] Requests reloaded successfully');
+          }).catch(err => {
+            console.error('❌ [Faculty - Approve APEX B] Error reloading:', err);
+          });
+        }, 500);
       } else {
         console.warn('⚠️ [Faculty - Approve APEX B] Item not found in local array for update');
       }
@@ -397,8 +413,9 @@ export class FacultySupervisor {
         errorObject: err?.error
       });
     } finally {
+      // Always remove from processing set to restore button state
       this.processingItems.delete(itemId);
-      console.log('🏁 [Faculty - Approve APEX B] Processing completed, removed from processing set');
+      console.log('🏁 [Faculty - Approve APEX B] Processing completed, button state restored');
     }
   }
 
