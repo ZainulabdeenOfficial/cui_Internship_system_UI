@@ -6,23 +6,6 @@
     <a routerLink="/guidance" class="btn btn-sm btn-outline-primary">Open Guidance</a>
   </div>
 
-  <!-- Approval Process Information -->
-  <div class="alert alert-warning" role="alert" *ngIf="apexBStatus && !isFullyApproved()">
-    <h6 class="alert-heading mb-2"><i class="bi bi-info-circle"></i> Internship Approval Process</h6>
-    <p class="mb-2 small">Your internship requires verification from three parties:</p>
-    <ol class="mb-0 small">
-      <li><strong>Student Verification:</strong> You must verify and submit your internship details {{ apexBStatus.studentVerified ? '✓ Completed' : '⏳ Pending' }}</li>
-      <li><strong>Faculty Verification:</strong> Your faculty supervisor must review and approve {{ apexBStatus.facultyVerified ? '✓ Completed' : '⏳ Pending' }}</li>
-      <li><strong>Admin Approval:</strong> Admin must approve and assign supervisors {{ apexBStatus.adminApproved ? '✓ Completed' : '⏳ Pending' }}</li>
-    </ol>
-    <p class="mb-0 mt-2 small"><strong>Note:</strong> Once all three verifications are complete, your internship will be fully approved and you can start weekly logs.</p>
-  </div>
-
-  <div class="alert alert-success" role="alert" *ngIf="isFullyApproved()">
-    <h6 class="alert-heading mb-0"><i class="bi bi-check-circle-fill"></i> Internship Fully Approved!</h6>
-    <p class="mb-0 small">All verifications complete. You can now submit weekly logs and complete your internship requirements.</p>
-  </div>
-
   <!-- Tabs: separate tabs for each student form and Complaints -->
   <ul class="nav nav-tabs mb-3">
     <li class="nav-item"><button type="button" class="nav-link" [class.active]="isCurrentTab('appex')" (click)="selectTab('appex')">Internship Approval (AppEx‑A)</button></li>
@@ -86,18 +69,18 @@
     </div>
   </div>
 
-  <!-- Admin-added APEX B Details Card -->
-  <div class="card mb-3 border-primary" *ngIf="apexBStatus && apexBStatus.adminApproved">
-    <div class="card-header bg-primary text-white">
-      <i class="bi bi-file-earmark-check-fill me-2"></i>
-      APEX B - Admin Approved Internship Details
+  <!-- Admin-added APEX B Details Card (only shown when fully approved) -->
+  <div class="card mb-3 border-success" *ngIf="isFullyApproved() && apexBStatus">
+    <div class="card-header bg-success text-white">
+      <i class="bi bi-check-circle-fill me-2"></i>
+      Approved Internship Details
     </div>
     <div class="card-body">
       <div class="row g-3">
-        <div class="col-12" *ngIf="isFullyApproved()">
+        <div class="col-12">
           <div class="alert alert-success mb-3">
             <i class="bi bi-check-circle-fill me-2"></i>
-            <strong>Your internship has been fully approved by all parties!</strong> You can now start submitting weekly logs.
+            <strong>Your internship has been fully approved by all parties!</strong> You can now access the Weekly Logs tab to submit your weekly progress.
           </div>
         </div>
         

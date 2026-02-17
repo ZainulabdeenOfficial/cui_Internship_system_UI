@@ -1,4 +1,4 @@
-import { Component, computed, effect, ChangeDetectorRef } from '@angular/core';
+import { Component, computed, effect, ChangeDetectorRef, OnDestroy } from '@angular/core';
 import { CommonModule, NgIf, NgFor } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { StoreService } from '../../shared/services/store.service';
@@ -18,7 +18,7 @@ import { Form3Form } from './form3-form';
   templateUrl: './student.html',
   styleUrl: './student.css'
 })
-export class Student {
+export class Student implements OnDestroy {
   // Dynamic dropdown options from backend
   dropdownCompanies: Array<{ id: string; name: string; email?: string; address?: string; website?: string; industry?: string }> = [];
   // UI state for professional autocomplete
@@ -179,6 +179,9 @@ export class Student {
     return this.store.complaints().filter(c => c.studentId === this.selectedId);
   };
   
+  // Auto-refresh status polling
+  private statusPollingInterval: any = null;
+  
   constructor(private store: StoreService, private toast: ToastService, private route: ActivatedRoute, private router: Router, private studentApi: StudentService, private adminApi: AdminService, private cdr: ChangeDetectorRef) {
     this.lockSelection = effect(() => {
       const mine = this.myStudentId();
@@ -187,6 +190,9 @@ export class Student {
       // Auto-load APEX B status when student is selected
       if (this.selectedId) {
         this.loadApexBStatus();
+        
+        // Start polling for status updates every 30 seconds if not fully approved
+        this.startStatusPolling();
       }
     });
     // Initialize tab from query params
@@ -716,6 +722,9 @@ export class Student {
           if (['appex', 'assignment', 'form3'].includes(this.currentTab)) {
             this.selectTab('weeklylogs');
           }
+          
+          // Stop polling once fully approved
+          this.stopStatusPolling();
         }
         
         // Update UI immediately
@@ -737,6 +746,42 @@ export class Student {
       this.loadingApexBStatus = false;
       this.cdr.markForCheck();
     }
+  }
+
+  // Start automatic status polling to check for verification updates
+  private startStatusPolling() {
+    // Clear any existing interval
+    this.stopStatusPolling();
+    
+    // Only poll if not fully approved yet
+    if (!this.isFullyApproved()) {
+      console.log('🔄 [Student] Starting automatic status polling...');
+      
+      // Poll every 30 seconds
+      this.statusPollingInterval = setInterval(() => {
+        if (this.selectedId && !this.isFullyApproved()) {
+          console.log('🔄 [Student] Auto-checking verification status...');
+          this.loadApexBStatus();
+        } else if (this.isFullyApproved()) {
+          // Stop polling once fully approved
+          console.log('✅ [Student] Fully approved - stopping status polling');
+          this.stopStatusPolling();
+        }
+      }, 30000); // 30 seconds
+    }
+  }
+  
+  // Stop automatic status polling
+  private stopStatusPolling() {
+    if (this.statusPollingInterval) {
+      clearInterval(this.statusPollingInterval);
+      this.statusPollingInterval = null;
+    }
+  }
+  
+  // Cleanup on component destroy
+  ngOnDestroy() {
+    this.stopStatusPolling();
   }
 
   // Forms for new API integrations
