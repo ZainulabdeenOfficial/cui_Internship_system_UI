@@ -61,18 +61,7 @@ export class Login implements OnDestroy, OnInit {
         if (user.role === 'site' || user.role === 'site_supervisor') { this.router.navigate(['/site']); return; }
       }
     } catch {}
-    // Hit backend API on page load to verify system status
-    this.checkSystemStatus();
-  }
-
-  private async checkSystemStatus(): Promise<void> {
-    try {
-      const res = await this.auth.checkSystemStatus();
-      // System is operational; silently continue
-    } catch (e: any) {
-      // Silent failure - don't disrupt login page on backend check
-      try { if (!environment.production) console.warn('[Login] System status check failed:', e?.message); } catch {}
-    }
+    // System status check removed - endpoint not implemented on backend
   }
 
   ngOnDestroy(): void { if (this.ticker) clearInterval(this.ticker); document.body.classList.remove('auth-light'); }
