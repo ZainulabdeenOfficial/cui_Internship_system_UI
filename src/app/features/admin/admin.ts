@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { StoreService } from '../../shared/services/store.service';
@@ -17,7 +17,7 @@ import { CreateAccountRequest } from '../../shared/models/admin/create-account.m
   styleUrl: './admin.css'
 })
 export class Admin {
-  constructor(private store: StoreService, private toast: ToastService, private route: ActivatedRoute, private router: Router, private adminApi: AdminService) {
+  constructor(private store: StoreService, private toast: ToastService, private route: ActivatedRoute, private router: Router, private adminApi: AdminService, private cdr: ChangeDetectorRef) {
     try {
       this.route.queryParamMap.subscribe(p => {
         const t = (p.get('tab') || '').toLowerCase();
@@ -97,9 +97,11 @@ export class Admin {
     if (tab === 'formsRequest') {
       // Set default sub-tab and auto-load APEX A forms
       this.currentFormsSubTab = 'apexA';
-      if (this.apexAForms.length === 0) {
-        this.loadApexAForms();
-      }
+      console.log('🔄 [FormRequest Tab] Switching to Forms Request tab, current sub-tab:', this.currentFormsSubTab);
+      console.log('📊 [FormRequest Tab] Current APEX A forms count:', this.apexAForms.length);
+      
+      // Always load to ensure fresh data
+      this.loadApexAForms();
     }
   }
   get officers() { return this.store.internshipOfficers; }
@@ -886,11 +888,13 @@ export class Admin {
       this.store.addFacultySupervisor(name, email, dept, pass);
       this.faculty = { name: '', email: '', department: '', password: '' };
       this.toast.success('Faculty Supervisor added');
+      this.cdr.markForCheck();
     } catch (err: any) {
       const msg = err?.error?.message || err?.message || 'Failed to add faculty supervisor';
       this.toast.danger(msg);
     } finally {
       this.addingFaculty = false;
+      this.cdr.markForCheck();
     }
   }
   onFacultyNameBlur() {
@@ -1009,11 +1013,13 @@ export class Admin {
     if (this.site.companyId === '' && res?.id) this.site.companyId = res.id;
       this.company = { name: '', email: '', phone: '', address: '', website: '', industry: '', description: '' };
       this.toast.success(res?.message || 'Company added');
+      this.cdr.markForCheck();
     } catch (err: any) {
       const msg = err?.error?.message || err?.message || 'Failed to add company';
       this.toast.danger(msg);
     } finally {
       this.addingCompany = false;
+      this.cdr.markForCheck();
     }
   }
   startEditCompany(id: string) {
@@ -1062,6 +1068,7 @@ export class Admin {
       this.store.addSiteSupervisor(name, email, cid || undefined, pass);
       this.site = { name: '', email: '', companyId: '', password: '' };
       this.toast.success('Site Supervisor added');
+      this.cdr.markForCheck();
     } catch (err: any) {
       const status = err?.status ?? 0;
       const unauthorized = status === 401 ? 'Unauthorized (401): Your session may be expired. Please log in again as ADMIN and retry.' : null;
@@ -1070,6 +1077,7 @@ export class Admin {
       this.toast.danger(msg);
     } finally {
       this.siteLoading['add'] = false;
+      this.cdr.markForCheck();
     }
   }
   companyName(id?: string) {
@@ -1257,8 +1265,10 @@ export class Admin {
 
   // APEX Forms Management Methods
   selectFormsSubTab(subTab: 'apexA' | 'apexB' | 'apexC') {
+    console.log('🔄 [Sub-Tab Switch] Switching to:', subTab);
     this.currentFormsSubTab = subTab;
-    // Auto-load forms when tab is selected
+    
+    // Load data when switching tabs to ensure fresh data
     if (subTab === 'apexA' && this.apexAForms.length === 0) {
       this.loadApexAForms();
     } else if (subTab === 'apexB' && this.apexBForms.length === 0) {
@@ -1266,6 +1276,9 @@ export class Admin {
     } else if (subTab === 'apexC' && this.apexCForms.length === 0) {
       this.loadApexCForms();
     }
+    
+    // Force UI update
+    this.cdr.markForCheck();
   }
 
   // Filtering and pagination helpers
@@ -1372,67 +1385,99 @@ export class Admin {
   async loadApexAForms() {
     if (this.loadingApexA) return;
     this.loadingApexA = true;
+    console.log('🔄 [APEX A] Loading forms...');
     try {
       const result = await this.adminApi.getApexAForms({ page: 1, limit: 10 });
-      this.apexAForms = result;
+      console.log('✅ [APEX A] API Response:', result);
+      console.log('✅ [APEX A] Number of forms:', result?.length || 0);
+      
+      this.apexAForms = result || [];
       this.selectedApexAIds.clear();
+      
+      // Force change detection to update UI
+      this.cdr.markForCheck();
+      
+      console.log('✅ [APEX A] Forms loaded successfully. Count:', this.apexAForms.length);
+      if (this.apexAForms.length > 0) {
+        this.toast.success(`Loaded ${this.apexAForms.length} APEX A forms`);
+      } else {
+        console.warn('⚠️ [APEX A] No forms returned from API');
+      }
     } catch (err: any) {
+      console.error('❌ [APEX A] Error loading forms:', err);
       const msg = err?.error?.message || err?.message || 'Failed to load APEX A forms';
       this.toast.danger(msg);
       this.apexAForms = [];
     } finally {
       this.loadingApexA = false;
+      this.cdr.markForCheck();
     }
   }
 
   async loadApexBForms() {
     if (this.loadingApexB) return;
     this.loadingApexB = true;
+    console.log('🔄 [APEX B] Loading forms...');
     try {
       const result = await this.adminApi.getApexBForms({ page: 1, limit: 10 });
       
-      console.log('🔍 [Admin - APEX B Forms] Full API Response:', JSON.stringify(result, null, 2));
+      console.log('✅ [APEX B] Full API Response:', JSON.stringify(result, null, 2));
+      console.log('✅ [APEX B] Number of forms:', result?.length || 0);
       
       // Check each form for student verification status
       if (Array.isArray(result) && result.length > 0) {
-        console.log('📊 [Admin - APEX B Student Verification Status Check]');
+        console.log('📊 [APEX B] Student Verification Status:');
         result.forEach((form: any, index: number) => {
-          console.log(`\n  Form ${index + 1}:`);
-          console.log(`    Student: ${form.student?.name || form.name || 'N/A'} (${form.student?.email || form.email || 'N/A'})`);
-          console.log(`    Student Verified: ${form.studentVerified || false}`);
-          console.log(`    Faculty Verified: ${form.facultyVerified || false}`);
-          console.log(`    Status: ${form.status || 'N/A'}`);
-          console.log(`    Agreement Accepted: ${form.agreementAccepted || false}`);
+          console.log(`  Form ${index + 1}: ${form.student?.name || form.name || 'N/A'} - Status: ${form.status || 'N/A'}`);
         });
       }
       
-      this.apexBForms = result;
+      this.apexBForms = result || [];
       this.selectedApexBIds.clear();
+      
+      // Force change detection to update UI
+      this.cdr.markForCheck();
+      
+      console.log('✅ [APEX B] Forms loaded successfully. Count:', this.apexBForms.length);
+      if (this.apexBForms.length > 0) {
+        this.toast.success(`Loaded ${this.apexBForms.length} APEX B forms`);
+      } else {
+        console.warn('⚠️ [APEX B] No forms returned from API');
+      }
     } catch (err: any) {
+      console.error('❌ [APEX B] Error loading:', err);
       const msg = err?.error?.message || err?.message || 'Failed to load APEX B forms';
       this.toast.danger(msg);
       this.apexBForms = [];
-      console.log('❌ [Admin - APEX B Forms] Error loading:', err?.message || err);
     } finally {
       this.loadingApexB = false;
+      this.cdr.markForCheck();
     }
   }
 
   async loadApexCForms() {
     if (this.loadingApexC) return;
     this.loadingApexC = true;
+    console.log('🔄 [APEX C] Loading forms...');
     try {
       // TODO: Replace with actual API when available
       this.apexCForms = [];
       this.selectedApexCIds.clear();
       // const result = await this.adminApi.getApexCForms();
       // this.apexCForms = result;
+      
+      // Force change detection to update UI
+      this.cdr.markForCheck();
+      
+      console.log('✅ [APEX C] Forms loaded successfully. Count:', this.apexCForms.length);
     } catch (err: any) {
+      console.error('❌ [APEX C] Error loading forms:', err);
       const msg = err?.error?.message || err?.message || 'Failed to load APEX C forms';
       this.toast.danger(msg);
       this.apexCForms = [];
     } finally {
       this.loadingApexC = false;
+      this.cdr.markForCheck();
     }
   }
 
@@ -1464,11 +1509,13 @@ export class Admin {
       // Update local state instead of full reload for better performance
       form.status = status;
       this.selectedApexAIds.delete(formId);
+      this.cdr.markForCheck();
     } catch (err: any) {
       const msg = err?.error?.message || err?.message || `Failed to ${status} APEX A form`;
       this.toast.danger(msg);
     } finally {
       this.updatingApexA = false;
+      this.cdr.markForCheck();
     }
   }
 
@@ -1506,6 +1553,7 @@ export class Admin {
       }
     } finally {
       this.approvingAllApexA = false;
+      this.cdr.markForCheck();
     }
   }
 
@@ -1577,6 +1625,7 @@ export class Admin {
       this.toast.danger(msg);
     } finally {
       this.updatingApexB = false;
+      this.cdr.markForCheck();
     }
   }
 
@@ -1615,6 +1664,7 @@ export class Admin {
       }
     } finally {
       this.approvingAllApexB = false;
+      this.cdr.markForCheck();
     }
   }
 
@@ -1649,6 +1699,7 @@ export class Admin {
       }
     } finally {
       this.approvingAllApexC = false;
+      this.cdr.markForCheck();
     }
   }
 
@@ -1914,12 +1965,16 @@ export class Admin {
       // Reset loading state first
       this.updatingApexB = false;
       
+      // Trigger change detection to update button states
+      this.cdr.markForCheck();
+      
       // Close modal only on success (in finally to ensure it always runs after state reset)
       if (success) {
         console.log('✅ [Admin - Submit APEX B Details] Closing modal after successful submission');
         // Use setTimeout to ensure state is fully updated before closing
         setTimeout(() => {
           this.closeApexBModal();
+          this.cdr.markForCheck();
         }, 100);
       }
     }
