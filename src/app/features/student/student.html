@@ -6,6 +6,23 @@
     <a routerLink="/guidance" class="btn btn-sm btn-outline-primary">Open Guidance</a>
   </div>
 
+  <!-- Approval Process Information -->
+  <div class="alert alert-warning" role="alert" *ngIf="apexBStatus && !isFullyApproved()">
+    <h6 class="alert-heading mb-2"><i class="bi bi-info-circle"></i> Internship Approval Process</h6>
+    <p class="mb-2 small">Your internship requires verification from three parties:</p>
+    <ol class="mb-0 small">
+      <li><strong>Student Verification:</strong> You must verify and submit your internship details {{ apexBStatus.studentVerified ? '✓ Completed' : '⏳ Pending' }}</li>
+      <li><strong>Faculty Verification:</strong> Your faculty supervisor must review and approve {{ apexBStatus.facultyVerified ? '✓ Completed' : '⏳ Pending' }}</li>
+      <li><strong>Admin Approval:</strong> Admin must approve and assign supervisors {{ apexBStatus.adminApproved ? '✓ Completed' : '⏳ Pending' }}</li>
+    </ol>
+    <p class="mb-0 mt-2 small"><strong>Note:</strong> Once all three verifications are complete, your internship will be fully approved and you can start weekly logs.</p>
+  </div>
+
+  <div class="alert alert-success" role="alert" *ngIf="isFullyApproved()">
+    <h6 class="alert-heading mb-0"><i class="bi bi-check-circle-fill"></i> Internship Fully Approved!</h6>
+    <p class="mb-0 small">All verifications complete. You can now submit weekly logs and complete your internship requirements.</p>
+  </div>
+
   <!-- Tabs: separate tabs for each student form and Complaints -->
   <ul class="nav nav-tabs mb-3">
     <li class="nav-item"><button type="button" class="nav-link" [class.active]="isCurrentTab('appex')" (click)="selectTab('appex')">Internship Approval (AppEx‑A)</button></li>
@@ -17,10 +34,55 @@
 
   <!-- Assignment and Approval Status -->
   <div class="card mb-3" *ngIf="selectedStudent() as ss">
-    <div class="card-body d-flex flex-wrap gap-3 align-items-center">
-      <span><strong>Status:</strong> <span class="badge" [class.text-bg-success]="ss.approved" [class.text-bg-secondary]="!ss.approved">{{ ss.approved ? 'Approved' : 'Pending Approval' }}</span></span>
-      <span><strong>Faculty Supervisor:</strong> {{ facultyName(ss.facultyId) }}</span>
-      <span><strong>Site Supervisor:</strong> {{ siteName(ss.siteId) }} <small class="text-muted">{{ siteEmail(ss.siteId) }}</small></span>
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-12 col-md-6">
+          <div class="d-flex flex-wrap gap-3 align-items-center">
+            <span><strong>Overall Status:</strong> 
+              <span class="badge" 
+                [class.text-bg-success]="isFullyApproved()" 
+                [class.text-bg-warning]="!isFullyApproved() && (apexBStatus?.studentVerified || apexBStatus?.facultyVerified || apexBStatus?.adminApproved)"
+                [class.text-bg-secondary]="!isFullyApproved() && !apexBStatus?.studentVerified && !apexBStatus?.facultyVerified && !apexBStatus?.adminApproved">
+                {{ isFullyApproved() ? 'Internship Approved' : 'Pending Verification' }}
+              </span>
+            </span>
+          </div>
+        </div>
+        
+        <div class="col-12 col-md-6" *ngIf="apexBStatus">
+          <div class="d-flex flex-wrap gap-2">
+            <span class="badge" [class.text-bg-success]="apexBStatus.studentVerified" [class.text-bg-secondary]="!apexBStatus.studentVerified">
+              <i class="bi" [class.bi-check-circle-fill]="apexBStatus.studentVerified" [class.bi-clock]="!apexBStatus.studentVerified"></i>
+              Student
+            </span>
+            <span class="badge" [class.text-bg-success]="apexBStatus.facultyVerified" [class.text-bg-secondary]="!apexBStatus.facultyVerified">
+              <i class="bi" [class.bi-check-circle-fill]="apexBStatus.facultyVerified" [class.bi-clock]="!apexBStatus.facultyVerified"></i>
+              Faculty
+            </span>
+            <span class="badge" [class.text-bg-success]="apexBStatus.adminApproved" [class.text-bg-secondary]="!apexBStatus.adminApproved">
+              <i class="bi" [class.bi-check-circle-fill]="apexBStatus.adminApproved" [class.bi-clock]="!apexBStatus.adminApproved"></i>
+              Admin
+            </span>
+          </div>
+        </div>
+        
+        <div class="col-12 col-md-4" *ngIf="apexBStatus?.companyName">
+          <span><strong>Company:</strong> {{ apexBStatus?.companyName }}</span>
+        </div>
+        <div class="col-12 col-md-4" *ngIf="apexBStatus?.internshipRole">
+          <span><strong>Role:</strong> {{ apexBStatus?.internshipRole }}</span>
+        </div>
+        <div class="col-12 col-md-4" *ngIf="apexBStatus?.startDate">
+          <span><strong>Duration:</strong> {{ apexBStatus?.startDate | date:'shortDate' }} - {{ apexBStatus?.endDate | date:'shortDate' }}</span>
+        </div>
+        
+        <div class="col-12 col-md-4">
+          <span><strong>Faculty Supervisor:</strong> {{ facultyName(ss.facultyId) }}</span>
+        </div>
+        <div class="col-12 col-md-8">
+          <span><strong>Site Supervisor:</strong> {{ siteName(ss.siteId) }} <small class="text-muted">{{ siteEmail(ss.siteId) }}</small></span>
+        </div>
+      </div>
     </div>
   </div>
 

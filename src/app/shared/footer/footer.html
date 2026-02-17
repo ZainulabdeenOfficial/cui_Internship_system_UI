@@ -17,9 +17,6 @@
 				<h6 class="mb-2">Quick links</h6>
 				<ul class="list-unstyled small mb-0">
 					<ng-container *ngIf="store.currentUser()?.role === 'student'">
-						<div class="mb-2">
-							<span class="badge" [class.text-bg-success]="studentStatus==='approved'" [class.text-bg-danger]="studentStatus==='rejected'" [class.text-bg-secondary]="studentStatus==='pending'">Status: {{ studentStatus || '-' }}</span>
-						</div>
 						<li><a class="link-light text-decoration-none" [routerLink]="['/student']" [queryParams]="{ tab: 'appex' }">Internship Approval (AppEx‑A)</a></li>
 						<li><a class="link-light text-decoration-none" [routerLink]="['/student']" [queryParams]="{ tab: 'assignment' }">Assignment &amp; Agreement</a></li>
 						<li><a class="link-light text-decoration-none" [routerLink]="['/student']" [queryParams]="{ tab: 'form3' }">Organization Overview &amp; Scope of Work</a></li>

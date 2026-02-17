@@ -1,4 +1,4 @@
-import { Component, computed, effect } from '@angular/core';
+import { Component, computed, effect, ChangeDetectorRef } from '@angular/core';
 import { CommonModule, NgIf, NgFor } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { StoreService } from '../../shared/services/store.service';
@@ -52,10 +52,31 @@ export class Student {
   myStudentId = computed(() => this.me()?.studentId ?? null);
   isApproved = computed(() => !!this.selectedStudent()?.approved);
   
+  // APEX B Verification Status
+  apexBStatus: {
+    studentVerified: boolean;
+    facultyVerified: boolean;
+    adminApproved: boolean;
+    status: string;
+    companyName?: string;
+    internshipRole?: string;
+    startDate?: string;
+    endDate?: string;
+  } | null = null;
+  loadingApexBStatus = false;
+  
+  // Check if all verifications are complete
+  isFullyApproved = computed(() => {
+    const apexB = this.apexBStatus;
+    if (!apexB) return this.isApproved();
+    return apexB.studentVerified && apexB.facultyVerified && apexB.adminApproved;
+  });
+  
   // Check if all APEX forms are approved to determine which tabs to show
   allApexFormsApproved(): boolean {
     // Check if APEX A and Assignment are submitted and approved
-    return this.appexASubmitted && this.isApproved();
+    // Also check APEX B full approval (all three: student, faculty, admin)
+    return this.appexASubmitted && (this.isFullyApproved() || this.isApproved());
   }
   
   private lockSelection: any;
@@ -153,10 +174,15 @@ export class Student {
     return this.store.complaints().filter(c => c.studentId === this.selectedId);
   };
   
-  constructor(private store: StoreService, private toast: ToastService, private route: ActivatedRoute, private router: Router, private studentApi: StudentService, private adminApi: AdminService) {
+  constructor(private store: StoreService, private toast: ToastService, private route: ActivatedRoute, private router: Router, private studentApi: StudentService, private adminApi: AdminService, private cdr: ChangeDetectorRef) {
     this.lockSelection = effect(() => {
       const mine = this.myStudentId();
       if (mine && this.selectedId !== mine) this.selectedId = mine;
+      
+      // Auto-load APEX B status when student is selected
+      if (this.selectedId) {
+        this.loadApexBStatus();
+      }
     });
     // Initialize tab from query params
     try {
@@ -633,6 +659,56 @@ export class Student {
       }
       this.toast.danger(err?.error?.message || err?.message || 'Failed to update AppEx-A');
       throw err;
+    }
+  }
+
+  // Load APEX B verification status for current student
+  async loadApexBStatus() {
+    if (this.loadingApexBStatus || !this.selectedId) return;
+    
+    this.loadingApexBStatus = true;
+    console.log('🔄 [Student] Loading APEX B verification status...');
+    
+    try {
+      const res = await this.adminApi.getApexBForms({ page: 1, limit: 100 });
+      console.log('✅ [Student] APEX B API Response:', res);
+      
+      // Find the APEX B form for this student
+      const myForm = Array.isArray(res) ? 
+        res.find((f: any) => f.student?.id === this.selectedId || f.id === this.selectedId) : 
+        null;
+      
+      if (myForm) {
+        this.apexBStatus = {
+          studentVerified: myForm.studentVerified || false,
+          facultyVerified: myForm.facultyVerified || false,
+          adminApproved: myForm.adminApproved || myForm.status === 'approved' || false,
+          status: myForm.status || 'PENDING',
+          companyName: myForm.companyName,
+          internshipRole: myForm.internshipRole,
+          startDate: myForm.startDate,
+          endDate: myForm.endDate
+        };
+        
+        console.log('✅ [Student] APEX B Status loaded:', {
+          studentVerified: this.apexBStatus.studentVerified,
+          facultyVerified: this.apexBStatus.facultyVerified,
+          adminApproved: this.apexBStatus.adminApproved,
+          fullyApproved: this.isFullyApproved()
+        });
+        
+        // Update UI immediately
+        this.cdr.markForCheck();
+      } else {
+        console.log('ℹ️ [Student] No APEX B form found for this student');
+        this.apexBStatus = null;
+      }
+    } catch (err: any) {
+      console.error('❌ [Student] Error loading APEX B status:', err);
+      this.apexBStatus = null;
+    } finally {
+      this.loadingApexBStatus = false;
+      this.cdr.markForCheck();
     }
   }
 
