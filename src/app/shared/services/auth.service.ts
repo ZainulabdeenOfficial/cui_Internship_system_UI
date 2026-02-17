@@ -124,14 +124,7 @@ export class AuthService {
     
     try { refreshToken = localStorage.getItem('refreshToken'); } catch {}
     
-    console.log('🔄 [Auth - Refresh Token] Starting refresh process:', {
-      hasRefreshToken: !!refreshToken,
-      refreshTokenLength: refreshToken?.length || 0
-    });
-    
     if (!refreshToken) {
-      console.error('❌ [Auth - Refresh Token] No refresh token found in localStorage');
-      try { if (!environment.production) console.warn('[Auth] No refreshToken found; skipping refresh'); } catch {}
       throw new Error('No refresh token found');
     }
     
@@ -144,21 +137,14 @@ export class AuthService {
     let res: RefreshTokenResponse;
     
     try {
-      console.log('📤 [Auth - Refresh Token] Sending refresh request to:', rel);
       // Prefer same-origin (rewrites/proxy) then fallback to absolute
       res = await firstValueFrom(post(rel));
-      console.log('✅ [Auth - Refresh Token] Response received from relative URL:', res);
     } catch (err: any) {
       const absUrl = `${this.absBase}${rel}`;
-      console.log('⚠️ [Auth - Refresh Token] Relative URL failed, trying absolute:', absUrl);
       try {
         res = await firstValueFrom(post(absUrl));
-        console.log('✅ [Auth - Refresh Token] Response received from absolute URL:', res);
       } catch (absErr: any) {
-        console.error('❌ [Auth - Refresh Token] Both relative and absolute URLs failed:', {
-          relativeError: err,
-          absoluteError: absErr
-        });
+        console.error('❌ Token refresh failed:', absErr?.message || absErr);
         throw absErr;
       }
     }
@@ -168,32 +154,22 @@ export class AuthService {
       const tok = (res as any)?.accessToken || (res as any)?.token || (res as any)?.data?.accessToken || (res as any)?.data?.token;
       const rtk = (res as any)?.refreshToken || (res as any)?.data?.refreshToken;
       
-      console.log('🔍 [Auth - Refresh Token] Parsing response:', {
-        hasAccessToken: !!tok,
-        hasRefreshToken: !!rtk,
-        responseKeys: Object.keys(res || {})
-      });
-      
       if (!tok) {
-        console.error('❌ [Auth - Refresh Token] Token refresh response missing accessToken:', res);
+        console.error('❌ Token refresh response missing access token');
         throw new Error('Invalid refresh response: missing access token');
       }
       
       // Save both access token and refresh token (if new one provided)
       sessionStorage.setItem('authToken', tok);
       sessionStorage.setItem('accessToken', tok);
-      console.log('✅ [Auth - Refresh Token] Access token saved to sessionStorage');
       
       if (rtk) {
         localStorage.setItem('refreshToken', rtk);
-        console.log('✅ [Auth - Refresh Token] New refresh token saved to localStorage');
       }
-      
-      console.log('✅ [Auth - Refresh Token] Access token refreshed and saved successfully');
       
       return res;
     } catch (saveErr) {
-      console.error('❌ [Auth - Refresh Token] Failed to save refreshed tokens:', saveErr);
+      console.error('❌ Failed to save refreshed tokens:', saveErr);
       throw saveErr;
     }
   }

@@ -70,16 +70,16 @@ export class TokenRefreshService {
   }
 
   private async refreshAndReschedule() {
-    console.log('🔄 [TokenRefresh] Attempting scheduled token refresh...');
-    
     try {
       // Check if refresh token exists before attempting
       const hasRefreshToken = localStorage.getItem('refreshToken');
       if (!hasRefreshToken) {
-        console.error('❌ [TokenRefresh] No refresh token found, stopping scheduler');
+        // User is not logged in - silently stop (expected behavior)
         if (this.timer) { clearTimeout(this.timer); this.timer = null; }
         return;
       }
+      
+      console.log('🔄 [TokenRefresh] Attempting scheduled token refresh...');
       
       const result = await this.auth.refreshAccessToken();
       
