@@ -150,28 +150,21 @@ export class AuthService {
     }
     
     // Validate and save tokens from response
-    try {
-      const tok = (res as any)?.accessToken || (res as any)?.token || (res as any)?.data?.accessToken || (res as any)?.data?.token;
-      const rtk = (res as any)?.refreshToken || (res as any)?.data?.refreshToken;
-      
-      if (!tok) {
-        console.error('❌ Token refresh response missing access token');
-        throw new Error('Invalid refresh response: missing access token');
-      }
-      
-      // Save both access token and refresh token (if new one provided)
-      sessionStorage.setItem('authToken', tok);
-      sessionStorage.setItem('accessToken', tok);
-      
-      if (rtk) {
-        localStorage.setItem('refreshToken', rtk);
-      }
-      
-      return res;
-    } catch (saveErr) {
-      console.error('❌ Failed to save refreshed tokens:', saveErr);
-      throw saveErr;
+    if (!res.accessToken) {
+      console.error('❌ Token refresh response missing access token');
+      throw new Error('Invalid refresh response: missing access token');
     }
+    
+    // Save access token
+    sessionStorage.setItem('authToken', res.accessToken);
+    sessionStorage.setItem('accessToken', res.accessToken);
+    
+    // Save refresh token if new one provided
+    if (res.refreshToken) {
+      localStorage.setItem('refreshToken', res.refreshToken);
+    }
+    
+    return res;
   }
 
   async generatePassword(): Promise<GeneratePasswordResponse> {
