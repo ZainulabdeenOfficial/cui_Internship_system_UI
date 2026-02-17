@@ -86,6 +86,114 @@
     </div>
   </div>
 
+  <!-- Admin-added APEX B Details Card -->
+  <div class="card mb-3 border-primary" *ngIf="apexBStatus && apexBStatus.adminApproved">
+    <div class="card-header bg-primary text-white">
+      <i class="bi bi-file-earmark-check-fill me-2"></i>
+      APEX B - Admin Approved Internship Details
+    </div>
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-12" *ngIf="isFullyApproved()">
+          <div class="alert alert-success mb-3">
+            <i class="bi bi-check-circle-fill me-2"></i>
+            <strong>Your internship has been fully approved by all parties!</strong> You can now start submitting weekly logs.
+          </div>
+        </div>
+        
+        <div class="col-12 col-md-6" *ngIf="apexBStatus.companyName">
+          <div class="d-flex align-items-start">
+            <i class="bi bi-building me-2 text-primary"></i>
+            <div>
+              <small class="text-muted d-block">Company Name</small>
+              <strong>{{ apexBStatus.companyName }}</strong>
+            </div>
+          </div>
+        </div>
+        
+        <div class="col-12 col-md-6" *ngIf="apexBStatus.internshipRole">
+          <div class="d-flex align-items-start">
+            <i class="bi bi-briefcase me-2 text-primary"></i>
+            <div>
+              <small class="text-muted d-block">Internship Role</small>
+              <strong>{{ apexBStatus.internshipRole }}</strong>
+            </div>
+          </div>
+        </div>
+        
+        <div class="col-12 col-md-6" *ngIf="apexBStatus.internshipType">
+          <div class="d-flex align-items-start">
+            <i class="bi bi-gear me-2 text-primary"></i>
+            <div>
+              <small class="text-muted d-block">Internship Type</small>
+              <strong>{{ apexBStatus.internshipType }}</strong>
+            </div>
+          </div>
+        </div>
+        
+        <div class="col-12 col-md-6" *ngIf="apexBStatus.location">
+          <div class="d-flex align-items-start">
+            <i class="bi bi-geo-alt me-2 text-primary"></i>
+            <div>
+              <small class="text-muted d-block">Location</small>
+              <strong>{{ apexBStatus.location }}</strong>
+            </div>
+          </div>
+        </div>
+        
+        <div class="col-12 col-md-6" *ngIf="apexBStatus.startDate">
+          <div class="d-flex align-items-start">
+            <i class="bi bi-calendar-event me-2 text-primary"></i>
+            <div>
+              <small class="text-muted d-block">Start Date</small>
+              <strong>{{ apexBStatus.startDate | date:'fullDate' }}</strong>
+            </div>
+          </div>
+        </div>
+        
+        <div class="col-12 col-md-6" *ngIf="apexBStatus.endDate">
+          <div class="d-flex align-items-start">
+            <i class="bi bi-calendar-check me-2 text-primary"></i>
+            <div>
+              <small class="text-muted d-block">End Date</small>
+              <strong>{{ apexBStatus.endDate | date:'fullDate' }}</strong>
+            </div>
+          </div>
+        </div>
+        
+        <div class="col-12 col-md-6" *ngIf="apexBStatus.duration">
+          <div class="d-flex align-items-start">
+            <i class="bi bi-clock me-2 text-primary"></i>
+            <div>
+              <small class="text-muted d-block">Duration</small>
+              <strong>{{ apexBStatus.duration }}</strong>
+            </div>
+          </div>
+        </div>
+        
+        <div class="col-12 col-md-6" *ngIf="apexBStatus.facultySupervisor">
+          <div class="d-flex align-items-start">
+            <i class="bi bi-person-badge me-2 text-primary"></i>
+            <div>
+              <small class="text-muted d-block">Faculty Supervisor</small>
+              <strong>{{ apexBStatus.facultySupervisor }}</strong>
+            </div>
+          </div>
+        </div>
+        
+        <div class="col-12 col-md-6" *ngIf="apexBStatus.siteSupervisor">
+          <div class="d-flex align-items-start">
+            <i class="bi bi-person-workspace me-2 text-primary"></i>
+            <div>
+              <small class="text-muted d-block">Site Supervisor</small>
+              <strong>{{ apexBStatus.siteSupervisor }}</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   
 
   <!-- Old Approval & Agreement form removed — AppEx-A used as single internship approval form -->

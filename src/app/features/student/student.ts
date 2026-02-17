@@ -62,6 +62,11 @@ export class Student {
     internshipRole?: string;
     startDate?: string;
     endDate?: string;
+    facultySupervisor?: string;
+    siteSupervisor?: string;
+    internshipType?: string;
+    duration?: string;
+    location?: string;
   } | null = null;
   loadingApexBStatus = false;
   
@@ -687,7 +692,13 @@ export class Student {
           companyName: myForm.companyName,
           internshipRole: myForm.internshipRole,
           startDate: myForm.startDate,
-          endDate: myForm.endDate
+          endDate: myForm.endDate,
+          // Admin-added details from APEX B
+          facultySupervisor: myForm.facultySupervisor || myForm.facultyName,
+          siteSupervisor: myForm.siteSupervisor || myForm.siteName,
+          internshipType: myForm.internshipType || myForm.type,
+          duration: myForm.duration,
+          location: myForm.location || myForm.internshipLocation
         };
         
         console.log('✅ [Student] APEX B Status loaded:', {
@@ -696,6 +707,17 @@ export class Student {
           adminApproved: this.apexBStatus.adminApproved,
           fullyApproved: this.isFullyApproved()
         });
+        
+        // If fully approved, automatically load weekly logs and switch to that tab
+        if (this.isFullyApproved()) {
+          console.log('✅ [Student] Fully approved! Auto-loading weekly logs...');
+          this.loadWeeklyLogs();
+          
+          // Auto-switch to weekly logs tab if currently on approval forms
+          if (['appex', 'assignment', 'form3'].includes(this.currentTab)) {
+            this.selectTab('weeklylogs');
+          }
+        }
         
         // Update UI immediately
         this.cdr.markForCheck();
@@ -1105,11 +1127,17 @@ export class Student {
       if (this.weeklyLogStatus.currentWeek) {
         this.weeklyLogForm.weekNo = this.weeklyLogStatus.currentWeek;
       }
+      
+      console.log('✅ [Student] Weekly logs loaded:', {
+        count: this.weeklyLogs.length,
+        status: this.weeklyLogStatus
+      });
     } catch (err: any) {
       const msg = err?.error?.message || err?.message || 'Failed to load weekly logs';
       this.toast.danger(msg);
     } finally {
       this.loadingWeeklyLogs = false;
+      this.cdr.markForCheck(); // Trigger UI update
     }
   }
 
@@ -1166,6 +1194,7 @@ export class Student {
       this.toast.danger(msg);
     } finally {
       this.submittingWeeklyLog = false;
+      this.cdr.markForCheck(); // Trigger UI update
     }
   }
 
