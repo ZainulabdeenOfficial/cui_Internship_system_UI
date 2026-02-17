@@ -1,0 +1,19 @@
+:host {
+  display: block;
+}
+
+.apex-a-management {
+  padding: 1rem;
+}
+
+.modal.show {
+  display: block;
+}
+
+.form-check-input {
+  cursor: pointer;
+}
+
+.btn-group .btn {
+  white-space: nowrap;
+}

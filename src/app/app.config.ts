@@ -4,7 +4,7 @@ import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { provideRouter } from '@angular/router';
 
 import { routes } from './app.routes';
-import { jsonInterceptor } from './shared/services/http.interceptor';
+import { httpInterceptor } from './core/interceptors/http.interceptor';
 import { authTokenInterceptor } from './shared/services/auth-token.interceptor';
 
 export const appConfig: ApplicationConfig = {
@@ -12,7 +12,8 @@ export const appConfig: ApplicationConfig = {
     provideBrowserGlobalErrorListeners(),
     provideZonelessChangeDetection(),
     provideRouter(routes),
-    provideHttpClient(withInterceptors([jsonInterceptor, authTokenInterceptor])),
+    // Use enhanced HTTP interceptor with loading and error handling
+    provideHttpClient(withInterceptors([httpInterceptor, authTokenInterceptor])),
     {
       provide: APP_INITIALIZER,
       useFactory: (svc: TokenRefreshService) => () => svc.init(),
