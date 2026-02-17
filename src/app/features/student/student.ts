@@ -675,30 +675,29 @@ export class Student {
     console.log('🔄 [Student] Loading APEX B verification status...');
     
     try {
-      const res = await this.adminApi.getApexBForms({ page: 1, limit: 100 });
+      // Use student-specific API endpoint (not admin endpoint)
+      const res = await this.studentApi.getAppexBVerification();
       console.log('✅ [Student] APEX B API Response:', res);
       
-      // Find the APEX B form for this student
-      const myForm = Array.isArray(res) ? 
-        res.find((f: any) => f.student?.id === this.selectedId || f.id === this.selectedId) : 
-        null;
+      // Response structure from student endpoint
+      const apexB = res?.apexB || res?.data || res;
       
-      if (myForm) {
+      if (apexB) {
         this.apexBStatus = {
-          studentVerified: myForm.studentVerified || false,
-          facultyVerified: myForm.facultyVerified || false,
-          adminApproved: myForm.adminApproved || myForm.status === 'approved' || false,
-          status: myForm.status || 'PENDING',
-          companyName: myForm.companyName,
-          internshipRole: myForm.internshipRole,
-          startDate: myForm.startDate,
-          endDate: myForm.endDate,
+          studentVerified: apexB.studentVerified || false,
+          facultyVerified: apexB.facultyVerified || false,
+          adminApproved: apexB.adminApproved || apexB.status === 'approved' || false,
+          status: apexB.status || 'PENDING',
+          companyName: apexB.companyName,
+          internshipRole: apexB.internshipRole,
+          startDate: apexB.startDate,
+          endDate: apexB.endDate,
           // Admin-added details from APEX B
-          facultySupervisor: myForm.facultySupervisor || myForm.facultyName,
-          siteSupervisor: myForm.siteSupervisor || myForm.siteName,
-          internshipType: myForm.internshipType || myForm.type,
-          duration: myForm.duration,
-          location: myForm.location || myForm.internshipLocation
+          facultySupervisor: apexB.facultySupervisor || apexB.facultySupervisorNameDesig,
+          siteSupervisor: apexB.siteSupervisor || apexB.siteSupervisorNameDesig,
+          internshipType: apexB.internshipType || apexB.type,
+          duration: apexB.duration || apexB.durationWeeks ? `${apexB.durationWeeks} weeks` : undefined,
+          location: apexB.location || apexB.internshipLocation
         };
         
         console.log('✅ [Student] APEX B Status loaded:', {
@@ -727,7 +726,13 @@ export class Student {
       }
     } catch (err: any) {
       console.error('❌ [Student] Error loading APEX B status:', err);
-      this.apexBStatus = null;
+      // If 404 or no data found, it's expected (student hasn't submitted yet)
+      if (err?.status === 404 || err?.status === 400) {
+        console.log('ℹ️ [Student] APEX B not yet submitted');
+        this.apexBStatus = null;
+      } else {
+        this.apexBStatus = null;
+      }
     } finally {
       this.loadingApexBStatus = false;
       this.cdr.markForCheck();
