@@ -16,6 +16,9 @@ import { FacultyService, FacultyProfile } from '../../shared/services/faculty.se
   styleUrl: './faculty-supervisor.css'
 })
 export class FacultySupervisor {
+  private hasLoadedProfileOnce = false;
+  private hasLoadedRequestsOnce = false;
+
   constructor(private store: StoreService, private toast: ToastService, private route: ActivatedRoute, private router: Router, private facultyApi: FacultyService) {
     // Pre-load APEX B requests on initialization for instant display
     this.loadStudentRequests();
@@ -192,11 +195,15 @@ export class FacultySupervisor {
   // Faculty profile via API
   apiProfile?: FacultyProfile;
   loadingProfile = false;
-  async loadMyProfileFromApi() {
+  async loadMyProfileFromApi(forceRefresh = false) {
     if (this.loadingProfile) return;
     this.loadingProfile = true;
     try {
-      const res = await this.facultyApi.getProfile();
+      const res = await this.facultyApi.getProfile({
+        skipGlobalLoading: this.hasLoadedProfileOnce || forceRefresh,
+        forceRefresh
+      });
+      this.hasLoadedProfileOnce = true;
       this.apiProfile = res.profile;
       // Optionally, sync into local store for view binding consistency
       const id = this.myFacultyId();
@@ -243,7 +250,7 @@ export class FacultySupervisor {
   showApexADetailsModal = false;
   selectedApexAForm: any = null;
   
-  async loadStudentRequests() {
+  async loadStudentRequests(forceRefresh = false) {
     if (this.loadingRequests) return;
     this.loadingRequests = true;
     
@@ -259,12 +266,19 @@ export class FacultySupervisor {
       
       // Load both requests in parallel for faster performance
       const [resA, resB] = await Promise.all([
-        this.facultyApi.getAppexAApprovals(statusFilter, this.page.appexA, this.pageSize),
-        this.facultyApi.getAppexBVerifications(statusFilter, this.page.appexB, this.pageSize)
+        this.facultyApi.getAppexAApprovals(statusFilter, this.page.appexA, this.pageSize, {
+          skipGlobalLoading: this.hasLoadedRequestsOnce || forceRefresh,
+          forceRefresh
+        }),
+        this.facultyApi.getAppexBVerifications(statusFilter, this.page.appexB, this.pageSize, {
+          skipGlobalLoading: this.hasLoadedRequestsOnce || forceRefresh,
+          forceRefresh
+        })
       ]);
       
       this.appexARequests = resA?.approvals || resA?.data || [];
       this.appexBRequests = resB?.verifications || resB?.data || [];
+      this.hasLoadedRequestsOnce = true;
       
       console.log('✅ [Faculty - Load Student Requests] Loaded successfully:', {
         appexACount: this.appexARequests.length,
@@ -396,7 +410,7 @@ export class FacultySupervisor {
         // Reload the list to get latest data from server (don't await to avoid blocking UI)
         setTimeout(() => {
           console.log('🔄 [Faculty - Approve APEX B] Reloading requests in background...');
-          this.loadStudentRequests().then(() => {
+          this.loadStudentRequests(true).then(() => {
             console.log('✅ [Faculty - Approve APEX B] Requests reloaded successfully');
           }).catch(err => {
             console.error('❌ [Faculty - Approve APEX B] Error reloading:', err);
@@ -528,7 +542,7 @@ export class FacultySupervisor {
   onRequestFilterChange() {
     this.page.appexA = 1;
     this.page.appexB = 1;
-    this.loadStudentRequests();
+    this.loadStudentRequests(true);
   }
 
   viewApexADetails(form: any) {

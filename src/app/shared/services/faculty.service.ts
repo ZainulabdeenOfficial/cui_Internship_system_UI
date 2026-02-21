@@ -19,9 +19,17 @@ export type FacultyProfile = {
   user?: { id?: string; name?: string; email?: string; role?: string; verified?: boolean };
 };
 
+export interface FacultyRequestOptions {
+  skipGlobalLoading?: boolean;
+  forceRefresh?: boolean;
+  cacheTtlMs?: number;
+}
+
 @Injectable({ providedIn: 'root' })
 export class FacultyService {
   private base = 'https://cui-internship-system-git-dev-zas-projects-7d9cf03b.vercel.app';
+  private readonly cachePrefix = 'faculty.api.cache.';
+  private readonly defaultCacheTtlMs = 2 * 60 * 1000;
   constructor(private http: HttpClient, private auth: AuthService) {}
 
   private getTokenFromStorage(): string | null {
@@ -55,18 +63,74 @@ export class FacultyService {
     } catch {}
     return token || null;
   }
-  private async authHeaders(json = true): Promise<HttpHeaders> {
+  private async authHeaders(json = true, options?: FacultyRequestOptions): Promise<HttpHeaders> {
     const token = await this.ensureFreshToken();
     const base: Record<string, string> = { Accept: 'application/json' };
     if (json) base['Content-Type'] = 'application/json';
     if (token) base['Authorization'] = `Bearer ${token}`;
+    if (options?.skipGlobalLoading) base['X-Skip-Global-Loading'] = 'true';
     return new HttpHeaders(base);
   }
 
-  async getProfile(): Promise<{ message?: string; profile?: FacultyProfile }> {
+  private cacheKey(endpoint: string): string {
+    const token = this.getTokenFromStorage();
+    const userPart = token ? token.slice(-16) : 'anon';
+    return `${this.cachePrefix}${userPart}:${endpoint}`;
+  }
+
+  private readCache<T>(key: string, options?: FacultyRequestOptions): T | null {
+    if (options?.forceRefresh) return null;
+    try {
+      const raw = sessionStorage.getItem(key);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw) as { expiresAt?: number; data?: T };
+      if (!parsed?.expiresAt || parsed.expiresAt <= Date.now()) {
+        sessionStorage.removeItem(key);
+        return null;
+      }
+      return (parsed.data ?? null) as T | null;
+    } catch {
+      return null;
+    }
+  }
+
+  private writeCache<T>(key: string, data: T, ttlMs?: number): void {
+    try {
+      const expiresAt = Date.now() + (ttlMs ?? this.defaultCacheTtlMs);
+      sessionStorage.setItem(key, JSON.stringify({ expiresAt, data }));
+    } catch {}
+  }
+
+  private clearCache(endpoint: string): void {
+    try {
+      sessionStorage.removeItem(this.cacheKey(endpoint));
+    } catch {}
+  }
+
+  private clearCacheByPrefix(endpointPrefix: string): void {
+    const token = this.getTokenFromStorage();
+    const userPart = token ? token.slice(-16) : 'anon';
+    const storagePrefix = `${this.cachePrefix}${userPart}:${endpointPrefix}`;
+    try {
+      const keys: string[] = [];
+      for (let i = 0; i < sessionStorage.length; i++) {
+        const key = sessionStorage.key(i);
+        if (key && key.startsWith(storagePrefix)) keys.push(key);
+      }
+      keys.forEach(key => sessionStorage.removeItem(key));
+    } catch {}
+  }
+
+  async getProfile(options?: FacultyRequestOptions): Promise<{ message?: string; profile?: FacultyProfile }> {
+    const key = this.cacheKey('profile');
+    const cached = this.readCache<{ message?: string; profile?: FacultyProfile }>(key, options);
+    if (cached) return cached;
+
     const url = `${this.base}/api/faculty/profile`;
-    const res = await firstValueFrom(this.http.get<any>(url, { headers: await this.authHeaders(false) }));
-    return { message: res?.message, profile: res?.profile as FacultyProfile };
+    const res = await firstValueFrom(this.http.get<any>(url, { headers: await this.authHeaders(false, options) }));
+    const mapped = { message: res?.message, profile: res?.profile as FacultyProfile };
+    this.writeCache(key, mapped, options?.cacheTtlMs ?? 5 * 60 * 1000);
+    return mapped;
   }
 
   async updateProfile(input: Partial<FacultyProfile>): Promise<{ message?: string; profile?: FacultyProfile }>{
@@ -82,17 +146,24 @@ export class FacultyService {
       expertise: input.expertise ?? ''
     };
     const res = await firstValueFrom(this.http.post<any>(url, body, { headers: await this.authHeaders(true) }));
-    return { message: res?.message, profile: res?.profile as FacultyProfile };
+    const mapped = { message: res?.message, profile: res?.profile as FacultyProfile };
+    this.clearCache('profile');
+    return mapped;
   }
 
-  async getAppexAApprovals(status?: string, page?: number, limit?: number): Promise<any> {
+  async getAppexAApprovals(status?: string, page?: number, limit?: number, options?: FacultyRequestOptions): Promise<any> {
     let url = `${this.base}/api/faculty/appex-a-approval`;
     const params: string[] = [];
     if (status) params.push(`status=${encodeURIComponent(status)}`);
     if (page !== undefined) params.push(`page=${page}`);
     if (limit !== undefined) params.push(`limit=${limit}`);
     if (params.length) url += '?' + params.join('&');
-    const res = await firstValueFrom(this.http.get<any>(url, { headers: await this.authHeaders(false) }));
+    const key = this.cacheKey(`appex-a-approval?${params.join('&')}`);
+    const cached = this.readCache<any>(key, options);
+    if (cached) return cached;
+
+    const res = await firstValueFrom(this.http.get<any>(url, { headers: await this.authHeaders(false, options) }));
+    this.writeCache(key, res, options?.cacheTtlMs);
     return res;
   }
 
@@ -100,20 +171,25 @@ export class FacultyService {
     const url = `${this.base}/api/faculty/appex-a-approval`;
     const body = { appexAId, status, comments: comments || '' };
     const res = await firstValueFrom(this.http.patch<any>(url, body, { headers: await this.authHeaders(true) }));
+    this.clearCacheByPrefix('appex-a-approval?');
     return res;
   }
 
-  async getAppexBVerifications(status?: string, page?: number, limit?: number): Promise<any> {
+  async getAppexBVerifications(status?: string, page?: number, limit?: number, options?: FacultyRequestOptions): Promise<any> {
     let url = `${this.base}/api/faculty/appex-b-verification`;
     const params: string[] = [];
     if (status) params.push(`status=${encodeURIComponent(status)}`);
     if (page !== undefined) params.push(`page=${page}`);
     if (limit !== undefined) params.push(`limit=${limit}`);
     if (params.length) url += '?' + params.join('&');
+
+    const key = this.cacheKey(`appex-b-verification?${params.join('&')}`);
+    const cached = this.readCache<any>(key, options);
+    if (cached) return cached;
     
     console.log('🔍 [Faculty Service - Get APEX B Verifications] Request:', { url, status, page, limit });
     
-    const res = await firstValueFrom(this.http.get<any>(url, { headers: await this.authHeaders(false) }));
+    const res = await firstValueFrom(this.http.get<any>(url, { headers: await this.authHeaders(false, options) }));
     
     console.log('✅ [Faculty Service - Get APEX B Verifications] Response:', {
       total: res?.total || res?.verifications?.length || 0,
@@ -122,6 +198,7 @@ export class FacultyService {
       totalPages: res?.totalPages
     });
     
+    this.writeCache(key, res, options?.cacheTtlMs);
     return res;
   }
 
@@ -135,6 +212,7 @@ export class FacultyService {
     });
     
     const res = await firstValueFrom(this.http.patch<any>(url, body, { headers: await this.authHeaders(true) }));
+    this.clearCacheByPrefix('appex-b-verification?');
     
     console.log('✅ [Faculty Service - Update APEX B Verification] Response:', {
       success: !!res,
