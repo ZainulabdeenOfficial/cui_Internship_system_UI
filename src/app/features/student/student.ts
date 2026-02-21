@@ -181,6 +181,9 @@ export class Student implements OnDestroy {
   
   // Auto-refresh status polling
   private statusPollingInterval: any = null;
+  private hasLoadedAppExAOnce = false;
+  private hasLoadedApexBStatusOnce = false;
+  private hasLoadedWeeklyLogsOnce = false;
   
   constructor(private store: StoreService, private toast: ToastService, private route: ActivatedRoute, private router: Router, private studentApi: StudentService, private adminApi: AdminService, private cdr: ChangeDetectorRef) {
     this.lockSelection = effect(() => {
@@ -261,7 +264,8 @@ export class Student implements OnDestroy {
           // 1) Try to load from server
           let serverHas = false;
           try {
-            const res = await this.apiGetAppExA();
+            const res = await this.apiGetAppExA({ skipGlobalLoading: this.hasLoadedAppExAOnce });
+            this.hasLoadedAppExAOnce = true;
             const ax = (res as any)?.internship?.appexA || (res as any)?.appexA || {};
             // treat as present when at least one meaningful field exists
             serverHas = Object.keys(ax).some(k => {
@@ -619,9 +623,9 @@ export class Student implements OnDestroy {
       throw err;
     }
   }
-  async apiGetAppExA() {
+  async apiGetAppExA(options?: { skipGlobalLoading?: boolean; forceRefresh?: boolean }) {
     try {
-      return await this.studentApi.getAppExA();
+      return await this.studentApi.getAppExA(options);
     } catch (err: any) {
       // 404 means no AppEx-A data exists yet (normal for new students)
       if (err?.status === 404) {
@@ -674,7 +678,7 @@ export class Student implements OnDestroy {
   }
 
   // Load APEX B verification status for current student
-  async loadApexBStatus() {
+  async loadApexBStatus(isBackground = false) {
     if (this.loadingApexBStatus || !this.selectedId) return;
     
     this.loadingApexBStatus = true;
@@ -682,7 +686,11 @@ export class Student implements OnDestroy {
     
     try {
       // Use student-specific API endpoint (not admin endpoint)
-      const res = await this.studentApi.getAppexBVerification();
+      const res = await this.studentApi.getAppexBVerification({
+        skipGlobalLoading: this.hasLoadedApexBStatusOnce || isBackground,
+        forceRefresh: isBackground
+      });
+      this.hasLoadedApexBStatusOnce = true;
       console.log('✅ [Student] APEX B API Response:', res);
       
       // Response structure from student endpoint
@@ -761,7 +769,7 @@ export class Student implements OnDestroy {
       this.statusPollingInterval = setInterval(() => {
         if (this.selectedId && !this.isFullyApproved()) {
           console.log('🔄 [Student] Auto-checking verification status...');
-          this.loadApexBStatus();
+          this.loadApexBStatus(true);
         } else if (this.isFullyApproved()) {
           // Stop polling once fully approved
           console.log('✅ [Student] Fully approved - stopping status polling');
@@ -1163,15 +1171,19 @@ export class Student implements OnDestroy {
     challenges: ''
   };
 
-  async loadWeeklyLogs() {
+  async loadWeeklyLogs(forceRefresh = false) {
     if (!this.selectedId) return;
     if (!this.ensureMine()) return;
 
     this.loadingWeeklyLogs = true;
     try {
-      const res = await this.studentApi.getWeeklyLogs();
+      const res = await this.studentApi.getWeeklyLogs({
+        skipGlobalLoading: this.hasLoadedWeeklyLogsOnce || forceRefresh,
+        forceRefresh
+      });
       this.weeklyLogs = res?.weeklyLogs || [];
       this.weeklyLogStatus = res?.weeklyLogStatus || {};
+      this.hasLoadedWeeklyLogsOnce = true;
       
       // Set default week number to current week if available
       if (this.weeklyLogStatus.currentWeek) {
@@ -1238,7 +1250,7 @@ export class Student implements OnDestroy {
         challenges: ''
       };
       
-      await this.loadWeeklyLogs();
+      await this.loadWeeklyLogs(true);
     } catch (err: any) {
       const msg = err?.error?.message || err?.message || 'Failed to submit weekly log';
       this.toast.danger(msg);

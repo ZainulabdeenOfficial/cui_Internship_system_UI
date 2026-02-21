@@ -5,11 +5,19 @@ import { firstValueFrom } from 'rxjs';
 
 export type InternshipType = 'ONSITE'|'REMOTE'|'VIRTUAL'|'HYBRID'|string;
 
+export interface StudentRequestOptions {
+  skipGlobalLoading?: boolean;
+  forceRefresh?: boolean;
+  cacheTtlMs?: number;
+}
+
 @Injectable({ providedIn: 'root' })
 export class StudentService {
   constructor(private http: HttpClient) {}
 
   private base = environment.apiBaseUrl.replace(/\/$/, '');
+  private readonly cachePrefix = 'student.api.cache.';
+  private readonly defaultCacheTtlMs = 5 * 60 * 1000;
   private abs(path: string) { 
     // Always use relative paths - Vercel rewrites and local proxy handle routing to backend
     return path;
@@ -24,6 +32,48 @@ export class StudentService {
       Accept: 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {})
     });
+  }
+
+  private withRequestOptions(headers: HttpHeaders, options?: StudentRequestOptions): HttpHeaders {
+    if (options?.skipGlobalLoading) {
+      return headers.set('X-Skip-Global-Loading', 'true');
+    }
+    return headers;
+  }
+
+  private cacheKey(endpoint: string): string {
+    const token = this.getAuthToken();
+    const userPart = token ? token.slice(-16) : 'anon';
+    return `${this.cachePrefix}${userPart}:${endpoint}`;
+  }
+
+  private readCache<T>(key: string, options?: StudentRequestOptions): T | null {
+    if (options?.forceRefresh) return null;
+    try {
+      const raw = sessionStorage.getItem(key);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw) as { expiresAt?: number; data?: T };
+      if (!parsed?.expiresAt || parsed.expiresAt <= Date.now()) {
+        sessionStorage.removeItem(key);
+        return null;
+      }
+      return (parsed.data ?? null) as T | null;
+    } catch {
+      return null;
+    }
+  }
+
+  private writeCache<T>(key: string, data: T, ttlMs?: number): void {
+    try {
+      const expiresAt = Date.now() + (ttlMs ?? this.defaultCacheTtlMs);
+      sessionStorage.setItem(key, JSON.stringify({ expiresAt, data }));
+    } catch {}
+  }
+
+  private clearCache(endpoint: string): void {
+    try {
+      sessionStorage.removeItem(this.cacheKey(endpoint));
+    } catch {}
   }
 
   // POST /api/student/create-internship
@@ -74,14 +124,20 @@ export class StudentService {
   }
 
   // GET /api/student/appex-a
-  async getAppExA(): Promise<any> {
+  async getAppExA(options?: StudentRequestOptions): Promise<any> {
+    const key = this.cacheKey('appex-a');
+    const cached = this.readCache<any>(key, options);
+    if (cached) return cached;
+
     const url = this.abs('/api/student/appex-a');
     const token = this.getAuthToken();
-    const headers = new HttpHeaders({ 
+    const headers = this.withRequestOptions(new HttpHeaders({ 
       Accept: 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {})
-    });
-    return await firstValueFrom(this.http.get<any>(url, { headers }));
+    }), options);
+    const res = await firstValueFrom(this.http.get<any>(url, { headers }));
+    this.writeCache(key, res, options?.cacheTtlMs);
+    return res;
   }
 
   // POST /api/student/appex-a
@@ -143,7 +199,9 @@ export class StudentService {
     console.log('📤 [submitAppExA] Headers:', headers.keys());
     console.log('📤 [submitAppExA] Authorization header:', headers.get('Authorization'));
     console.log('📦 [submitAppExA] Payload being sent:', JSON.stringify(cleanPayload, null, 2));
-    return await firstValueFrom(this.http.post<any>(url, cleanPayload, { headers }));
+    const res = await firstValueFrom(this.http.post<any>(url, cleanPayload, { headers }));
+    this.clearCache('appex-a');
+    return res;
   }
 
   // PUT /api/student/appex-a
@@ -201,7 +259,9 @@ export class StudentService {
     const url = this.abs('/api/student/appex-a');
     const headers = this.jsonHeaders();
     console.log('📤 [updateAppExA] Sending updated payload:', JSON.stringify(cleanPayload, null, 2));
-    return await firstValueFrom(this.http.put<any>(url, cleanPayload, { headers }));
+    const res = await firstValueFrom(this.http.put<any>(url, cleanPayload, { headers }));
+    this.clearCache('appex-a');
+    return res;
   }
 
   // GET /api/student/appex-b
@@ -449,14 +509,20 @@ export class StudentService {
   }
 
   // GET /api/student/appex-b-verification
-  async getAppexBVerification(): Promise<any> {
+  async getAppexBVerification(options?: StudentRequestOptions): Promise<any> {
+    const key = this.cacheKey('appex-b-verification');
+    const cached = this.readCache<any>(key, options);
+    if (cached) return cached;
+
     const url = this.abs('/api/student/appex-b-verification');
     const token = this.getAuthToken();
-    const headers = new HttpHeaders({ 
+    const headers = this.withRequestOptions(new HttpHeaders({ 
       Accept: 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {})
-    });
-    return await firstValueFrom(this.http.get<any>(url, { headers }));
+    }), options);
+    const res = await firstValueFrom(this.http.get<any>(url, { headers }));
+    this.writeCache(key, res, options?.cacheTtlMs ?? 60 * 1000);
+    return res;
   }
 
   // POST /api/student/weekly-logs
@@ -467,17 +533,25 @@ export class StudentService {
     challenges: string;
   }) {
     const url = this.abs('/api/student/weekly-logs');
-    return await firstValueFrom(this.http.post<any>(url, payload, { headers: this.jsonHeaders() }));
+    const res = await firstValueFrom(this.http.post<any>(url, payload, { headers: this.jsonHeaders() }));
+    this.clearCache('weekly-logs');
+    return res;
   }
 
   // GET /api/student/weekly-logs
-  async getWeeklyLogs(): Promise<any> {
+  async getWeeklyLogs(options?: StudentRequestOptions): Promise<any> {
+    const key = this.cacheKey('weekly-logs');
+    const cached = this.readCache<any>(key, options);
+    if (cached) return cached;
+
     const url = this.abs('/api/student/weekly-logs');
     const token = this.getAuthToken();
-    const headers = new HttpHeaders({ 
+    const headers = this.withRequestOptions(new HttpHeaders({ 
       Accept: 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {})
-    });
-    return await firstValueFrom(this.http.get<any>(url, { headers }));
+    }), options);
+    const res = await firstValueFrom(this.http.get<any>(url, { headers }));
+    this.writeCache(key, res, options?.cacheTtlMs ?? 60 * 1000);
+    return res;
   }
 }
