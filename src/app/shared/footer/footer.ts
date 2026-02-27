@@ -14,26 +14,6 @@ export class Footer {
   year = new Date().getFullYear();
   constructor(public store: StoreService, private router: Router) {}
 
-  // Whether the currently logged-in user is a student with approved status
-  get studentApproved(): boolean {
-    const user = this.store.currentUser();
-    if (!user || user.role !== 'student' || !user.studentId) return false;
-    const st = this.store.students().find(s => s.id === user.studentId);
-    return !!st?.approved;
-  }
-
-  // Status text for the logged-in student: approved | pending | rejected
-  get studentStatus(): 'approved'|'pending'|'rejected'|'' {
-    const user = this.store.currentUser();
-    if (!user || user.role !== 'student' || !user.studentId) return '';
-    const st = this.store.students().find(s => s.id === user.studentId);
-    if (st?.approved) return 'approved';
-    const list = this.store.approvals()[user.studentId] ?? [];
-    const last = list[list.length - 1];
-    if (last?.status === 'rejected') return 'rejected';
-    return 'pending';
-  }
-
   // Whether the footer should be visible on the current route
   get isVisible(): boolean {
     // Show footer on all pages
