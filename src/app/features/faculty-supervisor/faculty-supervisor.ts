@@ -449,7 +449,7 @@ export class FacultySupervisor {
     return item.status === 'approved' || item.facultyVerified === true;
   }
 
-  filteredAppexARequests = computed(() => {
+  filteredAppexARequests(): any[] {
     const search = this.requestSearch.trim().toLowerCase();
     const filter = this.requestFilter;
     
@@ -471,46 +471,32 @@ export class FacultySupervisor {
       
       return true;
     });
-  });
+  }
 
-  filteredAppexBRequests = computed(() => {
+  filteredAppexBRequests(): any[] {
     const search = this.requestSearch.trim().toLowerCase();
     const filter = this.requestFilter;
     
-    console.log('🔍 [Faculty - Filter APEX B] Filtering requests:', {
-      totalRequests: this.appexBRequests.length,
-      searchTerm: search,
-      filter: filter,
-      rawRequests: this.appexBRequests
-    });
-    
-    const filtered = this.appexBRequests.filter(item => {
-      // Show items that need faculty verification (pending, not yet faculty-verified)
-      // Include items where:
-      // 1. adminApprovalStatus is 'APPROVED' (admin has added details)
-      // 2. facultyVerified is null or false (faculty hasn't verified yet)
-      // OR status is 'PENDING_VERIFICATION' or 'pending'
-      const needsVerification = 
-        (item.adminApprovalStatus === 'APPROVED' && !item.facultyVerified) ||
+    return this.appexBRequests.filter(item => {
+      // Show items relevant to faculty:
+      // 1. Needs verification (admin approved but faculty hasn't verified)
+      // 2. Already faculty-verified (to show "Verified" badge)
+      // 3. Changes requested status
+      const isRelevant = 
+        (item.adminApprovalStatus === 'APPROVED') ||
         item.status === 'PENDING_VERIFICATION' ||
         item.calculatedStatus === 'PENDING_VERIFICATION' ||
-        (item.status === 'pending' && !item.facultyVerified);
+        item.status === 'pending' ||
+        item.status === 'approved' ||
+        item.status === 'changes_requested' ||
+        item.facultyVerified === true;
       
-      console.log('🔍 [Faculty - Filter APEX B] Checking item:', {
-        itemId: item.id,
-        status: item.status,
-        calculatedStatus: item.calculatedStatus,
-        adminApprovalStatus: item.adminApprovalStatus,
-        facultyVerified: item.facultyVerified,
-        needsVerification,
-        studentName: item.student?.name || item.name
-      });
-      
-      if (!needsVerification) return false;
+      if (!isRelevant) return false;
       
       // Status filter (only applicable if filter is set)
       if (filter !== 'all') {
         const status = item.status || item.calculatedStatus || 'pending';
+        if (filter === 'pending' && item.facultyVerified === true) return false;
         if (filter === 'pending' && status !== 'PENDING_VERIFICATION' && status !== 'pending') return false;
         if (filter === 'approved' && item.facultyVerified !== true) return false;
         if (filter === 'rejected' && item.status !== 'rejected' && item.status !== 'changes_requested') return false;
@@ -530,14 +516,7 @@ export class FacultySupervisor {
       
       return true;
     });
-    
-    console.log('✅ [Faculty - Filter APEX B] Filtered results:', {
-      filteredCount: filtered.length,
-      filteredItems: filtered
-    });
-    
-    return filtered;
-  });
+  }
 
   onRequestFilterChange() {
     this.page.appexA = 1;

@@ -201,35 +201,35 @@
                           }
                         </td>
                         <td>
-                          <div class="btn-group btn-group-sm" role="group">
+                          <div class="d-flex gap-1 align-items-center">
                             @if (item.facultyVerified !== true) {
                               <button 
-                                class="btn btn-success" 
+                                class="btn btn-sm btn-success" 
                                 (click)="approveAppexB(item, 'approve')" 
                                 [disabled]="isProcessingItem(item)" 
                                 title="Approve">
                                 @if (isProcessingItem(item)) {
                                   <span class="spinner-border spinner-border-sm"></span>
                                 } @else {
-                                  <i class="bi bi-check-circle"></i>
+                                  <i class="bi bi-check-circle"></i> Approve
                                 }
                               </button>
                               <button 
-                                class="btn btn-warning" 
+                                class="btn btn-sm btn-warning" 
                                 (click)="approveAppexB(item, 'request_changes', 'Please review and update')" 
                                 [disabled]="isProcessingItem(item)" 
                                 title="Request Changes">
                                 @if (isProcessingItem(item)) {
                                   <span class="spinner-border spinner-border-sm"></span>
                                 } @else {
-                                  <i class="bi bi-exclamation-circle"></i>
+                                  <i class="bi bi-exclamation-circle"></i> Changes
                                 }
                               </button>
                             } @else {
-                              <span class="text-success small"><i class="bi bi-check-circle-fill"></i> Verified</span>
+                              <span class="badge bg-success"><i class="bi bi-check-circle-fill me-1"></i> Verified</span>
                             }
                             <button 
-                              class="btn btn-outline-info" 
+                              class="btn btn-sm btn-outline-info" 
                               (click)="viewApexBDetails(item)" 
                               title="View Details"
                               [disabled]="isProcessingItem(item)">
