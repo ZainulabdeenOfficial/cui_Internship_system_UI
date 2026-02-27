@@ -6,6 +6,7 @@ import { ToastService } from '../../shared/toast/toast.service';
 import { ActivatedRoute, Router } from '@angular/router';
 import { PaginatePipe } from '../../shared/pagination/paginate.pipe';
 import { PaginatorComponent } from '../../shared/pagination/paginator';
+import { SiteService, SiteEvaluationCriteria, SiteEvaluationPayload } from '../../shared/services/site.service';
 
 @Component({
   selector: 'app-site-supervisor',
@@ -15,18 +16,18 @@ import { PaginatorComponent } from '../../shared/pagination/paginator';
   styleUrl: './site-supervisor.css'
 })
 export class SiteSupervisor {
-  constructor(private store: StoreService, private toast: ToastService, private route: ActivatedRoute, private router: Router) {
+  constructor(private store: StoreService, private toast: ToastService, private route: ActivatedRoute, private router: Router, private siteService: SiteService) {
     try {
       this.route.queryParamMap.subscribe(p => {
         const t = (p.get('tab') || '').toLowerCase();
-        const allowed = ['students','details','reports','profile','password'] as const;
+        const allowed = ['students','details','reports','evaluations','profile','password'] as const;
         if ((allowed as readonly string[]).includes(t)) this.currentTab = t as any;
       });
     } catch {}
   }
   get students() { return this.store.students; }
   selectedId: string | null = null;
-  currentTab: 'students'|'details'|'reports'|'profile'|'password' = 'students';
+  currentTab: 'students'|'details'|'reports'|'evaluations'|'profile'|'password' = 'students';
   page = { students: 1 };
   pageSize = 10;
   selectTab(tab: SiteSupervisor['currentTab']) {
@@ -72,6 +73,56 @@ export class SiteSupervisor {
   setSiteMarks(v: number) { if (this.selectedId) { this.store.setSiteMarks(this.selectedId, Math.max(0, Number(v))); this.toast.success('Site marks updated'); } }
   submitMid() { if (this.selectedId && this.mid.title) { this.store.submitReport(this.selectedId, { type: 'mid', title: this.mid.title, content: this.mid.content }); this.mid = { title: '', content: '' }; this.toast.success('Mid report submitted'); } }
   submitFinal() { if (this.selectedId && this.fin.title) { this.store.submitReport(this.selectedId, { type: 'site-final', title: this.fin.title, content: this.fin.content }); this.fin = { title: '', content: '' }; this.toast.success('Final report submitted'); } }
+  // --- Site Evaluation ---
+  evaluationType: 'site_mid' | 'site_final' = 'site_mid';
+  evaluationCriteria: SiteEvaluationCriteria = this.defaultCriteria();
+  evaluationComments = '';
+  submittingEvaluation = false;
+
+  private defaultCriteria(): SiteEvaluationCriteria {
+    return {
+      punctualityAttendance: 0,
+      linkTheoryToPractice: 0,
+      criticalThinking: 0,
+      technicalKnowledge: 0,
+      creativity: 0,
+      adaptability: 0,
+      timeManagement: 0,
+      professionalBehavior: 0,
+      assignmentsPerformance: 0,
+      communicationSkills: 0
+    };
+  }
+
+  get evaluationTotal(): number {
+    const c = this.evaluationCriteria;
+    return (c.punctualityAttendance + c.linkTheoryToPractice + c.criticalThinking +
+      c.technicalKnowledge + c.creativity + c.adaptability + c.timeManagement +
+      c.professionalBehavior + c.assignmentsPerformance + c.communicationSkills);
+  }
+
+  async submitEvaluation() {
+    if (!this.selectedId) { this.toast.warning('Please select a student first'); return; }
+    this.submittingEvaluation = true;
+    try {
+      const payload: SiteEvaluationPayload = {
+        internshipId: this.selectedId,
+        type: this.evaluationType,
+        criteria: { ...this.evaluationCriteria },
+        totalMarks: this.evaluationTotal,
+        comments: this.evaluationComments
+      };
+      await this.siteService.submitEvaluation(payload);
+      this.toast.success(`${this.evaluationType === 'site_mid' ? 'Mid' : 'Final'} evaluation submitted successfully`);
+      this.evaluationCriteria = this.defaultCriteria();
+      this.evaluationComments = '';
+    } catch (err: any) {
+      this.toast.danger(err?.error?.message || err?.message || 'Failed to submit evaluation');
+    } finally {
+      this.submittingEvaluation = false;
+    }
+  }
+
   // Change password for logged-in site supervisor
   pw = { old: '', next: '', confirm: '' };
   changePassword() {

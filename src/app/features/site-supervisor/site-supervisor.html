@@ -4,6 +4,7 @@
     <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='students'" (click)="selectTab('students')">Students</button></li>
     <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='details'" (click)="selectTab('details')">Details</button></li>
     <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='reports'" (click)="selectTab('reports')">Reports</button></li>
+    <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='evaluations'" (click)="selectTab('evaluations')">Evaluations</button></li>
   <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='profile'" (click)="selectTab('profile')">Profile</button></li>
     <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='password'" (click)="selectTab('password')">Password</button></li>
   </ul>
@@ -107,6 +108,98 @@
           <button class="btn btn-success" (click)="submitFinal()" [disabled]="!fin.title">Submit Final</button>
         </div>
       </div>
+    </div>
+  </div>
+  }
+
+  @if (currentTab==='evaluations') {
+  <div class="card mb-3">
+    <div class="card-header bg-light">Student Performance Evaluation</div>
+    <div class="card-body">
+      <!-- Student selection -->
+      <div class="row g-3 mb-4">
+        <div class="col-md-6">
+          <label class="form-label">Select Student</label>
+          <select class="form-select" [(ngModel)]="selectedId" name="evalStudentId">
+            <option [ngValue]="null">-- choose --</option>
+            <option *ngFor="let s of myStudents()" [ngValue]="s.id">{{ s.name }} ({{ s.email }})</option>
+          </select>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Evaluation Type</label>
+          <select class="form-select" [(ngModel)]="evaluationType" name="evalType">
+            <option value="site_mid">Mid Evaluation</option>
+            <option value="site_final">Final Evaluation</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Criteria (1-5 scale) -->
+      <div *ngIf="selectedId">
+        <h6 class="mb-3">Evaluation Criteria <small class="text-muted">(Rate 0-5 for each)</small></h6>
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label">Punctuality &amp; Attendance</label>
+            <input type="number" min="0" max="5" class="form-control" [(ngModel)]="evaluationCriteria.punctualityAttendance" name="c_pa" />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Link Theory to Practice</label>
+            <input type="number" min="0" max="5" class="form-control" [(ngModel)]="evaluationCriteria.linkTheoryToPractice" name="c_ltp" />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Critical Thinking</label>
+            <input type="number" min="0" max="5" class="form-control" [(ngModel)]="evaluationCriteria.criticalThinking" name="c_ct" />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Technical Knowledge</label>
+            <input type="number" min="0" max="5" class="form-control" [(ngModel)]="evaluationCriteria.technicalKnowledge" name="c_tk" />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Creativity</label>
+            <input type="number" min="0" max="5" class="form-control" [(ngModel)]="evaluationCriteria.creativity" name="c_cr" />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Adaptability</label>
+            <input type="number" min="0" max="5" class="form-control" [(ngModel)]="evaluationCriteria.adaptability" name="c_ad" />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Time Management</label>
+            <input type="number" min="0" max="5" class="form-control" [(ngModel)]="evaluationCriteria.timeManagement" name="c_tm" />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Professional Behavior</label>
+            <input type="number" min="0" max="5" class="form-control" [(ngModel)]="evaluationCriteria.professionalBehavior" name="c_pb" />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Assignments Performance</label>
+            <input type="number" min="0" max="5" class="form-control" [(ngModel)]="evaluationCriteria.assignmentsPerformance" name="c_ap" />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Communication Skills</label>
+            <input type="number" min="0" max="5" class="form-control" [(ngModel)]="evaluationCriteria.communicationSkills" name="c_cs" />
+          </div>
+        </div>
+
+        <div class="row g-3 mt-3">
+          <div class="col-md-3">
+            <label class="form-label">Total Marks</label>
+            <input type="number" class="form-control" [value]="evaluationTotal" readonly />
+          </div>
+          <div class="col-md-9">
+            <label class="form-label">Comments</label>
+            <textarea class="form-control" rows="2" [(ngModel)]="evaluationComments" name="evalComments" placeholder="Additional comments about the student's performance..."></textarea>
+          </div>
+        </div>
+
+        <div class="mt-3">
+          <button class="btn btn-primary" (click)="submitEvaluation()" [disabled]="submittingEvaluation || !selectedId">
+            <span *ngIf="submittingEvaluation" class="spinner-border spinner-border-sm me-1"></span>
+            Submit Evaluation
+          </button>
+        </div>
+      </div>
+
+      <div *ngIf="!selectedId" class="alert alert-warning mt-3">Please select a student to evaluate.</div>
     </div>
   </div>
   }
