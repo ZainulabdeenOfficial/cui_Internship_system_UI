@@ -67,4 +67,26 @@ export class SiteService {
       return { success: true, ...res };
     }
   }
+  
+  /**
+   * Fetch site evaluations by internshipId and type (site_mid | site_final)
+   */
+  async getEvaluations(internshipId: string, type: 'site_mid' | 'site_final'): Promise<SiteEvaluationResponse> {
+    const qs = `?internshipId=${encodeURIComponent(internshipId)}&type=${encodeURIComponent(type)}`;
+    const url = `/api/site/evaluations${qs}`;
+    try {
+      const res = await firstValueFrom(
+        this.http.get<SiteEvaluationResponse>(url, { headers: this.jsonHeaders() })
+      );
+      return { success: true, ...res };
+    } catch (err: any) {
+      const status = err?.status ?? 0;
+      if (status && status !== 0) throw err;
+      const abs = `${this.base}${url}`;
+      const res = await firstValueFrom(
+        this.http.get<SiteEvaluationResponse>(abs, { headers: this.jsonHeaders() })
+      );
+      return { success: true, ...res };
+    }
+  }
 }
