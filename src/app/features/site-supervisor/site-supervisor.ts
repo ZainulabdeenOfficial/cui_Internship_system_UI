@@ -78,6 +78,15 @@ export class SiteSupervisor {
   evaluationCriteria: SiteEvaluationCriteria = this.defaultCriteria();
   evaluationComments = '';
   submittingEvaluation = false;
+  loadingEvaluation = false;
+
+  // Load existing evaluation when student or type changes
+  async onEvalStudentChange() {
+    await this.loadEvaluation();
+  }
+  async onEvalTypeChange() {
+    await this.loadEvaluation();
+  }
 
   private defaultCriteria(): SiteEvaluationCriteria {
     return {
@@ -120,6 +129,34 @@ export class SiteSupervisor {
       this.toast.danger(err?.error?.message || err?.message || 'Failed to submit evaluation');
     } finally {
       this.submittingEvaluation = false;
+    }
+  }
+
+  private async loadEvaluation() {
+    if (!this.selectedId) return;
+    this.loadingEvaluation = true;
+    try {
+      const res = await this.siteService.getEvaluations(this.selectedId, this.evaluationType);
+      if (res && res.success && res.data) {
+        // API may return array of evaluations; pick the latest
+        const list = Array.isArray(res.data) ? res.data : (res.data.items || []);
+        const ev = list.length ? list[list.length - 1] : null;
+        if (ev) {
+          this.evaluationCriteria = { ...this.defaultCriteria(), ...(ev.criteria || ev.criteriaValues || ev.criteriaMap) } as SiteEvaluationCriteria;
+          this.evaluationComments = ev.comments || ev.commentsText || '';
+        } else {
+          this.evaluationCriteria = this.defaultCriteria();
+          this.evaluationComments = '';
+        }
+      } else {
+        // no data
+        this.evaluationCriteria = this.defaultCriteria();
+        this.evaluationComments = '';
+      }
+    } catch (err: any) {
+      this.toast.danger('Unable to load existing evaluation');
+    } finally {
+      this.loadingEvaluation = false;
     }
   }
 

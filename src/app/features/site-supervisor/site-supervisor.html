@@ -120,14 +120,14 @@
       <div class="row g-3 mb-4">
         <div class="col-md-6">
           <label class="form-label">Select Student</label>
-          <select class="form-select" [(ngModel)]="selectedId" name="evalStudentId">
+          <select class="form-select" [(ngModel)]="selectedId" (ngModelChange)="onEvalStudentChange()" name="evalStudentId">
             <option [ngValue]="null">-- choose --</option>
             <option *ngFor="let s of myStudents()" [ngValue]="s.id">{{ s.name }} ({{ s.email }})</option>
           </select>
         </div>
         <div class="col-md-6">
           <label class="form-label">Evaluation Type</label>
-          <select class="form-select" [(ngModel)]="evaluationType" name="evalType">
+          <select class="form-select" [(ngModel)]="evaluationType" (ngModelChange)="onEvalTypeChange()" name="evalType">
             <option value="site_mid">Mid Evaluation</option>
             <option value="site_final">Final Evaluation</option>
           </select>
