@@ -11,6 +11,7 @@
     <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='complaints'" (click)="selectTab('complaints')">Complaints</button></li>
     <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='scheme'" (click)="selectTab('scheme')">Scheme</button></li>
     <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='formsRequest'" (click)="selectTab('formsRequest')">Student Forms Request</button></li>
+    <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='evaluation'" (click)="selectTab('evaluation')"><i class="bi bi-clipboard2-check me-1"></i>Office Evaluation</button></li>
   </ul>
 
   <!-- Clean unified tab switcher using Angular 17+ control flow -->
@@ -1364,3 +1365,283 @@
     }
     }
   }
+
+
+  <div class="row g-3 mt-0">
+    <div class="col-12">
+
+      <!-- Info banner -->
+      <div class="alert alert-info d-flex gap-2 align-items-start mb-3">
+        <i class="bi bi-info-circle-fill mt-1"></i>
+        <div>
+          <strong>Office Evaluation Form</strong> — 4 criteria, each scored:
+          <span class="badge text-bg-success ms-1">Excellent (10)</span>
+          <span class="badge text-bg-primary ms-1">Good (8)</span>
+          <span class="badge text-bg-warning text-dark ms-1">Satisfactory (5)</span>
+          <span class="badge text-bg-danger ms-1">Needs Improvement (3)</span>
+          Total max 40, scaled to 20 in the evaluation summary.
+        </div>
+      </div>
+
+      <!-- ① Student list -->
+      <div class="card mb-3">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <span><i class="bi bi-people-fill me-2"></i>All Students</span>
+          <span class="badge text-bg-primary">{{ students().length }} student(s)</span>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>Student</th>
+                  <th>Reg. No</th>
+                  <th>Mode</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (s of students(); track s.id) {
+                  <tr [class.table-primary]="selectedStudentForEval?.id === s.id">
+                    <td>
+                      <div class="fw-semibold">{{ s.name }}</div>
+                      <small class="text-muted">{{ s.email }}</small>
+                    </td>
+                    <td>{{ s.registrationNo || '-' }}</td>
+                    <td>
+                      <span class="badge"
+                        [class.text-bg-secondary]="!s.internshipMode"
+                        [class.text-bg-info]="s.internshipMode==='Virtual'"
+                        [class.text-bg-primary]="s.internshipMode==='OnSite'"
+                        [class.text-bg-success]="s.internshipMode==='Fiverr' || s.internshipMode==='Upwork'">
+                        {{ s.internshipMode || '—' }}
+                      </span>
+                    </td>
+                    <td>
+                      <span class="badge" [class.text-bg-success]="s.approved" [class.text-bg-warning]="!s.approved">
+                        {{ s.approved ? 'Approved' : 'Pending' }}
+                      </span>
+                    </td>
+                    <td>
+                      <button class="btn btn-sm btn-outline-primary" (click)="selectStudentForEval(s)">
+                        <i class="bi bi-clipboard2-check me-1"></i>Evaluate
+                      </button>
+                    </td>
+                  </tr>
+                }
+                @if (students().length === 0) {
+                  <tr><td colspan="5" class="text-center text-muted py-3">No students found.</td></tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ② Evaluation Panel (shown after selecting a student) -->
+      @if (selectedStudentForEval) {
+      <div class="card border-primary mb-3">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+          <span><i class="bi bi-person-badge me-2"></i>{{ selectedStudentForEval.name }} — Office Evaluation</span>
+          <button class="btn btn-sm btn-outline-light" (click)="selectedStudentForEval = null; officeEvalResult = null">
+            <i class="bi bi-x-lg"></i> Deselect
+          </button>
+        </div>
+        <div class="card-body">
+
+          <!-- Submit form -->
+          <div class="card border mb-3">
+            <div class="card-header fw-semibold bg-light">Submit Office Evaluation</div>
+            <div class="card-body">
+              <div class="row g-3">
+
+                <div class="col-md-6">
+                  <label class="form-label">Internship ID
+                    <small class="text-muted">(auto-filled if available)</small>
+                  </label>
+                  <div class="input-group">
+                    <input type="text" class="form-control" placeholder="Enter internship ID"
+                           [(ngModel)]="officeEvalForm.internshipId" name="officeEvalInternshipId" />
+                    <button class="btn btn-outline-secondary" type="button"
+                            (click)="loadOfficeEvaluation(officeEvalForm.internshipId)"
+                            [disabled]="loadingOfficeEval || !officeEvalForm.internshipId">
+                      <span *ngIf="loadingOfficeEval" class="spinner-border spinner-border-sm"></span>
+                      <span *ngIf="!loadingOfficeEval"><i class="bi bi-arrow-clockwise"></i></span>
+                    </button>
+                  </div>
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label">Total Score (auto-calculated)</label>
+                  <div class="input-group">
+                    <span class="input-group-text fw-bold">{{ officeEvalTotal }}</span>
+                    <span class="input-group-text text-muted">/40 &mdash; Scaled to {{ (officeEvalTotal / 2) | number:'1.0-1' }}/20</span>
+                  </div>
+                </div>
+
+                <!-- Criterion 1: Internship Report -->
+                <div class="col-md-6">
+                  <label class="form-label">Internship Report</label>
+                  <select class="form-select" [(ngModel)]="officeEvalForm.criteria.internshipReport" name="cr_report">
+                    <option *ngFor="let o of criteriaOptions" [ngValue]="o.value">{{ o.label }} ({{ o.value }})</option>
+                  </select>
+                </div>
+
+                <!-- Criterion 2: Portfolio Evidence -->
+                <div class="col-md-6">
+                  <label class="form-label">Portfolio Evidence</label>
+                  <select class="form-select" [(ngModel)]="officeEvalForm.criteria.portfolioEvidence" name="cr_portfolio">
+                    <option *ngFor="let o of criteriaOptions" [ngValue]="o.value">{{ o.label }} ({{ o.value }})</option>
+                  </select>
+                </div>
+
+                <!-- Criterion 3: Time Management -->
+                <div class="col-md-6">
+                  <label class="form-label">Time Management</label>
+                  <select class="form-select" [(ngModel)]="officeEvalForm.criteria.timeManagement" name="cr_time">
+                    <option *ngFor="let o of criteriaOptions" [ngValue]="o.value">{{ o.label }} ({{ o.value }})</option>
+                  </select>
+                </div>
+
+                <!-- Criterion 4: Overall Internship Impact -->
+                <div class="col-md-6">
+                  <label class="form-label">Overall Internship Impact</label>
+                  <select class="form-select" [(ngModel)]="officeEvalForm.criteria.overallInternshipImpact" name="cr_impact">
+                    <option *ngFor="let o of criteriaOptions" [ngValue]="o.value">{{ o.label }} ({{ o.value }})</option>
+                  </select>
+                </div>
+
+                <div class="col-12">
+                  <label class="form-label">Comments <small class="text-muted">(optional)</small></label>
+                  <textarea class="form-control" rows="2" [(ngModel)]="officeEvalForm.comments" name="officeEvalComments"
+                            placeholder="Additional feedback for the student..."></textarea>
+                </div>
+
+                <div class="col-12">
+                  <button class="btn btn-primary"
+                          (click)="submitOfficeEvaluation()"
+                          [disabled]="submittingOfficeEval || !officeEvalForm.internshipId">
+                    <span *ngIf="submittingOfficeEval" class="spinner-border spinner-border-sm me-1"></span>
+                    <i *ngIf="!submittingOfficeEval" class="bi bi-send me-1"></i>
+                    Submit Evaluation
+                  </button>
+                </div>
+
+              </div>
+            </div>
+          </div>
+
+          <!-- Loading -->
+          <div *ngIf="loadingOfficeEval" class="text-center py-3">
+            <span class="spinner-border text-primary"></span>
+            <p class="mt-2 text-muted">Loading evaluation data…</p>
+          </div>
+
+          <!-- Existing Evaluation Result -->
+          @if (!loadingOfficeEval && officeEvalResult) {
+          <div class="card border-success">
+            <div class="card-header bg-success text-white">
+              <i class="bi bi-check-circle-fill me-2"></i>Submitted Office Evaluation
+            </div>
+            <div class="card-body">
+              <div class="row g-3">
+                <div class="col-md-3">
+                  <small class="text-muted d-block">Type</small>
+                  <strong>{{ officeEvalResult.type || '—' }}</strong>
+                </div>
+                <div class="col-md-3">
+                  <small class="text-muted d-block">Total Marks</small>
+                  <strong class="fs-5">{{ officeEvalResult.totalMarks ?? '—' }}
+                    <span *ngIf="officeEvalResult.maxMarks" class="fs-6 text-muted"> / {{ officeEvalResult.maxMarks }}</span>
+                  </strong>
+                </div>
+                <div class="col-md-3">
+                  <small class="text-muted d-block">Scaled (Office)</small>
+                  <strong class="fs-5">{{ officeEvalResult.totalMarks != null ? (officeEvalResult.totalMarks / 2 | number:'1.0-1') : '—' }}
+                    <span class="fs-6 text-muted"> / 20</span>
+                  </strong>
+                </div>
+                <div class="col-md-3">
+                  <small class="text-muted d-block">Submitted</small>
+                  <strong>{{ officeEvalResult.submittedDate ? (officeEvalResult.submittedDate | date:'mediumDate') : '—' }}</strong>
+                </div>
+
+                @if (officeEvalResult.evaluator) {
+                <div class="col-md-6">
+                  <small class="text-muted d-block">Evaluator</small>
+                  <strong>{{ officeEvalResult.evaluator?.name || officeEvalResult.evaluator?.email || '—' }}</strong>
+                </div>
+                }
+              </div>
+
+              <!-- Criteria Breakdown -->
+              @if (officeEvalResult.criteria && officeEvalResult.criteria.length > 0) {
+              <hr class="my-3" />
+              <h6 class="text-muted mb-2">Criteria Breakdown</h6>
+              <div class="row g-2">
+                @for (c of officeEvalResult.criteria; track $index) {
+                  <div class="col-6 col-md-3">
+                    <div class="border rounded p-2 text-center">
+                      <small class="text-muted d-block text-capitalize">{{ c.name || c.label || ('Criterion ' + ($index + 1)) }}</small>
+                      <span class="fw-bold fs-5">{{ c.marks ?? c.value ?? c.score ?? '—' }}</span>
+                      <small class="text-muted">/10</small>
+                    </div>
+                  </div>
+                }
+              </div>
+              } @else if (officeEvalResult.criteria && !(officeEvalResult.criteria.length)) {
+                <!-- criteria might be an object -->
+                <hr class="my-3" />
+                <h6 class="text-muted mb-2">Criteria Breakdown</h6>
+                <div class="row g-2">
+                  <div class="col-6 col-md-3">
+                    <div class="border rounded p-2 text-center">
+                      <small class="text-muted d-block">Internship Report</small>
+                      <span class="fw-bold fs-5">{{ (officeEvalResult.criteria)['internshipReport'] ?? '—' }}</span><small class="text-muted">/10</small>
+                    </div>
+                  </div>
+                  <div class="col-6 col-md-3">
+                    <div class="border rounded p-2 text-center">
+                      <small class="text-muted d-block">Portfolio Evidence</small>
+                      <span class="fw-bold fs-5">{{ (officeEvalResult.criteria)['portfolioEvidence'] ?? '—' }}</span><small class="text-muted">/10</small>
+                    </div>
+                  </div>
+                  <div class="col-6 col-md-3">
+                    <div class="border rounded p-2 text-center">
+                      <small class="text-muted d-block">Time Management</small>
+                      <span class="fw-bold fs-5">{{ (officeEvalResult.criteria)['timeManagement'] ?? '—' }}</span><small class="text-muted">/10</small>
+                    </div>
+                  </div>
+                  <div class="col-6 col-md-3">
+                    <div class="border rounded p-2 text-center">
+                      <small class="text-muted d-block">Overall Impact</small>
+                      <span class="fw-bold fs-5">{{ (officeEvalResult.criteria)['overallInternshipImpact'] ?? '—' }}</span><small class="text-muted">/10</small>
+                    </div>
+                  </div>
+                </div>
+              }
+
+              <div *ngIf="officeEvalResult.comments" class="mt-3">
+                <small class="text-muted d-block">Comments</small>
+                <p class="mb-0">{{ officeEvalResult.comments }}</p>
+              </div>
+            </div>
+          </div>
+          }
+
+          @if (!loadingOfficeEval && !officeEvalResult && officeEvalForm.internshipId) {
+            <div class="alert alert-info">
+              <i class="bi bi-info-circle me-2"></i>No office evaluation submitted yet for this internship. Use the form above to submit.
+            </div>
+          }
+
+        </div>
+      </div>
+      }
+
+    </div>
+  </div>
+  }
+
+}

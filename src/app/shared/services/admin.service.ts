@@ -530,4 +530,50 @@ export class AdminService {
     console.log('[AdminService] updateApexBDetails final payload:', JSON.stringify(body, null, 2));
     return await firstValueFrom(this.http.patch<any>(url, body, { headers: await this.authHeaders(true) }));
   }
+
+  /**
+   * POST /api/admin/office-evaluation
+   * Admin submits the office evaluation form with 4 criteria.
+   * Each criterion value: Excellent (10), Good (8), Satisfactory (5), Needs Improvement (3).
+   * Total max 40, scaled to 20 for the evaluation summary.
+   */
+  async submitOfficeEvaluation(payload: {
+    internshipId: string;
+    criteria: {
+      internshipReport: number;
+      portfolioEvidence: number;
+      timeManagement: number;
+      overallInternshipImpact: number;
+    };
+    comments?: string;
+  }): Promise<{ message?: string; evaluation?: any }> {
+    const base = environment.apiBaseUrl.replace(/\/$/, '');
+    const path = '/api/admin/office-evaluation';
+    const url = environment.production ? path : `${base}${path}`;
+    const headers = await this.authHeaders(true);
+    const body = {
+      internshipId: payload.internshipId,
+      criteria: {
+        internshipReport: payload.criteria.internshipReport,
+        portfolioEvidence: payload.criteria.portfolioEvidence,
+        timeManagement: payload.criteria.timeManagement,
+        overallInternshipImpact: payload.criteria.overallInternshipImpact
+      },
+      comments: payload.comments || ''
+    };
+    return await firstValueFrom(this.http.post<any>(url, body, { headers }));
+  }
+
+  /**
+   * GET /api/admin/office-evaluation?internshipId=...
+   * Retrieve the submitted office evaluation form.
+   * Accessible to student, faculty supervisor, site supervisor, and admin.
+   * Response: { message, evaluation: { id, type, totalMarks, maxMarks, criteria, comments, submittedDate, evaluator } }
+   */
+  async getOfficeEvaluation(internshipId: string): Promise<{ message?: string; evaluation?: any }> {
+    const base = environment.apiBaseUrl.replace(/\/$/, '');
+    const path = `/api/admin/office-evaluation?internshipId=${encodeURIComponent(internshipId)}`;
+    const url = environment.production ? path : `${base}${path}`;
+    return await firstValueFrom(this.http.get<any>(url, { headers: await this.authHeaders() }));
+  }
 }

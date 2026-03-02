@@ -21,7 +21,7 @@ export class Admin {
     try {
       this.route.queryParamMap.subscribe(p => {
         const t = (p.get('tab') || '').toLowerCase();
-        const allowed = ['requests','announcements','officers','faculty','companies','sites','compliance','complaints','scheme','formsrequest'] as const;
+        const allowed = ['requests','announcements','officers','faculty','companies','sites','compliance','complaints','scheme','formsrequest','evaluation'] as const;
         if ( (allowed as readonly string[]).includes(t) ) {
           this.currentTab = t as any;
           // Auto-load data when navigating directly via URL (no need to click refresh)
@@ -74,7 +74,7 @@ export class Admin {
   facultyId = '';
   siteId = '';
   selectedId: string | null = null;
-  currentTab: 'requests'|'announcements'|'officers'|'faculty'|'companies'|'sites'|'compliance'|'complaints'|'scheme'|'formsRequest' = 'requests';
+  currentTab: 'requests'|'announcements'|'officers'|'faculty'|'companies'|'sites'|'compliance'|'complaints'|'scheme'|'formsRequest'|'evaluation' = 'requests';
   currentFormsSubTab: 'apexA'|'apexB'|'apexC' = 'apexA';
   // pagination
   page = { students: 1, requests: 1, complaints: 1, faculty: 1, sites: 1, companies: 1, announcements: 1, officers: 1 };
@@ -1977,6 +1977,96 @@ export class Admin {
           this.cdr.markForCheck();
         }, 100);
       }
+    }
+  }
+
+  // ── Office Evaluation (POST/GET /api/admin/office-evaluation) ──────────────
+  readonly criteriaOptions = [
+    { label: 'Excellent', value: 10 },
+    { label: 'Good', value: 8 },
+    { label: 'Satisfactory', value: 5 },
+    { label: 'Needs Improvement', value: 3 }
+  ];
+
+  officeEvalForm = {
+    internshipId: '',
+    criteria: {
+      internshipReport: 10,
+      portfolioEvidence: 10,
+      timeManagement: 10,
+      overallInternshipImpact: 10
+    },
+    comments: ''
+  };
+
+  officeEvalResult: {
+    id?: string;
+    type?: string;
+    totalMarks?: number;
+    maxMarks?: number;
+    criteria?: any[];
+    comments?: string;
+    submittedDate?: string;
+    evaluator?: any;
+  } | null = null;
+
+  submittingOfficeEval = false;
+  loadingOfficeEval = false;
+  selectedStudentForEval: any = null;
+
+  get officeEvalTotal(): number {
+    const c = this.officeEvalForm.criteria;
+    return (c.internshipReport || 0) + (c.portfolioEvidence || 0) + (c.timeManagement || 0) + (c.overallInternshipImpact || 0);
+  }
+
+  selectStudentForEval(student: any) {
+    this.selectedStudentForEval = student;
+    const internshipId = student?.internshipId || student?.apexBInternshipId || '';
+    this.officeEvalForm = {
+      internshipId,
+      criteria: { internshipReport: 10, portfolioEvidence: 10, timeManagement: 10, overallInternshipImpact: 10 },
+      comments: ''
+    };
+    this.officeEvalResult = null;
+    if (internshipId) this.loadOfficeEvaluation(internshipId);
+  }
+
+  async loadOfficeEvaluation(internshipId: string) {
+    if (!internshipId || this.loadingOfficeEval) return;
+    this.loadingOfficeEval = true;
+    try {
+      const res = await this.adminApi.getOfficeEvaluation(internshipId);
+      this.officeEvalResult = res?.evaluation ?? null;
+    } catch (err: any) {
+      if (err?.status !== 404) {
+        const msg = err?.error?.message || err?.message || 'Failed to load office evaluation';
+        this.toast.danger(msg);
+      } else {
+        this.officeEvalResult = null;
+      }
+    } finally {
+      this.loadingOfficeEval = false;
+    }
+  }
+
+  async submitOfficeEvaluation() {
+    const id = this.officeEvalForm.internshipId.trim();
+    if (!id) { this.toast.warning('Enter the internship ID'); return; }
+    this.submittingOfficeEval = true;
+    try {
+      const res = await this.adminApi.submitOfficeEvaluation({
+        internshipId: id,
+        criteria: this.officeEvalForm.criteria,
+        comments: this.officeEvalForm.comments
+      });
+      this.toast.success(res?.message || 'Office evaluation submitted successfully');
+      this.officeEvalResult = res?.evaluation ?? null;
+      await this.loadOfficeEvaluation(id);
+    } catch (err: any) {
+      const msg = err?.error?.message || err?.message || 'Failed to submit office evaluation';
+      this.toast.danger(msg);
+    } finally {
+      this.submittingOfficeEval = false;
     }
   }
 }
