@@ -40,13 +40,14 @@ export class FacultySupervisor {
   get siteList() { return this.store.siteSupervisors; }
   get companyList() { return this.store.companies; }
   selectedId: string | null = null;
-  currentTab: 'students'|'details'|'reports'|'assignments'|'agreements'|'profile'|'requests' = 'students';
+  currentTab: 'students'|'details'|'reports'|'assignments'|'agreements'|'profile'|'requests'|'marks' = 'students';
   page = { students: 1, appexA: 1, appexB: 1 };
   pageSize = 10;
   selectTab(tab: FacultySupervisor['currentTab']) {
     this.currentTab = tab;
     try { this.router.navigate([], { relativeTo: this.route, queryParams: { tab }, queryParamsHandling: 'merge' }); } catch {}
     if (tab === 'profile') this.loadMyProfileFromApi();
+    if (tab === 'marks') this.loadEvaluationSummaryForSelected();
     // Requests are pre-loaded on init, no need to reload on tab click
   }
   get me() { return this.store.currentUser; }
@@ -547,5 +548,69 @@ export class FacultySupervisor {
   closeApexBDetailsModal() {
     this.showApexBDetailsModal = false;
     this.selectedApexBForm = null;
+  }
+
+  // ── Faculty Evaluation Marks (POST /api/faculty/evaluation-summary) ──────────
+  facultyMarksForm = { internshipId: '', marks: 0 };
+  submittingFacultyMarks = false;
+  evaluationSummary: {
+    facultyMarks?: number | null;
+    siteMarks?: number | null;
+    officeMarks?: number | null;
+    totalMarks?: number | null;
+    status?: string;
+    maximumMarks?: { faculty?: number; site?: number; office?: number; total?: number };
+  } | null = null;
+  loadingEvaluationSummary = false;
+
+  /** Load evaluation summary for the currently selected student's internship. */
+  async loadEvaluationSummaryForSelected() {
+    const id = this.facultyMarksForm.internshipId.trim();
+    if (!id) return;
+    await this.loadEvaluationSummary(id);
+  }
+
+  async loadEvaluationSummary(internshipId: string, forceRefresh = false) {
+    if (!internshipId || this.loadingEvaluationSummary) return;
+    this.loadingEvaluationSummary = true;
+    try {
+      const res = await this.facultyApi.getEvaluationSummary(internshipId, {
+        skipGlobalLoading: true,
+        forceRefresh
+      });
+      this.evaluationSummary = res?.evaluationSummary ?? null;
+    } catch (err: any) {
+      if (err?.status !== 404) {
+        const msg = err?.error?.message || err?.message || 'Failed to load evaluation summary';
+        this.toast.danger(msg);
+      } else {
+        this.evaluationSummary = null;
+      }
+    } finally {
+      this.loadingEvaluationSummary = false;
+    }
+  }
+
+  async submitFacultyMarks() {
+    const id = this.facultyMarksForm.internshipId.trim();
+    if (!id) { this.toast.warning('Enter the internship ID'); return; }
+    const marks = Number(this.facultyMarksForm.marks);
+    if (isNaN(marks) || marks < 0 || marks > 40) {
+      this.toast.warning('Marks must be between 0 and 40');
+      return;
+    }
+    this.submittingFacultyMarks = true;
+    try {
+      const res = await this.facultyApi.submitEvaluationSummary({ internshipId: id, marks });
+      this.toast.success(res?.message || 'Faculty marks submitted successfully');
+      this.evaluationSummary = res?.evaluationSummary ?? null;
+      // Reload summary to show updated totals
+      await this.loadEvaluationSummary(id, true);
+    } catch (err: any) {
+      const msg = err?.error?.message || err?.message || 'Failed to submit marks';
+      this.toast.danger(msg);
+    } finally {
+      this.submittingFacultyMarks = false;
+    }
   }
 }

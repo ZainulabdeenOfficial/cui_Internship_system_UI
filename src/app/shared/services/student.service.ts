@@ -598,4 +598,54 @@ export class StudentService {
     this.writeCache(key, res, options?.cacheTtlMs ?? 60 * 1000);
     return res;
   }
+
+  /**
+   * GET /api/student/internship  — resolves the student's own internship record & ID.
+   * Falls back to GET /api/student/appex-a which wraps response in { internship: { id, appexA } }.
+   */
+  async getMyInternship(options?: StudentRequestOptions): Promise<any> {
+    const key = this.cacheKey('my-internship');
+    const cached = this.readCache<any>(key, options);
+    if (cached) return cached;
+
+    const headers = (opt?: StudentRequestOptions) => this.withRequestOptions(new HttpHeaders({
+      Accept: 'application/json',
+      ...(this.getAuthToken() ? { Authorization: `Bearer ${this.getAuthToken()}` } : {})
+    }), opt);
+
+    // Primary: /api/student/internship
+    try {
+      const res = await firstValueFrom(this.http.get<any>(this.abs('/api/student/internship'), { headers: headers(options) }));
+      this.writeCache(key, res, options?.cacheTtlMs ?? 60 * 1000);
+      return res;
+    } catch (primary) {
+      // Fallback: /api/student/appex-a also returns { internship: { id, appexA } }
+      try {
+        const res = await firstValueFrom(this.http.get<any>(this.abs('/api/student/appex-a'), { headers: headers({ skipGlobalLoading: true }) }));
+        this.writeCache(key, res, 60 * 1000);
+        return res;
+      } catch { throw primary; }
+    }
+  }
+
+  /**
+   * GET /api/faculty/evaluation-summary?internshipId=...
+   * Retrieve evaluation summary (Faculty/Site/Office marks, total, pass/fail).
+   * Accessible to student, faculty supervisor, site supervisor, and admin.
+   */
+  async getEvaluationSummary(internshipId: string, options?: StudentRequestOptions): Promise<any> {
+    const endpoint = `/api/faculty/evaluation-summary?internshipId=${encodeURIComponent(internshipId)}`;
+    const key = this.cacheKey(endpoint);
+    const cached = this.readCache<any>(key, options);
+    if (cached) return cached;
+
+    const url = this.abs(endpoint);
+    const headers = this.withRequestOptions(new HttpHeaders({
+      Accept: 'application/json',
+      ...(this.getAuthToken() ? { Authorization: `Bearer ${this.getAuthToken()}` } : {})
+    }), options);
+    const res = await firstValueFrom(this.http.get<any>(url, { headers }));
+    this.writeCache(key, res, options?.cacheTtlMs ?? 60 * 1000);
+    return res;
+  }
 }

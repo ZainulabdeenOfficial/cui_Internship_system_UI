@@ -223,4 +223,32 @@ export class FacultyService {
     
     return res;
   }
+
+  /**
+   * POST /api/faculty/evaluation-summary
+   * Faculty supervisor submits their marks (0-40) for an internship.
+   */
+  async submitEvaluationSummary(payload: { internshipId: string; marks: number }): Promise<any> {
+    const url = `${this.base}/api/faculty/evaluation-summary`;
+    const body = { internshipId: payload.internshipId, marks: payload.marks };
+    const res = await firstValueFrom(this.http.post<any>(url, body, { headers: await this.authHeaders(true) }));
+    this.clearCache(`eval-summary-${payload.internshipId}`);
+    return res;
+  }
+
+  /**
+   * GET /api/faculty/evaluation-summary?internshipId=...
+   * Retrieve evaluation summary (Faculty/Site/Office marks, total, pass/fail).
+   * Accessible to student, faculty supervisor, site supervisor, and admin.
+   */
+  async getEvaluationSummary(internshipId: string, options?: FacultyRequestOptions): Promise<any> {
+    const key = this.cacheKey(`eval-summary-${internshipId}`);
+    const cached = this.readCache<any>(key, options);
+    if (cached) return cached;
+
+    const url = `${this.base}/api/faculty/evaluation-summary?internshipId=${encodeURIComponent(internshipId)}`;
+    const res = await firstValueFrom(this.http.get<any>(url, { headers: await this.authHeaders(false, options) }));
+    this.writeCache(key, res, options?.cacheTtlMs ?? 60 * 1000);
+    return res;
+  }
 }

@@ -72,8 +72,11 @@ export class Student implements OnDestroy {
 
   // Evaluations
   evaluations: any[] = [];
+  evaluationsLoadedOnce = false;
   loadingEvaluations = false;
   evaluationTypeFilter: 'all' | 'site_mid' | 'site_final' = 'all';
+  evaluationSummary: any = null;
+  loadingEvaluationSummary = false;
   /** Internship ID resolved from any available API response; drives evaluations fetch. */
   studentInternshipId: string | null = null;
   loadingApexBStatus = false;
@@ -739,7 +742,7 @@ export class Student implements OnDestroy {
         if (this.isFullyApproved()) {
           console.log('✅ [Student] Fully approved! Auto-loading weekly logs and evaluations...');
           this.loadWeeklyLogs();
-          this.loadEvaluations();
+          if (!this.evaluationsLoadedOnce) this.loadEvaluations();
           
           // Auto-switch to weekly logs tab if currently on approval forms
           if (['appex', 'assignment', 'form3'].includes(this.currentTab)) {
@@ -894,8 +897,8 @@ export class Student implements OnDestroy {
     if (tab === 'weeklylogs' && this.weeklyLogs.length === 0) {
       this.loadWeeklyLogs();
     }
-    // Auto-load evaluations when evaluations tab is selected
-    if (tab === 'evaluations' && this.evaluations.length === 0 && !this.loadingEvaluations) {
+    // Auto-load evaluations when evaluations tab is selected (only once; refresh button handles reloads)
+    if (tab === 'evaluations' && !this.evaluationsLoadedOnce && !this.loadingEvaluations) {
       this.loadEvaluations();
     }
   }
@@ -1294,7 +1297,10 @@ export class Student implements OnDestroy {
         forceRefresh
       });
       this.evaluations = Array.isArray(res?.evaluations) ? res.evaluations : [];
+      this.evaluationsLoadedOnce = true;
       console.log(`✅ [Student] Evaluations loaded (${this.evaluations.length}):`, this.evaluations);
+      // Also refresh the evaluation summary after loading evaluations
+      this.loadEvaluationSummary();
     } catch (err: any) {
       const status = err?.status ?? 0;
       if (status === 404 || status === 400) {
@@ -1305,6 +1311,28 @@ export class Student implements OnDestroy {
       }
     } finally {
       this.loadingEvaluations = false;
+      this.cdr.markForCheck();
+    }
+  }
+
+  async loadEvaluationSummary(forceRefresh = false) {
+    const internshipId = this.studentInternshipId || this.apexBStatus?.internshipId;
+    if (!internshipId || this.loadingEvaluationSummary) return;
+    this.loadingEvaluationSummary = true;
+    try {
+      const res = await this.studentApi.getEvaluationSummary(internshipId, {
+        skipGlobalLoading: true,
+        forceRefresh
+      });
+      this.evaluationSummary = res?.evaluationSummary ?? null;
+    } catch (err: any) {
+      if ((err?.status ?? 0) !== 404) {
+        const msg = err?.error?.message || err?.message || 'Failed to load evaluation summary';
+        console.warn('[Student] loadEvaluationSummary error:', msg);
+      }
+      this.evaluationSummary = null;
+    } finally {
+      this.loadingEvaluationSummary = false;
       this.cdr.markForCheck();
     }
   }

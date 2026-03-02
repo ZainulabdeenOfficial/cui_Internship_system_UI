@@ -8,6 +8,7 @@
     <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='assignments'" (click)="selectTab('assignments')">Assignments</button></li>
     <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='agreements'" (click)="selectTab('agreements')">Agreements</button></li>
     <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='profile'" (click)="selectTab('profile')">Profile</button></li>
+    <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='marks'" (click)="selectTab('marks')"><i class="bi bi-bar-chart-line me-1"></i>Evaluation Marks</button></li>
   </ul>
   <div class="row g-3 mb-3">
     <div class="col-md-3">
@@ -705,3 +706,114 @@
   </div>
 }
 
+<!-- ── Evaluation Marks Tab ─────────────────────────────────────── -->
+<div *ngIf="currentTab === 'marks'" class="mb-4">
+  <div class="card">
+    <div class="card-header">
+      <h5 class="mb-0"><i class="bi bi-bar-chart-line me-2"></i>Faculty Evaluation Marks</h5>
+    </div>
+    <div class="card-body">
+
+      <!-- Submit Marks Form -->
+      <div class="card border mb-4">
+        <div class="card-header fw-semibold bg-light">Submit Faculty Marks (0 – 40)</div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">Internship ID</label>
+              <input type="text" class="form-control" placeholder="Enter internship ID"
+                     [(ngModel)]="facultyMarksForm.internshipId"
+                     name="facultyMarksInternshipId"
+                     (blur)="loadEvaluationSummaryForSelected()" />
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Marks <small class="text-muted">(max 40)</small></label>
+              <input type="number" class="form-control" min="0" max="40"
+                     [(ngModel)]="facultyMarksForm.marks"
+                     name="facultyMarksValue" />
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+              <button class="btn btn-primary w-100"
+                      (click)="submitFacultyMarks()"
+                      [disabled]="submittingFacultyMarks">
+                <span *ngIf="submittingFacultyMarks" class="spinner-border spinner-border-sm me-1"></span>
+                Submit
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Lookup / refresh summary -->
+      <div class="d-flex gap-2 mb-3">
+        <button class="btn btn-sm btn-outline-secondary"
+                (click)="loadEvaluationSummaryForSelected()"
+                [disabled]="loadingEvaluationSummary || !facultyMarksForm.internshipId">
+          <span *ngIf="loadingEvaluationSummary" class="spinner-border spinner-border-sm me-1"></span>
+          Load Summary
+        </button>
+      </div>
+
+      <!-- Loading -->
+      <div *ngIf="loadingEvaluationSummary" class="text-center py-3">
+        <span class="spinner-border text-primary"></span>
+        <p class="mt-2 text-muted">Loading evaluation summary&hellip;</p>
+      </div>
+
+      <!-- Summary Display -->
+      <div *ngIf="!loadingEvaluationSummary && evaluationSummary" class="card border-primary">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+          <span>Evaluation Summary</span>
+          <span class="badge"
+                [class.text-bg-success]="evaluationSummary.status === 'pass'"
+                [class.text-bg-danger]="evaluationSummary.status !== 'pass'">
+            {{ evaluationSummary.status | titlecase }}
+          </span>
+        </div>
+        <div class="card-body">
+          <div class="row text-center g-2">
+            <div class="col-6 col-md-3">
+              <div class="border rounded p-2">
+                <div class="fw-bold fs-5">{{ evaluationSummary.facultyMarks ?? '-' }}</div>
+                <small class="text-muted">Faculty
+                  <span *ngIf="evaluationSummary.maximumMarks?.faculty"> / {{ evaluationSummary.maximumMarks?.faculty }}</span>
+                </small>
+              </div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div class="border rounded p-2">
+                <div class="fw-bold fs-5">{{ evaluationSummary.siteMarks ?? '-' }}</div>
+                <small class="text-muted">Site
+                  <span *ngIf="evaluationSummary.maximumMarks?.site"> / {{ evaluationSummary.maximumMarks?.site }}</span>
+                </small>
+              </div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div class="border rounded p-2">
+                <div class="fw-bold fs-5">{{ evaluationSummary.officeMarks ?? '-' }}</div>
+                <small class="text-muted">Office
+                  <span *ngIf="evaluationSummary.maximumMarks?.office"> / {{ evaluationSummary.maximumMarks?.office }}</span>
+                </small>
+              </div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div class="border rounded p-2 bg-light">
+                <div class="fw-bold fs-5">{{ evaluationSummary.totalMarks ?? '-' }}</div>
+                <small class="text-muted">Total
+                  <span *ngIf="evaluationSummary.maximumMarks?.total"> / {{ evaluationSummary.maximumMarks?.total }}</span>
+                </small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- No summary yet -->
+      <div *ngIf="!loadingEvaluationSummary && !evaluationSummary && facultyMarksForm.internshipId"
+           class="text-muted text-center py-3">
+        No evaluation summary found for this internship.
+      </div>
+
+    </div>
+  </div>
+</div>
