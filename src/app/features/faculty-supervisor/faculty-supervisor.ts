@@ -563,11 +563,42 @@ export class FacultySupervisor {
   } | null = null;
   loadingEvaluationSummary = false;
 
+  // ── Faculty Evaluation Form (GET /api/faculty/evaluation-form) ─────────────
+  evaluationForm: {
+    id?: string;
+    type?: string;
+    totalMarks?: number;
+    maxMarks?: number;
+    criteria?: any[];
+    comments?: string;
+    submittedDate?: string;
+    evaluator?: any;
+  } | null = null;
+  loadingEvaluationForm = false;
+  selectedStudentForMarks: any = null;
+
+  /** Select a student in the Marks tab and load their evaluation data. */
+  selectStudentForMarks(student: any) {
+    this.selectedStudentForMarks = student;
+    // Use internshipId from store student data if available, otherwise leave blank
+    const internshipId = student?.internshipId || student?.apexBInternshipId || '';
+    this.facultyMarksForm = { internshipId, marks: 0 };
+    this.evaluationSummary = null;
+    this.evaluationForm = null;
+    if (internshipId) {
+      this.loadEvaluationSummary(internshipId, true);
+      this.loadEvaluationFormData(internshipId, true);
+    }
+  }
+
   /** Load evaluation summary for the currently selected student's internship. */
   async loadEvaluationSummaryForSelected() {
     const id = this.facultyMarksForm.internshipId.trim();
     if (!id) return;
-    await this.loadEvaluationSummary(id);
+    await Promise.all([
+      this.loadEvaluationSummary(id),
+      this.loadEvaluationFormData(id)
+    ]);
   }
 
   async loadEvaluationSummary(internshipId: string, forceRefresh = false) {
@@ -591,6 +622,28 @@ export class FacultySupervisor {
     }
   }
 
+  /** Load submitted faculty evaluation form from GET /api/faculty/evaluation-form */
+  async loadEvaluationFormData(internshipId: string, forceRefresh = false) {
+    if (!internshipId || this.loadingEvaluationForm) return;
+    this.loadingEvaluationForm = true;
+    try {
+      const res = await this.facultyApi.getEvaluationForm(internshipId, {
+        skipGlobalLoading: true,
+        forceRefresh
+      });
+      this.evaluationForm = res?.evaluation ?? null;
+    } catch (err: any) {
+      if (err?.status !== 404) {
+        const msg = err?.error?.message || err?.message || 'Failed to load evaluation form';
+        this.toast.danger(msg);
+      } else {
+        this.evaluationForm = null;
+      }
+    } finally {
+      this.loadingEvaluationForm = false;
+    }
+  }
+
   async submitFacultyMarks() {
     const id = this.facultyMarksForm.internshipId.trim();
     if (!id) { this.toast.warning('Enter the internship ID'); return; }
@@ -604,8 +657,11 @@ export class FacultySupervisor {
       const res = await this.facultyApi.submitEvaluationSummary({ internshipId: id, marks });
       this.toast.success(res?.message || 'Faculty marks submitted successfully');
       this.evaluationSummary = res?.evaluationSummary ?? null;
-      // Reload summary to show updated totals
-      await this.loadEvaluationSummary(id, true);
+      // Reload summary and form to show updated data
+      await Promise.all([
+        this.loadEvaluationSummary(id, true),
+        this.loadEvaluationFormData(id, true)
+      ]);
     } catch (err: any) {
       const msg = err?.error?.message || err?.message || 'Failed to submit marks';
       this.toast.danger(msg);

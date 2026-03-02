@@ -251,4 +251,20 @@ export class FacultyService {
     this.writeCache(key, res, options?.cacheTtlMs ?? 60 * 1000);
     return res;
   }
+
+  /**
+   * GET /api/faculty/evaluation-form?internshipId=...
+   * Retrieve the submitted faculty evaluation form.
+   * Response: { message, evaluation: { id, type, totalMarks, maxMarks, criteria, comments, submittedDate, evaluator } }
+   */
+  async getEvaluationForm(internshipId: string, options?: FacultyRequestOptions): Promise<any> {
+    const key = this.cacheKey(`eval-form-${internshipId}`);
+    const cached = this.readCache<any>(key, options);
+    if (cached) return cached;
+
+    const url = `${this.base}/api/faculty/evaluation-form?internshipId=${encodeURIComponent(internshipId)}`;
+    const res = await firstValueFrom(this.http.get<any>(url, { headers: await this.authHeaders(false, options) }));
+    this.writeCache(key, res, options?.cacheTtlMs ?? 60 * 1000);
+    return res;
+  }
 }

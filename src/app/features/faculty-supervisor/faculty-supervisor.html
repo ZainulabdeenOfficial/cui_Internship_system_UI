@@ -202,7 +202,7 @@
                           }
                         </td>
                         <td>
-                          <div class="d-flex gap-1 align-items-center">
+                          <div class="d-flex flex-wrap gap-1 align-items-center">
                             @if (item.facultyVerified !== true) {
                               <button 
                                 class="btn btn-sm btn-success" 
@@ -212,29 +212,29 @@
                                 @if (isProcessingItem(item)) {
                                   <span class="spinner-border spinner-border-sm"></span>
                                 } @else {
-                                  <i class="bi bi-check-circle"></i> Approve
+                                  <i class="bi bi-check-circle-fill me-1"></i>Approve
                                 }
                               </button>
                               <button 
-                                class="btn btn-sm btn-warning" 
+                                class="btn btn-sm btn-warning text-dark" 
                                 (click)="approveAppexB(item, 'request_changes', 'Please review and update')" 
                                 [disabled]="isProcessingItem(item)" 
                                 title="Request Changes">
                                 @if (isProcessingItem(item)) {
                                   <span class="spinner-border spinner-border-sm"></span>
                                 } @else {
-                                  <i class="bi bi-exclamation-circle"></i> Changes
+                                  <i class="bi bi-pencil-fill me-1"></i>Changes
                                 }
                               </button>
                             } @else {
-                              <span class="badge bg-success"><i class="bi bi-check-circle-fill me-1"></i> Verified</span>
+                              <span class="badge text-bg-success"><i class="bi bi-check-circle-fill me-1"></i>Verified</span>
                             }
                             <button 
-                              class="btn btn-sm btn-outline-info" 
+                              class="btn btn-sm btn-outline-secondary" 
                               (click)="viewApexBDetails(item)" 
                               title="View Details"
                               [disabled]="isProcessingItem(item)">
-                              <i class="bi bi-eye"></i>
+                              <i class="bi bi-eye-fill me-1"></i>View
                             </button>
                           </div>
                         </td>
@@ -708,62 +708,194 @@
 
 <!-- ── Evaluation Marks Tab ─────────────────────────────────────── -->
 <div *ngIf="currentTab === 'marks'" class="mb-4">
-  <div class="card">
-    <div class="card-header">
-      <h5 class="mb-0"><i class="bi bi-bar-chart-line me-2"></i>Faculty Evaluation Marks</h5>
+
+  <!-- ① Assigned Students List ───────────────────────────────── -->
+  <div class="card mb-3">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <span><i class="bi bi-people-fill me-2"></i>My Assigned Students</span>
+      <span class="badge text-bg-primary">{{ myStudents().length }} student(s)</span>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Student</th>
+              <th>Reg. No</th>
+              <th>Mode</th>
+              <th>Faculty Marks</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (s of myStudents(); track s.id) {
+              <tr [class.table-primary]="selectedStudentForMarks?.id === s.id">
+                <td>
+                  <div class="fw-semibold">{{ s.name }}</div>
+                  <small class="text-muted">{{ s.email }}</small>
+                </td>
+                <td>{{ s.registrationNo || '-' }}</td>
+                <td>
+                  <span class="badge"
+                    [class.text-bg-secondary]="!s.internshipMode"
+                    [class.text-bg-info]="s.internshipMode==='Virtual'"
+                    [class.text-bg-primary]="s.internshipMode==='OnSite'"
+                    [class.text-bg-success]="s.internshipMode==='Fiverr' || s.internshipMode==='Upwork'">
+                    {{ s.internshipMode || '—' }}
+                  </span>
+                </td>
+                <td>
+                  <span class="fw-semibold">{{ s.marks?.faculty ?? '—' }}</span>
+                  <small class="text-muted"> /40</small>
+                </td>
+                <td>
+                  <span class="badge"
+                    [class.text-bg-success]="s.approved"
+                    [class.text-bg-warning]="!s.approved">
+                    {{ s.approved ? 'Approved' : 'Pending' }}
+                  </span>
+                </td>
+                <td>
+                  <button class="btn btn-sm btn-outline-primary"
+                          (click)="selectStudentForMarks(s)">
+                    <i class="bi bi-pencil-square me-1"></i>Add / View Marks
+                  </button>
+                </td>
+              </tr>
+            }
+            @if (myStudents().length === 0) {
+              <tr><td colspan="6" class="text-center text-muted py-3">No students assigned to you.</td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ② Selected Student Evaluation Panel ─────────────────────── -->
+  @if (selectedStudentForMarks) {
+  <div class="card border-primary mb-3">
+    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+      <span>
+        <i class="bi bi-person-badge me-2"></i>
+        {{ selectedStudentForMarks.name }} — Evaluation
+      </span>
+      <button class="btn btn-sm btn-outline-light" (click)="selectedStudentForMarks = null; evaluationForm = null; evaluationSummary = null">
+        <i class="bi bi-x-lg"></i> Deselect
+      </button>
     </div>
     <div class="card-body">
 
-      <!-- Submit Marks Form -->
-      <div class="card border mb-4">
+      <!-- Internship ID input + Submit Marks -->
+      <div class="card border mb-3">
         <div class="card-header fw-semibold bg-light">Submit Faculty Marks (0 – 40)</div>
         <div class="card-body">
-          <div class="row g-3">
-            <div class="col-md-6">
-              <label class="form-label">Internship ID</label>
+          <div class="row g-3 align-items-end">
+            <div class="col-md-5">
+              <label class="form-label">Internship ID
+                <small class="text-muted">(auto-filled if available)</small>
+              </label>
               <input type="text" class="form-control" placeholder="Enter internship ID"
                      [(ngModel)]="facultyMarksForm.internshipId"
                      name="facultyMarksInternshipId"
                      (blur)="loadEvaluationSummaryForSelected()" />
             </div>
-            <div class="col-md-4">
+            <div class="col-md-3">
               <label class="form-label">Marks <small class="text-muted">(max 40)</small></label>
               <input type="number" class="form-control" min="0" max="40"
                      [(ngModel)]="facultyMarksForm.marks"
                      name="facultyMarksValue" />
             </div>
-            <div class="col-md-2 d-flex align-items-end">
+            <div class="col-md-2">
               <button class="btn btn-primary w-100"
                       (click)="submitFacultyMarks()"
-                      [disabled]="submittingFacultyMarks">
+                      [disabled]="submittingFacultyMarks || !facultyMarksForm.internshipId">
                 <span *ngIf="submittingFacultyMarks" class="spinner-border spinner-border-sm me-1"></span>
                 Submit
+              </button>
+            </div>
+            <div class="col-md-2">
+              <button class="btn btn-outline-secondary w-100"
+                      (click)="loadEvaluationSummaryForSelected()"
+                      [disabled]="loadingEvaluationSummary || loadingEvaluationForm || !facultyMarksForm.internshipId">
+                <span *ngIf="loadingEvaluationSummary || loadingEvaluationForm" class="spinner-border spinner-border-sm me-1"></span>
+                Refresh
               </button>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Lookup / refresh summary -->
-      <div class="d-flex gap-2 mb-3">
-        <button class="btn btn-sm btn-outline-secondary"
-                (click)="loadEvaluationSummaryForSelected()"
-                [disabled]="loadingEvaluationSummary || !facultyMarksForm.internshipId">
-          <span *ngIf="loadingEvaluationSummary" class="spinner-border spinner-border-sm me-1"></span>
-          Load Summary
-        </button>
-      </div>
-
       <!-- Loading -->
-      <div *ngIf="loadingEvaluationSummary" class="text-center py-3">
+      <div *ngIf="loadingEvaluationSummary || loadingEvaluationForm" class="text-center py-3">
         <span class="spinner-border text-primary"></span>
-        <p class="mt-2 text-muted">Loading evaluation summary&hellip;</p>
+        <p class="mt-2 text-muted">Loading evaluation data…</p>
       </div>
 
-      <!-- Summary Display -->
+      <!-- Submitted Faculty Evaluation Form (from GET /api/faculty/evaluation-form) -->
+      @if (!loadingEvaluationForm && evaluationForm) {
+      <div class="card border-success mb-3">
+        <div class="card-header bg-success text-white">
+          <i class="bi bi-check-circle-fill me-2"></i>Submitted Faculty Evaluation Form
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-3">
+              <small class="text-muted d-block">Type</small>
+              <strong>{{ evaluationForm.type || '—' }}</strong>
+            </div>
+            <div class="col-md-3">
+              <small class="text-muted d-block">Total Marks</small>
+              <strong class="fs-5">{{ evaluationForm.totalMarks ?? '—' }}
+                <span *ngIf="evaluationForm.maxMarks" class="fs-6 text-muted"> / {{ evaluationForm.maxMarks }}</span>
+              </strong>
+            </div>
+            <div class="col-md-3">
+              <small class="text-muted d-block">Submitted Date</small>
+              <strong>{{ evaluationForm.submittedDate ? (evaluationForm.submittedDate | date:'mediumDate') : '—' }}</strong>
+            </div>
+            <div class="col-md-3" *ngIf="evaluationForm.evaluator">
+              <small class="text-muted d-block">Evaluator</small>
+              <strong>{{ evaluationForm.evaluator?.name || evaluationForm.evaluator?.email || '—' }}</strong>
+            </div>
+          </div>
+
+          <!-- Criteria breakdown -->
+          @if (evaluationForm.criteria && evaluationForm.criteria.length > 0) {
+          <hr class="my-3" />
+          <h6 class="text-muted mb-2">Criteria Breakdown</h6>
+          <div class="row g-2">
+            @for (c of evaluationForm.criteria; track $index) {
+              <div class="col-6 col-md-4">
+                <div class="d-flex justify-content-between border rounded p-2">
+                  <small class="text-capitalize">{{ c.name || c.label || ('Criterion ' + ($index + 1)) }}</small>
+                  <small class="fw-semibold">{{ c.marks ?? c.value ?? c.score ?? '—' }}</small>
+                </div>
+              </div>
+            }
+          </div>
+          }
+
+          <!-- Comments -->
+          <div *ngIf="evaluationForm.comments" class="mt-3">
+            <small class="text-muted d-block">Comments</small>
+            <p class="mb-0">{{ evaluationForm.comments }}</p>
+          </div>
+        </div>
+      </div>
+      }
+
+      @if (!loadingEvaluationForm && !evaluationForm && facultyMarksForm.internshipId) {
+        <div class="alert alert-info">
+          <i class="bi bi-info-circle me-2"></i>No submitted faculty evaluation form found for this internship. Use the form above to submit marks.
+        </div>
+      }
+
+      <!-- Evaluation Summary (GET /api/faculty/evaluation-summary) -->
       <div *ngIf="!loadingEvaluationSummary && evaluationSummary" class="card border-primary">
         <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-          <span>Evaluation Summary</span>
+          <span><i class="bi bi-bar-chart-line me-2"></i>Full Evaluation Summary</span>
           <span class="badge"
                 [class.text-bg-success]="evaluationSummary.status === 'pass'"
                 [class.text-bg-danger]="evaluationSummary.status !== 'pass'">
@@ -808,7 +940,6 @@
         </div>
       </div>
 
-      <!-- No summary yet -->
       <div *ngIf="!loadingEvaluationSummary && !evaluationSummary && facultyMarksForm.internshipId"
            class="text-muted text-center py-3">
         No evaluation summary found for this internship.
@@ -816,4 +947,6 @@
 
     </div>
   </div>
+  }
+
 </div>
