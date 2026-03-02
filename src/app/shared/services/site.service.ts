@@ -69,10 +69,14 @@ export class SiteService {
   }
   
   /**
-   * Fetch site evaluations by internshipId and type (site_mid | site_final)
+   * Fetch site evaluations by internshipId and optional type filter (site_mid | site_final).
+   * When type is omitted all evaluations for the internship are returned.
+   * Accessible to the student, their assigned faculty/site supervisor, and admins.
    */
-  async getEvaluations(internshipId: string, type: 'site_mid' | 'site_final'): Promise<SiteEvaluationResponse> {
-    const qs = `?internshipId=${encodeURIComponent(internshipId)}&type=${encodeURIComponent(type)}`;
+  async getEvaluations(internshipId: string, type?: 'site_mid' | 'site_final'): Promise<SiteEvaluationResponse> {
+    const params: string[] = [`internshipId=${encodeURIComponent(internshipId)}`];
+    if (type) params.push(`type=${encodeURIComponent(type)}`);
+    const qs = `?${params.join('&')}`;
     const url = `/api/site/evaluations${qs}`;
     try {
       const res = await firstValueFrom(

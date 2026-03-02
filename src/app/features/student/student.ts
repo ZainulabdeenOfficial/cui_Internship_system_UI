@@ -58,6 +58,7 @@ export class Student implements OnDestroy {
     facultyVerified: boolean;
     adminApproved: boolean;
     status: string;
+    internshipId?: string;
     companyName?: string;
     internshipRole?: string;
     startDate?: string;
@@ -68,6 +69,11 @@ export class Student implements OnDestroy {
     duration?: string;
     location?: string;
   } | null = null;
+
+  // Evaluations
+  evaluations: any[] = [];
+  loadingEvaluations = false;
+  evaluationTypeFilter: 'all' | 'site_mid' | 'site_final' = 'all';
   loadingApexBStatus = false;
   
   // Check if all verifications are complete
@@ -86,7 +92,7 @@ export class Student implements OnDestroy {
   
   private lockSelection: any;
   // tabs: make each form an explicit tab so AppEx-A is first
-  currentTab: 'appex'|'assignment'|'form3'|'evidence'|'logs'|'reports'|'assignments'|'complaints'|'marks'|'weeklylogs' = 'appex';
+  currentTab: 'appex'|'assignment'|'form3'|'evidence'|'logs'|'reports'|'assignments'|'complaints'|'marks'|'weeklylogs'|'evaluations' = 'appex';
   // Raw query param value (for debugging why a tab may be set but UI not rendering)
   lastQueryTab: string | null = null;
   // pagination state per tab/list
@@ -202,7 +208,7 @@ export class Student implements OnDestroy {
     try {
       this.route.queryParamMap.subscribe(p => {
           const tabParam = p.get('tab');
-          const allowed = ['appex','assignment','form3','evidence','logs','reports','assignments','complaints','marks','weeklylogs'] as const;
+          const allowed = ['appex','assignment','form3','evidence','logs','reports','assignments','complaints','marks','weeklylogs','evaluations'] as const;
           if (tabParam) {
             // record raw value for diagnostics
             this.lastQueryTab = tabParam;
@@ -242,7 +248,7 @@ export class Student implements OnDestroy {
           }
         // guard: if not approved, restrict to core forms/evidence/complaints
         const isOk = this.isApproved();
-        const visibleWhenPending = new Set(['appex','assignment','form3','evidence','complaints','weeklylogs']);
+        const visibleWhenPending = new Set(['appex','assignment','form3','evidence','complaints','weeklylogs','evaluations']);
         if (!isOk && !visibleWhenPending.has(this.currentTab)) {
           this.currentTab = 'appex';
           try { this.router.navigate([], { relativeTo: this.route, queryParams: { tab: 'appex' }, queryParamsHandling: 'merge' }); } catch {}
@@ -702,6 +708,7 @@ export class Student implements OnDestroy {
           facultyVerified: apexB.facultyVerified || false,
           adminApproved: apexB.adminApproved || apexB.status === 'approved' || false,
           status: apexB.status || 'PENDING',
+          internshipId: apexB.internshipId || apexB._id || apexB.id,
           companyName: apexB.companyName,
           internshipRole: apexB.internshipRole,
           startDate: apexB.startDate,
@@ -721,10 +728,11 @@ export class Student implements OnDestroy {
           fullyApproved: this.isFullyApproved()
         });
         
-        // If fully approved, automatically load weekly logs and switch to that tab
+        // If fully approved, automatically load weekly logs and evaluations; switch to weeklylogs tab
         if (this.isFullyApproved()) {
-          console.log('✅ [Student] Fully approved! Auto-loading weekly logs...');
+          console.log('✅ [Student] Fully approved! Auto-loading weekly logs and evaluations...');
           this.loadWeeklyLogs();
+          this.loadEvaluations();
           
           // Auto-switch to weekly logs tab if currently on approval forms
           if (['appex', 'assignment', 'form3'].includes(this.currentTab)) {
@@ -878,6 +886,10 @@ export class Student implements OnDestroy {
     // Auto-load weekly logs when weekly logs tab is selected
     if (tab === 'weeklylogs' && this.weeklyLogs.length === 0) {
       this.loadWeeklyLogs();
+    }
+    // Auto-load evaluations when evaluations tab is selected
+    if (tab === 'evaluations' && this.evaluations.length === 0 && !this.loadingEvaluations) {
+      this.loadEvaluations();
     }
   }
 
@@ -1200,6 +1212,41 @@ export class Student implements OnDestroy {
     } finally {
       this.loadingWeeklyLogs = false;
       this.cdr.markForCheck(); // Trigger UI update
+    }
+  }
+
+  /**
+   * Load evaluations for the student's current internship from /api/site/evaluations.
+   * Accessible to student, faculty/site supervisors, and admins.
+   */
+  async loadEvaluations(forceRefresh = false) {
+    const internshipId = this.apexBStatus?.internshipId;
+    if (!internshipId) {
+      console.warn('⚠️ [Student] No internshipId available to load evaluations');
+      return;
+    }
+    if (this.loadingEvaluations) return;
+
+    this.loadingEvaluations = true;
+    try {
+      const typeFilter = this.evaluationTypeFilter === 'all' ? undefined : this.evaluationTypeFilter;
+      const res = await this.studentApi.getEvaluations(internshipId, typeFilter, {
+        skipGlobalLoading: true,
+        forceRefresh
+      });
+      this.evaluations = Array.isArray(res?.evaluations) ? res.evaluations : [];
+      console.log(`✅ [Student] Evaluations loaded (${this.evaluations.length}):`, this.evaluations);
+    } catch (err: any) {
+      const status = err?.status ?? 0;
+      if (status === 404 || status === 400) {
+        this.evaluations = [];
+      } else {
+        const msg = err?.error?.message || err?.message || 'Failed to load evaluations';
+        this.toast.danger(msg);
+      }
+    } finally {
+      this.loadingEvaluations = false;
+      this.cdr.markForCheck();
     }
   }
 

@@ -12,6 +12,7 @@
     <li class="nav-item"><button type="button" class="nav-link" [class.active]="isCurrentTab('assignment')" (click)="selectTab('assignment')">Assignment & Agreement</button></li>
     <li class="nav-item"><button type="button" class="nav-link" [class.active]="isCurrentTab('form3')" (click)="selectTab('form3')">Organization Overview &amp; Scope of Work</button></li>
     <li class="nav-item"><button type="button" class="nav-link" [class.active]="isCurrentTab('weeklylogs')" (click)="selectTab('weeklylogs')">Weekly Logs</button></li>
+    <li class="nav-item"><button type="button" class="nav-link" [class.active]="isCurrentTab('evaluations')" (click)="selectTab('evaluations')">My Evaluations</button></li>
     <li class="nav-item ms-auto"><button type="button" class="nav-link" [class.active]="isCurrentTab('complaints')" (click)="selectTab('complaints')">Complaints</button></li>
   </ul>
 
@@ -551,6 +552,106 @@
           </ul>
           <div class="text-muted" *ngIf="myComplaints().length === 0">No complaints yet.</div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Evaluations tab content -->
+  <div *ngIf="isCurrentTab('evaluations')">
+    <div class="card mb-3">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span>My Evaluations</span>
+        <div class="d-flex gap-2 align-items-center">
+          <select class="form-select form-select-sm" style="width:auto"
+                  [(ngModel)]="evaluationTypeFilter"
+                  name="evalTypeFilter"
+                  (ngModelChange)="loadEvaluations(true)">
+            <option value="all">All Evaluation Types</option>
+            <option value="site_mid">Site Mid-Term (site_mid)</option>
+            <option value="site_final">Site Final (site_final)</option>
+          </select>
+          <button class="btn btn-sm btn-outline-secondary" (click)="loadEvaluations(true)" [disabled]="loadingEvaluations">
+            <span *ngIf="loadingEvaluations" class="spinner-border spinner-border-sm me-1"></span>
+            Refresh
+          </button>
+        </div>
+      </div>
+      <div class="card-body">
+
+        <!-- No internship ID yet -->
+        <div *ngIf="!apexBStatus?.internshipId" class="alert alert-warning">
+          Evaluations will be available once your internship is fully approved and an internship record has been created.
+        </div>
+
+        <!-- Loading -->
+        <div *ngIf="apexBStatus?.internshipId && loadingEvaluations" class="text-center py-4">
+          <span class="spinner-border text-primary"></span>
+          <p class="mt-2 text-muted">Loading evaluations&hellip;</p>
+        </div>
+
+        <!-- No evaluations yet -->
+        <div *ngIf="apexBStatus?.internshipId && !loadingEvaluations && evaluations.length === 0" class="text-muted text-center py-3">
+          No evaluations recorded yet.
+        </div>
+
+        <!-- Evaluations list -->
+        <div *ngIf="!loadingEvaluations && evaluations.length > 0">
+          <div class="row g-3">
+            <div class="col-12 col-md-6" *ngFor="let ev of evaluations">
+              <div class="card border h-100">
+                <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                  <div class="d-flex align-items-center gap-2">
+                    <span class="badge"
+                          [class.text-bg-warning]="ev.type === 'site_mid'"
+                          [class.text-bg-success]="ev.type === 'site_final'"
+                          [class.text-bg-secondary]="ev.type !== 'site_mid' && ev.type !== 'site_final'">
+                      {{ ev.type === 'site_mid' ? 'site_mid' : ev.type === 'site_final' ? 'site_final' : ev.type }}
+                    </span>
+                    <span class="fw-semibold">
+                      {{ ev.type === 'site_mid' ? 'Site Mid-Term Evaluation'
+                       : ev.type === 'site_final' ? 'Site Final Evaluation'
+                       : ev.type }}
+                    </span>
+                  </div>
+                  <span class="badge text-bg-primary">{{ ev.totalMarks ?? '-' }} / 100 marks</span>
+                </div>
+                <div class="card-body">
+
+                  <!-- Criteria breakdown -->
+                  <div *ngIf="ev.criteria" class="mb-3">
+                    <h6 class="text-muted mb-2">Criteria Scores</h6>
+                    <div class="row g-1">
+                      <div class="col-6" *ngFor="let c of ev.criteria | keyvalue">
+                        <div class="d-flex justify-content-between">
+                          <small class="text-capitalize">{{ $any(c.key) | titlecase }}</small>
+                          <small class="fw-semibold">{{ c.value }}</small>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Comments -->
+                  <div *ngIf="ev.comments" class="mb-2">
+                    <small class="text-muted d-block">Comments</small>
+                    <p class="mb-0 small">{{ ev.comments }}</p>
+                  </div>
+
+                  <!-- Submitted by / date -->
+                  <div class="d-flex gap-3 mt-2">
+                    <small class="text-muted" *ngIf="ev.submittedBy?.name">
+                      <i class="bi bi-person me-1"></i>{{ ev.submittedBy.name }}
+                    </small>
+                    <small class="text-muted" *ngIf="ev.createdAt || ev.submittedAt">
+                      <i class="bi bi-calendar3 me-1"></i>{{ (ev.createdAt || ev.submittedAt) | date:'mediumDate' }}
+                    </small>
+                  </div>
+
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
   </div>

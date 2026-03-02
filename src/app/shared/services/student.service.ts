@@ -554,4 +554,28 @@ export class StudentService {
     this.writeCache(key, res, options?.cacheTtlMs ?? 60 * 1000);
     return res;
   }
+
+  /**
+   * GET /api/site/evaluations?internshipId=<id>[&type=<type>]
+   * Retrieve evaluations for a specific internship.
+   * Accessible to the student, their assigned faculty/site supervisor, and admins.
+   * Optionally filter by evaluation type: 'site_mid' | 'site_final'.
+   */
+  async getEvaluations(internshipId: string, type?: 'site_mid' | 'site_final', options?: StudentRequestOptions): Promise<{ message: string; evaluations: any[] }> {
+    const params: string[] = [`internshipId=${encodeURIComponent(internshipId)}`];
+    if (type) params.push(`type=${encodeURIComponent(type)}`);
+    const endpoint = `/api/site/evaluations?${params.join('&')}`;
+    const key = this.cacheKey(endpoint);
+    const cached = this.readCache<any>(key, options);
+    if (cached) return cached;
+
+    const url = this.abs(endpoint);
+    const headers = this.withRequestOptions(new HttpHeaders({
+      Accept: 'application/json',
+      ...(this.getAuthToken() ? { Authorization: `Bearer ${this.getAuthToken()}` } : {})
+    }), options);
+    const res = await firstValueFrom(this.http.get<any>(url, { headers }));
+    this.writeCache(key, res, options?.cacheTtlMs ?? 60 * 1000);
+    return res;
+  }
 }
