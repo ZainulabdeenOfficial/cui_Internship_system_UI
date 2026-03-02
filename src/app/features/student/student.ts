@@ -74,6 +74,8 @@ export class Student implements OnDestroy {
   evaluations: any[] = [];
   loadingEvaluations = false;
   evaluationTypeFilter: 'all' | 'site_mid' | 'site_final' = 'all';
+  /** Internship ID resolved from any available API response; drives evaluations fetch. */
+  studentInternshipId: string | null = null;
   loadingApexBStatus = false;
   
   // Check if all verifications are complete
@@ -199,6 +201,7 @@ export class Student implements OnDestroy {
       // Auto-load APEX B status when student is selected
       if (this.selectedId) {
         this.loadApexBStatus();
+        this.loadStudentInternship();
         
         // Start polling for status updates every 30 seconds if not fully approved
         this.startStatusPolling();
@@ -272,7 +275,11 @@ export class Student implements OnDestroy {
           try {
             const res = await this.apiGetAppExA({ skipGlobalLoading: this.hasLoadedAppExAOnce });
             this.hasLoadedAppExAOnce = true;
-            const ax = (res as any)?.internship?.appexA || (res as any)?.appexA || {};
+            // Capture internship ID from the wrapper object whenever present
+            const internshipObj = (res as any)?.internship;
+            const resolvedId: string = internshipObj?.id || internshipObj?._id || (res as any)?.internshipId || '';
+            if (resolvedId) this.studentInternshipId = resolvedId;
+            const ax = internshipObj?.appexA || (res as any)?.appexA || {};
             // treat as present when at least one meaningful field exists
             serverHas = Object.keys(ax).some(k => {
               const v = (ax as any)[k];
@@ -1197,6 +1204,10 @@ export class Student implements OnDestroy {
       this.weeklyLogStatus = res?.weeklyLogStatus || {};
       this.hasLoadedWeeklyLogsOnce = true;
       
+      // Capture internship ID if the weekly logs response includes it
+      const wlInternshipId: string = res?.internshipId || res?.weeklyLogStatus?.internshipId || '';
+      if (wlInternshipId && !this.studentInternshipId) this.studentInternshipId = wlInternshipId;
+
       // Set default week number to current week if available
       if (this.weeklyLogStatus.currentWeek) {
         this.weeklyLogForm.weekNo = this.weeklyLogStatus.currentWeek;
@@ -1216,21 +1227,69 @@ export class Student implements OnDestroy {
   }
 
   /**
+   * Fetch the student's own internship record to reliably resolve the internship ID.
+   * Stores the result in `studentInternshipId` for use by other methods (e.g. loadEvaluations).
+   */
+  async loadStudentInternship(forceRefresh = false) {
+    if (!this.selectedId) return;
+    try {
+      const res = await this.studentApi.getMyInternship({ skipGlobalLoading: true, forceRefresh });
+      // Try every common field name the backend may use for the internship ID
+      const id: string =
+        res?.internship?.id ||
+        res?.internship?._id ||
+        res?.data?.id ||
+        res?.data?._id ||
+        res?.id ||
+        res?._id ||
+        res?.internshipId ||
+        '';
+      if (id) {
+        this.studentInternshipId = id;
+        console.log('✅ [Student] studentInternshipId resolved:', this.studentInternshipId);
+      } else {
+        console.warn('⚠️ [Student] getMyInternship returned no usable ID. Full response:', res);
+      }
+    } catch (err: any) {
+      // 404 is expected when the student hasn't created an internship yet
+      if (err?.status !== 404) {
+        console.warn('⚠️ [Student] loadStudentInternship failed:', err?.status, err?.message);
+      }
+    } finally {
+      // If we still have no ID try to extract it from APEX B status as last resort
+      if (!this.studentInternshipId && this.apexBStatus?.internshipId) {
+        this.studentInternshipId = this.apexBStatus.internshipId;
+      }
+    }
+  }
+
+  /**
    * Load evaluations for the student's current internship from /api/site/evaluations.
    * Accessible to student, faculty/site supervisors, and admins.
    */
   async loadEvaluations(forceRefresh = false) {
-    const internshipId = this.apexBStatus?.internshipId;
-    if (!internshipId) {
-      console.warn('⚠️ [Student] No internshipId available to load evaluations');
-      return;
-    }
-    if (this.loadingEvaluations) return;
+    // Resolve internship ID from all available sources
+    const internshipId =
+      this.studentInternshipId ||
+      this.apexBStatus?.internshipId ||
+      null;
 
+    if (!internshipId) {
+      // Attempt to load internship first, then retry evaluations
+      console.warn('⚠️ [Student] No internshipId yet — fetching internship first...');
+      await this.loadStudentInternship(true);
+      if (!this.studentInternshipId) {
+        console.warn('⚠️ [Student] Still no internshipId after fetch — cannot load evaluations');
+        return;
+      }
+    }
+
+    const idToUse = this.studentInternshipId || internshipId!;
+    if (this.loadingEvaluations) return;
     this.loadingEvaluations = true;
     try {
       const typeFilter = this.evaluationTypeFilter === 'all' ? undefined : this.evaluationTypeFilter;
-      const res = await this.studentApi.getEvaluations(internshipId, typeFilter, {
+      const res = await this.studentApi.getEvaluations(idToUse, typeFilter, {
         skipGlobalLoading: true,
         forceRefresh
       });

@@ -525,6 +525,26 @@ export class StudentService {
     return res;
   }
 
+  /**
+   * GET /api/student/internship
+   * Retrieves the current student's internship record, including the internship ID
+   * needed for other API calls (e.g. evaluations).
+   */
+  async getMyInternship(options?: StudentRequestOptions): Promise<any> {
+    const key = this.cacheKey('my-internship');
+    const cached = this.readCache<any>(key, options);
+    if (cached) return cached;
+
+    const url = this.abs('/api/student/internship');
+    const headers = this.withRequestOptions(new HttpHeaders({
+      Accept: 'application/json',
+      ...(this.getAuthToken() ? { Authorization: `Bearer ${this.getAuthToken()}` } : {})
+    }), options);
+    const res = await firstValueFrom(this.http.get<any>(url, { headers }));
+    this.writeCache(key, res, options?.cacheTtlMs ?? 60 * 1000);
+    return res;
+  }
+
   // POST /api/student/weekly-logs
   async submitWeeklyLog(payload: {
     weekNo: number;
