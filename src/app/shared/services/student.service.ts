@@ -628,4 +628,46 @@ export class StudentService {
     this.writeCache(key, res, options?.cacheTtlMs ?? 60 * 1000);
     return res;
   }
+
+  /**
+   * GET /api/faculty/evaluation-form?internshipId=...
+   * Retrieve the submitted faculty evaluation form.
+   * Accessible to student, faculty supervisor, site supervisor, and admin.
+   */
+  async getFacultyEvaluationForm(internshipId: string, options?: StudentRequestOptions): Promise<any> {
+    const endpoint = `/api/faculty/evaluation-form?internshipId=${encodeURIComponent(internshipId)}`;
+    const key = this.cacheKey(endpoint);
+    const cached = this.readCache<any>(key, options);
+    if (cached) return cached;
+
+    const url = this.abs(endpoint);
+    const headers = this.withRequestOptions(new HttpHeaders({
+      Accept: 'application/json',
+      ...(this.getAuthToken() ? { Authorization: `Bearer ${this.getAuthToken()}` } : {})
+    }), options);
+    const res = await firstValueFrom(this.http.get<any>(url, { headers }));
+    this.writeCache(key, res, options?.cacheTtlMs ?? 60 * 1000);
+    return res;
+  }
+
+  /**
+   * GET /api/admin/office-evaluation?internshipId=...
+   * Retrieve the submitted office evaluation form.
+   * Accessible to student, faculty supervisor, site supervisor, and admin.
+   */
+  async getAdminOfficeEvaluation(internshipId: string, options?: StudentRequestOptions): Promise<any> {
+    const endpoint = `/api/admin/office-evaluation?internshipId=${encodeURIComponent(internshipId)}`;
+    const key = this.cacheKey(endpoint);
+    const cached = this.readCache<any>(key, options);
+    if (cached) return cached;
+
+    const url = this.abs(endpoint);
+    const headers = this.withRequestOptions(new HttpHeaders({
+      Accept: 'application/json',
+      ...(this.getAuthToken() ? { Authorization: `Bearer ${this.getAuthToken()}` } : {})
+    }), options);
+    const res = await firstValueFrom(this.http.get<any>(url, { headers }));
+    this.writeCache(key, res, options?.cacheTtlMs ?? 60 * 1000);
+    return res;
+  }
 }

@@ -47,7 +47,11 @@ export class FacultySupervisor {
     this.currentTab = tab;
     try { this.router.navigate([], { relativeTo: this.route, queryParams: { tab }, queryParamsHandling: 'merge' }); } catch {}
     if (tab === 'profile') this.loadMyProfileFromApi();
-    if (tab === 'marks') this.loadEvaluationSummaryForSelected();
+    if (tab === 'marks') {
+      // Load APEX B requests first to populate marksTabStudents() with internship IDs
+      if (!this.hasLoadedRequestsOnce) this.loadStudentRequests();
+      this.loadEvaluationSummaryForSelected();
+    }
     // Requests are pre-loaded on init, no need to reload on tab click
   }
   get me() { return this.store.currentUser; }
@@ -251,15 +255,16 @@ export class FacultySupervisor {
   showApexADetailsModal = false;
   selectedApexAForm: any = null;
   
-  async loadStudentRequests(forceRefresh = false) {
+  async loadStudentRequests(forceRefresh = false, silent = false) {
     if (this.loadingRequests) return;
-    this.loadingRequests = true;
+    if (!silent) this.loadingRequests = true;
     
     console.log('🔄 [Faculty - Load Student Requests] Starting...', {
       filter: this.requestFilter,
       pageAppexA: this.page.appexA,
       pageAppexB: this.page.appexB,
-      pageSize: this.pageSize
+      pageSize: this.pageSize,
+      silent
     });
     
     try {
@@ -288,11 +293,13 @@ export class FacultySupervisor {
         appexBRequests: this.appexBRequests
       });
     } catch (err: any) {
-      const msg = err?.error?.message || err?.message || 'Failed to load student requests';
-      this.toast.danger(msg);
+      if (!silent) {
+        const msg = err?.error?.message || err?.message || 'Failed to load student requests';
+        this.toast.danger(msg);
+      }
       console.error('❌ [Faculty - Load Student Requests] Error:', err);
     } finally {
-      this.loadingRequests = false;
+      if (!silent) this.loadingRequests = false;
     }
   }
 
@@ -408,10 +415,10 @@ export class FacultySupervisor {
           updatedItem
         });
         
-        // Reload the list to get latest data from server (don't await to avoid blocking UI)
+        // Reload the list to get latest data from server silently (no spinner flash)
         setTimeout(() => {
-          console.log('🔄 [Faculty - Approve APEX B] Reloading requests in background...');
-          this.loadStudentRequests(true).then(() => {
+          console.log('🔄 [Faculty - Approve APEX B] Reloading requests in background (silent)...');
+          this.loadStudentRequests(true, true).then(() => {
             console.log('✅ [Faculty - Approve APEX B] Requests reloaded successfully');
           }).catch(err => {
             console.error('❌ [Faculty - Approve APEX B] Error reloading:', err);
@@ -580,8 +587,12 @@ export class FacultySupervisor {
   /** Select a student in the Marks tab and load their evaluation data. */
   selectStudentForMarks(student: any) {
     this.selectedStudentForMarks = student;
-    // Use internshipId from store student data if available, otherwise leave blank
-    const internshipId = student?.internshipId || student?.apexBInternshipId || '';
+    // Prefer internshipId from APEX B request data (most reliable), then store/other fields
+    const apexBMatch = this.appexBRequests.find(
+      item => (item.student?.id === student.id || item.studentId === student.id || item.id === student.apexBId) &&
+               (item.facultyVerified === true || item.status === 'approved' || item.adminApprovalStatus === 'APPROVED')
+    );
+    const internshipId = apexBMatch?.internshipId || student?.internshipId || student?.apexBInternshipId || '';
     this.facultyMarksForm = { internshipId, marks: 0 };
     this.evaluationSummary = null;
     this.evaluationForm = null;
@@ -589,6 +600,47 @@ export class FacultySupervisor {
       this.loadEvaluationSummary(internshipId, true);
       this.loadEvaluationFormData(internshipId, true);
     }
+  }
+
+  /**
+   * Returns students for the Marks tab by combining:
+   * 1. Assigned students from local store (filtered by facultyId)
+   * 2. Students from APEX B verification requests that are approved
+   * This ensures students enrolled via API appear even if local store doesn't have facultyId set.
+   */
+  marksTabStudents(): Array<any> {
+    const fromStore = this.myStudents();
+    const storeIds = new Set(fromStore.map((s: any) => s.id));
+
+    // Enrich store students with internship IDs from APEX B requests
+    const enriched = fromStore.map((s: any) => {
+      const apexBMatch = this.appexBRequests.find(
+        item => (item.student?.id === s.id || item.studentId === s.id) &&
+                 (item.facultyVerified === true || item.status === 'approved' || item.adminApprovalStatus === 'APPROVED')
+      );
+      return { ...s, internshipId: apexBMatch?.internshipId || s.internshipId || '' };
+    });
+
+    // Add APEX B students not present in local store
+    const apexBOnly = this.appexBRequests
+      .filter(item =>
+        (item.facultyVerified === true || item.status === 'approved' || item.adminApprovalStatus === 'APPROVED') &&
+        item.student?.id && !storeIds.has(item.student.id)
+      )
+      .map(item => ({
+        id: item.student?.id || item.studentId || '',
+        name: item.student?.name || item.name || 'Unknown',
+        email: item.student?.email || item.email || '',
+        registrationNo: item.student?.regNo || item.regNo || '',
+        internshipMode: item.internshipType || item.mode || undefined,
+        approved: true,
+        marks: undefined,
+        internshipId: item.internshipId || '',
+        apexBId: item.id  // keep APEX B record id for lookup
+      }))
+      .filter(s => !!s.id);
+
+    return [...enriched, ...apexBOnly];
   }
 
   /** Load evaluation summary for the currently selected student's internship. */

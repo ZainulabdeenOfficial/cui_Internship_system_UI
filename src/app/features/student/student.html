@@ -565,14 +565,14 @@
           <select class="form-select form-select-sm" style="width:auto"
                   [(ngModel)]="evaluationTypeFilter"
                   name="evalTypeFilter"
-                  (ngModelChange)="loadEvaluations(true)">
+                  (ngModelChange)="onEvaluationFilterChange()">
             <option value="all">All Evaluation Types</option>
             <option value="site_mid">Site Mid-Term (site_mid)</option>
             <option value="site_final">Site Final (site_final)</option>
           </select>
           <button class="btn btn-sm btn-outline-secondary" (click)="loadEvaluations(true)" [disabled]="loadingEvaluations">
             <span *ngIf="loadingEvaluations" class="spinner-border spinner-border-sm me-1"></span>
-            Refresh
+            {{ loadingEvaluations ? 'Loading...' : 'Refresh' }}
           </button>
         </div>
       </div>
@@ -584,6 +584,14 @@
         </div>
 
         <!-- Evaluation Summary Card -->
+        <!-- Loading skeleton while summary is being fetched -->
+        <div *ngIf="studentInternshipId && loadingEvaluationSummary && !evaluationSummary" class="card border-secondary mb-3">
+          <div class="card-header bg-secondary text-white d-flex align-items-center gap-2">
+            <span class="spinner-border spinner-border-sm"></span>
+            <span>Loading Evaluation Summary&hellip;</span>
+          </div>
+        </div>
+
         <div *ngIf="studentInternshipId && evaluationSummary" class="card border-primary mb-3">
           <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
             <span><i class="bi bi-bar-chart-line me-2"></i>Evaluation Summary</span>
@@ -652,16 +660,20 @@
                     <span class="badge"
                           [class.text-bg-warning]="ev.type === 'site_mid'"
                           [class.text-bg-success]="ev.type === 'site_final'"
-                          [class.text-bg-secondary]="ev.type !== 'site_mid' && ev.type !== 'site_final'">
-                      {{ ev.type === 'site_mid' ? 'site_mid' : ev.type === 'site_final' ? 'site_final' : ev.type }}
+                          [class.text-bg-primary]="ev.type === 'faculty'"
+                          [class.text-bg-info]="ev.type === 'office'"
+                          [class.text-bg-secondary]="ev.type !== 'site_mid' && ev.type !== 'site_final' && ev.type !== 'faculty' && ev.type !== 'office'">
+                      {{ ev.type }}
                     </span>
                     <span class="fw-semibold">
                       {{ ev.type === 'site_mid' ? 'Site Mid-Term Evaluation'
                        : ev.type === 'site_final' ? 'Site Final Evaluation'
+                       : ev.type === 'faculty' ? 'Faculty Supervisor Evaluation'
+                       : ev.type === 'office' ? 'Internship Office Evaluation'
                        : ev.type }}
                     </span>
                   </div>
-                  <span class="badge text-bg-primary">{{ ev.totalMarks ?? '-' }} / 100 marks</span>
+                  <span class="badge text-bg-primary">{{ ev.totalMarks ?? ev.facultyMarksScaled ?? ev.officeMarksScaled ?? '-' }} marks</span>
                 </div>
                 <div class="card-body">
 
@@ -669,9 +681,9 @@
                   <div *ngIf="ev.criteria" class="mb-3">
                     <h6 class="text-muted mb-2">Criteria Scores</h6>
                     <div class="row g-1">
-                      <div class="col-6" *ngFor="let c of ev.criteria | keyvalue">
+                      <div class="col-6" *ngFor="let c of criteriaEntries(ev.criteria)">
                         <div class="d-flex justify-content-between">
-                          <small class="text-capitalize">{{ $any(c.key) | titlecase }}</small>
+                          <small class="text-capitalize">{{ c.label }}</small>
                           <small class="fw-semibold">{{ c.value }}</small>
                         </div>
                       </div>

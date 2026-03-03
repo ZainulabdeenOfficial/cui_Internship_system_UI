@@ -713,7 +713,7 @@
   <div class="card mb-3">
     <div class="card-header d-flex justify-content-between align-items-center">
       <span><i class="bi bi-people-fill me-2"></i>My Assigned Students</span>
-      <span class="badge text-bg-primary">{{ myStudents().length }} student(s)</span>
+      <span class="badge text-bg-primary">{{ marksTabStudents().length }} student(s)</span>
     </div>
     <div class="card-body p-0">
       <div class="table-responsive">
@@ -729,7 +729,7 @@
             </tr>
           </thead>
           <tbody>
-            @for (s of myStudents(); track s.id) {
+            @for (s of marksTabStudents(); track s.id) {
               <tr [class.table-primary]="selectedStudentForMarks?.id === s.id">
                 <td>
                   <div class="fw-semibold">{{ s.name }}</div>
@@ -764,8 +764,10 @@
                 </td>
               </tr>
             }
-            @if (myStudents().length === 0) {
-              <tr><td colspan="6" class="text-center text-muted py-3">No students assigned to you.</td></tr>
+            @if (marksTabStudents().length === 0) {
+              <tr><td colspan="6" class="text-center text-muted py-3">
+                No students assigned to you. Go to the <strong>Student Requests</strong> tab to verify APEX B forms first.
+              </td></tr>
             }
           </tbody>
         </table>
