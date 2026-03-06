@@ -717,6 +717,10 @@ export class FacultySupervisor {
   async loadEvaluationSummaryForSelected() {
     const id = this.facultyMarksForm.internshipId.trim();
     if (!id) return;
+    console.group(`🌐 [Faculty Evaluation] API calls for internshipId: ${id}`);
+    console.log(`📡 GET /api/faculty/evaluation-summary?internshipId=${id}`);
+    console.log(`📡 GET /api/faculty/evaluation-form?internshipId=${id}`);
+    console.groupEnd();
     await Promise.all([
       this.loadEvaluationSummary(id),
       this.loadEvaluationFormData(id)
@@ -732,7 +736,20 @@ export class FacultySupervisor {
         forceRefresh
       });
       this.evaluationSummary = res?.evaluationSummary ?? null;
+      console.group(`📊 [Faculty] Evaluation Summary — internshipId: ${internshipId}`);
+      console.log('Raw response:', res);
+      if (this.evaluationSummary) {
+        console.log('Faculty Marks :', this.evaluationSummary.facultyMarks, '/', this.evaluationSummary.maximumMarks?.faculty ?? 40);
+        console.log('Site Marks    :', this.evaluationSummary.siteMarks,    '/', this.evaluationSummary.maximumMarks?.site    ?? 40);
+        console.log('Office Marks  :', this.evaluationSummary.officeMarks,  '/', this.evaluationSummary.maximumMarks?.office  ?? 20);
+        console.log('Total Marks   :', this.evaluationSummary.totalMarks,   '/', this.evaluationSummary.maximumMarks?.total   ?? 100);
+        console.log('Status        :', this.evaluationSummary.status);
+      } else {
+        console.warn('No evaluationSummary in response');
+      }
+      console.groupEnd();
     } catch (err: any) {
+      console.warn(`⚠️ [Faculty] Evaluation summary request failed (${err?.status}):`, err?.error?.message || err?.message);
       if (err?.status !== 404) {
         const msg = err?.error?.message || err?.message || 'Failed to load evaluation summary';
         this.toast.danger(msg);
@@ -754,7 +771,24 @@ export class FacultySupervisor {
         forceRefresh
       });
       this.evaluationForm = res?.evaluation ?? null;
+      console.group(`📄 [Faculty] Evaluation Form — internshipId: ${internshipId}`);
+      console.log('Raw response:', res);
+      if (this.evaluationForm) {
+        console.log('Type         :', this.evaluationForm.type);
+        console.log('Total Marks  :', this.evaluationForm.totalMarks, '/', this.evaluationForm.maxMarks);
+        console.log('Submitted At :', this.evaluationForm.submittedDate);
+        console.log('Evaluator    :', this.evaluationForm.evaluator?.name || this.evaluationForm.evaluator?.email);
+        if (this.evaluationForm.criteria?.length) {
+          console.table(this.evaluationForm.criteria.map((c: any) => ({
+            name: c.name || c.label, marks: c.marks ?? c.value ?? c.score
+          })));
+        }
+      } else {
+        console.warn('No evaluation form in response (not yet submitted or 404)');
+      }
+      console.groupEnd();
     } catch (err: any) {
+      console.warn(`⚠️ [Faculty] Evaluation form request failed (${err?.status}):`, err?.error?.message || err?.message);
       if (err?.status !== 404) {
         const msg = err?.error?.message || err?.message || 'Failed to load evaluation form';
         this.toast.danger(msg);
