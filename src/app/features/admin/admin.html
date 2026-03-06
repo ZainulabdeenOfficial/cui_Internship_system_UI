@@ -1597,25 +1597,25 @@
                   <div class="col-6 col-md-3">
                     <div class="border rounded p-2 text-center">
                       <small class="text-muted d-block">Internship Report</small>
-                      <span class="fw-bold fs-5">{{ (officeEvalResult.criteria)['internshipReport'] ?? '—' }}</span><small class="text-muted">/10</small>
+                      <span class="fw-bold fs-5">{{ $any(officeEvalResult.criteria)['internshipReport'] ?? '—' }}</span><small class="text-muted">/10</small>
                     </div>
                   </div>
                   <div class="col-6 col-md-3">
                     <div class="border rounded p-2 text-center">
                       <small class="text-muted d-block">Portfolio Evidence</small>
-                      <span class="fw-bold fs-5">{{ (officeEvalResult.criteria)['portfolioEvidence'] ?? '—' }}</span><small class="text-muted">/10</small>
+                      <span class="fw-bold fs-5">{{ $any(officeEvalResult.criteria)['portfolioEvidence'] ?? '—' }}</span><small class="text-muted">/10</small>
                     </div>
                   </div>
                   <div class="col-6 col-md-3">
                     <div class="border rounded p-2 text-center">
                       <small class="text-muted d-block">Time Management</small>
-                      <span class="fw-bold fs-5">{{ (officeEvalResult.criteria)['timeManagement'] ?? '—' }}</span><small class="text-muted">/10</small>
+                      <span class="fw-bold fs-5">{{ $any(officeEvalResult.criteria)['timeManagement'] ?? '—' }}</span><small class="text-muted">/10</small>
                     </div>
                   </div>
                   <div class="col-6 col-md-3">
                     <div class="border rounded p-2 text-center">
                       <small class="text-muted d-block">Overall Impact</small>
-                      <span class="fw-bold fs-5">{{ (officeEvalResult.criteria)['overallInternshipImpact'] ?? '—' }}</span><small class="text-muted">/10</small>
+                      <span class="fw-bold fs-5">{{ $any(officeEvalResult.criteria)['overallInternshipImpact'] ?? '—' }}</span><small class="text-muted">/10</small>
                     </div>
                   </div>
                 </div>
