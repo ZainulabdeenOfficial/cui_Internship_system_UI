@@ -6,7 +6,7 @@ import { ToastService } from '../../shared/toast/toast.service';
 import { ActivatedRoute, Router } from '@angular/router';
 import { PaginatePipe } from '../../shared/pagination/paginate.pipe';
 import { PaginatorComponent } from '../../shared/pagination/paginator';
-import { FacultyService, FacultyProfile } from '../../shared/services/faculty.service';
+import { FacultyService, FacultyProfile, FacultyInternship } from '../../shared/services/faculty.service';
 
 @Component({
   selector: 'app-faculty-supervisor',
@@ -22,6 +22,7 @@ export class FacultySupervisor {
   constructor(private store: StoreService, private toast: ToastService, private route: ActivatedRoute, private router: Router, private facultyApi: FacultyService) {
     // Pre-load APEX B requests on initialization for instant display
     this.loadStudentRequests();
+    this.loadFacultyInternships();
     
     try {
       this.route.queryParamMap.subscribe(p => {
@@ -248,6 +249,29 @@ export class FacultySupervisor {
   loadingRequests = false;
   requestFilter: 'all' | 'pending' | 'approved' | 'rejected' = 'all';
   requestSearch = '';
+
+  // Faculty internships from GET /api/faculty/internships
+  facultyInternships: FacultyInternship[] = [];
+  loadingFacultyInternships = false;
+  private hasLoadedInternshipsOnce = false;
+
+  async loadFacultyInternships(forceRefresh = false) {
+    if (this.loadingFacultyInternships) return;
+    this.loadingFacultyInternships = true;
+    try {
+      const res = await this.facultyApi.getFacultyInternships('all', {
+        skipGlobalLoading: this.hasLoadedInternshipsOnce,
+        forceRefresh
+      });
+      this.facultyInternships = res?.data ?? [];
+      this.hasLoadedInternshipsOnce = true;
+    } catch (err: any) {
+      // Non-critical — degrade gracefully if endpoint unavailable
+      console.warn('[Faculty] Could not load faculty internships:', err?.error?.message || err?.message);
+    } finally {
+      this.loadingFacultyInternships = false;
+    }
+  }
   currentFormsSubTab: 'apexA' | 'apexB' = 'apexA';
   processingItems = new Set<string>(); // Track which items are being processed
   
@@ -587,12 +611,15 @@ export class FacultySupervisor {
   /** Select a student in the Marks tab and load their evaluation data. */
   selectStudentForMarks(student: any) {
     this.selectedStudentForMarks = student;
-    // Prefer internshipId from APEX B request data (most reliable), then store/other fields
-    const apexBMatch = this.appexBRequests.find(
-      item => (item.student?.id === student.id || item.studentId === student.id || item.id === student.apexBId) &&
-               (item.facultyVerified === true || item.status === 'approved' || item.adminApprovalStatus === 'APPROVED')
-    );
-    const internshipId = apexBMatch?.internshipId || student?.internshipId || student?.apexBInternshipId || '';
+    // Prefer direct internshipId (from /api/faculty/internships), then fall back to APEX B lookup
+    let internshipId = student?.internshipId || '';
+    if (!internshipId) {
+      const apexBMatch = this.appexBRequests.find(
+        item => (item.student?.id === student.id || item.studentId === student.id) &&
+                 (item.facultyVerified === true || item.status === 'approved' || item.adminApprovalStatus === 'APPROVED')
+      );
+      internshipId = apexBMatch?.internshipId || student?.apexBInternshipId || '';
+    }
     this.facultyMarksForm = { internshipId, marks: 0 };
     this.evaluationSummary = null;
     this.evaluationForm = null;
@@ -604,15 +631,37 @@ export class FacultySupervisor {
 
   /**
    * Returns students for the Marks tab by combining:
-   * 1. Assigned students from local store (filtered by facultyId)
-   * 2. Students from APEX B verification requests that are approved
-   * This ensures students enrolled via API appear even if local store doesn't have facultyId set.
+   * 1. Internships from GET /api/faculty/internships (most reliable — direct internshipId)
+   * 2. Students from APEX B verification requests that are approved (fallback)
+   * 3. Assigned students from local store (fallback)
    */
   marksTabStudents(): Array<any> {
+    // Primary: real internship records from /api/faculty/internships
+    if (this.facultyInternships.length > 0) {
+      const seen = new Set<string>();
+      return this.facultyInternships
+        .filter(i => i.student?.id && !seen.has(i.student.id) && seen.add(i.student.id) !== undefined)
+        .map(i => ({
+          id: i.student.id,
+          name: i.student.name,
+          email: i.student.email,
+          registrationNo: i.student.regNo,
+          internshipMode: i.type,
+          status: i.status,
+          startDate: i.startDate,
+          endDate: i.endDate,
+          internshipId: i.id,
+          finalResult: i.finalResult,
+          site: i.site,
+          faculty: i.faculty,
+          approved: i.status !== 'PENDING'
+        }));
+    }
+
+    // Fallback: enrich local store students with internship IDs from APEX B requests
     const fromStore = this.myStudents();
     const storeIds = new Set(fromStore.map((s: any) => s.id));
 
-    // Enrich store students with internship IDs from APEX B requests
     const enriched = fromStore.map((s: any) => {
       const apexBMatch = this.appexBRequests.find(
         item => (item.student?.id === s.id || item.studentId === s.id) &&
@@ -636,7 +685,7 @@ export class FacultySupervisor {
         approved: true,
         marks: undefined,
         internshipId: item.internshipId || '',
-        apexBId: item.id  // keep APEX B record id for lookup
+        apexBId: item.id
       }))
       .filter(s => !!s.id);
 

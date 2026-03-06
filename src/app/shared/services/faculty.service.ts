@@ -3,6 +3,33 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { AuthService } from './auth.service';
 
+export interface FacultyInternship {
+  id: string;
+  studentId: string;
+  facultyId: string;
+  siteId?: string;
+  type: string;
+  startDate?: string;
+  endDate?: string;
+  status: string;
+  createdAt?: string;
+  updatedAt?: string;
+  student: { id: string; name: string; email: string; regNo: string };
+  faculty?: { id: string; name: string; email: string };
+  site?: { id: string; name: string; email: string; company?: { id: string; name: string; industry: string } };
+  finalResult?: {
+    id: string;
+    internshipId: string;
+    facultyMarks: number;
+    siteMarks: number;
+    officeMarks: number;
+    presentationMarks: number;
+    totalMarks: number;
+    status: string;
+    hodSignatureUrl?: string;
+  };
+}
+
 export type FacultyProfile = {
   id?: string;
   userId?: string;
@@ -266,5 +293,25 @@ export class FacultyService {
     const res = await firstValueFrom(this.http.get<any>(url, { headers: await this.authHeaders(false, options) }));
     this.writeCache(key, res, options?.cacheTtlMs ?? 60 * 1000);
     return res;
+  }
+
+  /**
+   * GET /api/faculty/internships?status=all
+   * Returns internships where the authenticated faculty user is assigned as faculty supervisor.
+   * Includes student, site, company, and finalResult data.
+   */
+  async getFacultyInternships(status = 'all', options?: FacultyRequestOptions): Promise<{ message?: string; data?: FacultyInternship[] }> {
+    const key = this.cacheKey(`internships?status=${status}`);
+    const cached = this.readCache<{ message?: string; data?: FacultyInternship[] }>(key, options);
+    if (cached) return cached;
+
+    const url = `${this.base}/api/faculty/internships?status=${encodeURIComponent(status)}`;
+    const res = await firstValueFrom(this.http.get<any>(url, { headers: await this.authHeaders(false, options) }));
+    this.writeCache(key, res, options?.cacheTtlMs ?? 2 * 60 * 1000);
+    return res;
+  }
+
+  clearFacultyInternshipsCache(): void {
+    this.clearCacheByPrefix('internships?');
   }
 }

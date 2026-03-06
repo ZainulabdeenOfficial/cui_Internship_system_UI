@@ -711,9 +711,15 @@
 
   <!-- ① Assigned Students List ───────────────────────────────── -->
   <div class="card mb-3">
-    <div class="card-header d-flex justify-content-between align-items-center">
+    <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
       <span><i class="bi bi-people-fill me-2"></i>My Assigned Students</span>
-      <span class="badge text-bg-primary">{{ marksTabStudents().length }} student(s)</span>
+      <div class="d-flex align-items-center gap-2">
+        <span class="badge text-bg-primary">{{ marksTabStudents().length }} student(s)</span>
+        <button class="btn btn-sm btn-outline-secondary" (click)="loadFacultyInternships(true)" [disabled]="loadingFacultyInternships">
+          <span *ngIf="loadingFacultyInternships" class="spinner-border spinner-border-sm me-1"></span>
+          {{ loadingFacultyInternships ? 'Loading…' : 'Refresh' }}
+        </button>
+      </div>
     </div>
     <div class="card-body p-0">
       <div class="table-responsive">
@@ -722,8 +728,9 @@
             <tr>
               <th>Student</th>
               <th>Reg. No</th>
-              <th>Mode</th>
+              <th>Type / Mode</th>
               <th>Faculty Marks</th>
+              <th>Total Marks</th>
               <th>Status</th>
               <th>Actions</th>
             </tr>
@@ -739,21 +746,29 @@
                 <td>
                   <span class="badge"
                     [class.text-bg-secondary]="!s.internshipMode"
-                    [class.text-bg-info]="s.internshipMode==='Virtual'"
-                    [class.text-bg-primary]="s.internshipMode==='OnSite'"
-                    [class.text-bg-success]="s.internshipMode==='Fiverr' || s.internshipMode==='Upwork'">
+                    [class.text-bg-info]="s.internshipMode==='Virtual' || s.internshipMode==='VIRTUAL'"
+                    [class.text-bg-primary]="s.internshipMode==='OnSite' || s.internshipMode==='ONSITE'"
+                    [class.text-bg-success]="s.internshipMode==='Fiverr' || s.internshipMode==='Upwork' || s.internshipMode==='FREELANCE'">
                     {{ s.internshipMode || '—' }}
                   </span>
                 </td>
                 <td>
-                  <span class="fw-semibold">{{ s.marks?.faculty ?? '—' }}</span>
+                  <span class="fw-semibold">{{ s.finalResult?.facultyMarks ?? s.marks?.faculty ?? '—' }}</span>
                   <small class="text-muted"> /40</small>
                 </td>
                 <td>
+                  <span class="fw-semibold" *ngIf="s.finalResult">
+                    {{ s.finalResult.totalMarks ?? '—' }}
+                  </span>
+                  <span *ngIf="!s.finalResult" class="text-muted">—</span>
+                </td>
+                <td>
                   <span class="badge"
-                    [class.text-bg-success]="s.approved"
-                    [class.text-bg-warning]="!s.approved">
-                    {{ s.approved ? 'Approved' : 'Pending' }}
+                    [class.text-bg-success]="s.status === 'APPROVED' || s.approved"
+                    [class.text-bg-info]="s.status === 'ACTIVE'"
+                    [class.text-bg-secondary]="s.status === 'COMPLETED'"
+                    [class.text-bg-warning]="s.status === 'PENDING' || (!s.status && !s.approved)">
+                    {{ s.status || (s.approved ? 'Approved' : 'Pending') }}
                   </span>
                 </td>
                 <td>
@@ -765,7 +780,7 @@
               </tr>
             }
             @if (marksTabStudents().length === 0) {
-              <tr><td colspan="6" class="text-center text-muted py-3">
+              <tr><td colspan="7" class="text-center text-muted py-3">
                 No students assigned to you. Go to the <strong>Student Requests</strong> tab to verify APEX B forms first.
               </td></tr>
             }
