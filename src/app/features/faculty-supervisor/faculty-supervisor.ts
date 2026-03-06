@@ -644,6 +644,30 @@ export class FacultySupervisor {
     this.facultyMarksForm = { internshipId, marks: 0 };
     this.evaluationSummary = null;
     this.evaluationForm = null;
+
+    console.group(`👤 [Faculty Marks Tab] Student selected: ${student?.name}`);
+    console.log('Student ID      :', student?.id);
+    console.log('Reg. No         :', student?.registrationNo);
+    console.log('Internship ID   :', internshipId || '⚠️ NOT FOUND — cannot load evaluations');
+    console.log('Internship Type :', student?.internshipMode);
+    console.log('Status          :', student?.status);
+    if (student?.finalResult) {
+      console.group('🏆 finalResult (inline from /api/faculty/internships)');
+      console.log('Faculty Marks :', student.finalResult.facultyMarks, '/ 40');
+      console.log('Site Marks    :', student.finalResult.siteMarks,    '/ 40');
+      console.log('Office Marks  :', student.finalResult.officeMarks,  '/ 20');
+      console.log('Total Marks   :', student.finalResult.totalMarks,   '/ 100');
+      console.log('Status        :', student.finalResult.status);
+      console.groupEnd();
+    } else {
+      console.warn('No finalResult on student record (marks not yet finalized)');
+    }
+    if (internshipId) {
+      console.log(`📡 Will call GET /api/faculty/evaluation-summary?internshipId=${internshipId}`);
+      console.log(`📡 Will call GET /api/faculty/evaluation-form?internshipId=${internshipId}`);
+    }
+    console.groupEnd();
+
     if (internshipId) {
       this.loadEvaluationSummary(internshipId, true);
       this.loadEvaluationFormData(internshipId, true);
