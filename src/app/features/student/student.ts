@@ -1322,6 +1322,17 @@ export class Student implements OnDestroy {
     try {
       const typeFilter = this.evaluationTypeFilter === 'all' ? undefined : this.evaluationTypeFilter;
 
+      // Log the exact API URLs being called
+      console.group(`🌐 [Student Evaluations] API calls for internshipId: ${idToUse}`);
+      console.log(`📡 GET /api/site/evaluations?internshipId=${idToUse}${typeFilter ? '&type=' + typeFilter : ''}`);
+      if (!typeFilter) {
+        console.log(`📡 GET /api/faculty/evaluation-form?internshipId=${idToUse}`);
+        console.log(`📡 GET /api/admin/office-evaluation?internshipId=${idToUse}`);
+      } else {
+        console.log('⏭️  Faculty & Office evaluation requests skipped (type filter active:', typeFilter, ')');
+      }
+      console.groupEnd();
+
       // Fetch from all three sources in parallel
       const [siteResult, facultyResult, officeResult] = await Promise.allSettled([
         this.studentApi.getEvaluations(idToUse, typeFilter, { skipGlobalLoading: true, forceRefresh }),

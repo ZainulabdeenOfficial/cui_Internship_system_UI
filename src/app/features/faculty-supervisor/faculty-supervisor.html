@@ -714,6 +714,7 @@
     <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
       <span><i class="bi bi-people-fill me-2"></i>My Assigned Students</span>
       <div class="d-flex align-items-center gap-2">
+        <code class="small text-muted border rounded px-2 py-1 bg-light">GET /api/faculty/internships?status=all</code>
         <span class="badge text-bg-primary">{{ marksTabStudents().length }} student(s)</span>
         <button class="btn btn-sm btn-outline-secondary" (click)="loadFacultyInternships(true)" [disabled]="loadingFacultyInternships">
           <span *ngIf="loadingFacultyInternships" class="spinner-border spinner-border-sm me-1"></span>
