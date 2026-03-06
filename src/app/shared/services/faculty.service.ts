@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { AuthService } from './auth.service';
+import { environment } from '../../../environments/environment';
 
 export interface FacultyInternship {
   id: string;
@@ -54,7 +55,7 @@ export interface FacultyRequestOptions {
 
 @Injectable({ providedIn: 'root' })
 export class FacultyService {
-  private base = 'https://cui-internship-system-git-dev-zas-projects-7d9cf03b.vercel.app';
+  private base = environment.apiBaseUrl;
   private readonly cachePrefix = 'faculty.api.cache.';
   private readonly defaultCacheTtlMs = 2 * 60 * 1000;
   constructor(private http: HttpClient, private auth: AuthService) {}
