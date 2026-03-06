@@ -615,7 +615,7 @@ export class FacultySupervisor {
   } | null = null;
   loadingEvaluationSummary = false;
 
-  // ── Faculty Evaluation Form (GET /api/faculty/evaluation-form) ─────────────
+  // ── Faculty Evaluation Form (POST/GET /api/faculty/evaluation-form) ─────────
   evaluationForm: {
     id?: string;
     type?: string;
@@ -628,6 +628,83 @@ export class FacultySupervisor {
   } | null = null;
   loadingEvaluationForm = false;
   selectedStudentForMarks: any = null;
+
+  // 6-criteria evaluation form fields (each 1-10)
+  evalFormCriteria = {
+    platformActivityEngagement: 0,
+    completionOfInternshipProjects: 0,
+    earningsAchieved: 0,
+    skillDevelopmentLearning: 0,
+    clientRatingAndFeedback: 0,
+    professionalismCommunication: 0
+  };
+  evalFormComments = '';
+  submittingEvalForm = false;
+
+  // Marks tab student list filters
+  marksSearch = '';
+  marksStatusFilter = 'all';
+
+  readonly criteriaLabels: { key: string; label: string }[] = [
+    { key: 'platformActivityEngagement',    label: 'Platform Activity & Engagement' },
+    { key: 'completionOfInternshipProjects', label: 'Completion of Internship Project(s)' },
+    { key: 'earningsAchieved',              label: 'Earnings Achieved' },
+    { key: 'skillDevelopmentLearning',      label: 'Skill Development & Learning' },
+    { key: 'clientRatingAndFeedback',       label: 'Client Rating and Feedback' },
+    { key: 'professionalismCommunication',  label: 'Professionalism & Communication' }
+  ];
+
+  filteredMarksTabStudents(): any[] {
+    const list = this.marksTabStudents();
+    const search = this.marksSearch.trim().toLowerCase();
+    const filter = this.marksStatusFilter;
+    return list.filter(s => {
+      if (filter !== 'all') {
+        const status = (s.status || '').toUpperCase();
+        if (filter === 'active'     && status !== 'ACTIVE')     return false;
+        if (filter === 'completed'  && status !== 'COMPLETED')  return false;
+        if (filter === 'approved'   && status !== 'APPROVED' && !s.approved) return false;
+        if (filter === 'pending'    && (s.approved || (status && status !== 'PENDING'))) return false;
+      }
+      if (search) {
+        const name  = (s.name || '').toLowerCase();
+        const reg   = (s.registrationNo || '').toLowerCase();
+        const email = (s.email || '').toLowerCase();
+        if (!name.includes(search) && !reg.includes(search) && !email.includes(search)) return false;
+      }
+      return true;
+    });
+  }
+
+  isCriteriaValid(): boolean {
+    return Object.values(this.evalFormCriteria).every(v => v >= 1 && v <= 10);
+  }
+
+  criteriaTotal(): number {
+    return Object.values(this.evalFormCriteria).reduce((sum, v) => sum + (Number(v) || 0), 0);
+  }
+
+  async submitEvaluationFormWithCriteria() {
+    const id = this.facultyMarksForm.internshipId.trim();
+    if (!id) { this.toast.warning('Enter the internship ID first'); return; }
+    if (!this.isCriteriaValid()) { this.toast.warning('Each criterion must be between 1 and 10'); return; }
+    this.submittingEvalForm = true;
+    try {
+      const res = await this.facultyApi.submitEvaluationForm({
+        internshipId: id,
+        criteria: { ...this.evalFormCriteria },
+        comments: this.evalFormComments || undefined
+      });
+      this.toast.success(res?.message || 'Faculty evaluation form submitted successfully');
+      this.evaluationForm = res?.evaluation ?? null;
+      await this.loadEvaluationSummary(id, true);
+    } catch (err: any) {
+      const msg = err?.error?.message || err?.message || 'Failed to submit evaluation form';
+      this.toast.danger(msg);
+    } finally {
+      this.submittingEvalForm = false;
+    }
+  }
 
   /** Select a student in the Marks tab and load their evaluation data. */
   selectStudentForMarks(student: any) {
