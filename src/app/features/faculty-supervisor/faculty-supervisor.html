@@ -804,6 +804,54 @@
     </div>
     <div class="card-body">
 
+      <!-- Final Result summary from internship record (no extra API call needed) -->
+      @if (selectedStudentForMarks?.finalResult) {
+      <div class="card border-warning mb-3">
+        <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
+          <span><i class="bi bi-trophy-fill me-2"></i>Final Result (from Internship Record)</span>
+          <span class="badge"
+                [class.text-bg-success]="selectedStudentForMarks.finalResult.status === 'pass'"
+                [class.text-bg-danger]="selectedStudentForMarks.finalResult.status !== 'pass'">
+            {{ selectedStudentForMarks.finalResult.status | titlecase }}
+          </span>
+        </div>
+        <div class="card-body">
+          <div class="row text-center g-2">
+            <div class="col-6 col-md-3">
+              <div class="border rounded p-2">
+                <div class="fw-bold fs-5">{{ selectedStudentForMarks.finalResult.facultyMarks ?? '—' }}</div>
+                <small class="text-muted">Faculty / 40</small>
+              </div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div class="border rounded p-2">
+                <div class="fw-bold fs-5">{{ selectedStudentForMarks.finalResult.siteMarks ?? '—' }}</div>
+                <small class="text-muted">Site / 40</small>
+              </div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div class="border rounded p-2">
+                <div class="fw-bold fs-5">{{ selectedStudentForMarks.finalResult.officeMarks ?? '—' }}</div>
+                <small class="text-muted">Office / 20</small>
+              </div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div class="border rounded p-2 bg-light">
+                <div class="fw-bold fs-5 text-primary">{{ selectedStudentForMarks.finalResult.totalMarks ?? '—' }}</div>
+                <small class="text-muted">Total / 100</small>
+              </div>
+            </div>
+          </div>
+          @if (selectedStudentForMarks.finalResult.presentationMarks != null) {
+          <div class="mt-2 text-center">
+            <small class="text-muted">Presentation Marks: </small>
+            <strong>{{ selectedStudentForMarks.finalResult.presentationMarks }}</strong>
+          </div>
+          }
+        </div>
+      </div>
+      }
+
       <!-- Internship ID input + Submit Marks -->
       <div class="card border mb-3">
         <div class="card-header fw-semibold bg-light">Submit Faculty Marks (0 – 40)</div>

@@ -1339,32 +1339,60 @@ export class Student implements OnDestroy {
 
       const allEvaluations: any[] = [];
 
+      // ── RAW API RESPONSES ──────────────────────────────────────────────────
+      console.group(`📊 [Student Evaluations] Raw API responses for internshipId: ${idToUse}`);
+
       // Site evaluations
       if (siteResult.status === 'fulfilled' && siteResult.value) {
         const evals = Array.isArray(siteResult.value?.evaluations) ? siteResult.value.evaluations : [];
+        console.log(`🏢 Site evaluations (${evals.length}):`, evals);
         allEvaluations.push(...evals);
+      } else if (siteResult.status === 'rejected') {
+        console.warn('🏢 Site evaluations — request failed:', siteResult.reason);
+      } else {
+        console.log('🏢 Site evaluations — no data returned:', siteResult.value);
       }
 
       // Faculty evaluation form
       if (facultyResult.status === 'fulfilled' && facultyResult.value?.evaluation) {
         const fev = facultyResult.value.evaluation;
+        console.log('🎓 Faculty evaluation form:', fev);
         // Only add if not already present
         if (!allEvaluations.some(e => e.type === 'faculty' || e.id === fev.id)) {
           allEvaluations.push({ ...fev, type: fev.type || 'faculty' });
         }
+      } else if (facultyResult.status === 'rejected') {
+        console.warn('🎓 Faculty evaluation form — request failed:', facultyResult.reason);
+      } else {
+        console.log('🎓 Faculty evaluation form — no data:', facultyResult.status === 'fulfilled' ? facultyResult.value : '(skipped by filter)');
       }
 
       // Admin/office evaluation form
       if (officeResult.status === 'fulfilled' && officeResult.value?.evaluation) {
         const oev = officeResult.value.evaluation;
+        console.log('🏛️ Office evaluation form:', oev);
         if (!allEvaluations.some(e => e.type === 'office' || e.id === oev.id)) {
           allEvaluations.push({ ...oev, type: oev.type || 'office' });
         }
+      } else if (officeResult.status === 'rejected') {
+        console.warn('🏛️ Office evaluation form — request failed:', officeResult.reason);
+      } else {
+        console.log('🏛️ Office evaluation form — no data:', officeResult.status === 'fulfilled' ? officeResult.value : '(skipped by filter)');
       }
+
+      console.log(`✅ Merged evaluation list (${allEvaluations.length} total):`, allEvaluations);
+      console.table(allEvaluations.map(e => ({
+        id: e.id,
+        type: e.type,
+        totalMarks: e.totalMarks ?? e.facultyMarksScaled ?? e.officeMarksScaled ?? '-',
+        submittedAt: e.submittedAt || e.createdAt || '-',
+        submittedBy: e.submittedBy?.name || e.evaluator?.name || '-'
+      })));
+      console.groupEnd();
+      // ──────────────────────────────────────────────────────────────────────
 
       this.evaluations = allEvaluations;
       this.evaluationsLoadedOnce = true;
-      console.log(`✅ [Student] Evaluations loaded (${this.evaluations.length}):`, this.evaluations);
       // Also refresh the evaluation summary, propagating forceRefresh
       this.loadEvaluationSummary(forceRefresh);
     } catch (err: any) {

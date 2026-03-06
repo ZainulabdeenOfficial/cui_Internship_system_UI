@@ -51,6 +51,8 @@ export class FacultySupervisor {
     if (tab === 'marks') {
       // Load APEX B requests first to populate marksTabStudents() with internship IDs
       if (!this.hasLoadedRequestsOnce) this.loadStudentRequests();
+      // Ensure internships are loaded (guard inside prevents double-loading)
+      this.loadFacultyInternships();
       this.loadEvaluationSummaryForSelected();
     }
     // Requests are pre-loaded on init, no need to reload on tab click
@@ -265,6 +267,25 @@ export class FacultySupervisor {
       });
       this.facultyInternships = res?.data ?? [];
       this.hasLoadedInternshipsOnce = true;
+      console.group('📋 [Faculty Internships] API Response');
+      console.log('Raw response:', res);
+      console.log('Internships count:', this.facultyInternships.length);
+      if (this.facultyInternships.length > 0) {
+        console.table(this.facultyInternships.map(i => ({
+          internshipId: i.id,
+          student: i.student?.name,
+          regNo: i.student?.regNo,
+          type: i.type,
+          status: i.status,
+          facultyMarks: i.finalResult?.facultyMarks ?? '-',
+          siteMarks: i.finalResult?.siteMarks ?? '-',
+          totalMarks: i.finalResult?.totalMarks ?? '-',
+          hasResult: !!i.finalResult
+        })));
+      } else {
+        console.warn('No internships returned from API (data array is empty)');
+      }
+      console.groupEnd();
     } catch (err: any) {
       // Non-critical — degrade gracefully if endpoint unavailable
       console.warn('[Faculty] Could not load faculty internships:', err?.error?.message || err?.message);
