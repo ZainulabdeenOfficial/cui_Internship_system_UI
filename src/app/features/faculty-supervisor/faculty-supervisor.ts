@@ -759,6 +759,7 @@ export class FacultySupervisor {
     try {
       const res = await this.facultyApi.getEvaluationSummary(internshipId, {
         skipGlobalLoading: true,
+        silentError: true,
         forceRefresh
       });
       this.evaluationSummary = res?.evaluationSummary ?? null;
@@ -776,12 +777,7 @@ export class FacultySupervisor {
       console.groupEnd();
     } catch (err: any) {
       console.warn(`⚠️ [Faculty] Evaluation summary request failed (${err?.status}):`, err?.error?.message || err?.message);
-      if (err?.status !== 404) {
-        const msg = err?.error?.message || err?.message || 'Failed to load evaluation summary';
-        this.toast.danger(msg);
-      } else {
-        this.evaluationSummary = null;
-      }
+      this.evaluationSummary = null;
     } finally {
       this.loadingEvaluationSummary = false;
     }
@@ -794,6 +790,7 @@ export class FacultySupervisor {
     try {
       const res = await this.facultyApi.getEvaluationForm(internshipId, {
         skipGlobalLoading: true,
+        silentError: true,
         forceRefresh
       });
       this.evaluationForm = res?.evaluation ?? null;
@@ -815,12 +812,7 @@ export class FacultySupervisor {
       console.groupEnd();
     } catch (err: any) {
       console.warn(`⚠️ [Faculty] Evaluation form request failed (${err?.status}):`, err?.error?.message || err?.message);
-      if (err?.status !== 404) {
-        const msg = err?.error?.message || err?.message || 'Failed to load evaluation form';
-        this.toast.danger(msg);
-      } else {
-        this.evaluationForm = null;
-      }
+      this.evaluationForm = null;
     } finally {
       this.loadingEvaluationForm = false;
     }
@@ -935,14 +927,12 @@ export class FacultySupervisor {
     try {
       const res = await this.facultyApi.getEvaluationSummary(internshipId, {
         skipGlobalLoading: true,
+        silentError: true,
         forceRefresh: true
       });
       this.viewModalSummary = res?.evaluationSummary ?? null;
     } catch (err: any) {
-      if ((err?.status ?? 0) !== 404) {
-        const msg = err?.error?.message || err?.message || 'Failed to load evaluation summary';
-        this.toast.danger(msg);
-      }
+      console.warn(`⚠️ [Faculty] View modal evaluation summary failed (${err?.status}):`, err?.error?.message || err?.message);
     } finally {
       this.viewModalLoading = false;
     }
