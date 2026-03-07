@@ -824,8 +824,7 @@ export class FacultySupervisor {
     }
   }
 
-  async submitFacultyMarks() {
-    const id = this.facultyMarksForm.internshipId.trim();
+  async submitFacultyMarks() {    const id = this.facultyMarksForm.internshipId.trim();
     if (!id) { this.toast.warning('Enter the internship ID'); return; }
     const marks = Number(this.facultyMarksForm.marks);
     if (isNaN(marks) || marks < 0 || marks > 40) {
@@ -848,5 +847,42 @@ export class FacultySupervisor {
     } finally {
       this.submittingFacultyMarks = false;
     }
+  }
+
+  // ── View Evaluation Summary Modal ──────────────────────────────────────────
+  showViewModal = false;
+  viewModalStudent: any = null;
+  viewModalSummary: any = null;
+  viewModalLoading = false;
+
+  async openViewModal(student: any) {
+    this.viewModalStudent = student;
+    this.viewModalSummary = null;
+    this.showViewModal = true;
+
+    const internshipId = student?.internshipId || '';
+    if (!internshipId) return;
+
+    this.viewModalLoading = true;
+    try {
+      const res = await this.facultyApi.getEvaluationSummary(internshipId, {
+        skipGlobalLoading: true,
+        forceRefresh: true
+      });
+      this.viewModalSummary = res?.evaluationSummary ?? null;
+    } catch (err: any) {
+      if ((err?.status ?? 0) !== 404) {
+        const msg = err?.error?.message || err?.message || 'Failed to load evaluation summary';
+        this.toast.danger(msg);
+      }
+    } finally {
+      this.viewModalLoading = false;
+    }
+  }
+
+  closeViewModal() {
+    this.showViewModal = false;
+    this.viewModalStudent = null;
+    this.viewModalSummary = null;
   }
 }

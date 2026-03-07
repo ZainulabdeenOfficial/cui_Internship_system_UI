@@ -714,7 +714,6 @@
     <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
       <span><i class="bi bi-people-fill me-2"></i>My Assigned Students</span>
       <div class="d-flex align-items-center gap-2">
-        <code class="small text-muted border rounded px-2 py-1 bg-light">GET /api/faculty/internships?status=all</code>
         <span class="badge text-bg-primary">{{ marksTabStudents().length }} student(s)</span>
         <button class="btn btn-sm btn-outline-secondary" (click)="loadFacultyInternships(true)" [disabled]="loadingFacultyInternships">
           <span *ngIf="loadingFacultyInternships" class="spinner-border spinner-border-sm me-1"></span>
@@ -773,10 +772,16 @@
                   </span>
                 </td>
                 <td>
-                  <button class="btn btn-sm btn-outline-primary"
-                          (click)="selectStudentForMarks(s)">
-                    <i class="bi bi-pencil-square me-1"></i>Add / View Marks
-                  </button>
+                  <div class="d-flex gap-1">
+                    <button class="btn btn-sm btn-outline-info"
+                            (click)="openViewModal(s)">
+                      <i class="bi bi-eye me-1"></i>View
+                    </button>
+                    <button class="btn btn-sm btn-outline-primary"
+                            (click)="selectStudentForMarks(s)">
+                      <i class="bi bi-pencil-square me-1"></i>Marks
+                    </button>
+                  </div>
                 </td>
               </tr>
             }
@@ -853,19 +858,19 @@
       </div>
       }
 
-      <!-- Internship ID input + Submit Marks -->
+      <!-- Submit Marks -->
       <div class="card border mb-3">
         <div class="card-header fw-semibold bg-light">Submit Faculty Marks (0 – 40)</div>
         <div class="card-body">
+          <!-- Hidden internship ID binding -->
+          <input type="hidden" [(ngModel)]="facultyMarksForm.internshipId" name="facultyMarksInternshipId" />
           <div class="row g-3 align-items-end">
             <div class="col-md-5">
-              <label class="form-label">Internship ID
-                <small class="text-muted">(auto-filled if available)</small>
-              </label>
-              <input type="text" class="form-control" placeholder="Enter internship ID"
-                     [(ngModel)]="facultyMarksForm.internshipId"
-                     name="facultyMarksInternshipId"
-                     (blur)="loadEvaluationSummaryForSelected()" />
+              <label class="form-label">Student</label>
+              <div class="border rounded px-3 py-2 bg-light">
+                <div class="fw-semibold">{{ selectedStudentForMarks?.name || '—' }}</div>
+                <small class="text-muted">{{ selectedStudentForMarks?.registrationNo || selectedStudentForMarks?.regNo || 'No Reg. No' }}</small>
+              </div>
             </div>
             <div class="col-md-3">
               <label class="form-label">Marks <small class="text-muted">(max 40)</small></label>
@@ -1015,4 +1020,124 @@
   </div>
   }
 
+</div>
+
+<!-- ── View Evaluation Summary Modal ──────────────────────────── -->
+<div class="modal fade show d-block" style="background:rgba(0,0,0,.5)" *ngIf="showViewModal" role="dialog" aria-modal="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="bi bi-person-badge me-2"></i>
+          {{ viewModalStudent?.name || 'Student' }} — Evaluation Summary
+        </h5>
+        <button type="button" class="btn-close" (click)="closeViewModal()"></button>
+      </div>
+      <div class="modal-body">
+
+        <!-- Student Info -->
+        <div class="row g-3 mb-3">
+          <div class="col-md-4">
+            <small class="text-muted d-block">Student Name</small>
+            <strong>{{ viewModalStudent?.name || '—' }}</strong>
+          </div>
+          <div class="col-md-4">
+            <small class="text-muted d-block">Reg. No</small>
+            <strong>{{ viewModalStudent?.registrationNo || viewModalStudent?.regNo || '—' }}</strong>
+          </div>
+          <div class="col-md-4">
+            <small class="text-muted d-block">Email</small>
+            <strong>{{ viewModalStudent?.email || '—' }}</strong>
+          </div>
+          <div class="col-md-4">
+            <small class="text-muted d-block">Internship Type</small>
+            <strong>{{ viewModalStudent?.internshipMode || viewModalStudent?.type || '—' }}</strong>
+          </div>
+          <div class="col-md-4">
+            <small class="text-muted d-block">Status</small>
+            <span class="badge"
+              [class.text-bg-success]="viewModalStudent?.status === 'APPROVED' || viewModalStudent?.approved"
+              [class.text-bg-info]="viewModalStudent?.status === 'ACTIVE'"
+              [class.text-bg-secondary]="viewModalStudent?.status === 'COMPLETED'"
+              [class.text-bg-warning]="!viewModalStudent?.status && !viewModalStudent?.approved">
+              {{ viewModalStudent?.status || (viewModalStudent?.approved ? 'Approved' : 'Pending') }}
+            </span>
+          </div>
+          <div class="col-md-4" *ngIf="viewModalStudent?.startDate || viewModalStudent?.endDate">
+            <small class="text-muted d-block">Duration</small>
+            <strong>{{ viewModalStudent?.startDate | date:'shortDate' }} – {{ viewModalStudent?.endDate | date:'shortDate' }}</strong>
+          </div>
+        </div>
+
+        <hr />
+
+        <!-- Loading -->
+        <div *ngIf="viewModalLoading" class="text-center py-4">
+          <span class="spinner-border text-primary"></span>
+          <p class="mt-2 text-muted">Loading evaluation summary…</p>
+        </div>
+
+        <!-- No internship ID warning -->
+        <div *ngIf="!viewModalLoading && !viewModalStudent?.internshipId" class="alert alert-warning">
+          <i class="bi bi-exclamation-triangle me-2"></i>
+          No internship record found for this student yet. Evaluation summary is unavailable.
+        </div>
+
+        <!-- Evaluation Summary -->
+        <div *ngIf="!viewModalLoading && viewModalSummary">
+          <h6 class="mb-3"><i class="bi bi-bar-chart-line me-2"></i>Evaluation Summary</h6>
+          <div class="row text-center g-3 mb-3">
+            <div class="col-6 col-md-3">
+              <div class="border rounded p-3">
+                <div class="fw-bold fs-3 text-primary">{{ viewModalSummary.facultyMarks ?? '—' }}</div>
+                <div class="text-muted small">Faculty</div>
+                <div class="text-muted small" *ngIf="viewModalSummary.maximumMarks?.faculty">max {{ viewModalSummary.maximumMarks.faculty }}</div>
+              </div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div class="border rounded p-3">
+                <div class="fw-bold fs-3 text-success">{{ viewModalSummary.siteMarks ?? '—' }}</div>
+                <div class="text-muted small">Site</div>
+                <div class="text-muted small" *ngIf="viewModalSummary.maximumMarks?.site">max {{ viewModalSummary.maximumMarks.site }}</div>
+              </div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div class="border rounded p-3">
+                <div class="fw-bold fs-3 text-info">{{ viewModalSummary.officeMarks ?? '—' }}</div>
+                <div class="text-muted small">Office</div>
+                <div class="text-muted small" *ngIf="viewModalSummary.maximumMarks?.office">max {{ viewModalSummary.maximumMarks.office }}</div>
+              </div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div class="border rounded p-3 bg-light">
+                <div class="fw-bold fs-3">{{ viewModalSummary.totalMarks ?? '—' }}</div>
+                <div class="text-muted small">Total</div>
+                <div class="text-muted small" *ngIf="viewModalSummary.maximumMarks?.total">max {{ viewModalSummary.maximumMarks.total }}</div>
+              </div>
+            </div>
+          </div>
+          <div class="text-center">
+            <span class="badge fs-6 px-4 py-2"
+              [class.text-bg-success]="viewModalSummary.status === 'pass'"
+              [class.text-bg-danger]="viewModalSummary.status !== 'pass'">
+              {{ viewModalSummary.status | titlecase }}
+            </span>
+          </div>
+        </div>
+
+        <!-- No summary yet -->
+        <div *ngIf="!viewModalLoading && !viewModalSummary && viewModalStudent?.internshipId" class="text-muted text-center py-3">
+          <i class="bi bi-hourglass me-2"></i>No evaluation summary found yet for this internship.
+        </div>
+
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline-primary"
+                (click)="selectStudentForMarks(viewModalStudent); closeViewModal()">
+          <i class="bi bi-pencil-square me-1"></i>Add / Edit Marks
+        </button>
+        <button class="btn btn-secondary" (click)="closeViewModal()">Close</button>
+      </div>
+    </div>
+  </div>
 </div>
