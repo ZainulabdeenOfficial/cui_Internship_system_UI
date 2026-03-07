@@ -281,29 +281,6 @@ export class FacultyService {
   }
 
   /**
-   * POST /api/faculty/evaluation-form
-   * Submit faculty evaluation form with 6 criteria (each 1-10, total 60, scaled to 40).
-   */
-  async submitEvaluationForm(payload: {
-    internshipId: string;
-    criteria: {
-      platformActivityEngagement: number;
-      completionOfInternshipProjects: number;
-      earningsAchieved: number;
-      skillDevelopmentLearning: number;
-      clientRatingAndFeedback: number;
-      professionalismCommunication: number;
-    };
-    comments?: string;
-  }): Promise<any> {
-    const url = `${this.base}/api/faculty/evaluation-form`;
-    const res = await firstValueFrom(this.http.post<any>(url, payload, { headers: await this.authHeaders(true) }));
-    this.clearCache(`eval-form-${payload.internshipId}`);
-    this.clearCache(`eval-summary-${payload.internshipId}`);
-    return res;
-  }
-
-  /**
    * GET /api/faculty/evaluation-form?internshipId=...
    * Retrieve the submitted faculty evaluation form.
    * Response: { message, evaluation: { id, type, totalMarks, maxMarks, criteria, comments, submittedDate, evaluator } }

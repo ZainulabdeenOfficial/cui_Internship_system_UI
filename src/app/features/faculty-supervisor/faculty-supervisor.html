@@ -714,29 +714,12 @@
     <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
       <span><i class="bi bi-people-fill me-2"></i>My Assigned Students</span>
       <div class="d-flex align-items-center gap-2">
-        <span class="badge text-bg-primary">{{ filteredMarksTabStudents().length }} student(s)</span>
+        <code class="small text-muted border rounded px-2 py-1 bg-light">GET /api/faculty/internships?status=all</code>
+        <span class="badge text-bg-primary">{{ marksTabStudents().length }} student(s)</span>
         <button class="btn btn-sm btn-outline-secondary" (click)="loadFacultyInternships(true)" [disabled]="loadingFacultyInternships">
           <span *ngIf="loadingFacultyInternships" class="spinner-border spinner-border-sm me-1"></span>
           {{ loadingFacultyInternships ? 'Loading…' : 'Refresh' }}
         </button>
-      </div>
-    </div>
-    <div class="card-body">
-      <!-- Filter row -->
-      <div class="row g-2 mb-3">
-        <div class="col-md-5">
-          <input class="form-control form-control-sm" placeholder="Search by name, email, or reg. no"
-                 [(ngModel)]="marksSearch" name="marksSearch" />
-        </div>
-        <div class="col-md-4">
-          <select class="form-select form-select-sm" [(ngModel)]="marksStatusFilter" name="marksStatusFilter">
-            <option value="all">All Statuses</option>
-            <option value="active">Active</option>
-            <option value="approved">Approved</option>
-            <option value="completed">Completed</option>
-            <option value="pending">Pending</option>
-          </select>
-        </div>
       </div>
     </div>
     <div class="card-body p-0">
@@ -754,7 +737,7 @@
             </tr>
           </thead>
           <tbody>
-            @for (s of filteredMarksTabStudents(); track s.id) {
+            @for (s of marksTabStudents(); track s.id) {
               <tr [class.table-primary]="selectedStudentForMarks?.id === s.id">
                 <td>
                   <div class="fw-semibold">{{ s.name }}</div>
@@ -797,7 +780,7 @@
                 </td>
               </tr>
             }
-            @if (filteredMarksTabStudents().length === 0) {
+            @if (marksTabStudents().length === 0) {
               <tr><td colspan="7" class="text-center text-muted py-3">
                 No students assigned to you. Go to the <strong>Student Requests</strong> tab to verify APEX B forms first.
               </td></tr>
@@ -885,18 +868,15 @@
                      (blur)="loadEvaluationSummaryForSelected()" />
             </div>
             <div class="col-md-3">
-              <label class="form-label">Marks <small class="text-muted">(0 – 40)</small></label>
-              <input type="number" class="form-control"
-                     [class.is-invalid]="facultyMarksForm.marks < 0 || facultyMarksForm.marks > 40"
-                     min="0" max="40"
+              <label class="form-label">Marks <small class="text-muted">(max 40)</small></label>
+              <input type="number" class="form-control" min="0" max="40"
                      [(ngModel)]="facultyMarksForm.marks"
                      name="facultyMarksValue" />
-              <div class="invalid-feedback">Marks must be between 0 and 40.</div>
             </div>
             <div class="col-md-2">
               <button class="btn btn-primary w-100"
                       (click)="submitFacultyMarks()"
-                      [disabled]="submittingFacultyMarks || !facultyMarksForm.internshipId || facultyMarksForm.marks < 0 || facultyMarksForm.marks > 40">
+                      [disabled]="submittingFacultyMarks || !facultyMarksForm.internshipId">
                 <span *ngIf="submittingFacultyMarks" class="spinner-border spinner-border-sm me-1"></span>
                 Submit
               </button>
@@ -912,51 +892,6 @@
           </div>
         </div>
       </div>
-
-      <!-- 6-Criteria Evaluation Form (POST /api/faculty/evaluation-form) -->
-      <!-- Shown when a valid internship ID exists and no form has been submitted yet -->
-      @if (facultyMarksForm.internshipId && !loadingEvaluationForm && !evaluationForm) {
-      <div class="card border-info mb-3">
-        <div class="card-header bg-info text-white fw-semibold">
-          <i class="bi bi-clipboard2-check me-2"></i>Submit Detailed Evaluation Form
-          <small class="ms-2 fw-normal opacity-75">(Faculty supervisor — 6 criteria, each 1–10, max total 60 → scaled to 40)</small>
-        </div>
-        <div class="card-body">
-          <div class="row g-3">
-            @for (c of criteriaLabels; track c.key) {
-              <div class="col-md-6">
-                <label class="form-label">{{ c.label }}</label>
-                <input type="number" class="form-control form-control-sm"
-                       [class.is-invalid]="$any(evalFormCriteria)[c.key] < 1 || $any(evalFormCriteria)[c.key] > 10"
-                       min="1" max="10"
-                       [(ngModel)]="$any(evalFormCriteria)[c.key]"
-                       [name]="'criterion_' + c.key" />
-                <div class="invalid-feedback">Must be between 1 and 10.</div>
-              </div>
-            }
-            <div class="col-12">
-              <label class="form-label">Comments <small class="text-muted">(optional)</small></label>
-              <textarea class="form-control form-control-sm" rows="2"
-                        [(ngModel)]="evalFormComments"
-                        name="evalFormComments"
-                        placeholder="Any comments or feedback…"></textarea>
-            </div>
-            <div class="col-12 d-flex align-items-center gap-3">
-              <button class="btn btn-info text-white"
-                      (click)="submitEvaluationFormWithCriteria()"
-                      [disabled]="submittingEvalForm || !isCriteriaValid()">
-                <span *ngIf="submittingEvalForm" class="spinner-border spinner-border-sm me-1"></span>
-                Submit Evaluation Form
-              </button>
-              <small class="text-muted">
-                Total: <strong>{{ criteriaTotal() }}</strong> / 60
-                <span class="ms-1">(≈ <strong>{{ (criteriaTotal() / 60 * 40) | number:'1.0-1' }}</strong> / 40 scaled)</span>
-              </small>
-            </div>
-          </div>
-        </div>
-      </div>
-      }
 
       <!-- Loading -->
       <div *ngIf="loadingEvaluationSummary || loadingEvaluationForm" class="text-center py-3">

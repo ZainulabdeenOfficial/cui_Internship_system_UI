@@ -74,7 +74,7 @@ export class Student implements OnDestroy {
   evaluations: any[] = [];
   evaluationsLoadedOnce = false;
   loadingEvaluations = false;
-  evaluationTypeFilter: 'all' | 'site_mid' | 'site_final' = 'all';
+  evaluationTypeFilter: 'all' | 'site_mid' | 'site_final' | 'faculty' | 'office' = 'all';
   evaluationSummary: any = null;
   loadingEvaluationSummary = false;
   /** Sequence counter used to discard stale API responses when the filter changes mid-flight. */
@@ -1324,23 +1324,27 @@ export class Student implements OnDestroy {
 
       // Log the exact API URLs being called
       console.group(`🌐 [Student Evaluations] API calls for internshipId: ${idToUse}`);
-      console.log(`📡 GET /api/site/evaluations?internshipId=${idToUse}${typeFilter ? '&type=' + typeFilter : ''}`);
-      if (!typeFilter) {
-        console.log(`📡 GET /api/faculty/evaluation-form?internshipId=${idToUse}`);
-        console.log(`📡 GET /api/admin/office-evaluation?internshipId=${idToUse}`);
-      } else {
-        console.log('⏭️  Faculty & Office evaluation requests skipped (type filter active:', typeFilter, ')');
-      }
+      const fetchSiteLog = !typeFilter || typeFilter === 'site_mid' || typeFilter === 'site_final';
+      if (fetchSiteLog) console.log(`📡 GET /api/site/evaluations?internshipId=${idToUse}${typeFilter ? '&type=' + typeFilter : ''}`);
+      if (!typeFilter || typeFilter === 'faculty') console.log(`📡 GET /api/faculty/evaluation-form?internshipId=${idToUse}`);
+      if (!typeFilter || typeFilter === 'office') console.log(`📡 GET /api/admin/office-evaluation?internshipId=${idToUse}`);
       console.groupEnd();
 
       // Fetch from all three sources in parallel
+      // Site evaluations apply when filter is 'all', 'site_mid', or 'site_final'
+      const fetchSite = !typeFilter || typeFilter === 'site_mid' || typeFilter === 'site_final';
+      // Faculty evaluation form applies when filter is 'all' or 'faculty'
+      const fetchFaculty = !typeFilter || typeFilter === 'faculty';
+      // Office evaluation applies when filter is 'all' or 'office'
+      const fetchOffice = !typeFilter || typeFilter === 'office';
       const [siteResult, facultyResult, officeResult] = await Promise.allSettled([
-        this.studentApi.getEvaluations(idToUse, typeFilter, { skipGlobalLoading: true, forceRefresh }),
-        // Only fetch faculty/office evals when showing all types (no specific filter active)
-        !typeFilter
+        fetchSite
+          ? this.studentApi.getEvaluations(idToUse, typeFilter, { skipGlobalLoading: true, forceRefresh })
+          : Promise.resolve(null),
+        fetchFaculty
           ? this.studentApi.getFacultyEvaluationForm(idToUse, { skipGlobalLoading: true, forceRefresh })
           : Promise.resolve(null),
-        !typeFilter
+        fetchOffice
           ? this.studentApi.getAdminOfficeEvaluation(idToUse, { skipGlobalLoading: true, forceRefresh })
           : Promise.resolve(null)
       ]);
