@@ -1339,13 +1339,13 @@ export class Student implements OnDestroy {
       const fetchOffice = !typeFilter || typeFilter === 'office';
       const [siteResult, facultyResult, officeResult] = await Promise.allSettled([
         fetchSite
-          ? this.studentApi.getEvaluations(idToUse, typeFilter, { skipGlobalLoading: true, forceRefresh })
+          ? this.studentApi.getEvaluations(idToUse, typeFilter, { skipGlobalLoading: true, silentError: true, forceRefresh })
           : Promise.resolve(null),
         fetchFaculty
-          ? this.studentApi.getFacultyEvaluationForm(idToUse, { skipGlobalLoading: true, forceRefresh })
+          ? this.studentApi.getFacultyEvaluationForm(idToUse, { skipGlobalLoading: true, silentError: true, forceRefresh })
           : Promise.resolve(null),
         fetchOffice
-          ? this.studentApi.getAdminOfficeEvaluation(idToUse, { skipGlobalLoading: true, forceRefresh })
+          ? this.studentApi.getAdminOfficeEvaluation(idToUse, { skipGlobalLoading: true, silentError: true, forceRefresh })
           : Promise.resolve(null)
       ]);
 
@@ -1449,6 +1449,7 @@ export class Student implements OnDestroy {
     try {
       const res = await this.studentApi.getEvaluationSummary(internshipId, {
         skipGlobalLoading: true,
+        silentError: true,
         forceRefresh
       });
       this.evaluationSummary = res?.evaluationSummary ?? null;

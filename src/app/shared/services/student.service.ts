@@ -9,6 +9,8 @@ export interface StudentRequestOptions {
   skipGlobalLoading?: boolean;
   forceRefresh?: boolean;
   cacheTtlMs?: number;
+  /** Suppress the global error toast — use for non-critical background fetches. */
+  silentError?: boolean;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -36,7 +38,10 @@ export class StudentService {
 
   private withRequestOptions(headers: HttpHeaders, options?: StudentRequestOptions): HttpHeaders {
     if (options?.skipGlobalLoading) {
-      return headers.set('X-Skip-Global-Loading', 'true');
+      headers = headers.set('X-Skip-Global-Loading', 'true');
+    }
+    if (options?.silentError) {
+      headers = headers.set('X-Silent-Error', 'true');
     }
     return headers;
   }
