@@ -1230,7 +1230,7 @@ export class Student implements OnDestroy {
       this.toast.danger(msg);
     } finally {
       this.loadingWeeklyLogs = false;
-      this.cdr.detectChanges();
+      this.cdr.markForCheck();
     }
   }
 
@@ -1318,7 +1318,7 @@ export class Student implements OnDestroy {
     if (seq !== this._evalLoadSeq) return;
 
     this.loadingEvaluations = true;
-    this.cdr.detectChanges();
+    this.cdr.markForCheck();
     try {
       const typeFilter = this.evaluationTypeFilter === 'all' ? undefined : this.evaluationTypeFilter;
 
@@ -1422,7 +1422,7 @@ export class Student implements OnDestroy {
     } finally {
       if (seq === this._evalLoadSeq) {
         this.loadingEvaluations = false;
-        this.cdr.detectChanges();
+        this.cdr.markForCheck();
       }
     }
   }
@@ -1446,6 +1446,7 @@ export class Student implements OnDestroy {
     const internshipId = this.studentInternshipId || this.apexBStatus?.internshipId;
     if (!internshipId || this.loadingEvaluationSummary) return;
     this.loadingEvaluationSummary = true;
+    this.cdr.markForCheck();
     try {
       const res = await this.studentApi.getEvaluationSummary(internshipId, {
         skipGlobalLoading: true,
@@ -1461,7 +1462,7 @@ export class Student implements OnDestroy {
       this.evaluationSummary = null;
     } finally {
       this.loadingEvaluationSummary = false;
-      this.cdr.detectChanges();
+      this.cdr.markForCheck();
     }
   }
 
