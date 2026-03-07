@@ -319,10 +319,12 @@ export class FacultySupervisor {
       const [resA, resB] = await Promise.all([
         this.facultyApi.getAppexAApprovals(statusFilter, this.page.appexA, this.pageSize, {
           skipGlobalLoading: this.hasLoadedRequestsOnce || forceRefresh,
+          silentError: true,
           forceRefresh
         }),
         this.facultyApi.getAppexBVerifications(statusFilter, this.page.appexB, this.pageSize, {
           skipGlobalLoading: this.hasLoadedRequestsOnce || forceRefresh,
+          silentError: true,
           forceRefresh
         })
       ]);

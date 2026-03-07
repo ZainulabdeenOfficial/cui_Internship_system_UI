@@ -51,6 +51,8 @@ export interface FacultyRequestOptions {
   skipGlobalLoading?: boolean;
   forceRefresh?: boolean;
   cacheTtlMs?: number;
+  /** Suppress the global error toast — use for non-critical background fetches. */
+  silentError?: boolean;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -97,6 +99,7 @@ export class FacultyService {
     if (json) base['Content-Type'] = 'application/json';
     if (token) base['Authorization'] = `Bearer ${token}`;
     if (options?.skipGlobalLoading) base['X-Skip-Global-Loading'] = 'true';
+    if (options?.silentError) base['X-Silent-Error'] = 'true';
     return new HttpHeaders(base);
   }
 
