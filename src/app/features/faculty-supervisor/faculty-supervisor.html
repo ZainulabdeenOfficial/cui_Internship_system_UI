@@ -882,52 +882,58 @@
           </div>
           <div class="row g-3">
             <div class="col-md-4">
-              <label class="form-label fw-semibold">Platform Activity &amp; Engagement
-                <span class="badge text-bg-secondary ms-1">{{ facultyEvalForm.platformActivityEngagement }}/10</span>
-              </label>
-              <input type="range" class="form-range" min="1" max="10" step="1"
-                     [(ngModel)]="facultyEvalForm.platformActivityEngagement"
-                     name="crit_platform" />
+              <label class="form-label fw-semibold">Platform Activity &amp; Engagement</label>
+              <div class="input-group">
+                <input type="number" class="form-control" min="1" max="10"
+                       [(ngModel)]="facultyEvalForm.platformActivityEngagement"
+                       name="crit_platform" placeholder="1–10" />
+                <span class="input-group-text text-muted">/ 10</span>
+              </div>
             </div>
             <div class="col-md-4">
-              <label class="form-label fw-semibold">Completion of Internship Project(s)
-                <span class="badge text-bg-secondary ms-1">{{ facultyEvalForm.completionOfInternshipProjects }}/10</span>
-              </label>
-              <input type="range" class="form-range" min="1" max="10" step="1"
-                     [(ngModel)]="facultyEvalForm.completionOfInternshipProjects"
-                     name="crit_completion" />
+              <label class="form-label fw-semibold">Completion of Internship Project(s)</label>
+              <div class="input-group">
+                <input type="number" class="form-control" min="1" max="10"
+                       [(ngModel)]="facultyEvalForm.completionOfInternshipProjects"
+                       name="crit_completion" placeholder="1–10" />
+                <span class="input-group-text text-muted">/ 10</span>
+              </div>
             </div>
             <div class="col-md-4">
-              <label class="form-label fw-semibold">Earnings Achieved
-                <span class="badge text-bg-secondary ms-1">{{ facultyEvalForm.earningsAchieved }}/10</span>
-              </label>
-              <input type="range" class="form-range" min="1" max="10" step="1"
-                     [(ngModel)]="facultyEvalForm.earningsAchieved"
-                     name="crit_earnings" />
+              <label class="form-label fw-semibold">Earnings Achieved</label>
+              <div class="input-group">
+                <input type="number" class="form-control" min="1" max="10"
+                       [(ngModel)]="facultyEvalForm.earningsAchieved"
+                       name="crit_earnings" placeholder="1–10" />
+                <span class="input-group-text text-muted">/ 10</span>
+              </div>
             </div>
             <div class="col-md-4">
-              <label class="form-label fw-semibold">Skill Development &amp; Learning
-                <span class="badge text-bg-secondary ms-1">{{ facultyEvalForm.skillDevelopmentLearning }}/10</span>
-              </label>
-              <input type="range" class="form-range" min="1" max="10" step="1"
-                     [(ngModel)]="facultyEvalForm.skillDevelopmentLearning"
-                     name="crit_skill" />
+              <label class="form-label fw-semibold">Skill Development &amp; Learning</label>
+              <div class="input-group">
+                <input type="number" class="form-control" min="1" max="10"
+                       [(ngModel)]="facultyEvalForm.skillDevelopmentLearning"
+                       name="crit_skill" placeholder="1–10" />
+                <span class="input-group-text text-muted">/ 10</span>
+              </div>
             </div>
             <div class="col-md-4">
-              <label class="form-label fw-semibold">Client Rating and Feedback
-                <span class="badge text-bg-secondary ms-1">{{ facultyEvalForm.clientRatingAndFeedback }}/10</span>
-              </label>
-              <input type="range" class="form-range" min="1" max="10" step="1"
-                     [(ngModel)]="facultyEvalForm.clientRatingAndFeedback"
-                     name="crit_client" />
+              <label class="form-label fw-semibold">Client Rating and Feedback</label>
+              <div class="input-group">
+                <input type="number" class="form-control" min="1" max="10"
+                       [(ngModel)]="facultyEvalForm.clientRatingAndFeedback"
+                       name="crit_client" placeholder="1–10" />
+                <span class="input-group-text text-muted">/ 10</span>
+              </div>
             </div>
             <div class="col-md-4">
-              <label class="form-label fw-semibold">Professionalism &amp; Communication
-                <span class="badge text-bg-secondary ms-1">{{ facultyEvalForm.professionalismCommunication }}/10</span>
-              </label>
-              <input type="range" class="form-range" min="1" max="10" step="1"
-                     [(ngModel)]="facultyEvalForm.professionalismCommunication"
-                     name="crit_professionalism" />
+              <label class="form-label fw-semibold">Professionalism &amp; Communication</label>
+              <div class="input-group">
+                <input type="number" class="form-control" min="1" max="10"
+                       [(ngModel)]="facultyEvalForm.professionalismCommunication"
+                       name="crit_professionalism" placeholder="1–10" />
+                <span class="input-group-text text-muted">/ 10</span>
+              </div>
             </div>
             <div class="col-12">
               <label class="form-label">Comments <small class="text-muted">(optional)</small></label>
