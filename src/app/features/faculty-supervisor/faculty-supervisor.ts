@@ -1,4 +1,4 @@
-import { Component, computed } from '@angular/core';
+import { ChangeDetectorRef, Component, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { StoreService } from '../../shared/services/store.service';
@@ -19,7 +19,7 @@ export class FacultySupervisor {
   private hasLoadedProfileOnce = false;
   private hasLoadedRequestsOnce = false;
 
-  constructor(private store: StoreService, private toast: ToastService, private route: ActivatedRoute, private router: Router, private facultyApi: FacultyService) {
+  constructor(private store: StoreService, private toast: ToastService, private route: ActivatedRoute, private router: Router, private facultyApi: FacultyService, private cdr: ChangeDetectorRef) {
     // Pre-load APEX B requests on initialization for instant display
     this.loadStudentRequests();
     this.loadFacultyInternships();
@@ -780,6 +780,7 @@ export class FacultySupervisor {
       this.evaluationSummary = null;
     } finally {
       this.loadingEvaluationSummary = false;
+      this.cdr.markForCheck();
     }
   }
 
@@ -815,6 +816,7 @@ export class FacultySupervisor {
       this.evaluationForm = null;
     } finally {
       this.loadingEvaluationForm = false;
+      this.cdr.markForCheck();
     }
   }
 
