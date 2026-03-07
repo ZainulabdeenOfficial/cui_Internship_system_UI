@@ -858,41 +858,92 @@
       </div>
       }
 
-      <!-- Submit Marks -->
+      <!-- Submit Faculty Evaluation Form -->
+      <input type="hidden" [(ngModel)]="facultyMarksForm.internshipId" name="facultyMarksInternshipId" />
       <div class="card border mb-3">
-        <div class="card-header fw-semibold bg-light">Submit Faculty Marks (0 – 40)</div>
+        <div class="card-header fw-semibold bg-light d-flex justify-content-between align-items-center">
+          <span><i class="bi bi-clipboard2-check me-2"></i>Submit Faculty Evaluation Form</span>
+          <div class="d-flex align-items-center gap-3">
+            <span class="text-muted small">Total: <strong class="text-primary">{{ evalFormTotal }}</strong> / 60
+              <span class="text-muted ms-1">(scaled to 40)</span>
+            </span>
+            <button class="btn btn-sm btn-outline-secondary"
+                    (click)="loadEvaluationSummaryForSelected()"
+                    [disabled]="loadingEvaluationSummary || loadingEvaluationForm || !facultyMarksForm.internshipId">
+              <span *ngIf="loadingEvaluationSummary || loadingEvaluationForm" class="spinner-border spinner-border-sm me-1"></span>
+              Refresh
+            </button>
+          </div>
+        </div>
         <div class="card-body">
-          <!-- Hidden internship ID binding -->
-          <input type="hidden" [(ngModel)]="facultyMarksForm.internshipId" name="facultyMarksInternshipId" />
-          <div class="row g-3 align-items-end">
-            <div class="col-md-5">
-              <label class="form-label">Student</label>
-              <div class="border rounded px-3 py-2 bg-light">
-                <div class="fw-semibold">{{ selectedStudentForMarks?.name || '—' }}</div>
-                <small class="text-muted">{{ selectedStudentForMarks?.registrationNo || selectedStudentForMarks?.regNo || 'No Reg. No' }}</small>
-              </div>
+          <div class="alert alert-info py-2 mb-3">
+            <i class="bi bi-info-circle me-2"></i>
+            Grade each criterion <strong>1–10</strong>. Total max 60 is scaled to <strong>40</strong> in the evaluation summary.
+          </div>
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Platform Activity &amp; Engagement
+                <span class="badge text-bg-secondary ms-1">{{ facultyEvalForm.platformActivityEngagement }}/10</span>
+              </label>
+              <input type="range" class="form-range" min="1" max="10" step="1"
+                     [(ngModel)]="facultyEvalForm.platformActivityEngagement"
+                     name="crit_platform" />
             </div>
-            <div class="col-md-3">
-              <label class="form-label">Marks <small class="text-muted">(max 40)</small></label>
-              <input type="number" class="form-control" min="0" max="40"
-                     [(ngModel)]="facultyMarksForm.marks"
-                     name="facultyMarksValue" />
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Completion of Internship Project(s)
+                <span class="badge text-bg-secondary ms-1">{{ facultyEvalForm.completionOfInternshipProjects }}/10</span>
+              </label>
+              <input type="range" class="form-range" min="1" max="10" step="1"
+                     [(ngModel)]="facultyEvalForm.completionOfInternshipProjects"
+                     name="crit_completion" />
             </div>
-            <div class="col-md-2">
-              <button class="btn btn-primary w-100"
-                      (click)="submitFacultyMarks()"
-                      [disabled]="submittingFacultyMarks || !facultyMarksForm.internshipId">
-                <span *ngIf="submittingFacultyMarks" class="spinner-border spinner-border-sm me-1"></span>
-                Submit
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Earnings Achieved
+                <span class="badge text-bg-secondary ms-1">{{ facultyEvalForm.earningsAchieved }}/10</span>
+              </label>
+              <input type="range" class="form-range" min="1" max="10" step="1"
+                     [(ngModel)]="facultyEvalForm.earningsAchieved"
+                     name="crit_earnings" />
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Skill Development &amp; Learning
+                <span class="badge text-bg-secondary ms-1">{{ facultyEvalForm.skillDevelopmentLearning }}/10</span>
+              </label>
+              <input type="range" class="form-range" min="1" max="10" step="1"
+                     [(ngModel)]="facultyEvalForm.skillDevelopmentLearning"
+                     name="crit_skill" />
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Client Rating and Feedback
+                <span class="badge text-bg-secondary ms-1">{{ facultyEvalForm.clientRatingAndFeedback }}/10</span>
+              </label>
+              <input type="range" class="form-range" min="1" max="10" step="1"
+                     [(ngModel)]="facultyEvalForm.clientRatingAndFeedback"
+                     name="crit_client" />
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Professionalism &amp; Communication
+                <span class="badge text-bg-secondary ms-1">{{ facultyEvalForm.professionalismCommunication }}/10</span>
+              </label>
+              <input type="range" class="form-range" min="1" max="10" step="1"
+                     [(ngModel)]="facultyEvalForm.professionalismCommunication"
+                     name="crit_professionalism" />
+            </div>
+            <div class="col-12">
+              <label class="form-label">Comments <small class="text-muted">(optional)</small></label>
+              <textarea class="form-control" rows="2" [(ngModel)]="facultyEvalForm.comments"
+                        name="eval_comments" placeholder="Additional remarks..."></textarea>
+            </div>
+            <div class="col-12 d-flex gap-2 align-items-center">
+              <button class="btn btn-primary"
+                      (click)="submitEvaluationForm()"
+                      [disabled]="submittingEvalForm || !facultyMarksForm.internshipId || evalFormTotal === 0">
+                <span *ngIf="submittingEvalForm" class="spinner-border spinner-border-sm me-1"></span>
+                Submit Evaluation Form
               </button>
-            </div>
-            <div class="col-md-2">
-              <button class="btn btn-outline-secondary w-100"
-                      (click)="loadEvaluationSummaryForSelected()"
-                      [disabled]="loadingEvaluationSummary || loadingEvaluationForm || !facultyMarksForm.internshipId">
-                <span *ngIf="loadingEvaluationSummary || loadingEvaluationForm" class="spinner-border spinner-border-sm me-1"></span>
-                Refresh
-              </button>
+              <span *ngIf="evalFormTotal > 0" class="text-muted small">
+                Scaled marks: <strong>{{ (evalFormTotal / 60 * 40) | number:'1.1-1' }} / 40</strong>
+              </span>
             </div>
           </div>
         </div>

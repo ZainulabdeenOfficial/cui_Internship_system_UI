@@ -675,18 +675,41 @@
                        : ev.type }}
                     </span>
                   </div>
-                  <span class="badge text-bg-primary">{{ ev.totalMarks ?? ev.facultyMarksScaled ?? ev.officeMarksScaled ?? '-' }} marks</span>
+                  <!-- For faculty: show scaled/40 prominently; raw total shown below -->
+                  <div class="d-flex align-items-center gap-2">
+                    <span *ngIf="ev.type === 'faculty' && ev.facultyMarksScaled != null"
+                          class="badge text-bg-primary">
+                      {{ ev.facultyMarksScaled }} / {{ ev.maxMarks ?? 40 }} (scaled)
+                    </span>
+                    <span *ngIf="ev.type !== 'faculty' || ev.facultyMarksScaled == null"
+                          class="badge text-bg-primary">
+                      {{ ev.totalMarks ?? ev.officeMarksScaled ?? '-' }}
+                      <span *ngIf="ev.maxMarks"> / {{ ev.maxMarks }}</span>
+                    </span>
+                  </div>
                 </div>
                 <div class="card-body">
+
+                  <!-- Faculty: raw score vs scaled score -->
+                  <div *ngIf="ev.type === 'faculty' && ev.totalMarks != null" class="d-flex gap-3 mb-3 flex-wrap">
+                    <div class="border rounded px-3 py-2 text-center">
+                      <div class="fw-bold fs-5 text-primary">{{ ev.facultyMarksScaled ?? '—' }}</div>
+                      <small class="text-muted">Scaled / {{ ev.maxMarks ?? 40 }}</small>
+                    </div>
+                    <div class="border rounded px-3 py-2 text-center">
+                      <div class="fw-bold fs-5">{{ ev.totalMarks }}</div>
+                      <small class="text-muted">Raw / 60</small>
+                    </div>
+                  </div>
 
                   <!-- Criteria breakdown -->
                   <div *ngIf="ev.criteria" class="mb-3">
                     <h6 class="text-muted mb-2">Criteria Scores</h6>
                     <div class="row g-1">
                       <div class="col-6" *ngFor="let c of criteriaEntries(ev.criteria)">
-                        <div class="d-flex justify-content-between">
+                        <div class="d-flex justify-content-between border-bottom py-1">
                           <small class="text-capitalize">{{ c.label }}</small>
-                          <small class="fw-semibold">{{ c.value }}</small>
+                          <small class="fw-semibold">{{ c.value }}<span class="text-muted">/10</span></small>
                         </div>
                       </div>
                     </div>
@@ -698,13 +721,17 @@
                     <p class="mb-0 small">{{ ev.comments }}</p>
                   </div>
 
-                  <!-- Submitted by / date -->
-                  <div class="d-flex gap-3 mt-2">
-                    <small class="text-muted" *ngIf="ev.submittedBy?.name">
-                      <i class="bi bi-person me-1"></i>{{ ev.submittedBy.name }}
+                  <!-- Submitted by / date — handles all field name variants -->
+                  <div class="d-flex gap-3 mt-2 flex-wrap">
+                    <small class="text-muted"
+                           *ngIf="ev.submittedBy?.name || ev.evaluator?.name || ev.evaluator?.email">
+                      <i class="bi bi-person me-1"></i>
+                      {{ ev.submittedBy?.name || ev.evaluator?.name || ev.evaluator?.email }}
                     </small>
-                    <small class="text-muted" *ngIf="ev.createdAt || ev.submittedAt">
-                      <i class="bi bi-calendar3 me-1"></i>{{ (ev.createdAt || ev.submittedAt) | date:'mediumDate' }}
+                    <small class="text-muted"
+                           *ngIf="ev.createdAt || ev.submittedAt || ev.submittedDate">
+                      <i class="bi bi-calendar3 me-1"></i>
+                      {{ (ev.createdAt || ev.submittedAt || ev.submittedDate) | date:'mediumDate' }}
                     </small>
                   </div>
 

@@ -824,6 +824,72 @@ export class FacultySupervisor {
     }
   }
 
+  // ── Faculty Evaluation Form (POST /api/faculty/evaluation-form) ───────────
+  facultyEvalForm = {
+    platformActivityEngagement: 0,
+    completionOfInternshipProjects: 0,
+    earningsAchieved: 0,
+    skillDevelopmentLearning: 0,
+    clientRatingAndFeedback: 0,
+    professionalismCommunication: 0,
+    comments: ''
+  };
+  submittingEvalForm = false;
+
+  get evalFormTotal(): number {
+    const f = this.facultyEvalForm;
+    return (f.platformActivityEngagement || 0)
+      + (f.completionOfInternshipProjects || 0)
+      + (f.earningsAchieved || 0)
+      + (f.skillDevelopmentLearning || 0)
+      + (f.clientRatingAndFeedback || 0)
+      + (f.professionalismCommunication || 0);
+  }
+
+  async submitEvaluationForm() {
+    const id = this.facultyMarksForm.internshipId.trim();
+    if (!id) { this.toast.warning('No internship ID — select a student first'); return; }
+    const f = this.facultyEvalForm;
+    const criteria = [
+      f.platformActivityEngagement,
+      f.completionOfInternshipProjects,
+      f.earningsAchieved,
+      f.skillDevelopmentLearning,
+      f.clientRatingAndFeedback,
+      f.professionalismCommunication
+    ];
+    if (criteria.some(v => v < 1 || v > 10)) {
+      this.toast.warning('Each criterion must be between 1 and 10');
+      return;
+    }
+    this.submittingEvalForm = true;
+    try {
+      const res = await this.facultyApi.submitEvaluationForm({
+        internshipId: id,
+        criteria: {
+          platformActivityEngagement: f.platformActivityEngagement,
+          completionOfInternshipProjects: f.completionOfInternshipProjects,
+          earningsAchieved: f.earningsAchieved,
+          skillDevelopmentLearning: f.skillDevelopmentLearning,
+          clientRatingAndFeedback: f.clientRatingAndFeedback,
+          professionalismCommunication: f.professionalismCommunication
+        },
+        comments: f.comments || undefined
+      });
+      this.toast.success(res?.message || 'Evaluation form submitted successfully');
+      this.evaluationForm = res?.evaluation ?? null;
+      await Promise.all([
+        this.loadEvaluationSummary(id, true),
+        this.loadEvaluationFormData(id, true)
+      ]);
+    } catch (err: any) {
+      const msg = err?.error?.message || err?.message || 'Failed to submit evaluation form';
+      this.toast.danger(msg);
+    } finally {
+      this.submittingEvalForm = false;
+    }
+  }
+
   async submitFacultyMarks() {    const id = this.facultyMarksForm.internshipId.trim();
     if (!id) { this.toast.warning('Enter the internship ID'); return; }
     const marks = Number(this.facultyMarksForm.marks);
