@@ -1,8 +1,14 @@
-import { HttpInterceptorFn, HttpErrorResponse } from '@angular/common/http';
+import { HttpInterceptorFn, HttpErrorResponse, HttpContextToken } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { catchError, finalize, throwError } from 'rxjs';
 import { LoadingService } from '../../core/services/loading.service';
 import { ErrorHandlerService } from '../../core/services/error-handler.service';
+
+/** Pass `true` via HttpContext to suppress the global loading spinner for a request. */
+export const SKIP_GLOBAL_LOADING = new HttpContextToken<boolean>(() => false);
+
+/** Pass `true` via HttpContext to suppress global error toasts for a request. */
+export const SILENT_ERROR = new HttpContextToken<boolean>(() => false);
 
 /**
  * Enhanced HTTP Interceptor
@@ -22,8 +28,8 @@ export const httpInterceptor: HttpInterceptorFn = (req, next) => {
     });
   }
 
-  // Check if this request should show global loading
-  const skipGlobalLoading = req.headers.has('X-Skip-Global-Loading');
+  // Use HttpContext tokens instead of custom headers to avoid CORS preflight failures
+  const skipGlobalLoading = req.context.get(SKIP_GLOBAL_LOADING);
   
   if (!skipGlobalLoading) {
     loadingService.show();
@@ -31,8 +37,7 @@ export const httpInterceptor: HttpInterceptorFn = (req, next) => {
 
   return next(req).pipe(
     catchError((error: HttpErrorResponse) => {
-      // Check if error should be silent
-      const silent = req.headers.has('X-Silent-Error');
+      const silent = req.context.get(SILENT_ERROR);
       
       if (!silent) {
         errorHandler.handleError(error);

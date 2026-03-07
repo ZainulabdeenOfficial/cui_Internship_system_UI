@@ -1,8 +1,9 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpContext, HttpHeaders } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { AuthService } from './auth.service';
 import { environment } from '../../../environments/environment';
+import { SILENT_ERROR, SKIP_GLOBAL_LOADING } from '../../core/interceptors/http.interceptor';
 
 export interface FacultyInternship {
   id: string;
@@ -98,9 +99,13 @@ export class FacultyService {
     const base: Record<string, string> = { Accept: 'application/json' };
     if (json) base['Content-Type'] = 'application/json';
     if (token) base['Authorization'] = `Bearer ${token}`;
-    if (options?.skipGlobalLoading) base['X-Skip-Global-Loading'] = 'true';
-    if (options?.silentError) base['X-Silent-Error'] = 'true';
     return new HttpHeaders(base);
+  }
+
+  private buildContext(options?: FacultyRequestOptions): HttpContext {
+    return new HttpContext()
+      .set(SKIP_GLOBAL_LOADING, options?.skipGlobalLoading ?? false)
+      .set(SILENT_ERROR, options?.silentError ?? false);
   }
 
   private cacheKey(endpoint: string): string {
@@ -158,7 +163,7 @@ export class FacultyService {
     if (cached) return cached;
 
     const url = `${this.base}/api/faculty/profile`;
-    const res = await firstValueFrom(this.http.get<any>(url, { headers: await this.authHeaders(false, options) }));
+    const res = await firstValueFrom(this.http.get<any>(url, { headers: await this.authHeaders(false, options), context: this.buildContext(options) }));
     const mapped = { message: res?.message, profile: res?.profile as FacultyProfile };
     this.writeCache(key, mapped, options?.cacheTtlMs ?? 5 * 60 * 1000);
     return mapped;
@@ -193,7 +198,7 @@ export class FacultyService {
     const cached = this.readCache<any>(key, options);
     if (cached) return cached;
 
-    const res = await firstValueFrom(this.http.get<any>(url, { headers: await this.authHeaders(false, options) }));
+    const res = await firstValueFrom(this.http.get<any>(url, { headers: await this.authHeaders(false, options), context: this.buildContext(options) }));
     this.writeCache(key, res, options?.cacheTtlMs);
     return res;
   }
@@ -220,7 +225,7 @@ export class FacultyService {
     
     console.log('🔍 [Faculty Service - Get APEX B Verifications] Request:', { url, status, page, limit });
     
-    const res = await firstValueFrom(this.http.get<any>(url, { headers: await this.authHeaders(false, options) }));
+    const res = await firstValueFrom(this.http.get<any>(url, { headers: await this.authHeaders(false, options), context: this.buildContext(options) }));
     
     console.log('✅ [Faculty Service - Get APEX B Verifications] Response:', {
       total: res?.total || res?.verifications?.length || 0,
@@ -278,7 +283,7 @@ export class FacultyService {
     if (cached) return cached;
 
     const url = `${this.base}/api/faculty/evaluation-summary?internshipId=${encodeURIComponent(internshipId)}`;
-    const res = await firstValueFrom(this.http.get<any>(url, { headers: await this.authHeaders(false, options) }));
+    const res = await firstValueFrom(this.http.get<any>(url, { headers: await this.authHeaders(false, options), context: this.buildContext(options) }));
     this.writeCache(key, res, options?.cacheTtlMs ?? 60 * 1000);
     return res;
   }
@@ -317,7 +322,7 @@ export class FacultyService {
     if (cached) return cached;
 
     const url = `${this.base}/api/faculty/evaluation-form?internshipId=${encodeURIComponent(internshipId)}`;
-    const res = await firstValueFrom(this.http.get<any>(url, { headers: await this.authHeaders(false, options) }));
+    const res = await firstValueFrom(this.http.get<any>(url, { headers: await this.authHeaders(false, options), context: this.buildContext(options) }));
     this.writeCache(key, res, options?.cacheTtlMs ?? 60 * 1000);
     return res;
   }
@@ -333,7 +338,7 @@ export class FacultyService {
     if (cached) return cached;
 
     const url = `${this.base}/api/faculty/internships?status=${encodeURIComponent(status)}`;
-    const res = await firstValueFrom(this.http.get<any>(url, { headers: await this.authHeaders(false, options) }));
+    const res = await firstValueFrom(this.http.get<any>(url, { headers: await this.authHeaders(false, options), context: this.buildContext(options) }));
     this.writeCache(key, res, options?.cacheTtlMs ?? 2 * 60 * 1000);
     return res;
   }

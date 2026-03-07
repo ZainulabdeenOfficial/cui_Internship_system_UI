@@ -1,7 +1,8 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpContext, HttpHeaders } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import { firstValueFrom } from 'rxjs';
+import { SILENT_ERROR, SKIP_GLOBAL_LOADING } from '../../core/interceptors/http.interceptor';
 
 export type InternshipType = 'ONSITE'|'REMOTE'|'VIRTUAL'|'HYBRID'|string;
 
@@ -37,13 +38,13 @@ export class StudentService {
   }
 
   private withRequestOptions(headers: HttpHeaders, options?: StudentRequestOptions): HttpHeaders {
-    if (options?.skipGlobalLoading) {
-      headers = headers.set('X-Skip-Global-Loading', 'true');
-    }
-    if (options?.silentError) {
-      headers = headers.set('X-Silent-Error', 'true');
-    }
     return headers;
+  }
+
+  private buildContext(options?: StudentRequestOptions): HttpContext {
+    return new HttpContext()
+      .set(SKIP_GLOBAL_LOADING, options?.skipGlobalLoading ?? false)
+      .set(SILENT_ERROR, options?.silentError ?? false);
   }
 
   private cacheKey(endpoint: string): string {
@@ -140,7 +141,7 @@ export class StudentService {
       Accept: 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {})
     }), options);
-    const res = await firstValueFrom(this.http.get<any>(url, { headers }));
+    const res = await firstValueFrom(this.http.get<any>(url, { headers, context: this.buildContext(options) }));
     this.writeCache(key, res, options?.cacheTtlMs);
     return res;
   }
@@ -555,7 +556,7 @@ export class StudentService {
       Accept: 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {})
     }), options);
-    const res = await firstValueFrom(this.http.get<any>(url, { headers }));
+    const res = await firstValueFrom(this.http.get<any>(url, { headers, context: this.buildContext(options) }));
     this.writeCache(key, res, options?.cacheTtlMs ?? 60 * 1000);
     return res;
   }
@@ -579,7 +580,7 @@ export class StudentService {
       Accept: 'application/json',
       ...(this.getAuthToken() ? { Authorization: `Bearer ${this.getAuthToken()}` } : {})
     }), options);
-    const res = await firstValueFrom(this.http.get<any>(url, { headers }));
+    const res = await firstValueFrom(this.http.get<any>(url, { headers, context: this.buildContext(options) }));
     this.writeCache(key, res, options?.cacheTtlMs ?? 60 * 1000);
     return res;
   }
@@ -600,13 +601,14 @@ export class StudentService {
 
     // Primary: /api/student/internship
     try {
-      const res = await firstValueFrom(this.http.get<any>(this.abs('/api/student/internship'), { headers: headers(options) }));
+      const res = await firstValueFrom(this.http.get<any>(this.abs('/api/student/internship'), { headers: headers(options), context: this.buildContext(options) }));
       this.writeCache(key, res, options?.cacheTtlMs ?? 60 * 1000);
       return res;
     } catch (primary) {
       // Fallback: /api/student/appex-a also returns { internship: { id, appexA } }
       try {
-        const res = await firstValueFrom(this.http.get<any>(this.abs('/api/student/appex-a'), { headers: headers({ skipGlobalLoading: true }) }));
+        const fallbackOpts = { skipGlobalLoading: true };
+        const res = await firstValueFrom(this.http.get<any>(this.abs('/api/student/appex-a'), { headers: headers(fallbackOpts), context: this.buildContext(fallbackOpts) }));
         this.writeCache(key, res, 60 * 1000);
         return res;
       } catch { throw primary; }
@@ -629,7 +631,7 @@ export class StudentService {
       Accept: 'application/json',
       ...(this.getAuthToken() ? { Authorization: `Bearer ${this.getAuthToken()}` } : {})
     }), options);
-    const res = await firstValueFrom(this.http.get<any>(url, { headers }));
+    const res = await firstValueFrom(this.http.get<any>(url, { headers, context: this.buildContext(options) }));
     this.writeCache(key, res, options?.cacheTtlMs ?? 60 * 1000);
     return res;
   }
@@ -650,7 +652,7 @@ export class StudentService {
       Accept: 'application/json',
       ...(this.getAuthToken() ? { Authorization: `Bearer ${this.getAuthToken()}` } : {})
     }), options);
-    const res = await firstValueFrom(this.http.get<any>(url, { headers }));
+    const res = await firstValueFrom(this.http.get<any>(url, { headers, context: this.buildContext(options) }));
     this.writeCache(key, res, options?.cacheTtlMs ?? 60 * 1000);
     return res;
   }
@@ -671,7 +673,7 @@ export class StudentService {
       Accept: 'application/json',
       ...(this.getAuthToken() ? { Authorization: `Bearer ${this.getAuthToken()}` } : {})
     }), options);
-    const res = await firstValueFrom(this.http.get<any>(url, { headers }));
+    const res = await firstValueFrom(this.http.get<any>(url, { headers, context: this.buildContext(options) }));
     this.writeCache(key, res, options?.cacheTtlMs ?? 60 * 1000);
     return res;
   }
