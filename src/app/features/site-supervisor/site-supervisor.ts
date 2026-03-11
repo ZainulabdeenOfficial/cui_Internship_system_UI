@@ -1,4 +1,4 @@
-import { Component, computed } from '@angular/core';
+import { Component, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { StoreService } from '../../shared/services/store.service';
@@ -6,7 +6,7 @@ import { ToastService } from '../../shared/toast/toast.service';
 import { ActivatedRoute, Router } from '@angular/router';
 import { PaginatePipe } from '../../shared/pagination/paginate.pipe';
 import { PaginatorComponent } from '../../shared/pagination/paginator';
-import { SiteService, SiteEvaluationCriteria, SiteEvaluationPayload } from '../../shared/services/site.service';
+import { SiteService, SiteEvaluationCriteria, SiteEvaluationPayload, SiteInternship } from '../../shared/services/site.service';
 
 @Component({
   selector: 'app-site-supervisor',
@@ -15,7 +15,7 @@ import { SiteService, SiteEvaluationCriteria, SiteEvaluationPayload } from '../.
   templateUrl: './site-supervisor.html',
   styleUrl: './site-supervisor.css'
 })
-export class SiteSupervisor {
+export class SiteSupervisor implements OnInit {
   constructor(private store: StoreService, private toast: ToastService, private route: ActivatedRoute, private router: Router, private siteService: SiteService) {
     try {
       this.route.queryParamMap.subscribe(p => {
@@ -24,6 +24,10 @@ export class SiteSupervisor {
         if ((allowed as readonly string[]).includes(t)) this.currentTab = t as any;
       });
     } catch {}
+  }
+
+  ngOnInit() {
+    this.loadSiteInternships();
   }
   get students() { return this.store.students; }
   selectedId: string | null = null;
@@ -79,13 +83,54 @@ export class SiteSupervisor {
   evaluationComments = '';
   submittingEvaluation = false;
   loadingEvaluation = false;
+  // Loaded evaluation (null = not yet submitted, object = already submitted)
+  loadedEvalMid: any | null = null;
+  loadedEvalFinal: any | null = null;
+
+  // Internship IDs from API (studentId → internshipId)
+  private siteInternships: SiteInternship[] = [];
+  internshipIdByStudentId: Record<string, string> = {};
+  loadingInternships = false;
+
+  private async loadSiteInternships() {
+    this.loadingInternships = true;
+    try {
+      const res = await this.siteService.getSiteInternships();
+      const raw: any = res.data;
+      const list: SiteInternship[] = Array.isArray(raw) ? raw : (raw?.items || []);
+      this.siteInternships = list;
+      this.internshipIdByStudentId = {};
+      for (const inv of list) {
+        const studentId = inv.studentId || inv.student?.id;
+        if (studentId && inv.id) this.internshipIdByStudentId[studentId] = inv.id;
+      }
+    } catch { /* silent — fallback to studentId */ } finally {
+      this.loadingInternships = false;
+    }
+  }
+
+  private getEffectiveInternshipId(): string | null {
+    if (!this.selectedId) return null;
+    return this.internshipIdByStudentId[this.selectedId] || this.selectedId;
+  }
+
+  get loadedEvalForCurrentType(): any | null {
+    return this.evaluationType === 'site_mid' ? this.loadedEvalMid : this.loadedEvalFinal;
+  }
+
+  criteriaEntries(criteria: Record<string, number>): { label: string; value: number }[] {
+    return Object.entries(criteria).map(([k, v]) => ({
+      label: k.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase()),
+      value: v
+    }));
+  }
 
   // Load existing evaluation when student or type changes
   async onEvalStudentChange() {
-    await this.loadEvaluation();
+    await this.loadBothEvaluations();
   }
   async onEvalTypeChange() {
-    await this.loadEvaluation();
+    // no reload needed; switching view only
   }
 
   private defaultCriteria(): SiteEvaluationCriteria {
@@ -111,18 +156,23 @@ export class SiteSupervisor {
   }
 
   async submitEvaluation() {
-    if (!this.selectedId) { this.toast.warning('Please select a student first'); return; }
+    const internshipId = this.getEffectiveInternshipId();
+    if (!internshipId) { this.toast.warning('Please select a student first'); return; }
     this.submittingEvaluation = true;
     try {
       const payload: SiteEvaluationPayload = {
-        internshipId: this.selectedId,
+        internshipId,
         type: this.evaluationType,
         criteria: { ...this.evaluationCriteria },
         totalMarks: this.evaluationTotal,
         comments: this.evaluationComments
       };
-      await this.siteService.submitEvaluation(payload);
-      this.toast.success(`${this.evaluationType === 'site_mid' ? 'Mid' : 'Final'} evaluation submitted successfully`);
+      const res = await this.siteService.submitEvaluation(payload);
+      this.toast.success(`${this.evaluationType === 'site_mid' ? 'Mid-term' : 'Final'} evaluation submitted successfully`);
+      // Store submitted evaluation as loaded state
+      const submitted = { criteria: { ...payload.criteria }, totalMarks: payload.totalMarks, comments: payload.comments, type: payload.type, submittedAt: new Date().toISOString(), ...(res.data || {}) };
+      if (this.evaluationType === 'site_mid') this.loadedEvalMid = submitted;
+      else this.loadedEvalFinal = submitted;
       this.evaluationCriteria = this.defaultCriteria();
       this.evaluationComments = '';
     } catch (err: any) {
@@ -132,29 +182,27 @@ export class SiteSupervisor {
     }
   }
 
-  private async loadEvaluation() {
-    if (!this.selectedId) return;
+  private async loadBothEvaluations() {
+    const internshipId = this.getEffectiveInternshipId();
+    if (!internshipId) return;
+    this.loadedEvalMid = null;
+    this.loadedEvalFinal = null;
     this.loadingEvaluation = true;
     try {
-      const res = await this.siteService.getEvaluations(this.selectedId, this.evaluationType);
-      if (res && res.success && res.data) {
-        // API may return array of evaluations; pick the latest
-        const list = Array.isArray(res.data) ? res.data : (res.data.items || []);
-        const ev = list.length ? list[list.length - 1] : null;
-        if (ev) {
-          this.evaluationCriteria = { ...this.defaultCriteria(), ...(ev.criteria || ev.criteriaValues || ev.criteriaMap) } as SiteEvaluationCriteria;
-          this.evaluationComments = ev.comments || ev.commentsText || '';
-        } else {
-          this.evaluationCriteria = this.defaultCriteria();
-          this.evaluationComments = '';
-        }
-      } else {
-        // no data
-        this.evaluationCriteria = this.defaultCriteria();
-        this.evaluationComments = '';
+      const [midRes, finalRes] = await Promise.allSettled([
+        this.siteService.getEvaluations(internshipId, 'site_mid'),
+        this.siteService.getEvaluations(internshipId, 'site_final')
+      ]);
+      if (midRes.status === 'fulfilled' && midRes.value?.success && midRes.value.data) {
+        const list = Array.isArray(midRes.value.data) ? midRes.value.data : (midRes.value.data.items || []);
+        if (list.length) this.loadedEvalMid = list[list.length - 1];
       }
-    } catch (err: any) {
-      this.toast.danger('Unable to load existing evaluation');
+      if (finalRes.status === 'fulfilled' && finalRes.value?.success && finalRes.value.data) {
+        const list = Array.isArray(finalRes.value.data) ? finalRes.value.data : (finalRes.value.data.items || []);
+        if (list.length) this.loadedEvalFinal = list[list.length - 1];
+      }
+    } catch {
+      this.toast.danger('Unable to load existing evaluations');
     } finally {
       this.loadingEvaluation = false;
     }

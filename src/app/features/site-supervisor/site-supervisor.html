@@ -114,9 +114,12 @@
 
   @if (currentTab==='evaluations') {
   <div class="card mb-3">
-    <div class="card-header bg-light">Student Performance Evaluation</div>
+    <div class="card-header bg-light d-flex justify-content-between align-items-center">
+      <span>Student Performance Evaluation</span>
+      <span *ngIf="loadingEvaluation" class="spinner-border spinner-border-sm text-secondary"></span>
+    </div>
     <div class="card-body">
-      <!-- Student selection -->
+      <!-- Student + type selection -->
       <div class="row g-3 mb-4">
         <div class="col-md-6">
           <label class="form-label">Select Student</label>
@@ -128,78 +131,185 @@
         <div class="col-md-6">
           <label class="form-label">Evaluation Type</label>
           <select class="form-select" [(ngModel)]="evaluationType" (ngModelChange)="onEvalTypeChange()" name="evalType">
-            <option value="site_mid">Mid Evaluation</option>
+            <option value="site_mid">Mid-Term Evaluation</option>
             <option value="site_final">Final Evaluation</option>
           </select>
         </div>
       </div>
 
-      <!-- Criteria (1-5 scale) -->
+      <div *ngIf="!selectedId" class="alert alert-warning">Please select a student to evaluate.</div>
+
       <div *ngIf="selectedId">
-        <h6 class="mb-3">Evaluation Criteria <small class="text-muted">(Rate 0-5 for each)</small></h6>
-        <div class="row g-3">
-          <div class="col-md-6">
-            <label class="form-label">Punctuality &amp; Attendance</label>
-            <input type="number" min="0" max="5" class="form-control" [(ngModel)]="evaluationCriteria.punctualityAttendance" name="c_pa" />
+
+        <!-- ── SUBMITTED / APPROVED STATE ── -->
+        <div *ngIf="loadedEvalForCurrentType" class="card border-success mb-4">
+          <div class="card-header bg-success text-white d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <span>
+              <i class="bi bi-check-circle-fill me-2"></i>
+              {{ evaluationType === 'site_mid' ? 'Mid-Term' : 'Final' }} Evaluation — Submitted
+            </span>
+            <span class="badge text-bg-light text-dark fs-6">
+              Total: {{ loadedEvalForCurrentType.totalMarks ?? evaluationTotal }} / 50
+            </span>
           </div>
-          <div class="col-md-6">
-            <label class="form-label">Link Theory to Practice</label>
-            <input type="number" min="0" max="5" class="form-control" [(ngModel)]="evaluationCriteria.linkTheoryToPractice" name="c_ltp" />
-          </div>
-          <div class="col-md-6">
-            <label class="form-label">Critical Thinking</label>
-            <input type="number" min="0" max="5" class="form-control" [(ngModel)]="evaluationCriteria.criticalThinking" name="c_ct" />
-          </div>
-          <div class="col-md-6">
-            <label class="form-label">Technical Knowledge</label>
-            <input type="number" min="0" max="5" class="form-control" [(ngModel)]="evaluationCriteria.technicalKnowledge" name="c_tk" />
-          </div>
-          <div class="col-md-6">
-            <label class="form-label">Creativity</label>
-            <input type="number" min="0" max="5" class="form-control" [(ngModel)]="evaluationCriteria.creativity" name="c_cr" />
-          </div>
-          <div class="col-md-6">
-            <label class="form-label">Adaptability</label>
-            <input type="number" min="0" max="5" class="form-control" [(ngModel)]="evaluationCriteria.adaptability" name="c_ad" />
-          </div>
-          <div class="col-md-6">
-            <label class="form-label">Time Management</label>
-            <input type="number" min="0" max="5" class="form-control" [(ngModel)]="evaluationCriteria.timeManagement" name="c_tm" />
-          </div>
-          <div class="col-md-6">
-            <label class="form-label">Professional Behavior</label>
-            <input type="number" min="0" max="5" class="form-control" [(ngModel)]="evaluationCriteria.professionalBehavior" name="c_pb" />
-          </div>
-          <div class="col-md-6">
-            <label class="form-label">Assignments Performance</label>
-            <input type="number" min="0" max="5" class="form-control" [(ngModel)]="evaluationCriteria.assignmentsPerformance" name="c_ap" />
-          </div>
-          <div class="col-md-6">
-            <label class="form-label">Communication Skills</label>
-            <input type="number" min="0" max="5" class="form-control" [(ngModel)]="evaluationCriteria.communicationSkills" name="c_cs" />
+          <div class="card-body">
+            <div class="alert alert-success mb-3">
+              <i class="bi bi-check-circle-fill me-2"></i>
+              You have already submitted this evaluation. Only one submission is allowed per type.
+            </div>
+
+            <!-- Criteria breakdown -->
+            <h6 class="text-muted mb-3">Criteria Scores</h6>
+            <div class="row g-2 mb-3"
+                 *ngIf="loadedEvalForCurrentType.criteria || loadedEvalForCurrentType.criteriaValues || loadedEvalForCurrentType.criteriaMap">
+              <ng-container *ngFor="let entry of criteriaEntries(loadedEvalForCurrentType.criteria || loadedEvalForCurrentType.criteriaValues || loadedEvalForCurrentType.criteriaMap)">
+                <div class="col-12 col-md-6">
+                  <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                    <small class="text-capitalize fw-medium">{{ entry.label }}</small>
+                    <div class="d-flex align-items-center gap-2">
+                      <div class="progress" style="width:80px; height:8px; flex-grow:1">
+                        <div class="progress-bar bg-success" role="progressbar"
+                             [style.width.%]="(entry.value / 5) * 100"></div>
+                      </div>
+                      <small class="fw-bold">{{ entry.value }}<span class="text-muted fw-normal">/5</span></small>
+                    </div>
+                  </div>
+                </div>
+              </ng-container>
+            </div>
+
+            <!-- Comments -->
+            <div *ngIf="loadedEvalForCurrentType.comments || loadedEvalForCurrentType.commentsText" class="mb-2">
+              <small class="text-muted d-block mb-1">Comments</small>
+              <p class="mb-0">{{ loadedEvalForCurrentType.comments || loadedEvalForCurrentType.commentsText }}</p>
+            </div>
+
+            <!-- Timestamp -->
+            <div class="mt-3 d-flex gap-3 text-muted flex-wrap">
+              <small *ngIf="loadedEvalForCurrentType.submittedAt || loadedEvalForCurrentType.createdAt">
+                <i class="bi bi-calendar3 me-1"></i>
+                Submitted {{ (loadedEvalForCurrentType.submittedAt || loadedEvalForCurrentType.createdAt) | date:'mediumDate' }}
+              </small>
+              <small *ngIf="loadedEvalForCurrentType.submittedBy?.name || loadedEvalForCurrentType.evaluator?.name">
+                <i class="bi bi-person me-1"></i>
+                {{ loadedEvalForCurrentType.submittedBy?.name || loadedEvalForCurrentType.evaluator?.name }}
+              </small>
+            </div>
           </div>
         </div>
 
-        <div class="row g-3 mt-3">
-          <div class="col-md-3">
-            <label class="form-label">Total Marks</label>
-            <input type="number" class="form-control" [value]="evaluationTotal" readonly />
+        <!-- ── SUBMISSION FORM (only shown when not yet submitted) ── -->
+        <div *ngIf="!loadedEvalForCurrentType">
+          <h6 class="mb-3">
+            {{ evaluationType === 'site_mid' ? 'Mid-Term' : 'Final' }} Evaluation Form
+            <small class="text-muted fw-normal">— Rate each criterion from 0 to 5</small>
+          </h6>
+
+          <div class="row g-3">
+            <div class="col-md-6" *ngFor="let c of [
+              {label: 'Punctuality & Attendance',     field: 'punctualityAttendance'},
+              {label: 'Link Theory to Practice',      field: 'linkTheoryToPractice'},
+              {label: 'Critical Thinking',            field: 'criticalThinking'},
+              {label: 'Technical Knowledge',          field: 'technicalKnowledge'},
+              {label: 'Creativity',                   field: 'creativity'},
+              {label: 'Adaptability',                 field: 'adaptability'},
+              {label: 'Time Management',              field: 'timeManagement'},
+              {label: 'Professional Behavior',        field: 'professionalBehavior'},
+              {label: 'Assignments Performance',      field: 'assignmentsPerformance'},
+              {label: 'Communication Skills',         field: 'communicationSkills'}
+            ]">
+              <div class="border rounded p-3">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <label class="form-label mb-0 fw-medium">{{ c.label }}</label>
+                  <span class="badge text-bg-primary">{{ $any(evaluationCriteria)[c.field] }} / 5</span>
+                </div>
+                <input type="range" min="0" max="5" step="1" class="form-range"
+                       [(ngModel)]="$any(evaluationCriteria)[c.field]"
+                       [name]="'c_' + c.field" />
+                <div class="d-flex justify-content-between">
+                  <small class="text-muted">0</small>
+                  <small class="text-muted">5</small>
+                </div>
+              </div>
+            </div>
           </div>
-          <div class="col-md-9">
-            <label class="form-label">Comments</label>
-            <textarea class="form-control" rows="2" [(ngModel)]="evaluationComments" name="evalComments" placeholder="Additional comments about the student's performance..."></textarea>
+
+          <div class="row g-3 mt-3 align-items-end">
+            <div class="col-md-3">
+              <label class="form-label">Total Marks</label>
+              <div class="input-group">
+                <input type="number" class="form-control fw-bold" [value]="evaluationTotal" readonly />
+                <span class="input-group-text text-muted">/ 50</span>
+              </div>
+            </div>
+            <div class="col-md-9">
+              <label class="form-label">Comments</label>
+              <textarea class="form-control" rows="2" [(ngModel)]="evaluationComments" name="evalComments"
+                        placeholder="Additional comments about the student's performance..."></textarea>
+            </div>
+          </div>
+
+          <div class="mt-4">
+            <button class="btn btn-primary" (click)="submitEvaluation()"
+                    [disabled]="submittingEvaluation">
+              <span *ngIf="submittingEvaluation" class="spinner-border spinner-border-sm me-1"></span>
+              Submit {{ evaluationType === 'site_mid' ? 'Mid-Term' : 'Final' }} Evaluation
+            </button>
+            <small class="text-muted ms-3">
+              <i class="bi bi-info-circle me-1"></i>
+              Each evaluation type can only be submitted once.
+            </small>
           </div>
         </div>
 
-        <div class="mt-3">
-          <button class="btn btn-primary" (click)="submitEvaluation()" [disabled]="submittingEvaluation || !selectedId">
-            <span *ngIf="submittingEvaluation" class="spinner-border spinner-border-sm me-1"></span>
-            Submit Evaluation
-          </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Evaluation Status Overview (both types for selected student) -->
+  <div *ngIf="selectedId" class="card mb-3">
+    <div class="card-header bg-light">
+      <i class="bi bi-bar-chart-line me-2"></i>Evaluation Status Overview
+    </div>
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-6">
+          <div class="card h-100" [class.border-success]="loadedEvalMid" [class.border-secondary]="!loadedEvalMid">
+            <div class="card-body d-flex align-items-center gap-3">
+              <i class="bi fs-2"
+                 [class.bi-check-circle-fill]="loadedEvalMid"
+                 [class.bi-clock]="!loadedEvalMid"
+                 [class.text-success]="loadedEvalMid"
+                 [class.text-secondary]="!loadedEvalMid"></i>
+              <div>
+                <div class="fw-semibold">Mid-Term Evaluation</div>
+                <small *ngIf="loadedEvalMid" class="text-success">
+                  Submitted — {{ loadedEvalMid.totalMarks ?? '?' }} / 50
+                </small>
+                <small *ngIf="!loadedEvalMid" class="text-muted">Not submitted yet</small>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="card h-100" [class.border-success]="loadedEvalFinal" [class.border-secondary]="!loadedEvalFinal">
+            <div class="card-body d-flex align-items-center gap-3">
+              <i class="bi fs-2"
+                 [class.bi-check-circle-fill]="loadedEvalFinal"
+                 [class.bi-clock]="!loadedEvalFinal"
+                 [class.text-success]="loadedEvalFinal"
+                 [class.text-secondary]="!loadedEvalFinal"></i>
+              <div>
+                <div class="fw-semibold">Final Evaluation</div>
+                <small *ngIf="loadedEvalFinal" class="text-success">
+                  Submitted — {{ loadedEvalFinal.totalMarks ?? '?' }} / 50
+                </small>
+                <small *ngIf="!loadedEvalFinal" class="text-muted">Not submitted yet</small>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
-
-      <div *ngIf="!selectedId" class="alert alert-warning mt-3">Please select a student to evaluate.</div>
     </div>
   </div>
   }

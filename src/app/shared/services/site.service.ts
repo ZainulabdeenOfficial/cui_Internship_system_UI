@@ -30,6 +30,20 @@ export interface SiteEvaluationResponse {
   data?: any;
 }
 
+export interface SiteInternship {
+  id: string;
+  studentId?: string;
+  facultyId?: string;
+  siteId?: string;
+  type?: string;
+  startDate?: string;
+  endDate?: string;
+  status?: string;
+  student?: { id: string; name: string; email: string; regNo?: string };
+  faculty?: { id: string; name: string; email: string };
+  site?: { id: string; name: string; email: string };
+}
+
 @Injectable({ providedIn: 'root' })
 export class SiteService {
   private base = environment.apiBaseUrl.replace(/\/$/, '');
@@ -68,6 +82,28 @@ export class SiteService {
     }
   }
   
+  /**
+   * GET /api/site/internships
+   * Returns internships where the authenticated user is the assigned site supervisor.
+   */
+  async getSiteInternships(): Promise<{ success?: boolean; data?: SiteInternship[]; message?: string }> {
+    const url = `/api/site/internships`;
+    try {
+      const res = await firstValueFrom(
+        this.http.get<any>(url, { headers: this.jsonHeaders() })
+      );
+      return { success: true, ...res };
+    } catch (err: any) {
+      const status = err?.status ?? 0;
+      if (status && status !== 0) throw err;
+      const abs = `${this.base}${url}`;
+      const res = await firstValueFrom(
+        this.http.get<any>(abs, { headers: this.jsonHeaders() })
+      );
+      return { success: true, ...res };
+    }
+  }
+
   /**
    * Fetch site evaluations by internshipId and optional type filter (site_mid | site_final).
    * When type is omitted all evaluations for the internship are returned.
