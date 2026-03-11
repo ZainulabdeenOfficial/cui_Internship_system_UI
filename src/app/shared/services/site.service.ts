@@ -83,19 +83,20 @@ export class SiteService {
   }
   
   /**
-   * GET /api/site/internships
-   * Returns internships where the authenticated user is the assigned site supervisor.
+   * GET /api/site/internships?status=all
+   * Returns internships where the authenticated site supervisor is assigned.
+   * @param status Optional filter: 'pending' | 'approved' | 'completed' | 'rejected' | 'all' (default 'all')
    */
-  async getSiteInternships(): Promise<{ success?: boolean; data?: SiteInternship[]; message?: string }> {
-    const url = `/api/site/internships`;
+  async getSiteInternships(status: 'pending' | 'approved' | 'completed' | 'rejected' | 'all' = 'all'): Promise<{ success?: boolean; data?: SiteInternship[]; message?: string }> {
+    const url = `/api/site/internships?status=${encodeURIComponent(status)}`;
     try {
       const res = await firstValueFrom(
         this.http.get<any>(url, { headers: this.jsonHeaders() })
       );
       return { success: true, ...res };
     } catch (err: any) {
-      const status = err?.status ?? 0;
-      if (status && status !== 0) throw err;
+      const statusCode = err?.status ?? 0;
+      if (statusCode && statusCode !== 0) throw err;
       const abs = `${this.base}${url}`;
       const res = await firstValueFrom(
         this.http.get<any>(abs, { headers: this.jsonHeaders() })
