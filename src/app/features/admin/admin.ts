@@ -21,7 +21,7 @@ export class Admin {
     try {
       this.route.queryParamMap.subscribe(p => {
         const t = (p.get('tab') || '').toLowerCase();
-        const allowed = ['requests','announcements','officers','faculty','companies','sites','compliance','complaints','scheme','formsrequest','evaluation'] as const;
+        const allowed = ['requests','announcements','officers','faculty','companies','sites','compliance','complaints','scheme','formsrequest','evaluation','maintenance'] as const;
         if ( (allowed as readonly string[]).includes(t) ) {
           this.currentTab = t as any;
           // Auto-load data when navigating directly via URL (no need to click refresh)
@@ -74,11 +74,30 @@ export class Admin {
   facultyId = '';
   siteId = '';
   selectedId: string | null = null;
-  currentTab: 'requests'|'announcements'|'officers'|'faculty'|'companies'|'sites'|'compliance'|'complaints'|'scheme'|'formsRequest'|'evaluation' = 'requests';
+  currentTab: 'requests'|'announcements'|'officers'|'faculty'|'companies'|'sites'|'compliance'|'complaints'|'scheme'|'formsRequest'|'evaluation'|'maintenance' = 'requests';
+  // Maintenance
+  cleaningUpTokens = false;
+  cleanupResult: { success?: boolean; message?: string; deletedCount?: number; timestamp?: string } | null = null;
   currentFormsSubTab: 'apexA'|'apexB'|'apexC' = 'apexA';
   // pagination
   page = { students: 1, requests: 1, complaints: 1, faculty: 1, sites: 1, companies: 1, announcements: 1, officers: 1 };
   pageSize = 10;
+  async runCleanupTokens() {
+    this.cleaningUpTokens = true;
+    this.cleanupResult = null;
+    try {
+      const res = await this.adminApi.cleanupTokens();
+      this.cleanupResult = res;
+      this.toast.success(res?.message || `Cleanup done — ${res?.deletedCount ?? 0} tokens removed`);
+    } catch (err: any) {
+      const msg = err?.error?.message || err?.message || 'Cleanup failed';
+      this.toast.danger(msg);
+      this.cleanupResult = { success: false, message: msg };
+    } finally {
+      this.cleaningUpTokens = false;
+    }
+  }
+
   selectTab(tab: Admin['currentTab']) {
     this.currentTab = tab;
     try { this.router.navigate([], { relativeTo: this.route, queryParams: { tab }, queryParamsHandling: 'merge' }); } catch {}

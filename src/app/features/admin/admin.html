@@ -12,6 +12,7 @@
     <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='scheme'" (click)="selectTab('scheme')">Scheme</button></li>
     <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='formsRequest'" (click)="selectTab('formsRequest')">Student Forms Request</button></li>
     <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='evaluation'" (click)="selectTab('evaluation')"><i class="bi bi-clipboard2-check me-1"></i>Office Evaluation</button></li>
+    <li class="nav-item ms-auto"><button class="nav-link text-danger" [class.active]="currentTab==='maintenance'" (click)="selectTab('maintenance')"><i class="bi bi-tools me-1"></i>Maintenance</button></li>
   </ul>
 
   <!-- Clean unified tab switcher using Angular 17+ control flow -->
@@ -1639,6 +1640,63 @@
       </div>
       }
 
+    </div>
+  </div>
+  }
+
+  @case ('maintenance') {
+  <div class="row g-3">
+    <div class="col-12">
+      <div class="card border-danger">
+        <div class="card-header bg-danger text-white d-flex align-items-center gap-2">
+          <i class="bi bi-tools"></i>
+          <span>System Maintenance</span>
+        </div>
+        <div class="card-body">
+
+          <!-- Cleanup Tokens -->
+          <div class="mb-4">
+            <h6 class="fw-bold mb-1">Clean Up Expired/Revoked Refresh Tokens</h6>
+            <p class="text-muted small mb-3">
+              Removes stale or revoked refresh tokens from the database.
+              Run this periodically to keep the token table lean.
+              <strong class="text-danger">Active sessions will not be affected.</strong>
+            </p>
+            <div class="d-flex align-items-center gap-3 flex-wrap">
+              <button class="btn btn-danger"
+                      [disabled]="cleaningUpTokens"
+                      (click)="runCleanupTokens()">
+                <span *ngIf="cleaningUpTokens" class="spinner-border spinner-border-sm me-1"></span>
+                <i *ngIf="!cleaningUpTokens" class="bi bi-trash me-1"></i>
+                {{ cleaningUpTokens ? 'Running...' : 'Run Cleanup' }}
+              </button>
+              <span *ngIf="cleanupResult" class="badge"
+                    [class.text-bg-success]="cleanupResult.success"
+                    [class.text-bg-danger]="!cleanupResult.success">
+                {{ cleanupResult.success ? '\u2713' : '\u2717' }}
+                {{ cleanupResult.message }}
+              </span>
+            </div>
+
+            <!-- Result card -->
+            <div *ngIf="cleanupResult && cleanupResult.success" class="card border-success mt-3" style="max-width:420px">
+              <div class="card-body py-2 px-3">
+                <div class="row g-2 text-center">
+                  <div class="col-6">
+                    <div class="fw-bold fs-4 text-danger">{{ cleanupResult.deletedCount ?? 0 }}</div>
+                    <small class="text-muted">Tokens Deleted</small>
+                  </div>
+                  <div class="col-6">
+                    <div class="fw-bold small mt-2">{{ cleanupResult.timestamp | date:'medium' }}</div>
+                    <small class="text-muted">Completed At</small>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
     </div>
   </div>
   }

@@ -576,4 +576,14 @@ export class AdminService {
     const url = environment.production ? path : `${base}${path}`;
     return await firstValueFrom(this.http.get<any>(url, { headers: await this.authHeaders() }));
   }
+
+  /** POST /api/maintenance/cleanup-tokens — removes expired/revoked tokens from the database */
+  async cleanupTokens(): Promise<{ success?: boolean; message?: string; deletedCount?: number; timestamp?: string }> {
+    const base = environment.apiBaseUrl.replace(/\/$/, '');
+    const path = '/api/maintenance/cleanup-tokens';
+    const url = environment.production ? path : `${base}${path}`;
+    return await firstValueFrom(
+      this.http.post<any>(url, {}, { headers: await this.authHeaders(true) })
+    );
+  }
 }

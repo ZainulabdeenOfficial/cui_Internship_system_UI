@@ -14,6 +14,7 @@ const NEEDS_BEARER: RouteRule[] = [
   /^\/api\/faculty\//,
   /^\/api\/site\//,
   /^\/api\/secure\//,
+  /^\/api\/maintenance\//,
   /^\/api\/auth\/refresh-token$/
 ];
 const PUBLIC_AUTH: RouteRule[] = [
@@ -53,13 +54,34 @@ export const authTokenInterceptor: HttpInterceptorFn = (req, next) => {
 
     const token = needsAuth ? getSessionToken() : null;
     if (needsAuth && !token) {
-      console.warn('⚠️ [authTokenInterceptor] No token found for protected endpoint:', path);
-      // Check if refresh token exists before attempting request
+      console.warn('⚠️ [authTokenInterceptor] No access token for protected endpoint:', path);
       const hasRefreshToken = localStorage.getItem('refreshToken');
       if (!hasRefreshToken) {
+        // No refresh token either — cannot authenticate, redirect immediately
         console.error('❌ [authTokenInterceptor] No refresh token available, redirecting to login');
         auth.logout({ redirect: true }).catch(() => {});
+        return throwError(() => new Error('No authentication tokens available'));
       }
+      // Access token missing but refresh token present — proactively refresh before sending
+      console.log('🔄 [authTokenInterceptor] Proactive refresh (no access token) for:', path);
+      isRefreshingGlobally = true;
+      return from(auth.refreshAccessToken()).pipe(
+        switchMap(() => {
+          isRefreshingGlobally = false;
+          const newToken = getSessionToken();
+          console.log('✅ [authTokenInterceptor] Proactive refresh done, retrying:', path);
+          const authed = newToken
+            ? req.clone({ setHeaders: { Authorization: `Bearer ${newToken}` } })
+            : req;
+          return next(authed);
+        }),
+        catchError((refreshErr) => {
+          isRefreshingGlobally = false;
+          console.error('❌ [authTokenInterceptor] Proactive refresh failed, logging out:', refreshErr?.message);
+          auth.logout({ redirect: true }).catch(() => {});
+          return throwError(() => refreshErr);
+        })
+      );
     }
     if (token) {
       console.log('✅ [authTokenInterceptor] Adding Bearer token for:', path);
