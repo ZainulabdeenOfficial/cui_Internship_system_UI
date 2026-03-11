@@ -1446,7 +1446,7 @@ export class Student implements OnDestroy {
     const internshipId = this.studentInternshipId || this.apexBStatus?.internshipId;
     if (!internshipId || this.loadingEvaluationSummary) return;
     this.loadingEvaluationSummary = true;
-    this.cdr.markForCheck();
+    try { this.cdr.detectChanges(); } catch {}
     try {
       const res = await this.studentApi.getEvaluationSummary(internshipId, {
         skipGlobalLoading: true,
@@ -1462,7 +1462,7 @@ export class Student implements OnDestroy {
       this.evaluationSummary = null;
     } finally {
       this.loadingEvaluationSummary = false;
-      this.cdr.markForCheck();
+      try { this.cdr.detectChanges(); } catch {}
     }
   }
 

@@ -756,6 +756,7 @@ export class FacultySupervisor {
   async loadEvaluationSummary(internshipId: string, forceRefresh = false) {
     if (!internshipId || this.loadingEvaluationSummary) return;
     this.loadingEvaluationSummary = true;
+    try { this.cdr.detectChanges(); } catch {}
     try {
       const res = await this.facultyApi.getEvaluationSummary(internshipId, {
         skipGlobalLoading: true,
@@ -780,7 +781,7 @@ export class FacultySupervisor {
       this.evaluationSummary = null;
     } finally {
       this.loadingEvaluationSummary = false;
-      this.cdr.markForCheck();
+      try { this.cdr.detectChanges(); } catch {}
     }
   }
 
