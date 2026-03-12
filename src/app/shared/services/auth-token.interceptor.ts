@@ -25,14 +25,23 @@ const PUBLIC_AUTH: RouteRule[] = [
   /^\/api\/auth\/refresh-token$/
 ];
 
+// In-memory token cache: populated whenever storage is successfully read.
+// Falls back to this when browser Tracking Prevention blocks localStorage/sessionStorage.
+let _cachedToken: string | null = null;
+
 function getSessionToken(): string | null {
   try {
-    return sessionStorage.getItem('authToken')
+    const stored = sessionStorage.getItem('authToken')
       || sessionStorage.getItem('accessToken')
       || sessionStorage.getItem('token')
       || localStorage.getItem('authToken')
       || localStorage.getItem('accessToken');
-  } catch { return null; }
+    if (stored) { _cachedToken = stored; }
+    return stored || _cachedToken;
+  } catch {
+    // Storage blocked (e.g. Edge Tracking Prevention) — use memory cache
+    return _cachedToken;
+  }
 }
 
 function normalizePath(req: HttpRequest<any>): string {
@@ -43,6 +52,43 @@ function normalizePath(req: HttpRequest<any>): string {
   return raw.split('?')[0];
 }
 
+/** 
+ * Uses native fetch (bypasses Angular interceptors) to call GET /api/auth/sessions.
+ * The backend authenticates via httpOnly session cookie (withCredentials).
+ * Returns an access token string if the server provides one, empty string '' if the
+ * session is valid but no token is in the response, or null if session is invalid/expired.
+ */
+async function trySessionFetch(): Promise<string | null> {
+  const urls = ['/api/auth/sessions', API_BASE ? `${API_BASE}/api/auth/sessions` : null].filter(Boolean) as string[];
+  for (const url of urls) {
+    try {
+      const res = await fetch(url, { credentials: 'include', headers: { Accept: 'application/json' } });
+      if (res.status === 401 || res.status === 403) return null; // genuinely expired
+      if (!res.ok) continue;
+      const data = await res.json();
+      // Extract token from various response shapes
+      const sessions = Array.isArray(data) ? data : Array.isArray(data?.sessions) ? data.sessions : null;
+      const token = data?.accessToken || data?.token
+        || data?.data?.accessToken || data?.data?.token
+        || (sessions?.[0]?.accessToken) || (sessions?.[0]?.token);
+      if (token) {
+        _cachedToken = token;
+        try {
+          sessionStorage.setItem('authToken', token);
+          sessionStorage.setItem('accessToken', token);
+          localStorage.setItem('authToken', token);
+          localStorage.setItem('accessToken', token);
+        } catch {}
+        return token;
+      }
+      // Session exists on server (200 OK) but no token in body — session is valid
+      return '';
+    } catch { continue; }
+  }
+  return null;
+}
+
+// Prevents duplicate concurrent refreshes (many parallel API calls all seeing no token).
 let isRefreshingGlobally = false;
 // Prevents multiple simultaneous logout redirects (race condition when multiple API calls
 // fire concurrently and all detect missing tokens before the router navigation completes).
@@ -74,10 +120,50 @@ export const authTokenInterceptor: HttpInterceptorFn = (req, next) => {
       // Only attempt a proactive refresh if a refresh token exists (cookie or localStorage).
       // Without one, redirect to login immediately to avoid unnecessary 405 errors.
       const hasRefreshToken = (() => { try { return !!localStorage.getItem('refreshToken'); } catch { return false; } })();
+      if (!hasRefreshToken && !_cachedToken) {
+        // No refresh token in storage and no in-memory cache.
+        // Before logging out, check if the session cookie is still valid via GET /api/auth/sessions.
+        // This handles Edge Tracking Prevention which blocks localStorage but leaves httpOnly cookies intact.
+        if (isRefreshingGlobally) {
+          return from(new Promise<void>(r => setTimeout(r, 800))).pipe(
+            switchMap(() => {
+              const t = getSessionToken();
+              return next(t ? req.clone({ setHeaders: { Authorization: `Bearer ${t}` } }) : req);
+            })
+          );
+        }
+        console.log('🔍 [authTokenInterceptor] No token in storage or cache — checking session cookie via /api/auth/sessions');
+        isRefreshingGlobally = true;
+        return from(trySessionFetch()).pipe(
+          switchMap((sessionToken) => {
+            isRefreshingGlobally = false;
+            if (sessionToken === null) {
+              // Definitely no valid session
+              console.warn('⚠️ [authTokenInterceptor] Session invalid, redirecting to login');
+              triggerLogout(auth);
+              return throwError(() => new Error('Session expired. Please log in again.'));
+            }
+            const freshToken = getSessionToken();
+            if (freshToken) {
+              console.log('✅ [authTokenInterceptor] Session active, token retrieved, retrying:', path);
+              return next(req.clone({ setHeaders: { Authorization: `Bearer ${freshToken}` } }));
+            }
+            // Session is valid (cookie) but backend didn't return a new token — proceed without bearer
+            // and let the 401 handler below do a final retry.
+            console.log('ℹ️ [authTokenInterceptor] Session valid via cookie but no bearer token available, proceeding without bearer');
+            return next(req);
+          }),
+          catchError(() => {
+            isRefreshingGlobally = false;
+            triggerLogout(auth);
+            return throwError(() => new Error('Session expired. Please log in again.'));
+          })
+        );
+      }
       if (!hasRefreshToken) {
-        console.warn('⚠️ [authTokenInterceptor] No refresh token available, redirecting to login');
-        triggerLogout(auth);
-        return throwError(() => new Error('Session expired. Please log in again.'));
+        // Memory cache has a token but storage is blocked — use it directly
+        console.log('✅ [authTokenInterceptor] Using in-memory cached token (storage blocked)');
+        return next(req.clone({ setHeaders: { Authorization: `Bearer ${_cachedToken!}` } }));
       }
       if (isRefreshingGlobally) {
         // Another in-flight request is already refreshing; wait then send with available token
