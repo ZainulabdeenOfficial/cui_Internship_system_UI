@@ -85,8 +85,18 @@ export const authTokenInterceptor: HttpInterceptorFn = (req, next) => {
         }),
         catchError((refreshErr) => {
           isRefreshingGlobally = false;
+          const refreshStatus: number = refreshErr?.status ?? 0;
+          // For definitive server errors (4xx/5xx, e.g. 405), the refresh endpoint is broken
+          // or the token is invalid. Clear stale tokens and redirect to login immediately
+          // instead of falling through with no token (which causes a 401 storm).
+          if (refreshStatus >= 400 && refreshStatus < 600) {
+            console.warn(`⚠️ [authTokenInterceptor] Proactive refresh failed (HTTP ${refreshStatus}), clearing tokens and redirecting to login`);
+            auth.clearTokens();
+            auth.logout({ redirect: true }).catch(() => {});
+            return throwError(() => new Error('Session expired. Please log in again.'));
+          }
           console.warn('⚠️ [authTokenInterceptor] Proactive refresh failed:', refreshErr?.message);
-          // Forward without auth; let the server 401 drive the retry flow below
+          // For network errors (status 0), fall through; the 401 handler below will retry
           return next(req);
         })
       );
