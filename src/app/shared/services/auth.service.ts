@@ -16,7 +16,8 @@ export class AuthService {
   private rel(path: string) { return path.startsWith('/') ? path : `/${path}`; }
   private async postJson<T>(path: string, body: any, opts?: { timeoutMs?: number }) {
     const urlRel = this.rel(path);
-    const req$ = this.http.post<T>(urlRel, body, { headers: new HttpHeaders({ 'Content-Type': 'application/json', Accept: 'application/json' }) });
+    // withCredentials: true ensures the browser sends/receives httpOnly cookies (refresh token)
+    const req$ = this.http.post<T>(urlRel, body, { headers: new HttpHeaders({ 'Content-Type': 'application/json', Accept: 'application/json' }), withCredentials: true });
     try { return await firstValueFrom(opts?.timeoutMs ? req$.pipe(timeout(opts.timeoutMs)) : req$); }
     catch (err: any) {
       // Only fallback on network/CORS-like errors (status 0). For 4xx/5xx, bubble up as-is.
@@ -24,7 +25,7 @@ export class AuthService {
       if (status && status !== 0) throw err;
       // Fallback to absolute base if relative fails due to environment misconfig
       const abs = `${this.absBase}${urlRel}`;
-      const req2$ = this.http.post<T>(abs, body, { headers: new HttpHeaders({ 'Content-Type': 'application/json', Accept: 'application/json' }) });
+      const req2$ = this.http.post<T>(abs, body, { headers: new HttpHeaders({ 'Content-Type': 'application/json', Accept: 'application/json' }), withCredentials: true });
       return await firstValueFrom(opts?.timeoutMs ? req2$.pipe(timeout(opts.timeoutMs)) : req2$);
     }
   }
@@ -128,24 +129,25 @@ export class AuthService {
 
   async refreshAccessToken(): Promise<RefreshTokenResponse> {
     const rel = '/api/auth/refresh-token';
-    let refreshToken: string | null = null;
-    
-    try { refreshToken = localStorage.getItem('refreshToken'); } catch {}
-    
-    if (!refreshToken) {
-      throw new Error('No refresh token found');
-    }
+    // The backend stores the refresh token as an httpOnly cookie.
+    // withCredentials: true tells the browser to send that cookie automatically.
+    // Also include any localStorage refresh token as a body fallback for backends
+    // that accept both cookie and body-based refresh tokens.
+    const bodyRefreshToken = (() => { try { return localStorage.getItem('refreshToken') || undefined; } catch { return undefined; } })();
     
     const post = (u: string) => this.http.post<RefreshTokenResponse>(
-      u, 
-      { refreshToken }, 
-      { headers: new HttpHeaders({ 'Content-Type': 'application/json' }) }
+      u,
+      bodyRefreshToken ? { refreshToken: bodyRefreshToken } : {},
+      {
+        headers: new HttpHeaders({ 'Content-Type': 'application/json' }),
+        withCredentials: true  // sends httpOnly refresh-token cookie
+      }
     );
     
     let res: RefreshTokenResponse;
     
     try {
-      // Prefer same-origin (rewrites/proxy) then fallback to absolute
+      // Prefer same-origin (proxy) so the cookie domain matches
       res = await firstValueFrom(post(rel));
     } catch (err: any) {
       const absUrl = `${this.absBase}${rel}`;

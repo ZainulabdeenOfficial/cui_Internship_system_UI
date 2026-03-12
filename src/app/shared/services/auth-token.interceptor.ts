@@ -55,14 +55,17 @@ export const authTokenInterceptor: HttpInterceptorFn = (req, next) => {
     const token = needsAuth ? getSessionToken() : null;
     if (needsAuth && !token) {
       console.warn('⚠️ [authTokenInterceptor] No access token for protected endpoint:', path);
-      const hasRefreshToken = localStorage.getItem('refreshToken');
-      if (!hasRefreshToken) {
-        // No refresh token either — forward without auth and let the server's 401 handle it.
-        // Do NOT redirect here: the user may have just logged in and tokens are in flight.
-        console.warn('⚠️ [authTokenInterceptor] No refresh token — forwarding without auth for:', path);
-        return next(req);
+      // Refresh token is an httpOnly cookie — JS cannot read it, but the browser sends it
+      // automatically via withCredentials. Always attempt a proactive refresh.
+      if (isRefreshingGlobally) {
+        // Another in-flight request is already refreshing; wait then send with available token
+        return from(new Promise<void>(r => setTimeout(r, 800))).pipe(
+          switchMap(() => {
+            const t = getSessionToken();
+            return next(t ? req.clone({ setHeaders: { Authorization: `Bearer ${t}` } }) : req);
+          })
+        );
       }
-      // Access token missing but refresh token present — proactively refresh before sending
       console.log('🔄 [authTokenInterceptor] Proactive refresh (no access token) for:', path);
       isRefreshingGlobally = true;
       return from(auth.refreshAccessToken()).pipe(
@@ -77,8 +80,8 @@ export const authTokenInterceptor: HttpInterceptorFn = (req, next) => {
         }),
         catchError((refreshErr) => {
           isRefreshingGlobally = false;
-          console.error('❌ [authTokenInterceptor] Proactive refresh failed:', refreshErr?.message);
-          // Forward without auth rather than hard-redirecting; let 401 drive logout
+          console.warn('⚠️ [authTokenInterceptor] Proactive refresh failed:', refreshErr?.message);
+          // Forward without auth; let the server 401 drive the retry flow below
           return next(req);
         })
       );
@@ -118,13 +121,9 @@ export const authTokenInterceptor: HttpInterceptorFn = (req, next) => {
         
         if (!eligible) return throwError(() => err);
         
-        // Check if we have a refresh token before attempting refresh
-        const hasRefreshToken = localStorage.getItem('refreshToken');
-        if (!hasRefreshToken) {
-          console.error('❌ [authTokenInterceptor] No refresh token available for 401 retry');
-          auth.logout({ redirect: true }).catch(() => {});
-          return throwError(() => err);
-        }
+        // The refresh token is an httpOnly cookie — JS cannot read it via localStorage.
+        // Always attempt the refresh; the browser will send the cookie automatically.
+        // If the refresh endpoint itself returns 401 the catchError below will logout.
         
         // If another request is already refreshing, wait a bit and retry once
         if (isRefreshingGlobally) {
