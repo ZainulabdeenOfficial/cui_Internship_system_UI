@@ -44,8 +44,25 @@ function normalizePath(req: HttpRequest<any>): string {
 }
 
 let isRefreshingGlobally = false;
+// Prevents multiple simultaneous logout redirects (race condition when multiple API calls
+// fire concurrently and all detect missing tokens before the router navigation completes).
+let isLoggingOut = false;
+
+function triggerLogout(auth: AuthService) {
+  if (isLoggingOut) return;
+  isLoggingOut = true;
+  auth.logout({ redirect: true }).catch(() => {}).finally(() => {
+    // Reset after navigation so a fresh login can work normally
+    setTimeout(() => { isLoggingOut = false; }, 5000);
+  });
+}
+
 export const authTokenInterceptor: HttpInterceptorFn = (req, next) => {
   const auth = inject(AuthService);
+  // If a logout redirect is already in progress, abort all further API calls immediately
+  if (isLoggingOut) {
+    return throwError(() => new Error('Session expired. Please log in again.'));
+  }
   try {
     const path = normalizePath(req);
     const isApi = path.startsWith('/api');
@@ -59,7 +76,7 @@ export const authTokenInterceptor: HttpInterceptorFn = (req, next) => {
       const hasRefreshToken = (() => { try { return !!localStorage.getItem('refreshToken'); } catch { return false; } })();
       if (!hasRefreshToken) {
         console.warn('⚠️ [authTokenInterceptor] No refresh token available, redirecting to login');
-        auth.logout({ redirect: true }).catch(() => {});
+        triggerLogout(auth);
         return throwError(() => new Error('Session expired. Please log in again.'));
       }
       if (isRefreshingGlobally) {
@@ -92,7 +109,7 @@ export const authTokenInterceptor: HttpInterceptorFn = (req, next) => {
           if (refreshStatus >= 400 && refreshStatus < 600) {
             console.warn(`⚠️ [authTokenInterceptor] Proactive refresh failed (HTTP ${refreshStatus}), clearing tokens and redirecting to login`);
             auth.clearTokens();
-            auth.logout({ redirect: true }).catch(() => {});
+            triggerLogout(auth);
             return throwError(() => new Error('Session expired. Please log in again.'));
           }
           console.warn('⚠️ [authTokenInterceptor] Proactive refresh failed:', refreshErr?.message);
@@ -157,7 +174,7 @@ export const authTokenInterceptor: HttpInterceptorFn = (req, next) => {
                 return next(retried);
               } else {
                 console.error('❌ [authTokenInterceptor] Still no token after wait, logging out');
-                auth.logout({ redirect: true }).catch(() => {});
+                triggerLogout(auth);
                 return throwError(() => err);
               }
             })
@@ -186,7 +203,7 @@ export const authTokenInterceptor: HttpInterceptorFn = (req, next) => {
               message: refreshErr?.message,
               status: refreshErr?.status
             });
-            auth.logout({ redirect: true }).catch(() => {});
+            triggerLogout(auth);
             return throwError(() => err);
           })
         );
