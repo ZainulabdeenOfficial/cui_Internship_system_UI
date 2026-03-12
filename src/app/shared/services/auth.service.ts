@@ -66,6 +66,9 @@ export class AuthService {
           const rtk = anyRes.refreshToken || anyRes?.data?.refreshToken || anyRes?.user?.refreshToken;
           if (atk) sessionStorage.setItem('authToken', atk);
           if (atk) sessionStorage.setItem('accessToken', atk);
+          // Also persist in localStorage so the token survives page refresh
+          if (atk) localStorage.setItem('authToken', atk);
+          if (atk) localStorage.setItem('accessToken', atk);
           if (rtk) localStorage.setItem('refreshToken', rtk);
         } catch {}
       // If API omitted token but set success, try refresh once
@@ -155,9 +158,11 @@ export class AuthService {
       throw new Error('Invalid refresh response: missing access token');
     }
     
-    // Save access token
+    // Save access token in both storages so it persists across page refreshes
     sessionStorage.setItem('authToken', res.accessToken);
     sessionStorage.setItem('accessToken', res.accessToken);
+    localStorage.setItem('authToken', res.accessToken);
+    localStorage.setItem('accessToken', res.accessToken);
     
     // Save refresh token if new one provided
     if (res.refreshToken) {
@@ -177,7 +182,11 @@ export class AuthService {
       sessionStorage.removeItem('accessToken');
       sessionStorage.removeItem('token');
     } catch {}
-    try { localStorage.removeItem('refreshToken'); } catch {}
+    try {
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('accessToken');
+    } catch {}
   }
 
   async logout(options?: { redirect?: boolean; returnTo?: string }) {
