@@ -99,7 +99,15 @@ export class TokenRefreshService {
         this.timer = setTimeout(() => this.refreshAndReschedule(), 60_000);
       }
     } catch (err: any) {
-      // on failure, try again in 60s
+      const status: number = err?.status ?? 0;
+      // For definitive server errors (4xx/5xx, e.g. 405 Method Not Allowed) stop the
+      // retry loop — the endpoint is not going to start working on its own.
+      if (status >= 400 && status < 600) {
+        console.warn(`⚠️ [TokenRefresh] Non-retryable refresh failure (HTTP ${status}), stopping refresh timer.`);
+        if (this.timer) { clearTimeout(this.timer); this.timer = null; }
+        return;
+      }
+      // For transient / network errors, retry in 60s
       console.warn('⚠️ [TokenRefresh] Failed to refresh token, retrying in 60s:', {
         error: err,
         message: err?.message,

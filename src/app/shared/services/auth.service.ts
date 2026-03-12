@@ -150,6 +150,14 @@ export class AuthService {
       // Prefer same-origin (proxy) so the cookie domain matches
       res = await firstValueFrom(post(rel));
     } catch (err: any) {
+      const status: number = err?.status ?? 0;
+      // Only fall back to absolute URL for network/CORS errors (status 0).
+      // For 4xx/5xx (e.g. 405 Method Not Allowed), the backend has spoken — retrying
+      // a different URL won't help and generates duplicate error noise.
+      if (status !== 0) {
+        console.error('❌ Token refresh failed:', err?.message || err);
+        throw err;
+      }
       const absUrl = `${this.absBase}${rel}`;
       try {
         res = await firstValueFrom(post(absUrl));

@@ -14,8 +14,7 @@ const NEEDS_BEARER: RouteRule[] = [
   /^\/api\/faculty\//,
   /^\/api\/site\//,
   /^\/api\/secure\//,
-  /^\/api\/maintenance\//,
-  /^\/api\/auth\/refresh-token$/
+  /^\/api\/maintenance\//
 ];
 const PUBLIC_AUTH: RouteRule[] = [
   /^\/api\/auth\/login$/,
@@ -55,8 +54,14 @@ export const authTokenInterceptor: HttpInterceptorFn = (req, next) => {
     const token = needsAuth ? getSessionToken() : null;
     if (needsAuth && !token) {
       console.warn('⚠️ [authTokenInterceptor] No access token for protected endpoint:', path);
-      // Refresh token is an httpOnly cookie — JS cannot read it, but the browser sends it
-      // automatically via withCredentials. Always attempt a proactive refresh.
+      // Only attempt a proactive refresh if a refresh token exists (cookie or localStorage).
+      // Without one, redirect to login immediately to avoid unnecessary 405 errors.
+      const hasRefreshToken = (() => { try { return !!localStorage.getItem('refreshToken'); } catch { return false; } })();
+      if (!hasRefreshToken) {
+        console.warn('⚠️ [authTokenInterceptor] No refresh token available, redirecting to login');
+        auth.logout({ redirect: true }).catch(() => {});
+        return throwError(() => new Error('Session expired. Please log in again.'));
+      }
       if (isRefreshingGlobally) {
         // Another in-flight request is already refreshing; wait then send with available token
         return from(new Promise<void>(r => setTimeout(r, 800))).pipe(
