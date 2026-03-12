@@ -57,13 +57,18 @@ export class AuthService {
     const attempt = async (): Promise<LoginResponse> => {
       const res = await this.postJson<LoginResponse>('/api/auth/login', input, { timeoutMs: to });
       const anyRes: any = res || {};
-        let token = anyRes.token || anyRes.accessToken;
-        const user = anyRes.user ?? anyRes.data ?? undefined;
-        const role = (user?.role || anyRes.role || '').toString();
+        // Support all common backend token response shapes:
+        // { accessToken } | { token } | { data: { accessToken } } | { data: { token } }
+        const atk = anyRes.accessToken || anyRes.token
+          || anyRes.data?.accessToken || anyRes.data?.token
+          || anyRes.tokens?.accessToken || anyRes.tokens?.token;
+        const rtk = anyRes.refreshToken || anyRes.data?.refreshToken
+          || anyRes.user?.refreshToken || anyRes.tokens?.refreshToken;
+        let token = atk;
+        const user = anyRes.user ?? anyRes.data?.user ?? anyRes.data ?? undefined;
+        const role = (anyRes.role || user?.role || '').toString();
         // Save tokens if present
         try {
-          const atk = anyRes.accessToken || anyRes.token;
-          const rtk = anyRes.refreshToken || anyRes?.data?.refreshToken || anyRes?.user?.refreshToken;
           if (atk) sessionStorage.setItem('authToken', atk);
           if (atk) sessionStorage.setItem('accessToken', atk);
           // Also persist in localStorage so the token survives page refresh

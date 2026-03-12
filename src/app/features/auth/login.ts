@@ -119,16 +119,29 @@ export class Login implements OnDestroy, OnInit {
   const apiRes = await this.auth.login({ email, password }, { timeoutMs: 4000 });
   if (apiRes?.message) { this.apiMessage = apiRes.message; this.toast.info(apiRes.message); }
   if (apiRes && apiRes.success) {
-        // Persist initial token if present
-  if (apiRes.token) { sessionStorage.setItem('authToken', apiRes.token); }
-  if (apiRes.accessToken) { sessionStorage.setItem('accessToken', apiRes.accessToken); sessionStorage.setItem('authToken', apiRes.accessToken); }
-        else {
-          // Attempt to fetch a fresh token (regenerate) if missing
-          try {
-            const refreshed = await this.auth.refreshAccessToken();
-            const rt = (refreshed as any)?.token || (refreshed as any)?.accessToken;
-            if (rt) sessionStorage.setItem('authToken', rt);
-          } catch {}
+        // Persist initial token in both storages (sessionStorage for current session,
+        // localStorage so it survives page refresh)
+        const rawToken = apiRes.token || apiRes.accessToken;
+        if (rawToken) {
+          sessionStorage.setItem('authToken', rawToken);
+          sessionStorage.setItem('accessToken', rawToken);
+          localStorage.setItem('authToken', rawToken);
+          localStorage.setItem('accessToken', rawToken);
+        } else {
+          // Token might already be saved by auth.service; only try refresh if truly missing
+          const existing = sessionStorage.getItem('authToken') || localStorage.getItem('authToken');
+          if (!existing) {
+            try {
+              const refreshed = await this.auth.refreshAccessToken();
+              const rt = (refreshed as any)?.token || (refreshed as any)?.accessToken;
+              if (rt) {
+                sessionStorage.setItem('authToken', rt);
+                sessionStorage.setItem('accessToken', rt);
+                localStorage.setItem('authToken', rt);
+                localStorage.setItem('accessToken', rt);
+              }
+            } catch {}
+          }
         }
         if (this.remember) localStorage.setItem('lastStudentEmail', email);
     // Determine role from API user if provided; do NOT default silently

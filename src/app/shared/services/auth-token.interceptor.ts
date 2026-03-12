@@ -57,10 +57,10 @@ export const authTokenInterceptor: HttpInterceptorFn = (req, next) => {
       console.warn('⚠️ [authTokenInterceptor] No access token for protected endpoint:', path);
       const hasRefreshToken = localStorage.getItem('refreshToken');
       if (!hasRefreshToken) {
-        // No refresh token either — cannot authenticate, redirect immediately
-        console.error('❌ [authTokenInterceptor] No refresh token available, redirecting to login');
-        auth.logout({ redirect: true }).catch(() => {});
-        return throwError(() => new Error('No authentication tokens available'));
+        // No refresh token either — forward without auth and let the server's 401 handle it.
+        // Do NOT redirect here: the user may have just logged in and tokens are in flight.
+        console.warn('⚠️ [authTokenInterceptor] No refresh token — forwarding without auth for:', path);
+        return next(req);
       }
       // Access token missing but refresh token present — proactively refresh before sending
       console.log('🔄 [authTokenInterceptor] Proactive refresh (no access token) for:', path);
@@ -77,9 +77,9 @@ export const authTokenInterceptor: HttpInterceptorFn = (req, next) => {
         }),
         catchError((refreshErr) => {
           isRefreshingGlobally = false;
-          console.error('❌ [authTokenInterceptor] Proactive refresh failed, logging out:', refreshErr?.message);
-          auth.logout({ redirect: true }).catch(() => {});
-          return throwError(() => refreshErr);
+          console.error('❌ [authTokenInterceptor] Proactive refresh failed:', refreshErr?.message);
+          // Forward without auth rather than hard-redirecting; let 401 drive logout
+          return next(req);
         })
       );
     }
