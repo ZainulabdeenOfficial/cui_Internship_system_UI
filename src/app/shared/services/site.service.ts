@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import { firstValueFrom } from 'rxjs';
+import { SiteInternship, GetSiteInternshipsResponse } from '../models/site/internship.models';
 
 export interface SiteEvaluationCriteria {
   punctualityAttendance: number;
@@ -28,20 +29,6 @@ export interface SiteEvaluationResponse {
   success?: boolean;
   message?: string;
   data?: any;
-}
-
-export interface SiteInternship {
-  id: string;
-  studentId?: string;
-  facultyId?: string;
-  siteId?: string;
-  type?: string;
-  startDate?: string;
-  endDate?: string;
-  status?: string;
-  student?: { id: string; name: string; email: string; regNo?: string };
-  faculty?: { id: string; name: string; email: string };
-  site?: { id: string; name: string; email: string };
 }
 
 @Injectable({ providedIn: 'root' })
@@ -87,21 +74,21 @@ export class SiteService {
    * Returns internships where the authenticated site supervisor is assigned.
    * @param status Optional filter: 'pending' | 'approved' | 'completed' | 'rejected' | 'all' (default 'all')
    */
-  async getSiteInternships(status: 'pending' | 'approved' | 'completed' | 'rejected' | 'all' = 'all'): Promise<{ success?: boolean; data?: SiteInternship[]; message?: string }> {
+  async getSiteInternships(status: 'pending' | 'approved' | 'completed' | 'rejected' | 'all' = 'all'): Promise<GetSiteInternshipsResponse> {
     const url = `/api/site/internships?status=${encodeURIComponent(status)}`;
     try {
       const res = await firstValueFrom(
-        this.http.get<any>(url, { headers: this.jsonHeaders() })
+        this.http.get<GetSiteInternshipsResponse>(url, { headers: this.jsonHeaders() })
       );
-      return { success: true, ...res };
+      return res;
     } catch (err: any) {
       const statusCode = err?.status ?? 0;
       if (statusCode && statusCode !== 0) throw err;
       const abs = `${this.base}${url}`;
       const res = await firstValueFrom(
-        this.http.get<any>(abs, { headers: this.jsonHeaders() })
+        this.http.get<GetSiteInternshipsResponse>(abs, { headers: this.jsonHeaders() })
       );
-      return { success: true, ...res };
+      return res;
     }
   }
 

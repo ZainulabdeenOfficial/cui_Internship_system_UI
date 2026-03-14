@@ -6,7 +6,8 @@ import { ToastService } from '../../shared/toast/toast.service';
 import { ActivatedRoute, Router } from '@angular/router';
 import { PaginatePipe } from '../../shared/pagination/paginate.pipe';
 import { PaginatorComponent } from '../../shared/pagination/paginator';
-import { SiteService, SiteEvaluationCriteria, SiteEvaluationPayload, SiteInternship } from '../../shared/services/site.service';
+import { SiteService, SiteEvaluationCriteria, SiteEvaluationPayload } from '../../shared/services/site.service';
+import { SiteInternship } from '../../shared/models/site/internship.models';
 
 @Component({
   selector: 'app-site-supervisor',
