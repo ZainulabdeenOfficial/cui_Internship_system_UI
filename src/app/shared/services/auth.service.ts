@@ -134,21 +134,42 @@ export class AuthService {
     // Also include any localStorage refresh token as a body fallback for backends
     // that accept both cookie and body-based refresh tokens.
     const bodyRefreshToken = (() => { try { return localStorage.getItem('refreshToken') || undefined; } catch { return undefined; } })();
-    
+
     const post = (u: string) => this.http.post<RefreshTokenResponse>(
       u,
-      bodyRefreshToken ? { refreshToken: bodyRefreshToken } : {},
+      bodyRefreshToken ? { refreshToken: bodyRefreshToken } : null,
       {
-        headers: new HttpHeaders({ 'Content-Type': 'application/json' }),
+        headers: new HttpHeaders({ Accept: 'application/json' }),
         withCredentials: true  // sends httpOnly refresh-token cookie
       }
     );
-    
-    let res: RefreshTokenResponse;
-    
+
+    // Some backends only register one of the two path variants.
+    // Try both without changing the HTTP method (always POST).
+    const relCandidates = [rel, `${rel}/`];
+    let res: RefreshTokenResponse | null = null;
+
     try {
-      // Prefer same-origin (proxy) so the cookie domain matches
-      res = await firstValueFrom(post(rel));
+      // Prefer same-origin (proxy) so the cookie domain matches.
+      // If one route variant returns 405, try the alternate variant once.
+      let lastRelErr: any;
+      for (const candidate of relCandidates) {
+        try {
+          res = await firstValueFrom(post(candidate));
+          lastRelErr = null;
+          break;
+        } catch (candidateErr: any) {
+          lastRelErr = candidateErr;
+          const candidateStatus: number = candidateErr?.status ?? 0;
+          // For non-405 server responses, fail fast.
+          if (candidateStatus !== 405) {
+            throw candidateErr;
+          }
+        }
+      }
+      if (lastRelErr && !res) {
+        throw lastRelErr;
+      }
     } catch (err: any) {
       const status: number = err?.status ?? 0;
       // Only fall back to absolute URL for network/CORS errors (status 0).
@@ -158,9 +179,25 @@ export class AuthService {
         console.error('❌ Token refresh failed:', err?.message || err);
         throw err;
       }
-      const absUrl = `${this.absBase}${rel}`;
+      const absCandidates = [`${this.absBase}${rel}`, `${this.absBase}${rel}/`];
       try {
-        res = await firstValueFrom(post(absUrl));
+        let absErr: any;
+        for (const candidate of absCandidates) {
+          try {
+            res = await firstValueFrom(post(candidate));
+            absErr = null;
+            break;
+          } catch (candidateErr: any) {
+            absErr = candidateErr;
+            const candidateStatus: number = candidateErr?.status ?? 0;
+            if (candidateStatus !== 405) {
+              throw candidateErr;
+            }
+          }
+        }
+        if (absErr && !res) {
+          throw absErr;
+        }
       } catch (absErr: any) {
         console.error('❌ Token refresh failed:', absErr?.message || absErr);
         throw absErr;
@@ -168,7 +205,7 @@ export class AuthService {
     }
     
     // Validate and save tokens from response
-    if (!res.accessToken) {
+    if (!res?.accessToken) {
       console.error('❌ Token refresh response missing access token');
       throw new Error('Invalid refresh response: missing access token');
     }
