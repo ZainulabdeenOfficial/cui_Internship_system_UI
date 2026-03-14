@@ -135,68 +135,93 @@ export class AuthService {
     // that accept both cookie and body-based refresh tokens.
     const bodyRefreshToken = (() => { try { return localStorage.getItem('refreshToken') || undefined; } catch { return undefined; } })();
 
+    const headers = { Accept: 'application/json' };
+
     const post = (u: string) => this.http.post<RefreshTokenResponse>(
       u,
       bodyRefreshToken ? { refreshToken: bodyRefreshToken } : null,
-      {
-        headers: new HttpHeaders({ Accept: 'application/json' }),
-        withCredentials: true  // sends httpOnly refresh-token cookie
-      }
+      { headers: new HttpHeaders(headers), withCredentials: true }
     );
 
-    // Some backends only register one of the two path variants.
-    // Try both without changing the HTTP method (always POST).
-    const relCandidates = [rel, `${rel}/`];
+    const get = (u: string) => {
+      const urlWithParams = bodyRefreshToken ? `${u}?refreshToken=${encodeURIComponent(bodyRefreshToken)}` : u;
+      return this.http.get<RefreshTokenResponse>(urlWithParams, { headers: new HttpHeaders(headers), withCredentials: true });
+    };
+
+    // Try POST first (standard), then GET if POST returns 405.
+    // Also try both path variants (with and without trailing slash).
+    const pathCandidates = [rel, `${rel}/`];
+    const methodCandidates: Array<[string, (u: string) => any]> = [
+      ['POST', post],
+      ['GET', get]
+    ];
+
     let res: RefreshTokenResponse | null = null;
+    let lastErr: any = null;
 
     try {
       // Prefer same-origin (proxy) so the cookie domain matches.
-      // If one route variant returns 405, try the alternate variant once.
-      let lastRelErr: any;
-      for (const candidate of relCandidates) {
-        try {
-          res = await firstValueFrom(post(candidate));
-          lastRelErr = null;
-          break;
-        } catch (candidateErr: any) {
-          lastRelErr = candidateErr;
-          const candidateStatus: number = candidateErr?.status ?? 0;
-          // For non-405 server responses, fail fast.
-          if (candidateStatus !== 405) {
-            throw candidateErr;
-          }
-        }
-      }
-      if (lastRelErr && !res) {
-        throw lastRelErr;
-      }
-    } catch (err: any) {
-      const status: number = err?.status ?? 0;
-      // Only fall back to absolute URL for network/CORS errors (status 0).
-      // For 4xx/5xx (e.g. 405 Method Not Allowed), the backend has spoken — retrying
-      // a different URL won't help and generates duplicate error noise.
-      if (status !== 0) {
-        console.error('❌ Token refresh failed:', err?.message || err);
-        throw err;
-      }
-      const absCandidates = [`${this.absBase}${rel}`, `${this.absBase}${rel}/`];
-      try {
-        let absErr: any;
-        for (const candidate of absCandidates) {
+      for (const [methodName, method] of methodCandidates) {
+        for (const candidate of pathCandidates) {
           try {
-            res = await firstValueFrom(post(candidate));
-            absErr = null;
+            console.log(`🔄 [TokenRefresh] Trying ${methodName} ${candidate}`);
+            res = await firstValueFrom(method(candidate));
+            console.log(`✅ [TokenRefresh] ${methodName} ${candidate} succeeded`);
+            lastErr = null;
             break;
           } catch (candidateErr: any) {
-            absErr = candidateErr;
             const candidateStatus: number = candidateErr?.status ?? 0;
-            if (candidateStatus !== 405) {
+            console.warn(`⚠️ [TokenRefresh] ${methodName} ${candidate} failed (HTTP ${candidateStatus})`);
+            lastErr = candidateErr;
+            // For non-405 server responses on first method (POST), fail fast.
+            // For 405 on POST, try GET; for 405 on GET, continue to absolute URL fallback.
+            if (candidateStatus !== 405 && methodName === 'POST') {
               throw candidateErr;
             }
           }
         }
-        if (absErr && !res) {
-          throw absErr;
+        // If we got a successful response, stop trying methods
+        if (res) break;
+      }
+      if (lastErr && !res) {
+        throw lastErr;
+      }
+    } catch (err: any) {
+      const status: number = err?.status ?? 0;
+      // Only fall back to absolute URL for network/CORS errors (status 0).
+      // For 4xx/5xx, retry once more with absolute URL before giving up.
+      if (status !== 0 && status !== 405) {
+        console.error('❌ Token refresh failed:', err?.message || err);
+        throw err;
+      }
+
+      // Fallback: try absolute URL with both methods and path variants
+      const absBase = this.absBase;
+      console.log(`🔄 [TokenRefresh] Fallback to absolute URL: ${absBase}`);
+      
+      try {
+        for (const [methodName, method] of methodCandidates) {
+          for (const candidate of pathCandidates) {
+            try {
+              const absUrl = `${absBase}${candidate}`;
+              console.log(`🔄 [TokenRefresh] Trying ${methodName} ${absUrl}`);
+              res = await firstValueFrom(method(absUrl));
+              console.log(`✅ [TokenRefresh] ${methodName} ${absUrl} succeeded`);
+              lastErr = null;
+              break;
+            } catch (candidateErr: any) {
+              const candidateStatus: number = candidateErr?.status ?? 0;
+              console.warn(`⚠️ [TokenRefresh] ${methodName} failed (HTTP ${candidateStatus})`);
+              lastErr = candidateErr;
+              if (candidateStatus !== 405 && methodName === 'POST') {
+                throw candidateErr;
+              }
+            }
+          }
+          if (res) break;
+        }
+        if (lastErr && !res) {
+          throw lastErr;
         }
       } catch (absErr: any) {
         console.error('❌ Token refresh failed:', absErr?.message || absErr);
