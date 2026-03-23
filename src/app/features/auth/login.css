@@ -44,7 +44,7 @@
 .login-card .alert-success{background:rgba(25,135,84,.24);border-color:rgba(25,135,84,.55);color:#fff;}
 
 /* Captcha */
-.captcha-box{font-family:'Courier New',monospace;font-size:1.05rem;letter-spacing:.25rem;background:linear-gradient(135deg,#f8fafc,#e9eef5);padding:.65rem 1rem;border:2px dashed #6b7280;border-radius:10px;user-select:none;min-width:160px;text-align:center;position:relative;box-shadow:inset 0 0 4px rgba(0,0,0,.05);color:#000;font-weight:600;text-shadow:none;}
+.captcha-box{font-family:'Courier New',monospace;font-size:1.05rem;letter-spacing:.25rem;background:linear-gradient(135deg,#f8fafc,#e9eef5);padding:.65rem 1rem;border:2px dashed #6b7280;border-radius:10px;user-select:none;width:140px;flex-shrink:0;text-align:center;position:relative;box-shadow:inset 0 0 4px rgba(0,0,0,.05);color:#000;font-weight:600;text-shadow:none;}
 /* Placeholders */
 .login-card .form-control::placeholder{color:rgba(255,255,255,.7);} 
 
