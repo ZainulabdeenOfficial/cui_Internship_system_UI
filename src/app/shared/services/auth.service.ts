@@ -54,7 +54,7 @@ export class AuthService {
   }
 
   async login(input: LoginRequest, options?: { timeoutMs?: number }): Promise<LoginResponse> {
-    const to = options?.timeoutMs ?? 4000;
+    const to = options?.timeoutMs ?? 6000;
     const attempt = async (): Promise<LoginResponse> => {
       const res = await this.postJson<LoginResponse>('/api/auth/login', input, { timeoutMs: to });
       const anyRes: any = res || {};
@@ -93,7 +93,8 @@ export class AuthService {
       const isTimeout = err?.name === 'TimeoutError' || /timeout/i.test(err?.message || '');
       if (isTimeout) {
         try { return await attempt(); } catch (e2: any) {
-          return { success: false, message: 'Login timeout. Please try again.' };
+          // After retry fails, provide more specific guidance
+          return { success: false, message: 'Server took too long to respond. Please check your internet connection and try again.' };
         }
       }
       const message = err?.error?.message || err?.message || 'Login failed';

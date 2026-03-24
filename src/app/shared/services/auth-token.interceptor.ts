@@ -57,12 +57,24 @@ function normalizePath(req: HttpRequest<any>): string {
  * The backend authenticates via httpOnly session cookie (withCredentials).
  * Returns an access token string if the server provides one, empty string '' if the
  * session is valid but no token is in the response, or null if session is invalid/expired.
+ * Times out after 2 seconds to prevent hanging requests when session endpoint is slow.
  */
 async function trySessionFetch(): Promise<string | null> {
   const urls = ['/api/auth/sessions', API_BASE ? `${API_BASE}/api/auth/sessions` : null].filter(Boolean) as string[];
+  const FETCH_TIMEOUT_MS = 2000; // 2 second timeout for session check
+  
   for (const url of urls) {
     try {
-      const res = await fetch(url, { credentials: 'include', headers: { Accept: 'application/json' } });
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+      
+      const res = await fetch(url, { 
+        credentials: 'include', 
+        headers: { Accept: 'application/json' },
+        signal: controller.signal 
+      });
+      clearTimeout(timeoutId);
+      
       if (res.status === 401 || res.status === 403) return null; // genuinely expired
       if (!res.ok) continue;
       const data = await res.json();
@@ -83,7 +95,15 @@ async function trySessionFetch(): Promise<string | null> {
       }
       // Session exists on server (200 OK) but no token in body — session is valid
       return '';
-    } catch { continue; }
+    } catch (err) { 
+      // Treat timeout as "no session" - be lenient and continue
+      if (err instanceof DOMException && err.name === 'AbortError') {
+        console.warn('⚠️ [trySessionFetch] Session check timed out for:', url);
+        continue;
+      }
+      // Other errors also just continue to next URL
+      continue; 
+    }
   }
   return null;
 }
@@ -153,10 +173,12 @@ export const authTokenInterceptor: HttpInterceptorFn = (req, next) => {
             console.log('ℹ️ [authTokenInterceptor] Session valid via cookie but no bearer token available, proceeding without bearer');
             return next(req);
           }),
-          catchError(() => {
+          catchError((err) => {
             isRefreshingGlobally = false;
-            triggerLogout(auth);
-            return throwError(() => new Error('Session expired. Please log in again.'));
+            // If session check timed out or failed, be lenient - don't force a logout
+            // The request can still proceed or be retried by the 401 handler
+            console.warn('⚠️ [authTokenInterceptor] Session check failed (possibly timed out), proceeding without token:', err?.message);
+            return next(req);
           })
         );
       }
