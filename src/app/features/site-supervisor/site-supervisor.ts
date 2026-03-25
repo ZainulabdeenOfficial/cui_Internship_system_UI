@@ -290,16 +290,16 @@ export class SiteSupervisor implements OnInit {
 
   private defaultCriteria(): SiteEvaluationCriteria {
     return {
-      punctualityAttendance: 0,
-      linkTheoryToPractice: 0,
-      criticalThinking: 0,
-      technicalKnowledge: 0,
-      creativity: 0,
-      adaptability: 0,
-      timeManagement: 0,
-      professionalBehavior: 0,
-      assignmentsPerformance: 0,
-      communicationSkills: 0
+      punctualityAttendance: 1,
+      linkTheoryToPractice: 1,
+      criticalThinking: 1,
+      technicalKnowledge: 1,
+      creativity: 1,
+      adaptability: 1,
+      timeManagement: 1,
+      professionalBehavior: 1,
+      assignmentsPerformance: 1,
+      communicationSkills: 1
     };
   }
 
@@ -308,31 +308,31 @@ export class SiteSupervisor implements OnInit {
     const sum = (c.punctualityAttendance + c.linkTheoryToPractice + c.criticalThinking +
       c.technicalKnowledge + c.creativity + c.adaptability + c.timeManagement +
       c.professionalBehavior + c.assignmentsPerformance + c.communicationSkills);
-    // Convert from 0-50 scale (each criterion 0-5, 10 criteria = max 50)
+    // Sum of all criteria (each criterion 1-4, 10 criteria = 10-40 range)
     return sum;
   }
 
   /**
    * Validate criterion input in real-time
-   * Clamps value to 0-5 range if user tries to type invalid number
+   * Clamps value to 1-4 range if user tries to type invalid number
    */
   validateCriterion(field: string, event: any) {
     const criteria = this.evaluationCriteria as any;
     let value = criteria[field];
     
     if (value === null || value === undefined || value === '') {
-      criteria[field] = 0;
+      criteria[field] = 1; // Default to 1, not 0
       return;
     }
     
     // Convert to number
     value = Number(value);
     
-    // Clamp to 0-5 range
-    if (value < 0) {
-      criteria[field] = 0;
-    } else if (value > 5) {
-      criteria[field] = 5;
+    // Clamp to 1-4 range (API requires minimum 1)
+    if (value < 1) {
+      criteria[field] = 1;
+    } else if (value > 4) {
+      criteria[field] = 4;
     } else if (!Number.isInteger(value)) {
       // Round to nearest integer
       criteria[field] = Math.round(value);
@@ -340,12 +340,13 @@ export class SiteSupervisor implements OnInit {
       criteria[field] = value;
     }
     
-    console.log(`✓ [validateCriterion] ${field}: ${criteria[field]}/5`);
+    console.log(`✓ [validateCriterion] ${field}: ${criteria[field]}/4`);
   }
 
   /**
    * Validate total marks input in real-time
-   * Clamps value to 0-50 range if user tries to type invalid number
+   * Clamps value to 10-40 range if user tries to type invalid number
+   * (since each criterion is 1-4 and there are 10 criteria: 1*10=10 to 4*10=40)
    */
   validateTotalMarks(event: any) {
     if (this.evaluationTotalInput === null || this.evaluationTotalInput === undefined) {
@@ -355,11 +356,11 @@ export class SiteSupervisor implements OnInit {
     
     let value = Number(this.evaluationTotalInput);
     
-    // Clamp to 0-50 range
-    if (value < 0) {
-      this.evaluationTotalInput = 0;
-    } else if (value > 50) {
-      this.evaluationTotalInput = 50;
+    // Clamp to 10-40 range (min 1*10, max 4*10)
+    if (value < 10) {
+      this.evaluationTotalInput = 10;
+    } else if (value > 40) {
+      this.evaluationTotalInput = 40;
     } else if (!Number.isInteger(value)) {
       // Round to nearest integer
       this.evaluationTotalInput = Math.round(value);
@@ -367,16 +368,17 @@ export class SiteSupervisor implements OnInit {
       this.evaluationTotalInput = value;
     }
     
-    console.log(`✓ [validateTotalMarks] ${this.evaluationTotalInput}/50`);
+    console.log(`✓ [validateTotalMarks] ${this.evaluationTotalInput}/40`);
   }
 
   /**
-   * Check if all criteria are valid (0-5)
+   * Check if all criteria are valid (1-4 as per API requirements)
    */
   areCriteriaValid(): boolean {
     for (const [key, value] of Object.entries(this.evaluationCriteria)) {
-      if (value < 0 || value > 5 || !Number.isInteger(value)) {
-        console.warn(`❌ Invalid criterion: ${key} = ${value}`);
+      // API requires values between 1 and 4 (not 0-5)
+      if (value < 1 || value > 4 || !Number.isInteger(value)) {
+        console.warn(`❌ Invalid criterion: ${key} = ${value} (must be 1-4)`);
         return false;
       }
     }
@@ -387,14 +389,14 @@ export class SiteSupervisor implements OnInit {
     const internshipId = this.getEffectiveInternshipId();
     if (!internshipId) { this.toast.warning('Please select a student first'); return; }
     
-    // Validate all criteria are within 0-5 range using new validation method
+    // Validate all criteria are within 1-4 range (API requirement)
     if (!this.areCriteriaValid()) {
-      this.toast.danger('Please correct invalid criterion values (0-5 only)');
+      this.toast.danger('All criteria must have values between 1-4');
       return;
     }
     
-    // Calculate total marks from criteria (sum: 0-50)
-    // Each criterion is 0-5, 10 criteria, so max total = 50
+    // Calculate total marks from criteria (sum: 10-40 since each is 1-4)
+    // Each criterion is 1-4, 10 criteria, so min = 10, max = 40
     let totalMarks: number;
     
     if (this.evaluationTotalInput !== null && this.evaluationTotalInput !== undefined) {
@@ -405,33 +407,26 @@ export class SiteSupervisor implements OnInit {
       totalMarks = this.evaluationTotal;
     }
     
-    // Validate total marks are within 0-50 range
-    if (totalMarks < 0 || totalMarks > 50) {
-      this.toast.danger('Total marks must be between 0-50');
-      return;
-    }
-    
-    // Check that at least some marks are entered
-    const allCriteriaZero = Object.values(this.evaluationCriteria).every(v => v === 0);
-    if (totalMarks === 0 && allCriteriaZero && this.evaluationTotalInput === null) {
-      this.toast.warning('Please enter marks or rate the criteria');
+    // Validate total marks are within 10-40 range (min 1*10, max 4*10)
+    if (totalMarks < 10 || totalMarks > 40) {
+      this.toast.danger('Total marks must be between 10-40 (based on criteria 1-4)');
       return;
     }
     
     this.submittingEvaluation = true;
     try {
-      // Build criteria object ensuring all fields are integers
+      // Build criteria object ensuring all fields are integers 1-4
       const criteria: SiteEvaluationCriteria = {
-        punctualityAttendance: Math.round(this.evaluationCriteria.punctualityAttendance || 0),
-        linkTheoryToPractice: Math.round(this.evaluationCriteria.linkTheoryToPractice || 0),
-        criticalThinking: Math.round(this.evaluationCriteria.criticalThinking || 0),
-        technicalKnowledge: Math.round(this.evaluationCriteria.technicalKnowledge || 0),
-        creativity: Math.round(this.evaluationCriteria.creativity || 0),
-        adaptability: Math.round(this.evaluationCriteria.adaptability || 0),
-        timeManagement: Math.round(this.evaluationCriteria.timeManagement || 0),
-        professionalBehavior: Math.round(this.evaluationCriteria.professionalBehavior || 0),
-        assignmentsPerformance: Math.round(this.evaluationCriteria.assignmentsPerformance || 0),
-        communicationSkills: Math.round(this.evaluationCriteria.communicationSkills || 0)
+        punctualityAttendance: Math.max(1, Math.min(4, Math.round(this.evaluationCriteria.punctualityAttendance || 1))),
+        linkTheoryToPractice: Math.max(1, Math.min(4, Math.round(this.evaluationCriteria.linkTheoryToPractice || 1))),
+        criticalThinking: Math.max(1, Math.min(4, Math.round(this.evaluationCriteria.criticalThinking || 1))),
+        technicalKnowledge: Math.max(1, Math.min(4, Math.round(this.evaluationCriteria.technicalKnowledge || 1))),
+        creativity: Math.max(1, Math.min(4, Math.round(this.evaluationCriteria.creativity || 1))),
+        adaptability: Math.max(1, Math.min(4, Math.round(this.evaluationCriteria.adaptability || 1))),
+        timeManagement: Math.max(1, Math.min(4, Math.round(this.evaluationCriteria.timeManagement || 1))),
+        professionalBehavior: Math.max(1, Math.min(4, Math.round(this.evaluationCriteria.professionalBehavior || 1))),
+        assignmentsPerformance: Math.max(1, Math.min(4, Math.round(this.evaluationCriteria.assignmentsPerformance || 1))),
+        communicationSkills: Math.max(1, Math.min(4, Math.round(this.evaluationCriteria.communicationSkills || 1)))
       };
       
       const payload: SiteEvaluationPayload = {

@@ -475,32 +475,32 @@
         <div class="row g-3 mb-4">
           <div class="col-md-6">
             <label class="form-label fw-medium">
-              <i class="bi bi-calculator me-1"></i>Total Marks (0-50)
+              <i class="bi bi-calculator me-1"></i>Total Marks (10-40)
             </label>
-            <input type="number" min="0" max="50" step="1" class="form-control form-control-lg fw-semibold"
-                   [class.is-invalid]="evaluationTotalInput !== null && (evaluationTotalInput > 50 || evaluationTotalInput < 0)"
-                   [class.is-valid]="evaluationTotalInput !== null && evaluationTotalInput >= 0 && evaluationTotalInput <= 50"
+            <input type="number" min="10" max="40" step="1" class="form-control form-control-lg fw-semibold"
+                   [class.is-invalid]="evaluationTotalInput !== null && (evaluationTotalInput > 40 || evaluationTotalInput < 10)"
+                   [class.is-valid]="evaluationTotalInput !== null && evaluationTotalInput >= 10 && evaluationTotalInput <= 40"
                    [(ngModel)]="evaluationTotalInput" 
                    (input)="validateTotalMarks($event)"
                    name="evalMarks"
-                   placeholder="Enter total marks (0-50)..." />
+                   placeholder="Enter total marks (10-40)..." />
             <div class="progress mt-2" style="height: 8px;" *ngIf="evaluationTotalInput !== null">
               <div class="progress-bar" 
-                   [style.width.%]="(evaluationTotalInput / 50) * 100"
-                   [class.bg-success]="evaluationTotalInput >= 40"
-                   [class.bg-info]="evaluationTotalInput >= 30 && evaluationTotalInput < 40"
-                   [class.bg-warning]="evaluationTotalInput >= 20 && evaluationTotalInput < 30"
-                   [class.bg-danger]="evaluationTotalInput < 20">
+                   [style.width.%]="((evaluationTotalInput - 10) / 30) * 100"
+                   [class.bg-success]="evaluationTotalInput >= 32"
+                   [class.bg-info]="evaluationTotalInput >= 24 && evaluationTotalInput < 32"
+                   [class.bg-warning]="evaluationTotalInput >= 16 && evaluationTotalInput < 24"
+                   [class.bg-danger]="evaluationTotalInput < 16">
               </div>
             </div>
-            <small *ngIf="evaluationTotalInput !== null && evaluationTotalInput > 50" class="text-danger d-block mt-1 fw-semibold">
-              <i class="bi bi-exclamation-circle me-1"></i>❌ Invalid: Cannot exceed 50
+            <small *ngIf="evaluationTotalInput !== null && evaluationTotalInput > 40" class="text-danger d-block mt-1 fw-semibold">
+              <i class="bi bi-exclamation-circle me-1"></i>❌ Invalid: Cannot exceed 40
             </small>
-            <small *ngIf="evaluationTotalInput !== null && evaluationTotalInput < 0" class="text-danger d-block mt-1 fw-semibold">
-              <i class="bi bi-exclamation-circle me-1"></i>❌ Invalid: Cannot be negative
+            <small *ngIf="evaluationTotalInput !== null && evaluationTotalInput < 10" class="text-danger d-block mt-1 fw-semibold">
+              <i class="bi bi-exclamation-circle me-1"></i>❌ Invalid: Must be at least 10
             </small>
-            <small *ngIf="evaluationTotalInput !== null && evaluationTotalInput >= 0 && evaluationTotalInput <= 50" class="text-muted d-block mt-1">
-              <i class="bi bi-info-circle me-1"></i>Enter marks from 0 to 50
+            <small *ngIf="evaluationTotalInput !== null && evaluationTotalInput >= 10 && evaluationTotalInput <= 40" class="text-muted d-block mt-1">
+              <i class="bi bi-info-circle me-1"></i>Enter marks from 10 to 40
             </small>
           </div>
           <div class="col-md-6">
@@ -515,7 +515,7 @@
         <!-- Criteria Input Fields -->
         <div class="border-top pt-3 mt-4">
           <h6 class="mb-3">
-            <i class="bi bi-list-check me-2"></i>Evaluation Criteria (0-5 per criterion)
+            <i class="bi bi-list-check me-2"></i>Evaluation Criteria (1-4 per criterion)
           </h6>
           <div class="row g-3">
             <div class="col-md-6" *ngFor="let c of [
@@ -536,22 +536,22 @@
                     <small class="fw-medium">{{ c.label }}</small>
                   </label>
                   <span class="badge" 
-                        [class.bg-success]="$any(evaluationCriteria)[c.field] >= 4"
+                        [class.bg-success]="$any(evaluationCriteria)[c.field] === 4"
                         [class.bg-info]="$any(evaluationCriteria)[c.field] === 3"
                         [class.bg-warning]="$any(evaluationCriteria)[c.field] === 2"
                         [class.bg-danger]="$any(evaluationCriteria)[c.field] === 1"
-                        [class.bg-secondary]="$any(evaluationCriteria)[c.field] === 0 || !$any(evaluationCriteria)[c.field]">
-                    {{ $any(evaluationCriteria)[c.field] ?? 0 }}/5
+                        [class.bg-secondary]="!$any(evaluationCriteria)[c.field] || $any(evaluationCriteria)[c.field] < 1">
+                    {{ $any(evaluationCriteria)[c.field] ?? 0 }}/4
                   </span>
                 </div>
-                <input type="number" [id]="'crit_' + c.field" min="0" max="5" step="1"
+                <input type="number" [id]="'crit_' + c.field" min="1" max="4" step="1"
                        class="form-control text-center fw-semibold"
-                       [class.is-invalid]="$any(evaluationCriteria)[c.field] > 5 || $any(evaluationCriteria)[c.field] < 0"
-                       [class.is-valid]="$any(evaluationCriteria)[c.field] >= 0 && $any(evaluationCriteria)[c.field] <= 5 && $any(evaluationCriteria)[c.field] > 0"
+                       [class.is-invalid]="$any(evaluationCriteria)[c.field] > 4 || $any(evaluationCriteria)[c.field] < 1"
+                       [class.is-valid]="$any(evaluationCriteria)[c.field] >= 1 && $any(evaluationCriteria)[c.field] <= 4"
                        [(ngModel)]="$any(evaluationCriteria)[c.field]"
                        (input)="validateCriterion(c.field, $event)"
                        [name]="'c_' + c.field"
-                       [attr.placeholder]="'0-5' "
+                       [attr.placeholder]="'1-4' "
                        required />
                 <div class="progress mt-2" style="height: 6px;">
                   <div class="progress-bar" 
@@ -582,17 +582,17 @@
                 <i class="bi bi-calculator-lg me-2"></i><strong>Criteria Total:</strong>
               </span>
               <span class="fw-bold">
-                {{ evaluationTotal }}/50
-                <small class="text-muted">({{ (evaluationTotal / 50 * 100).toFixed(0) }}%)</small>
+                {{ evaluationTotal }}/40
+                <small class="text-muted">({{ (evaluationTotal / 40 * 100).toFixed(0) }}%)</small>
               </span>
             </div>
             <div class="progress mt-2" style="height: 8px;">
               <div class="progress-bar" 
-                   [style.width.%]="(evaluationTotal / 50) * 100"
-                   [class.bg-success]="evaluationTotal >= 40"
-                   [class.bg-info]="evaluationTotal >= 30 && evaluationTotal < 40"
-                   [class.bg-warning]="evaluationTotal >= 20 && evaluationTotal < 30"
-                   [class.bg-danger]="evaluationTotal < 20">
+                   [style.width.%]="(evaluationTotal / 40) * 100"
+                   [class.bg-success]="evaluationTotal >= 32"
+                   [class.bg-info]="evaluationTotal >= 24 && evaluationTotal < 32"
+                   [class.bg-warning]="evaluationTotal >= 16 && evaluationTotal < 24"
+                   [class.bg-danger]="evaluationTotal < 16">>
               </div>
             </div>
           </div>
