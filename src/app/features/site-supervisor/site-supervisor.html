@@ -31,64 +31,149 @@
         </div>
       }
 
-      <!-- Real-time Debug Info -->
-      <div class="alert alert-secondary small mb-3" *ngIf="!loadingInternships">
-        <strong>📊 Debug:</strong> 
-        API Students: {{ apiStudents().length }} | 
-        Display Students: {{ myStudents().length }} | 
-        Loading: {{ loadingInternships }}
-      </div>
+      <!-- Status Filter -->
+      @if (myStudents().length > 0) {
+        <div class="mb-3 p-3 bg-light rounded">
+          <label class="form-label mb-2"><strong>Filter by Status</strong></label>
+          <div class="btn-group" role="group">
+            <input type="radio" class="btn-check" name="statusFilter" id="all" value="all" 
+                   [checked]="statusFilter() === 'all'" 
+                   (change)="statusFilter.set('all')" />
+            <label class="btn btn-outline-primary" for="all">All</label>
+
+            <input type="radio" class="btn-check" name="statusFilter" id="pending" value="PENDING" 
+                   [checked]="statusFilter() === 'PENDING'" 
+                   (change)="statusFilter.set('PENDING')" />
+            <label class="btn btn-outline-warning" for="pending">Pending</label>
+
+            <input type="radio" class="btn-check" name="statusFilter" id="approved" value="APPROVED" 
+                   [checked]="statusFilter() === 'APPROVED'" 
+                   (change)="statusFilter.set('APPROVED')" />
+            <label class="btn btn-outline-success" for="approved">Approved</label>
+
+            <input type="radio" class="btn-check" name="statusFilter" id="in-progress" value="IN_PROGRESS" 
+                   [checked]="statusFilter() === 'IN_PROGRESS'" 
+                   (change)="statusFilter.set('IN_PROGRESS')" />
+            <label class="btn btn-outline-info" for="in-progress">In Progress</label>
+
+            <input type="radio" class="btn-check" name="statusFilter" id="completed" value="COMPLETED" 
+                   [checked]="statusFilter() === 'COMPLETED'" 
+                   (change)="statusFilter.set('COMPLETED')" />
+            <label class="btn btn-outline-secondary" for="completed">Completed</label>
+
+            <input type="radio" class="btn-check" name="statusFilter" id="rejected" value="REJECTED" 
+                   [checked]="statusFilter() === 'REJECTED'" 
+                   (change)="statusFilter.set('REJECTED')" />
+            <label class="btn btn-outline-danger" for="rejected">Rejected</label>
+          </div>
+          <small class="text-muted d-block mt-2">Showing {{ filteredStudents().length }} of {{ myStudents().length }} students</small>
+        </div>
+      }
 
       <!-- Students Table -->
-      @if (myStudents().length > 0) {
+      @if (filteredStudents().length > 0) {
         <div class="table-responsive">
           <table class="table table-hover align-middle table-card">
             <thead>
-              <tr><th>Name</th><th>Email</th><th>Registration No</th><th>Company</th><th>Mid Score</th><th>Final Score</th><th>Action</th></tr>
+              <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Registration No</th>
+                <th>Company</th>
+                <th>Status</th>
+                <th>Start Date</th>
+                <th>End Date</th>
+                <th>Actions</th>
+              </tr>
             </thead>
             <tbody>
-              @for (s of (myStudents() | paginate: page.students : pageSize); track s.id) {
+              @for (s of (filteredStudents() | paginate: page.students : pageSize); track s.id) {
               <tr>
                 <td><strong>{{ s.name }}</strong></td>
                 <td>{{ s.email }}</td>
                 <td><span class="badge text-bg-info">{{ getStudentRegNo(s.id) || '-' }}</span></td>
                 <td>{{ siteInternshipsByStudentId[s.id]?.site?.company?.name || '-' }}</td>
-                <td style="width:120px"><input type="number" min="0" class="form-control form-control-sm" [(ngModel)]="batchMid[s.id]" name="bmid{{s.id}}" [placeholder]="midScore(s.id) != null ? (midScore(s.id) + '') : 'Mid'" /></td>
-                <td style="width:120px"><input type="number" min="0" class="form-control form-control-sm" [(ngModel)]="batchFinal[s.id]" name="bfin{{s.id}}" [placeholder]="finalScore(s.id) != null ? (finalScore(s.id) + '') : 'Final'" /></td>
                 <td>
-                  <div class="btn-group btn-group-sm">
-                    <button class="btn btn-primary" (click)="saveBatchRow(s.id)">Save</button>
-                    <button class="btn btn-secondary" (click)="selectedId = s.id">Open</button>
+                  <span class="badge"
+                        [class.text-bg-warning]="siteInternshipsByStudentId[s.id]?.status === 'PENDING'"
+                        [class.text-bg-success]="siteInternshipsByStudentId[s.id]?.status === 'APPROVED'"
+                        [class.text-bg-info]="siteInternshipsByStudentId[s.id]?.status === 'IN_PROGRESS'"
+                        [class.text-bg-secondary]="siteInternshipsByStudentId[s.id]?.status === 'COMPLETED'"
+                        [class.text-bg-danger]="siteInternshipsByStudentId[s.id]?.status === 'REJECTED'">
+                    {{ siteInternshipsByStudentId[s.id]?.status || '-' }}
+                  </span>
+                </td>
+                <td>{{ siteInternshipsByStudentId[s.id]?.startDate | date:'short' }}</td>
+                <td>{{ siteInternshipsByStudentId[s.id]?.endDate | date:'short' }}</td>
+                <td>
+                  <div class="btn-group btn-group-sm" role="group">
+                    <button class="btn btn-primary" 
+                            title="View Details"
+                            (click)="selectedId = s.id; selectTab('details')">
+                      <i class="bi bi-eye"></i>
+                    </button>
+                    <button class="btn btn-info" 
+                            title="View Evaluations"
+                            (click)="selectedId = s.id; selectTab('evaluations')">
+                      <i class="bi bi-clipboard-check"></i>
+                    </button>
+                    <button class="btn btn-warning" 
+                            title="View Reports"
+                            (click)="selectedId = s.id; selectTab('reports')">
+                      <i class="bi bi-file-text"></i>
+                    </button>
                   </div>
                 </td>
               </tr>
               }
             </tbody>
           </table>
-          <app-paginator [total]="myStudents().length" [(page)]="page.students" [pageSize]="pageSize"></app-paginator>
+          <app-paginator [total]="filteredStudents().length" [(page)]="page.students" [pageSize]="pageSize"></app-paginator>
         </div>
-        <button class="btn btn-sm btn-primary" (click)="saveBatchAll()">Save All</button>
+        <button class="btn btn-sm btn-primary" (click)="saveBatchAll()">Save All Scores</button>
+      }
+
+      <!-- No filtered results -->
+      @if (!loadingInternships && myStudents().length > 0 && filteredStudents().length === 0) {
+        <div class="alert alert-info">
+          <i class="bi bi-info-circle me-2"></i>No students with status "{{ statusFilter() }}" found.
+        </div>
       }
     </div>
   </div>
   }
   @if (currentTab==='details') {
-  <div class="row g-3 align-items-end">
-    <div class="col-md-6">
-      <label class="form-label">Select Student</label>
-      <select class="form-select" [(ngModel)]="selectedId" name="ssid">
-        <option [ngValue]="null">-- choose --</option>
-        <option *ngFor="let s of myStudents()" [ngValue]="s.id">{{ s.name }} ({{ s.email }})</option>
-      </select>
-    </div>
-    <div class="col-md-3">
-      <label class="form-label">Site Marks (0-40)</label>
-      <input type="number" min="0" max="40" class="form-control" (ngModelChange)="setSiteMarks($event)" [ngModel]="selectedStudent()?.marks?.site ?? ''" />
+  <div class="card mb-3">
+    <div class="card-header bg-light">Student Selection & Marking</div>
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label"><strong>Select Student</strong></label>
+          <select class="form-select" [(ngModel)]="selectedId" name="ssid">
+            <option [ngValue]="null">-- choose --</option>
+            <option *ngFor="let s of myStudents()" [ngValue]="s.id">{{ s.name }} ({{ s.email }})</option>
+          </select>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label"><strong>Site Marks (0-40)</strong></label>
+          <div class="input-group">
+            <input type="number" min="0" max="40" class="form-control form-control-lg" 
+                   (ngModelChange)="setSiteMarks($event)" 
+                   [ngModel]="selectedStudent()?.marks?.site ?? ''" 
+                   placeholder="Enter marks 0-40"
+                   [disabled]="!selectedId" />
+            <span class="input-group-text fw-bold" *ngIf="selectedStudent()?.marks?.site">
+              {{ selectedStudent()?.marks?.site }}/40
+            </span>
+          </div>
+          <small class="text-muted d-block mt-1" *ngIf="!selectedId">Select a student to enter marks</small>
+        </div>
+      </div>
     </div>
   </div>
   }
   @if (selectedId && currentTab==='details') {
-  <div class="row g-3 mt-3">
+  <div class="row g-3">
     <!-- Internship Details Card -->
     <div class="col-12">
       <div class="card">
@@ -470,44 +555,6 @@
     </div>
   </div>
   }
-
-  <!-- Debug Panel for API Data -->
-  <hr class="my-4" />
-  <details class="mb-3" open>
-    <summary class="cursor-pointer"><strong>🔍 Debug Info - API Data Loading</strong></summary>
-    <div class="card mt-2 bg-light">
-      <div class="card-body small">
-        <div class="row">
-          <div class="col-md-6">
-            <p><strong>Loading Status:</strong> {{ loadingInternships ? '⏳ Loading...' : '✅ Complete' }}</p>
-            <p><strong>API Students Found:</strong> {{ apiStudents().length }}</p>
-            <p><strong>Displayed Students:</strong> {{ myStudents().length }}</p>
-            <p><strong>Your Site ID:</strong> <code>{{ mySiteId() || 'None' }}</code></p>
-          </div>
-          <div class="col-md-6">
-            <p><strong>Internship Mappings:</strong> {{ Object.keys(internshipIdByStudentId).length }}</p>
-            <p><strong>Site Internships Cached:</strong> {{ Object.keys(siteInternshipsByStudentId).length }}</p>
-            <p *ngIf="apiStudents().length > 0" class="text-success">✅ API data loaded successfully</p>
-            <p *ngIf="apiStudents().length === 0 && !loadingInternships" class="text-warning">⚠️ No API data - using store students</p>
-          </div>
-        </div>
-        
-        <!-- First few students preview -->
-        <div class="mt-3 pt-3 border-top" *ngIf="myStudents().length > 0">
-          <p><strong>Preview of loaded students:</strong></p>
-          <div class="small text-muted">
-            @for (s of myStudents().slice(0, 3); track s.id) {
-              <div class="mb-2 p-2 bg-white rounded border">
-                <strong>{{ s.name }}</strong> ({{ s.email }})
-                <br/>
-                <small>RegNo: {{ getStudentRegNo(s.id) || '-' }} | Company: {{ siteInternshipsByStudentId[s.id]?.site?.company?.name || '-' }}</small>
-              </div>
-            }
-          </div>
-        </div>
-      </div>
-    </div>
-  </details>
 
   <!-- hidden usage to ensure standalone imports are recognized -->
   <ng-template #__ensureImportsSite>

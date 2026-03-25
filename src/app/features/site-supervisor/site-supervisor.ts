@@ -38,6 +38,10 @@ export class SiteSupervisor implements OnInit {
   currentTab: 'students'|'details'|'reports'|'evaluations'|'profile'|'password' = 'students';
   page = { students: 1 };
   pageSize = 10;
+  
+  // Status filter for students list
+  statusFilter = signal<'PENDING' | 'APPROVED' | 'IN_PROGRESS' | 'COMPLETED' | 'REJECTED' | 'all'>('all');
+  
   selectTab(tab: SiteSupervisor['currentTab']) {
     this.currentTab = tab;
     try { this.router.navigate([], { relativeTo: this.route, queryParams: { tab }, queryParamsHandling: 'merge' }); } catch {}
@@ -99,6 +103,22 @@ export class SiteSupervisor implements OnInit {
       : this.students();
     console.log('📦 [myStudents] Using store students (count:', storeStu.length + ', site:', sid + ')');
     return storeStu;
+  });
+
+  // Filtered students based on status filter
+  filteredStudents = computed(() => {
+    const students = this.myStudents();
+    const status = this.statusFilter();
+    
+    if (status === 'all') {
+      return students;
+    }
+    
+    // Filter by internship status
+    return students.filter(s => {
+      const internship = this.siteInternshipsByStudentId[s.id];
+      return internship?.status === status;
+    });
   });
   // Batch marking buffers
   batchMid: Record<string, number> = {};
