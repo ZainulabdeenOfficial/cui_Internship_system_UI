@@ -408,10 +408,25 @@
                 <span *ngIf="(evaluationType === 'site_mid' && (!loadedEvalMid || !loadedEvalMid.totalMarks)) || (evaluationType === 'site_final' && (!loadedEvalFinal || !loadedEvalFinal.totalMarks))" class="text-muted">—</span>
               </td>
               <td>
-                <button class="btn btn-sm btn-outline-primary" (click)="selectedId = student.id; onEvalStudentChange()" 
-                        title="View & Evaluate">
-                  <i class="bi bi-pencil-square"></i>
-                </button>
+                <div class="btn-group btn-group-sm w-100" role="group">
+                  <button class="btn btn-sm btn-outline-primary" 
+                          (click)="selectedId = student.id; selectTab('details')"
+                          title="View Details"
+                          data-bs-toggle="tooltip">
+                    <i class="bi bi-eye"></i> Details
+                  </button>
+                  <button class="btn btn-sm btn-outline-info" 
+                          (click)="selectedId = student.id; onEvalStudentChange()" 
+                          title="View & Evaluate">
+                    <i class="bi bi-pencil-square"></i> Evaluate
+                  </button>
+                  <button class="btn btn-sm btn-outline-warning" 
+                          (click)="selectedId = student.id; selectTab('reports')"
+                          title="View Reports"
+                          data-bs-toggle="tooltip">
+                    <i class="bi bi-file-text"></i> Reports
+                  </button>
+                </div>
               </td>
             </tr>
             }
