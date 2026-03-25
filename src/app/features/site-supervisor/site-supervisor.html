@@ -477,12 +477,30 @@
             <label class="form-label fw-medium">
               <i class="bi bi-calculator me-1"></i>Total Marks (0-50)
             </label>
-            <input type="number" min="0" max="50" step="1" class="form-control form-control-lg"
-                   [(ngModel)]="evaluationTotalInput" name="evalMarks"
-                   placeholder="Enter total marks..." />
-            <small class="text-muted d-block mt-1">
-              <i class="bi bi-info-circle me-1"></i>
-              Enter the total marks from 0 to 50
+            <input type="number" min="0" max="50" step="1" class="form-control form-control-lg fw-semibold"
+                   [class.is-invalid]="evaluationTotalInput !== null && (evaluationTotalInput > 50 || evaluationTotalInput < 0)"
+                   [class.is-valid]="evaluationTotalInput !== null && evaluationTotalInput >= 0 && evaluationTotalInput <= 50"
+                   [(ngModel)]="evaluationTotalInput" 
+                   (input)="validateTotalMarks($event)"
+                   name="evalMarks"
+                   placeholder="Enter total marks (0-50)..." />
+            <div class="progress mt-2" style="height: 8px;" *ngIf="evaluationTotalInput !== null">
+              <div class="progress-bar" 
+                   [style.width.%]="(evaluationTotalInput / 50) * 100"
+                   [class.bg-success]="evaluationTotalInput >= 40"
+                   [class.bg-info]="evaluationTotalInput >= 30 && evaluationTotalInput < 40"
+                   [class.bg-warning]="evaluationTotalInput >= 20 && evaluationTotalInput < 30"
+                   [class.bg-danger]="evaluationTotalInput < 20">
+              </div>
+            </div>
+            <small *ngIf="evaluationTotalInput !== null && evaluationTotalInput > 50" class="text-danger d-block mt-1 fw-semibold">
+              <i class="bi bi-exclamation-circle me-1"></i>❌ Invalid: Cannot exceed 50
+            </small>
+            <small *ngIf="evaluationTotalInput !== null && evaluationTotalInput < 0" class="text-danger d-block mt-1 fw-semibold">
+              <i class="bi bi-exclamation-circle me-1"></i>❌ Invalid: Cannot be negative
+            </small>
+            <small *ngIf="evaluationTotalInput !== null && evaluationTotalInput >= 0 && evaluationTotalInput <= 50" class="text-muted d-block mt-1">
+              <i class="bi bi-info-circle me-1"></i>Enter marks from 0 to 50
             </small>
           </div>
           <div class="col-md-6">
@@ -527,23 +545,31 @@
                   </span>
                 </div>
                 <input type="number" [id]="'crit_' + c.field" min="0" max="5" step="1"
-                       class="form-control text-center"
+                       class="form-control text-center fw-semibold"
                        [class.is-invalid]="$any(evaluationCriteria)[c.field] > 5 || $any(evaluationCriteria)[c.field] < 0"
+                       [class.is-valid]="$any(evaluationCriteria)[c.field] >= 0 && $any(evaluationCriteria)[c.field] <= 5 && $any(evaluationCriteria)[c.field] > 0"
                        [(ngModel)]="$any(evaluationCriteria)[c.field]"
+                       (input)="validateCriterion(c.field, $event)"
                        [name]="'c_' + c.field"
-                       [attr.placeholder]="'0-5'" />
+                       [attr.placeholder]="'0-5' "
+                       required />
                 <div class="progress mt-2" style="height: 6px;">
                   <div class="progress-bar" 
                        [style.width.%]="(($any(evaluationCriteria)[c.field] ?? 0) / 5) * 100"
                        [class.bg-success]="$any(evaluationCriteria)[c.field] >= 4"
                        [class.bg-info]="$any(evaluationCriteria)[c.field] === 3"
                        [class.bg-warning]="$any(evaluationCriteria)[c.field] === 2"
-                       [class.bg-danger]="$any(evaluationCriteria)[c.field] === 1">
+                       [class.bg-danger]="$any(evaluationCriteria)[c.field] === 1"
+                       [class.bg-secondary]="!$any(evaluationCriteria)[c.field] || $any(evaluationCriteria)[c.field] === 0">
                   </div>
                 </div>
                 <small *ngIf="$any(evaluationCriteria)[c.field] > 5 || $any(evaluationCriteria)[c.field] < 0" 
-                       class="text-danger d-block mt-1">
-                  <i class="bi bi-exclamation-circle me-1"></i>Must be between 0-5
+                       class="text-danger d-block mt-1 fw-semibold">
+                  <i class="bi bi-exclamation-circle me-1"></i>❌ Invalid: Must be 0-5
+                </small>
+                <small *ngIf="$any(evaluationCriteria)[c.field] >= 0 && $any(evaluationCriteria)[c.field] <= 5 && $any(evaluationCriteria)[c.field] > 0" 
+                       class="text-success d-block mt-1">
+                  <i class="bi bi-check-circle me-1"></i>✓ Valid
                 </small>
               </div>
             </div>

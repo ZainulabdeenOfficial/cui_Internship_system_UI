@@ -312,16 +312,85 @@ export class SiteSupervisor implements OnInit {
     return sum;
   }
 
+  /**
+   * Validate criterion input in real-time
+   * Clamps value to 0-5 range if user tries to type invalid number
+   */
+  validateCriterion(field: string, event: any) {
+    const criteria = this.evaluationCriteria as any;
+    let value = criteria[field];
+    
+    if (value === null || value === undefined || value === '') {
+      criteria[field] = 0;
+      return;
+    }
+    
+    // Convert to number
+    value = Number(value);
+    
+    // Clamp to 0-5 range
+    if (value < 0) {
+      criteria[field] = 0;
+    } else if (value > 5) {
+      criteria[field] = 5;
+    } else if (!Number.isInteger(value)) {
+      // Round to nearest integer
+      criteria[field] = Math.round(value);
+    } else {
+      criteria[field] = value;
+    }
+    
+    console.log(`✓ [validateCriterion] ${field}: ${criteria[field]}/5`);
+  }
+
+  /**
+   * Validate total marks input in real-time
+   * Clamps value to 0-50 range if user tries to type invalid number
+   */
+  validateTotalMarks(event: any) {
+    if (this.evaluationTotalInput === null || this.evaluationTotalInput === undefined) {
+      this.evaluationTotalInput = null;
+      return;
+    }
+    
+    let value = Number(this.evaluationTotalInput);
+    
+    // Clamp to 0-50 range
+    if (value < 0) {
+      this.evaluationTotalInput = 0;
+    } else if (value > 50) {
+      this.evaluationTotalInput = 50;
+    } else if (!Number.isInteger(value)) {
+      // Round to nearest integer
+      this.evaluationTotalInput = Math.round(value);
+    } else {
+      this.evaluationTotalInput = value;
+    }
+    
+    console.log(`✓ [validateTotalMarks] ${this.evaluationTotalInput}/50`);
+  }
+
+  /**
+   * Check if all criteria are valid (0-5)
+   */
+  areCriteriaValid(): boolean {
+    for (const [key, value] of Object.entries(this.evaluationCriteria)) {
+      if (value < 0 || value > 5 || !Number.isInteger(value)) {
+        console.warn(`❌ Invalid criterion: ${key} = ${value}`);
+        return false;
+      }
+    }
+    return true;
+  }
+
   async submitEvaluation() {
     const internshipId = this.getEffectiveInternshipId();
     if (!internshipId) { this.toast.warning('Please select a student first'); return; }
     
-    // Validate all criteria are within 0-5 range
-    for (const [key, value] of Object.entries(this.evaluationCriteria)) {
-      if (value < 0 || value > 5) {
-        this.toast.danger(`${key}: Value must be between 0-5`);
-        return;
-      }
+    // Validate all criteria are within 0-5 range using new validation method
+    if (!this.areCriteriaValid()) {
+      this.toast.danger('Please correct invalid criterion values (0-5 only)');
+      return;
     }
     
     // Calculate total marks from criteria (sum: 0-50)
