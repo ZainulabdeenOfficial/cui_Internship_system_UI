@@ -155,6 +155,7 @@ export class SiteSupervisor implements OnInit {
   evaluationType: 'site_mid' | 'site_final' = 'site_mid';
   evaluationCriteria: SiteEvaluationCriteria = this.defaultCriteria();
   evaluationComments = '';
+  evaluationTotalInput: number | null = null;
   submittingEvaluation = false;
   loadingEvaluation = false;
   // Loaded evaluation (null = not yet submitted, object = already submitted)
@@ -312,13 +313,24 @@ export class SiteSupervisor implements OnInit {
   async submitEvaluation() {
     const internshipId = this.getEffectiveInternshipId();
     if (!internshipId) { this.toast.warning('Please select a student first'); return; }
+    
+    // Use input total if provided, otherwise calculate from criteria
+    const totalMarks = this.evaluationTotalInput !== null && this.evaluationTotalInput !== undefined 
+      ? this.evaluationTotalInput 
+      : this.evaluationTotal;
+    
+    if (totalMarks === 0 && this.evaluationTotalInput === null) {
+      this.toast.warning('Please enter marks or rate the criteria');
+      return;
+    }
+    
     this.submittingEvaluation = true;
     try {
       const payload: SiteEvaluationPayload = {
         internshipId,
         type: this.evaluationType,
         criteria: { ...this.evaluationCriteria },
-        totalMarks: this.evaluationTotal,
+        totalMarks: totalMarks,
         comments: this.evaluationComments
       };
       const res = await this.siteService.submitEvaluation(payload);
@@ -329,6 +341,7 @@ export class SiteSupervisor implements OnInit {
       else this.loadedEvalFinal = submitted;
       this.evaluationCriteria = this.defaultCriteria();
       this.evaluationComments = '';
+      this.evaluationTotalInput = null;
     } catch (err: any) {
       this.toast.danger(err?.error?.message || err?.message || 'Failed to submit evaluation');
     } finally {

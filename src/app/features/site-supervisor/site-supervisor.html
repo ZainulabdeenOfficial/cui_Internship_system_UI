@@ -33,94 +33,122 @@
 
       <!-- Status Filter -->
       @if (myStudents().length > 0) {
-        <div class="mb-3 p-3 bg-light rounded">
-          <label class="form-label mb-2"><strong>Filter by Status</strong></label>
-          <div class="btn-group" role="group">
-            <input type="radio" class="btn-check" name="statusFilter" id="all" value="all" 
-                   [checked]="statusFilter() === 'all'" 
-                   (change)="statusFilter.set('all')" />
-            <label class="btn btn-outline-primary" for="all">All</label>
+        <div class="card mb-3 border-0 shadow-sm">
+          <div class="card-body">
+            <h6 class="mb-3"><i class="bi bi-funnel me-2"></i><strong>Filter by Status</strong></h6>
+            <div class="d-flex flex-wrap gap-2">
+              <button type="button" 
+                      class="btn" 
+                      [class.btn-primary]="statusFilter() === 'all'"
+                      [class.btn-outline-primary]="statusFilter() !== 'all'"
+                      (click)="statusFilter.set('all')">
+                <i class="bi bi-list me-1"></i>All
+              </button>
 
-            <input type="radio" class="btn-check" name="statusFilter" id="pending" value="PENDING" 
-                   [checked]="statusFilter() === 'PENDING'" 
-                   (change)="statusFilter.set('PENDING')" />
-            <label class="btn btn-outline-warning" for="pending">Pending</label>
+              <button type="button" 
+                      class="btn" 
+                      [class.btn-warning]="statusFilter() === 'PENDING'"
+                      [class.btn-outline-warning]="statusFilter() !== 'PENDING'"
+                      (click)="statusFilter.set('PENDING')">
+                <i class="bi bi-hourglass-split me-1"></i>Pending
+              </button>
 
-            <input type="radio" class="btn-check" name="statusFilter" id="approved" value="APPROVED" 
-                   [checked]="statusFilter() === 'APPROVED'" 
-                   (change)="statusFilter.set('APPROVED')" />
-            <label class="btn btn-outline-success" for="approved">Approved</label>
+              <button type="button" 
+                      class="btn" 
+                      [class.btn-success]="statusFilter() === 'APPROVED'"
+                      [class.btn-outline-success]="statusFilter() !== 'APPROVED'"
+                      (click)="statusFilter.set('APPROVED')">
+                <i class="bi bi-check-circle me-1"></i>Approved
+              </button>
 
-            <input type="radio" class="btn-check" name="statusFilter" id="in-progress" value="IN_PROGRESS" 
-                   [checked]="statusFilter() === 'IN_PROGRESS'" 
-                   (change)="statusFilter.set('IN_PROGRESS')" />
-            <label class="btn btn-outline-info" for="in-progress">In Progress</label>
+              <button type="button" 
+                      class="btn" 
+                      [class.btn-info]="statusFilter() === 'IN_PROGRESS'"
+                      [class.btn-outline-info]="statusFilter() !== 'IN_PROGRESS'"
+                      (click)="statusFilter.set('IN_PROGRESS')">
+                <i class="bi bi-play-circle me-1"></i>In Progress
+              </button>
 
-            <input type="radio" class="btn-check" name="statusFilter" id="completed" value="COMPLETED" 
-                   [checked]="statusFilter() === 'COMPLETED'" 
-                   (change)="statusFilter.set('COMPLETED')" />
-            <label class="btn btn-outline-secondary" for="completed">Completed</label>
+              <button type="button" 
+                      class="btn" 
+                      [class.btn-secondary]="statusFilter() === 'COMPLETED'"
+                      [class.btn-outline-secondary]="statusFilter() !== 'COMPLETED'"
+                      (click)="statusFilter.set('COMPLETED')">
+                <i class="bi bi-check-all me-1"></i>Completed
+              </button>
 
-            <input type="radio" class="btn-check" name="statusFilter" id="rejected" value="REJECTED" 
-                   [checked]="statusFilter() === 'REJECTED'" 
-                   (change)="statusFilter.set('REJECTED')" />
-            <label class="btn btn-outline-danger" for="rejected">Rejected</label>
+              <button type="button" 
+                      class="btn" 
+                      [class.btn-danger]="statusFilter() === 'REJECTED'"
+                      [class.btn-outline-danger]="statusFilter() !== 'REJECTED'"
+                      (click)="statusFilter.set('REJECTED')">
+                <i class="bi bi-x-circle me-1"></i>Rejected
+              </button>
+            </div>
+            <small class="text-muted d-block mt-3">
+              <i class="bi bi-info-circle me-1"></i>Showing <strong>{{ filteredStudents().length }}</strong> of <strong>{{ myStudents().length }}</strong> students
+            </small>
           </div>
-          <small class="text-muted d-block mt-2">Showing {{ filteredStudents().length }} of {{ myStudents().length }} students</small>
         </div>
       }
 
       <!-- Students Table -->
       @if (filteredStudents().length > 0) {
         <div class="table-responsive">
-          <table class="table table-hover align-middle table-card">
-            <thead>
+          <table class="table table-hover align-middle">
+            <thead class="table-light">
               <tr>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Registration No</th>
-                <th>Company</th>
-                <th>Status</th>
-                <th>Start Date</th>
-                <th>End Date</th>
-                <th>Actions</th>
+                <th style="min-width: 180px">Name</th>
+                <th style="min-width: 200px">Email</th>
+                <th style="min-width: 120px">Reg No</th>
+                <th style="min-width: 150px">Company</th>
+                <th style="min-width: 110px">Status</th>
+                <th style="min-width: 110px">Start Date</th>
+                <th style="min-width: 110px">End Date</th>
+                <th style="min-width: 150px" class="text-center">Actions</th>
               </tr>
             </thead>
             <tbody>
               @for (s of (filteredStudents() | paginate: page.students : pageSize); track s.id) {
               <tr>
                 <td><strong>{{ s.name }}</strong></td>
-                <td>{{ s.email }}</td>
-                <td><span class="badge text-bg-info">{{ getStudentRegNo(s.id) || '-' }}</span></td>
-                <td>{{ siteInternshipsByStudentId[s.id]?.site?.company?.name || '-' }}</td>
+                <td><small>{{ s.email }}</small></td>
+                <td><span class="badge bg-info">{{ getStudentRegNo(s.id) || '-' }}</span></td>
+                <td><small>{{ siteInternshipsByStudentId[s.id]?.site?.company?.name || '-' }}</small></td>
                 <td>
-                  <span class="badge"
-                        [class.text-bg-warning]="siteInternshipsByStudentId[s.id]?.status === 'PENDING'"
-                        [class.text-bg-success]="siteInternshipsByStudentId[s.id]?.status === 'APPROVED'"
-                        [class.text-bg-info]="siteInternshipsByStudentId[s.id]?.status === 'IN_PROGRESS'"
-                        [class.text-bg-secondary]="siteInternshipsByStudentId[s.id]?.status === 'COMPLETED'"
-                        [class.text-bg-danger]="siteInternshipsByStudentId[s.id]?.status === 'REJECTED'">
+                  <span class="badge fw-semibold"
+                        [class.bg-warning]="siteInternshipsByStudentId[s.id]?.status === 'PENDING'"
+                        [class.bg-success]="siteInternshipsByStudentId[s.id]?.status === 'APPROVED'"
+                        [class.bg-info]="siteInternshipsByStudentId[s.id]?.status === 'IN_PROGRESS'"
+                        [class.bg-secondary]="siteInternshipsByStudentId[s.id]?.status === 'COMPLETED'"
+                        [class.bg-danger]="siteInternshipsByStudentId[s.id]?.status === 'REJECTED'">
                     {{ siteInternshipsByStudentId[s.id]?.status || '-' }}
                   </span>
                 </td>
-                <td>{{ siteInternshipsByStudentId[s.id]?.startDate | date:'short' }}</td>
-                <td>{{ siteInternshipsByStudentId[s.id]?.endDate | date:'short' }}</td>
+                <td><small>{{ siteInternshipsByStudentId[s.id]?.startDate | date:'short' }}</small></td>
+                <td><small>{{ siteInternshipsByStudentId[s.id]?.endDate | date:'short' }}</small></td>
                 <td>
-                  <div class="btn-group btn-group-sm" role="group">
-                    <button class="btn btn-primary" 
+                  <div class="btn-group btn-group-sm w-100" role="group">
+                    <button type="button"
+                            class="btn btn-sm btn-outline-primary" 
                             title="View Details"
-                            (click)="selectedId = s.id; selectTab('details')">
-                      <i class="bi bi-eye"></i>
+                            (click)="selectedId = s.id; selectTab('details')"
+                            data-bs-toggle="tooltip">
+                      <i class="bi bi-eye"></i> Details
                     </button>
-                    <button class="btn btn-info" 
+                    <button type="button"
+                            class="btn btn-sm btn-outline-info" 
                             title="View Evaluations"
-                            (click)="selectedId = s.id; selectTab('evaluations')">
-                      <i class="bi bi-clipboard-check"></i>
+                            (click)="selectedId = s.id; selectTab('evaluations')"
+                            data-bs-toggle="tooltip">
+                      <i class="bi bi-award"></i> Eval
                     </button>
-                    <button class="btn btn-warning" 
+                    <button type="button"
+                            class="btn btn-sm btn-outline-warning" 
                             title="View Reports"
-                            (click)="selectedId = s.id; selectTab('reports')">
-                      <i class="bi bi-file-text"></i>
+                            (click)="selectedId = s.id; selectTab('reports')"
+                            data-bs-toggle="tooltip">
+                      <i class="bi bi-file-text"></i> Reports
                     </button>
                   </div>
                 </td>
@@ -128,17 +156,15 @@
               }
             </tbody>
           </table>
-          <app-paginator [total]="filteredStudents().length" [(page)]="page.students" [pageSize]="pageSize"></app-paginator>
         </div>
-        <button class="btn btn-sm btn-primary" (click)="saveBatchAll()">Save All Scores</button>
+        <div class="d-flex justify-content-between align-items-center mt-3">
+          <app-paginator [total]="filteredStudents().length" [(page)]="page.students" [pageSize]="pageSize"></app-paginator>
+          <button class="btn btn-primary" (click)="saveBatchAll()">
+            <i class="bi bi-save me-2"></i>Save All Scores
+          </button>
+        </div>
       }
 
-      <!-- No filtered results -->
-      @if (!loadingInternships && myStudents().length > 0 && filteredStudents().length === 0) {
-        <div class="alert alert-info">
-          <i class="bi bi-info-circle me-2"></i>No students with status "{{ statusFilter() }}" found.
-        </div>
-      }
     </div>
   </div>
   }
@@ -314,198 +340,183 @@
   <div class="card mb-3">
     <div class="card-header bg-light d-flex justify-content-between align-items-center">
       <span>Student Performance Evaluation</span>
-      <span *ngIf="loadingEvaluation" class="spinner-border spinner-border-sm text-secondary"></span>
+      <span *ngIf="loadingInternships" class="spinner-border spinner-border-sm text-secondary"></span>
     </div>
     <div class="card-body">
-      <!-- Student + type selection -->
-      <div class="row g-3 mb-4">
-        <div class="col-md-6">
-          <label class="form-label">Select Student</label>
-          <select class="form-select" [(ngModel)]="selectedId" (ngModelChange)="onEvalStudentChange()" name="evalStudentId">
-            <option [ngValue]="null">-- choose --</option>
-            <option *ngFor="let s of myStudents()" [ngValue]="s.id">{{ s.name }} ({{ s.email }})</option>
-          </select>
-        </div>
-        <div class="col-md-6">
-          <label class="form-label">Evaluation Type</label>
-          <select class="form-select" [(ngModel)]="evaluationType" (ngModelChange)="onEvalTypeChange()" name="evalType">
-            <option value="site_mid">Mid-Term Evaluation</option>
-            <option value="site_final">Final Evaluation</option>
-          </select>
+      <!-- Evaluation Type Filter -->
+      <div class="mb-4">
+        <label class="form-label fw-semibold mb-2">Evaluation Type</label>
+        <div class="d-flex gap-2 flex-wrap">
+          <button type="button" class="btn" 
+                  [class.btn-primary]="evaluationType === 'site_mid'"
+                  [class.btn-outline-secondary]="evaluationType !== 'site_mid'"
+                  (click)="evaluationType = 'site_mid'">
+            <i class="bi bi-clipboard-check me-2"></i>Mid-Term
+          </button>
+          <button type="button" class="btn"
+                  [class.btn-primary]="evaluationType === 'site_final'"
+                  [class.btn-outline-secondary]="evaluationType !== 'site_final'"
+                  (click)="evaluationType = 'site_final'">
+            <i class="bi bi-award me-2"></i>Final
+          </button>
         </div>
       </div>
 
-      <div *ngIf="!selectedId" class="alert alert-warning">Please select a student to evaluate.</div>
+      <!-- Students Evaluation Table -->
+      @if (filteredStudents().length > 0) {
+      <div class="table-responsive">
+        <table class="table table-hover table-sm">
+          <thead class="table-light">
+            <tr>
+              <th style="min-width: 180px;">Name</th>
+              <th style="min-width: 220px;">Email</th>
+              <th style="min-width: 110px;">Reg No</th>
+              <th style="min-width: 130px;">Company</th>
+              <th style="min-width: 100px;">Status</th>
+              <th style="min-width: 100px;">Marks</th>
+              <th style="min-width: 150px;">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (student of (filteredStudents() | paginate: page.students : pageSize); track student.id) {
+            <tr>
+              <td class="fw-medium">{{ student.name }}</td>
+              <td class="text-muted small">{{ student.email }}</td>
+              <td class="text-monospace">{{ getStudentRegNo(student.id) }}</td>
+              <td>{{ getStudentCompany(student.id)?.name || '—' }}</td>
+              <td>
+                <span *ngIf="evaluationType === 'site_mid' && loadedEvalMid && loadedEvalMid.totalMarks" class="badge text-bg-success">
+                  <i class="bi bi-check-circle me-1"></i>Submitted
+                </span>
+                <span *ngIf="evaluationType === 'site_mid' && (!loadedEvalMid || !loadedEvalMid.totalMarks)" class="badge text-bg-warning">
+                  <i class="bi bi-clock me-1"></i>Pending
+                </span>
+                <span *ngIf="evaluationType === 'site_final' && loadedEvalFinal && loadedEvalFinal.totalMarks" class="badge text-bg-success">
+                  <i class="bi bi-check-circle me-1"></i>Submitted
+                </span>
+                <span *ngIf="evaluationType === 'site_final' && (!loadedEvalFinal || !loadedEvalFinal.totalMarks)" class="badge text-bg-warning">
+                  <i class="bi bi-clock me-1"></i>Pending
+                </span>
+              </td>
+              <td>
+                <span *ngIf="evaluationType === 'site_mid' && loadedEvalMid && loadedEvalMid.totalMarks" class="fw-bold text-success">
+                  {{ loadedEvalMid.totalMarks }}/50
+                </span>
+                <span *ngIf="evaluationType === 'site_final' && loadedEvalFinal && loadedEvalFinal.totalMarks" class="fw-bold text-success">
+                  {{ loadedEvalFinal.totalMarks }}/50
+                </span>
+                <span *ngIf="(evaluationType === 'site_mid' && (!loadedEvalMid || !loadedEvalMid.totalMarks)) || (evaluationType === 'site_final' && (!loadedEvalFinal || !loadedEvalFinal.totalMarks))" class="text-muted">—</span>
+              </td>
+              <td>
+                <button class="btn btn-sm btn-outline-primary" (click)="selectedId = student.id; onEvalStudentChange()" 
+                        title="View & Evaluate">
+                  <i class="bi bi-pencil-square"></i>
+                </button>
+              </td>
+            </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      }
 
-      <div *ngIf="selectedId">
+      @if (filteredStudents().length === 0) {
+      <div class="alert alert-info">
+        <i class="bi bi-info-circle me-2"></i>No students available for evaluation yet.
+      </div>
+      }
 
-        <!-- ── SUBMITTED / APPROVED STATE ── -->
-        <div *ngIf="loadedEvalForCurrentType" class="card border-success mb-4">
-          <div class="card-header bg-success text-white d-flex justify-content-between align-items-center flex-wrap gap-2">
-            <span>
-              <i class="bi bi-check-circle-fill me-2"></i>
-              {{ evaluationType === 'site_mid' ? 'Mid-Term' : 'Final' }} Evaluation — Submitted
-            </span>
-            <span class="badge text-bg-light text-dark fs-6">
-              Total: {{ loadedEvalForCurrentType.totalMarks ?? evaluationTotal }} / 50
-            </span>
-          </div>
-          <div class="card-body">
-            <div class="alert alert-success mb-3">
-              <i class="bi bi-check-circle-fill me-2"></i>
-              You have already submitted this evaluation. Only one submission is allowed per type.
-            </div>
-
-            <!-- Criteria breakdown -->
-            <h6 class="text-muted mb-3">Criteria Scores</h6>
-            <div class="row g-2 mb-3"
-                 *ngIf="loadedEvalForCurrentType.criteria || loadedEvalForCurrentType.criteriaValues || loadedEvalForCurrentType.criteriaMap">
-              <ng-container *ngFor="let entry of criteriaEntries(loadedEvalForCurrentType.criteria || loadedEvalForCurrentType.criteriaValues || loadedEvalForCurrentType.criteriaMap)">
-                <div class="col-12 col-md-6">
-                  <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
-                    <small class="text-capitalize fw-medium">{{ entry.label }}</small>
-                    <div class="d-flex align-items-center gap-2">
-                      <div class="progress" style="width:80px; height:8px; flex-grow:1">
-                        <div class="progress-bar bg-success" role="progressbar"
-                             [style.width.%]="(entry.value / 5) * 100"></div>
-                      </div>
-                      <small class="fw-bold">{{ entry.value }}<span class="text-muted fw-normal">/5</span></small>
-                    </div>
-                  </div>
-                </div>
-              </ng-container>
-            </div>
-
-            <!-- Comments -->
-            <div *ngIf="loadedEvalForCurrentType.comments || loadedEvalForCurrentType.commentsText" class="mb-2">
-              <small class="text-muted d-block mb-1">Comments</small>
-              <p class="mb-0">{{ loadedEvalForCurrentType.comments || loadedEvalForCurrentType.commentsText }}</p>
-            </div>
-
-            <!-- Timestamp -->
-            <div class="mt-3 d-flex gap-3 text-muted flex-wrap">
-              <small *ngIf="loadedEvalForCurrentType.submittedAt || loadedEvalForCurrentType.createdAt">
-                <i class="bi bi-calendar3 me-1"></i>
-                Submitted {{ (loadedEvalForCurrentType.submittedAt || loadedEvalForCurrentType.createdAt) | date:'mediumDate' }}
-              </small>
-              <small *ngIf="loadedEvalForCurrentType.submittedBy?.name || loadedEvalForCurrentType.evaluator?.name">
-                <i class="bi bi-person me-1"></i>
-                {{ loadedEvalForCurrentType.submittedBy?.name || loadedEvalForCurrentType.evaluator?.name }}
-              </small>
-            </div>
-          </div>
-        </div>
-
-        <!-- ── SUBMISSION FORM (only shown when not yet submitted) ── -->
-        <div *ngIf="!loadedEvalForCurrentType">
-          <h6 class="mb-3">
-            {{ evaluationType === 'site_mid' ? 'Mid-Term' : 'Final' }} Evaluation Form
-            <small class="text-muted fw-normal">— Rate each criterion from 0 to 5</small>
-          </h6>
-
-          <div class="row g-3">
-            <div class="col-md-6" *ngFor="let c of [
-              {label: 'Punctuality & Attendance',     field: 'punctualityAttendance'},
-              {label: 'Link Theory to Practice',      field: 'linkTheoryToPractice'},
-              {label: 'Critical Thinking',            field: 'criticalThinking'},
-              {label: 'Technical Knowledge',          field: 'technicalKnowledge'},
-              {label: 'Creativity',                   field: 'creativity'},
-              {label: 'Adaptability',                 field: 'adaptability'},
-              {label: 'Time Management',              field: 'timeManagement'},
-              {label: 'Professional Behavior',        field: 'professionalBehavior'},
-              {label: 'Assignments Performance',      field: 'assignmentsPerformance'},
-              {label: 'Communication Skills',         field: 'communicationSkills'}
-            ]">
-              <div class="border rounded p-3">
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                  <label class="form-label mb-0 fw-medium">{{ c.label }}</label>
-                  <span class="badge text-bg-primary">{{ $any(evaluationCriteria)[c.field] }} / 5</span>
-                </div>
-                <input type="range" min="0" max="5" step="1" class="form-range"
-                       [(ngModel)]="$any(evaluationCriteria)[c.field]"
-                       [name]="'c_' + c.field" />
-                <div class="d-flex justify-content-between">
-                  <small class="text-muted">0</small>
-                  <small class="text-muted">5</small>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="row g-3 mt-3 align-items-end">
-            <div class="col-md-3">
-              <label class="form-label">Total Marks</label>
-              <div class="input-group">
-                <input type="number" class="form-control fw-bold" [value]="evaluationTotal" readonly />
-                <span class="input-group-text text-muted">/ 50</span>
-              </div>
-            </div>
-            <div class="col-md-9">
-              <label class="form-label">Comments</label>
-              <textarea class="form-control" rows="2" [(ngModel)]="evaluationComments" name="evalComments"
-                        placeholder="Additional comments about the student's performance..."></textarea>
-            </div>
-          </div>
-
-          <div class="mt-4">
-            <button class="btn btn-primary" (click)="submitEvaluation()"
-                    [disabled]="submittingEvaluation">
-              <span *ngIf="submittingEvaluation" class="spinner-border spinner-border-sm me-1"></span>
-              Submit {{ evaluationType === 'site_mid' ? 'Mid-Term' : 'Final' }} Evaluation
-            </button>
-            <small class="text-muted ms-3">
-              <i class="bi bi-info-circle me-1"></i>
-              Each evaluation type can only be submitted once.
-            </small>
-          </div>
-        </div>
-
+      <div class="d-flex justify-content-between align-items-center mt-3">
+        <app-paginator [total]="filteredStudents().length" [(page)]="page.students" [pageSize]="pageSize"></app-paginator>
       </div>
     </div>
   </div>
 
-  <!-- Evaluation Status Overview (both types for selected student) -->
+  <!-- Evaluation Form (shown when student is selected) -->
   <div *ngIf="selectedId" class="card mb-3">
-    <div class="card-header bg-light">
-      <i class="bi bi-bar-chart-line me-2"></i>Evaluation Status Overview
+    <div class="card-header bg-light d-flex justify-content-between align-items-center">
+      <span>
+        Evaluate: <strong>{{ selectedStudent()?.name }}</strong> 
+        <small class="text-muted">({{ evaluationType === 'site_mid' ? 'Mid-Term' : 'Final' }})</small>
+      </span>
+      <button class="btn btn-sm btn-outline-secondary" (click)="selectedId = null">
+        <i class="bi bi-x"></i>
+      </button>
     </div>
     <div class="card-body">
-      <div class="row g-3">
-        <div class="col-md-6">
-          <div class="card h-100" [class.border-success]="loadedEvalMid" [class.border-secondary]="!loadedEvalMid">
-            <div class="card-body d-flex align-items-center gap-3">
-              <i class="bi fs-2"
-                 [class.bi-check-circle-fill]="loadedEvalMid"
-                 [class.bi-clock]="!loadedEvalMid"
-                 [class.text-success]="loadedEvalMid"
-                 [class.text-secondary]="!loadedEvalMid"></i>
-              <div>
-                <div class="fw-semibold">Mid-Term Evaluation</div>
-                <small *ngIf="loadedEvalMid" class="text-success">
-                  Submitted — {{ loadedEvalMid.totalMarks ?? '?' }} / 50
-                </small>
-                <small *ngIf="!loadedEvalMid" class="text-muted">Not submitted yet</small>
+      <!-- Check if already submitted -->
+      <div *ngIf="loadedEvalForCurrentType" class="alert alert-success mb-3">
+        <i class="bi bi-check-circle-fill me-2"></i>
+        <strong>Already Submitted:</strong> This evaluation was submitted with {{ loadedEvalForCurrentType.totalMarks || 0 }}/50 marks
+      </div>
+
+      <!-- Evaluation Form -->
+      <div *ngIf="!loadedEvalForCurrentType">
+        <h6 class="mb-3">
+          Enter {{ evaluationType === 'site_mid' ? 'Mid-Term' : 'Final' }} Evaluation Marks
+        </h6>
+
+        <!-- Simple Number Input Fields for Marks -->
+        <div class="row g-3 mb-4">
+          <div class="col-md-6">
+            <label class="form-label fw-medium">
+              <i class="bi bi-calculator me-1"></i>Total Marks (0-50)
+            </label>
+            <input type="number" min="0" max="50" step="1" class="form-control form-control-lg"
+                   [(ngModel)]="evaluationTotalInput" name="evalMarks"
+                   placeholder="Enter total marks..." />
+            <small class="text-muted d-block mt-1">
+              <i class="bi bi-info-circle me-1"></i>
+              Enter the total marks from 0 to 50
+            </small>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-medium">
+              <i class="bi bi-chat-dots me-1"></i>Comments (Optional)
+            </label>
+            <textarea class="form-control" rows="3" [(ngModel)]="evaluationComments" name="evalComments"
+                      placeholder="Add any comments about student's performance..."></textarea>
+          </div>
+        </div>
+
+        <!-- Criteria Input Fields -->
+        <div class="border-top pt-3 mt-4">
+          <h6 class="mb-3">Evaluation Criteria (0-5 per criterion)</h6>
+          <div class="row g-3">
+            <div class="col-md-6" *ngFor="let c of [
+              {label: 'Punctuality & Attendance',    field: 'punctualityAttendance'},
+              {label: 'Link Theory to Practice',     field: 'linkTheoryToPractice'},
+              {label: 'Critical Thinking',           field: 'criticalThinking'},
+              {label: 'Technical Knowledge',         field: 'technicalKnowledge'},
+              {label: 'Creativity',                  field: 'creativity'},
+              {label: 'Adaptability',                field: 'adaptability'},
+              {label: 'Time Management',             field: 'timeManagement'},
+              {label: 'Professional Behavior',       field: 'professionalBehavior'},
+              {label: 'Assignments Performance',     field: 'assignmentsPerformance'},
+              {label: 'Communication Skills',        field: 'communicationSkills'}
+            ]">
+              <div class="input-group">
+                <label class="input-group-text" [for]="'crit_' + c.field">{{ c.label }}</label>
+                <input type="number" [id]="'crit_' + c.field" min="0" max="5" step="1"
+                       class="form-control text-center"
+                       [(ngModel)]="$any(evaluationCriteria)[c.field]"
+                       [name]="'c_' + c.field"
+                       [attr.placeholder]="'0-5'" />
               </div>
             </div>
           </div>
         </div>
-        <div class="col-md-6">
-          <div class="card h-100" [class.border-success]="loadedEvalFinal" [class.border-secondary]="!loadedEvalFinal">
-            <div class="card-body d-flex align-items-center gap-3">
-              <i class="bi fs-2"
-                 [class.bi-check-circle-fill]="loadedEvalFinal"
-                 [class.bi-clock]="!loadedEvalFinal"
-                 [class.text-success]="loadedEvalFinal"
-                 [class.text-secondary]="!loadedEvalFinal"></i>
-              <div>
-                <div class="fw-semibold">Final Evaluation</div>
-                <small *ngIf="loadedEvalFinal" class="text-success">
-                  Submitted — {{ loadedEvalFinal.totalMarks ?? '?' }} / 50
-                </small>
-                <small *ngIf="!loadedEvalFinal" class="text-muted">Not submitted yet</small>
-              </div>
-            </div>
-          </div>
+
+        <div class="mt-4 d-flex gap-2">
+          <button class="btn btn-primary" (click)="submitEvaluation()"
+                  [disabled]="submittingEvaluation">
+            <span *ngIf="submittingEvaluation" class="spinner-border spinner-border-sm me-2"></span>
+            <i *ngIf="!submittingEvaluation" class="bi bi-check-circle me-2"></i>
+            Submit {{ evaluationType === 'site_mid' ? 'Mid-Term' : 'Final' }} Evaluation
+          </button>
+          <button class="btn btn-outline-secondary" (click)="selectedId = null" [disabled]="submittingEvaluation">
+            <i class="bi bi-x-circle me-2"></i>Cancel
+          </button>
         </div>
       </div>
     </div>
