@@ -32,13 +32,13 @@ export interface SiteInfo {
 export interface FinalResult {
   id: string;
   internshipId: string;
-  facultyMarks: number;
-  siteMarks: number;
-  officeMarks: number;
-  presentationMarks: number;
-  totalMarks: number;
+  facultyMarks: number | null;
+  siteMarks: number | null;
+  officeMarks: number | null;
+  presentationMarks: number | null;
+  totalMarks: number | null;
   status: string;
-  hodSignatureUrl: string;
+  hodSignatureUrl: string | null;
 }
 
 export interface SiteInternship {
@@ -52,10 +52,13 @@ export interface SiteInternship {
   status: 'PENDING' | 'APPROVED' | 'COMPLETED' | 'REJECTED' | 'IN_PROGRESS';
   createdAt: string;
   updatedAt: string;
+  internshipApprovalId?: string | null;
+  internshipAssignmentId?: string | null;
+  internshipProposalId?: string | null;
   student: StudentInfo;
   faculty: FacultyInfo;
   site: SiteInfo;
-  finalResult?: FinalResult;
+  finalResult?: FinalResult | null;
 }
 
 export interface GetSiteInternshipsResponse {

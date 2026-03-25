@@ -22,7 +22,7 @@
             <tr>
               <td>{{ s.name }}</td>
               <td>{{ s.email }}</td>
-              <td>{{ s.registrationNo || '-' }}</td>
+              <td>{{ getStudentRegNo(s.id) || '-' }}</td>
               <td style="width:120px"><input type="number" min="0" class="form-control form-control-sm" [(ngModel)]="batchMid[s.id]" name="bmid{{s.id}}" [placeholder]="midScore(s.id) != null ? (midScore(s.id) + '') : 'Mid'" /></td>
               <td style="width:120px"><input type="number" min="0" class="form-control form-control-sm" [(ngModel)]="batchFinal[s.id]" name="bfin{{s.id}}" [placeholder]="finalScore(s.id) != null ? (finalScore(s.id) + '') : 'Final'" /></td>
               <td>
@@ -58,8 +58,90 @@
   }
   @if (selectedId && currentTab==='details') {
   <div class="row g-3 mt-3">
+    <!-- Internship Details Card -->
     <div class="col-12">
-      <div class="alert alert-info">Select a tab to view logs, reports, or scoring for the selected student.</div>
+      <div class="card">
+        <div class="card-header bg-light">
+          <h6 class="mb-0">
+            <i class="bi bi-briefcase me-2"></i>Internship Details
+          </h6>
+        </div>
+        <div class="card-body">
+          <div class="row" *ngIf="siteInternshipsByStudentId[selectedId]">
+            <div class="col-md-6">
+              <small class="text-muted d-block">Registration No</small>
+              <div class="mb-3">{{ getStudentRegNo(selectedId) || '-' }}</div>
+              
+              <small class="text-muted d-block">Company</small>
+              <div class="mb-3">
+                <strong>{{ getStudentCompany(selectedId)?.name || '-' }}</strong>
+                <small class="text-muted d-block">{{ getStudentCompany(selectedId)?.industry || '' }}</small>
+              </div>
+              
+              <small class="text-muted d-block">Type</small>
+              <div class="mb-3">
+                <span class="badge" [class.text-bg-primary]="true">{{ siteInternshipsByStudentId[selectedId]?.type || '-' }}</span>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <small class="text-muted d-block">Status</small>
+              <div class="mb-3">
+                <span class="badge" 
+                      [class.text-bg-warning]="siteInternshipsByStudentId[selectedId]?.status === 'PENDING'"
+                      [class.text-bg-success]="siteInternshipsByStudentId[selectedId]?.status === 'APPROVED'"
+                      [class.text-bg-info]="siteInternshipsByStudentId[selectedId]?.status === 'IN_PROGRESS'"
+                      [class.text-bg-secondary]="siteInternshipsByStudentId[selectedId]?.status === 'COMPLETED'">
+                  {{ siteInternshipsByStudentId[selectedId]?.status || '-' }}
+                </span>
+              </div>
+
+              <small class="text-muted d-block">Start Date</small>
+              <div class="mb-3">{{ siteInternshipsByStudentId[selectedId]?.startDate | date:'mediumDate' }}</div>
+
+              <small class="text-muted d-block">End Date</small>
+              <div class="mb-3">{{ siteInternshipsByStudentId[selectedId]?.endDate | date:'mediumDate' }}</div>
+            </div>
+          </div>
+          <div *ngIf="!siteInternshipsByStudentId[selectedId]" class="alert alert-warning mb-0">
+            No internship data available for this student.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Final Results Card -->
+    <div class="col-12" *ngIf="getStudentFinalResult(selectedId)">
+      <div class="card">
+        <div class="card-header bg-light">
+          <h6 class="mb-0">
+            <i class="bi bi-graph-up me-2"></i>Final Results
+          </h6>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-3">
+              <small class="text-muted d-block">Faculty Marks</small>
+              <div class="fs-5 fw-bold">{{ getStudentFinalResult(selectedId)?.facultyMarks ?? '-' }}</div>
+            </div>
+            <div class="col-md-3">
+              <small class="text-muted d-block">Site Marks</small>
+              <div class="fs-5 fw-bold">{{ getStudentFinalResult(selectedId)?.siteMarks ?? '-' }}</div>
+            </div>
+            <div class="col-md-3">
+              <small class="text-muted d-block">Office Marks</small>
+              <div class="fs-5 fw-bold">{{ getStudentFinalResult(selectedId)?.officeMarks ?? '-' }}</div>
+            </div>
+            <div class="col-md-3">
+              <small class="text-muted d-block">Total Marks</small>
+              <div class="fs-5 fw-bold text-success">{{ getStudentFinalResult(selectedId)?.totalMarks ?? '-' }}</div>
+            </div>
+          </div>
+          <div class="mt-3 pt-3 border-top">
+            <small class="text-muted d-block">Status</small>
+            <span class="badge text-bg-primary">{{ getStudentFinalResult(selectedId)?.status || '-' }}</span>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
   }

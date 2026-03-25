@@ -91,21 +91,46 @@ export class SiteSupervisor implements OnInit {
   // Internship IDs from API (studentId → internshipId)
   private siteInternships: SiteInternship[] = [];
   internshipIdByStudentId: Record<string, string> = {};
+  // Enhanced student data from API (includes regNo, company info, final results)
+  siteInternshipsByStudentId: Record<string, SiteInternship> = {};
   loadingInternships = false;
 
   private async loadSiteInternships() {
     this.loadingInternships = true;
     try {
-      const res = await this.siteService.getSiteInternships();
+      const res = await this.siteService.getSiteInternships('all');
       const raw: any = res.data;
       const list: SiteInternship[] = Array.isArray(raw) ? raw : (raw?.items || []);
       this.siteInternships = list;
       this.internshipIdByStudentId = {};
+      this.siteInternshipsByStudentId = {};
+      
+      // Map internships by student ID for easy access to rich data
       for (const inv of list) {
         const studentId = inv.studentId || inv.student?.id;
-        if (studentId && inv.id) this.internshipIdByStudentId[studentId] = inv.id;
+        if (studentId) {
+          if (inv.id) {
+            this.internshipIdByStudentId[studentId] = inv.id;
+          }
+          // Store full internship data for access to regNo, company, final results
+          this.siteInternshipsByStudentId[studentId] = inv;
+          console.log(`✅ [SiteSupervisor] Mapped internship for student ${studentId}`, {
+            name: inv.student?.name,
+            regNo: inv.student?.regNo,
+            company: inv.site?.company?.name,
+            status: inv.status,
+            finalResult: inv.finalResult?.status
+          });
+        }
       }
-    } catch { /* silent — fallback to studentId */ } finally {
+      console.log(`📊 [SiteSupervisor] Loaded ${list.length} internships`, {
+        internshipCount: list.length,
+        studentCount: Object.keys(this.internshipIdByStudentId).length
+      });
+    } catch (err: any) {
+      console.error('❌ [SiteSupervisor] Failed to load internships:', err?.message);
+      this.toast.danger('Unable to load internship data. Please refresh the page.');
+    } finally {
       this.loadingInternships = false;
     }
   }
@@ -113,6 +138,35 @@ export class SiteSupervisor implements OnInit {
   private getEffectiveInternshipId(): string | null {
     if (!this.selectedId) return null;
     return this.internshipIdByStudentId[this.selectedId] || this.selectedId;
+  }
+
+  /**
+   * Get registration number from API internship data or fallback to store student data
+   */
+  getStudentRegNo(studentId: string): string | undefined {
+    const internship = this.siteInternshipsByStudentId[studentId];
+    if (internship?.student?.regNo) {
+      return internship.student.regNo;
+    }
+    // Fallback to store student data
+    const student = this.store.students().find(s => s.id === studentId);
+    return student?.registrationNo;
+  }
+
+  /**
+   * Get internship company info from API data
+   */
+  getStudentCompany(studentId: string): { name?: string; industry?: string } | null {
+    const internship = this.siteInternshipsByStudentId[studentId];
+    return internship?.site?.company || null;
+  }
+
+  /**
+   * Get final result/marks from internship data
+   */
+  getStudentFinalResult(studentId: string): any | null {
+    const internship = this.siteInternshipsByStudentId[studentId];
+    return internship?.finalResult || null;
   }
 
   get loadedEvalForCurrentType(): any | null {

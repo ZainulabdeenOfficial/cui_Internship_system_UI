@@ -73,6 +73,7 @@ export class SiteService {
    * GET /api/site/internships?status=all
    * Returns internships where the authenticated site supervisor is assigned.
    * Sends Authorization Bearer token in the request header.
+   * Properly handles nullable fields in finalResult and optional internship IDs.
    * @param status Optional filter: 'pending' | 'approved' | 'completed' | 'rejected' | 'all' (default 'all')
    */
   async getSiteInternships(status: 'pending' | 'approved' | 'completed' | 'rejected' | 'all' = 'all'): Promise<GetSiteInternshipsResponse> {
@@ -86,26 +87,80 @@ export class SiteService {
       const res = await firstValueFrom(
         this.http.get<GetSiteInternshipsResponse>(url, { headers: this.jsonHeaders(true), withCredentials: true })
       );
-      console.log('✅ [SiteService] Site internships retrieved successfully');
+      console.log('✅ [SiteService] Site internships retrieved successfully', {
+        count: res?.data?.length ?? 0,
+        message: res?.message
+      });
+      // Validate and sanitize response data
+      if (res?.data && Array.isArray(res.data)) {
+        res.data = res.data.map(inv => this.sanitizeSiteInternship(inv));
+      }
       return res;
     } catch (err: any) {
       const statusCode = err?.status ?? 0;
-      console.error(`❌ [SiteService] GET ${url} failed (HTTP ${statusCode}):`, err?.error?.message || err?.message);
-      if (statusCode && statusCode !== 0) throw err;
-      const abs = `${this.base}${url}`;
-      try {
-        console.log(`🔄 [SiteService] Retrying GET ${abs} with Bearer token`);
-        const res = await firstValueFrom(
-          this.http.get<GetSiteInternshipsResponse>(abs, { headers: this.jsonHeaders(true), withCredentials: true })
-        );
-        console.log('✅ [SiteService] Site internships retrieved (absolute URL)');
-        return res;
-      } catch (absErr: any) {
-        const absStatus = absErr?.status ?? 0;
-        console.error(`❌ [SiteService] GET ${abs} failed (HTTP ${absStatus}):`, absErr?.error?.message || absErr?.message);
-        throw absErr;
+      console.error(`❌ [SiteService] GET ${url} failed (HTTP ${statusCode}):`, {
+        message: err?.error?.message || err?.message,
+        error: err?.error
+      });
+      // Retry with absolute URL if it's a CORS/network error
+      if (statusCode === 0 || statusCode === 403 || statusCode === 0) {
+        const abs = `${this.base}${url}`;
+        try {
+          console.log(`🔄 [SiteService] Retrying GET ${abs} with Bearer token (absolute URL)`);
+          const res = await firstValueFrom(
+            this.http.get<GetSiteInternshipsResponse>(abs, { headers: this.jsonHeaders(true), withCredentials: true })
+          );
+          console.log('✅ [SiteService] Site internships retrieved (absolute URL)', {
+            count: res?.data?.length ?? 0
+          });
+          if (res?.data && Array.isArray(res.data)) {
+            res.data = res.data.map(inv => this.sanitizeSiteInternship(inv));
+          }
+          return res;
+        } catch (absErr: any) {
+          const absStatus = absErr?.status ?? 0;
+          console.error(`❌ [SiteService] GET ${abs} failed (HTTP ${absStatus}):`, absErr?.error?.message || absErr?.message);
+          throw absErr;
+        }
       }
+      throw err;
     }
+  }
+
+  /**
+   * Sanitize site internship data to ensure all fields are properly typed
+   * Handles null values and missing optional fields
+   */
+  private sanitizeSiteInternship(inv: any): SiteInternship {
+    return {
+      id: inv.id || '',
+      studentId: inv.studentId || '',
+      facultyId: inv.facultyId || '',
+      siteId: inv.siteId || '',
+      type: inv.type || 'ONSITE',
+      startDate: inv.startDate || new Date().toISOString(),
+      endDate: inv.endDate || new Date().toISOString(),
+      status: inv.status || 'PENDING',
+      createdAt: inv.createdAt || new Date().toISOString(),
+      updatedAt: inv.updatedAt || new Date().toISOString(),
+      internshipApprovalId: inv.internshipApprovalId ?? null,
+      internshipAssignmentId: inv.internshipAssignmentId ?? null,
+      internshipProposalId: inv.internshipProposalId ?? null,
+      student: inv.student || { id: '', name: '', email: '', regNo: '' },
+      faculty: inv.faculty || { id: '', name: '', email: '' },
+      site: inv.site || { id: '', name: '', email: '', company: { id: '', name: '', industry: '' } },
+      finalResult: inv.finalResult ? {
+        id: inv.finalResult.id || '',
+        internshipId: inv.finalResult.internshipId || inv.id || '',
+        facultyMarks: inv.finalResult.facultyMarks ?? null,
+        siteMarks: inv.finalResult.siteMarks ?? null,
+        officeMarks: inv.finalResult.officeMarks ?? null,
+        presentationMarks: inv.finalResult.presentationMarks ?? null,
+        totalMarks: inv.finalResult.totalMarks ?? null,
+        status: inv.finalResult.status || 'pending',
+        hodSignatureUrl: inv.finalResult.hodSignatureUrl ?? null
+      } : null
+    };
   }
 
   /**
