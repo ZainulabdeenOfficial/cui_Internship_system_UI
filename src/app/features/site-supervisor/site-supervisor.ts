@@ -305,9 +305,11 @@ export class SiteSupervisor implements OnInit {
 
   get evaluationTotal(): number {
     const c = this.evaluationCriteria;
-    return (c.punctualityAttendance + c.linkTheoryToPractice + c.criticalThinking +
+    const sum = (c.punctualityAttendance + c.linkTheoryToPractice + c.criticalThinking +
       c.technicalKnowledge + c.creativity + c.adaptability + c.timeManagement +
       c.professionalBehavior + c.assignmentsPerformance + c.communicationSkills);
+    // Convert from 0-50 scale (each criterion 0-5, 10 criteria = max 50)
+    return sum;
   }
 
   async submitEvaluation() {
@@ -322,10 +324,17 @@ export class SiteSupervisor implements OnInit {
       }
     }
     
-    // Use input total if provided, otherwise calculate from criteria
-    const totalMarks = this.evaluationTotalInput !== null && this.evaluationTotalInput !== undefined 
-      ? this.evaluationTotalInput 
-      : this.evaluationTotal;
+    // Calculate total marks from criteria (sum: 0-50)
+    // Each criterion is 0-5, 10 criteria, so max total = 50
+    let totalMarks: number;
+    
+    if (this.evaluationTotalInput !== null && this.evaluationTotalInput !== undefined) {
+      // Use manually entered total if provided
+      totalMarks = this.evaluationTotalInput;
+    } else {
+      // Calculate from criteria: sum all criteria values
+      totalMarks = this.evaluationTotal;
+    }
     
     // Validate total marks are within 0-50 range
     if (totalMarks < 0 || totalMarks > 50) {
@@ -333,7 +342,9 @@ export class SiteSupervisor implements OnInit {
       return;
     }
     
-    if (totalMarks === 0 && this.evaluationTotalInput === null) {
+    // Check that at least some marks are entered
+    const allCriteriaZero = Object.values(this.evaluationCriteria).every(v => v === 0);
+    if (totalMarks === 0 && allCriteriaZero && this.evaluationTotalInput === null) {
       this.toast.warning('Please enter marks or rate the criteria');
       return;
     }
@@ -348,7 +359,12 @@ export class SiteSupervisor implements OnInit {
         ...(this.evaluationComments?.trim() ? { comments: this.evaluationComments.trim() } : {})
       };
       
-      console.log('📤 [submitEvaluation] Sending payload:', payload);
+      console.log('📤 [submitEvaluation] Sending payload:', {
+        ...payload,
+        internshipId: internshipId.substring(0, 8) + '...',
+        calculatedTotal: this.evaluationTotal,
+        submittedTotal: payload.totalMarks
+      });
       
       const res = await this.siteService.submitEvaluation(payload);
       
