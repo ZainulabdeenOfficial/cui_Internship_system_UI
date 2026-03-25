@@ -420,20 +420,39 @@ export class SiteSupervisor implements OnInit {
     
     this.submittingEvaluation = true;
     try {
+      // Build criteria object ensuring all fields are integers
+      const criteria: SiteEvaluationCriteria = {
+        punctualityAttendance: Math.round(this.evaluationCriteria.punctualityAttendance || 0),
+        linkTheoryToPractice: Math.round(this.evaluationCriteria.linkTheoryToPractice || 0),
+        criticalThinking: Math.round(this.evaluationCriteria.criticalThinking || 0),
+        technicalKnowledge: Math.round(this.evaluationCriteria.technicalKnowledge || 0),
+        creativity: Math.round(this.evaluationCriteria.creativity || 0),
+        adaptability: Math.round(this.evaluationCriteria.adaptability || 0),
+        timeManagement: Math.round(this.evaluationCriteria.timeManagement || 0),
+        professionalBehavior: Math.round(this.evaluationCriteria.professionalBehavior || 0),
+        assignmentsPerformance: Math.round(this.evaluationCriteria.assignmentsPerformance || 0),
+        communicationSkills: Math.round(this.evaluationCriteria.communicationSkills || 0)
+      };
+      
       const payload: SiteEvaluationPayload = {
-        internshipId,
+        internshipId: internshipId.trim(),
         type: this.evaluationType,
-        criteria: { ...this.evaluationCriteria },
+        criteria: criteria,
         totalMarks: Math.round(totalMarks),
         ...(this.evaluationComments?.trim() ? { comments: this.evaluationComments.trim() } : {})
       };
       
-      console.log('📤 [submitEvaluation] Sending payload:', {
+      // Validate payload structure before sending
+      if (!payload.internshipId || !payload.type) {
+        this.toast.danger('Missing required fields: internshipId or type');
+        this.submittingEvaluation = false;
+        return;
+      }
+      
+      console.log('📤 [submitEvaluation] Sending payload:', JSON.stringify({
         ...payload,
-        internshipId: internshipId.substring(0, 8) + '...',
-        calculatedTotal: this.evaluationTotal,
-        submittedTotal: payload.totalMarks
-      });
+        internshipId: payload.internshipId.substring(0, 8) + '...',
+      }, null, 2));
       
       const res = await this.siteService.submitEvaluation(payload);
       
@@ -461,15 +480,32 @@ export class SiteSupervisor implements OnInit {
       this.selectedId = null;
       
     } catch (err: any) {
-      console.error('❌ [submitEvaluation] Error:', {
+      console.error('❌ [submitEvaluation] Full error object:', err);
+      console.error('❌ [submitEvaluation] Error details:', {
         status: err?.status,
         statusText: err?.statusText,
+        statusMessage: err?.statusText || 'Unknown error',
         message: err?.message,
-        error: err?.error
+        errorBody: err?.error,
+        errorMsg: typeof err?.error === 'string' ? err.error : err?.error?.message || err?.error?.error
       });
       
-      const errorMsg = err?.error?.message || err?.error?.errors?.[0] || err?.message || 'Failed to submit evaluation';
-      this.toast.danger(errorMsg);
+      // Parse different error response formats
+      let errorMsg = 'Failed to submit evaluation';
+      
+      if (typeof err?.error === 'string') {
+        errorMsg = err.error;
+      } else if (err?.error?.message) {
+        errorMsg = err.error.message;
+      } else if (err?.error?.error) {
+        errorMsg = err.error.error;
+      } else if (err?.error?.errors && Array.isArray(err.error.errors)) {
+        errorMsg = err.error.errors[0] || 'Invalid request. Please check your input';
+      } else if (err?.message) {
+        errorMsg = err.message;
+      }
+      
+      this.toast.danger(`${errorMsg}`);
     } finally {
       this.submittingEvaluation = false;
     }

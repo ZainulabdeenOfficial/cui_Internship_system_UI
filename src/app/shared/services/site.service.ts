@@ -54,7 +54,7 @@ export class SiteService {
     const url = `/api/site/evaluations`;
     try {
       console.log('🔄 [SiteService.submitEvaluation] Posting to:', url);
-      console.log('📦 [SiteService.submitEvaluation] Payload:', payload);
+      console.log('📦 [SiteService.submitEvaluation] Payload:', JSON.stringify(payload, null, 2));
       
       const res = await firstValueFrom(
         this.http.post<SiteEvaluationResponse>(url, payload, { headers: this.jsonHeaders() })
@@ -63,12 +63,13 @@ export class SiteService {
       console.log('✅ [SiteService.submitEvaluation] Success response:', res);
       return { success: true, ...res };
     } catch (err: any) {
-      // Log the error details
-      console.error('❌ [SiteService.submitEvaluation] API error:', {
+      // Log comprehensive error details
+      console.error('❌ [SiteService.submitEvaluation] API error full details:', {
         status: err?.status,
         statusText: err?.statusText,
-        message: err?.error?.message || err?.message,
-        fullError: err?.error
+        message: err?.message,
+        errorBody: err?.error,
+        errorString: typeof err?.error === 'string' ? err.error : JSON.stringify(err?.error)
       });
       
       // Fallback to absolute URL on network/CORS errors
@@ -86,7 +87,10 @@ export class SiteService {
         console.log('✅ [SiteService.submitEvaluation] Fallback success:', res);
         return { success: true, ...res };
       } catch (fallbackErr: any) {
-        console.error('❌ [SiteService.submitEvaluation] Fallback also failed:', fallbackErr);
+        console.error('❌ [SiteService.submitEvaluation] Fallback also failed:', {
+          status: fallbackErr?.status,
+          errorBody: fallbackErr?.error
+        });
         throw fallbackErr;
       }
     }
