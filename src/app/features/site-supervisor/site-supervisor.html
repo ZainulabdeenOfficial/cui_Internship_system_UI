@@ -496,7 +496,9 @@
 
         <!-- Criteria Input Fields -->
         <div class="border-top pt-3 mt-4">
-          <h6 class="mb-3">Evaluation Criteria (0-5 per criterion)</h6>
+          <h6 class="mb-3">
+            <i class="bi bi-list-check me-2"></i>Evaluation Criteria (0-5 per criterion)
+          </h6>
           <div class="row g-3">
             <div class="col-md-6" *ngFor="let c of [
               {label: 'Punctuality & Attendance',    field: 'punctualityAttendance'},
@@ -510,13 +512,61 @@
               {label: 'Assignments Performance',     field: 'assignmentsPerformance'},
               {label: 'Communication Skills',        field: 'communicationSkills'}
             ]">
-              <div class="input-group">
-                <label class="input-group-text" [for]="'crit_' + c.field">{{ c.label }}</label>
+              <div>
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <label class="form-label mb-0" [for]="'crit_' + c.field">
+                    <small class="fw-medium">{{ c.label }}</small>
+                  </label>
+                  <span class="badge" 
+                        [class.bg-success]="$any(evaluationCriteria)[c.field] >= 4"
+                        [class.bg-info]="$any(evaluationCriteria)[c.field] === 3"
+                        [class.bg-warning]="$any(evaluationCriteria)[c.field] === 2"
+                        [class.bg-danger]="$any(evaluationCriteria)[c.field] === 1"
+                        [class.bg-secondary]="$any(evaluationCriteria)[c.field] === 0 || !$any(evaluationCriteria)[c.field]">
+                    {{ $any(evaluationCriteria)[c.field] ?? 0 }}/5
+                  </span>
+                </div>
                 <input type="number" [id]="'crit_' + c.field" min="0" max="5" step="1"
                        class="form-control text-center"
+                       [class.is-invalid]="$any(evaluationCriteria)[c.field] > 5 || $any(evaluationCriteria)[c.field] < 0"
                        [(ngModel)]="$any(evaluationCriteria)[c.field]"
                        [name]="'c_' + c.field"
                        [attr.placeholder]="'0-5'" />
+                <div class="progress mt-2" style="height: 6px;">
+                  <div class="progress-bar" 
+                       [style.width.%]="(($any(evaluationCriteria)[c.field] ?? 0) / 5) * 100"
+                       [class.bg-success]="$any(evaluationCriteria)[c.field] >= 4"
+                       [class.bg-info]="$any(evaluationCriteria)[c.field] === 3"
+                       [class.bg-warning]="$any(evaluationCriteria)[c.field] === 2"
+                       [class.bg-danger]="$any(evaluationCriteria)[c.field] === 1">
+                  </div>
+                </div>
+                <small *ngIf="$any(evaluationCriteria)[c.field] > 5 || $any(evaluationCriteria)[c.field] < 0" 
+                       class="text-danger d-block mt-1">
+                  <i class="bi bi-exclamation-circle me-1"></i>Must be between 0-5
+                </small>
+              </div>
+            </div>
+          </div>
+
+          <!-- Criteria Summary -->
+          <div class="alert alert-info mt-4 mb-0">
+            <div class="d-flex justify-content-between align-items-center">
+              <span>
+                <i class="bi bi-calculator-lg me-2"></i><strong>Criteria Total:</strong>
+              </span>
+              <span class="fw-bold">
+                {{ evaluationTotal }}/50
+                <small class="text-muted">({{ (evaluationTotal / 50 * 100).toFixed(0) }}%)</small>
+              </span>
+            </div>
+            <div class="progress mt-2" style="height: 8px;">
+              <div class="progress-bar" 
+                   [style.width.%]="(evaluationTotal / 50) * 100"
+                   [class.bg-success]="evaluationTotal >= 40"
+                   [class.bg-info]="evaluationTotal >= 30 && evaluationTotal < 40"
+                   [class.bg-warning]="evaluationTotal >= 20 && evaluationTotal < 30"
+                   [class.bg-danger]="evaluationTotal < 20">
               </div>
             </div>
           </div>

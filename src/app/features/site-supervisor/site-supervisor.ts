@@ -314,10 +314,24 @@ export class SiteSupervisor implements OnInit {
     const internshipId = this.getEffectiveInternshipId();
     if (!internshipId) { this.toast.warning('Please select a student first'); return; }
     
+    // Validate all criteria are within 0-5 range
+    for (const [key, value] of Object.entries(this.evaluationCriteria)) {
+      if (value < 0 || value > 5) {
+        this.toast.danger(`${key}: Value must be between 0-5`);
+        return;
+      }
+    }
+    
     // Use input total if provided, otherwise calculate from criteria
     const totalMarks = this.evaluationTotalInput !== null && this.evaluationTotalInput !== undefined 
       ? this.evaluationTotalInput 
       : this.evaluationTotal;
+    
+    // Validate total marks are within 0-50 range
+    if (totalMarks < 0 || totalMarks > 50) {
+      this.toast.danger('Total marks must be between 0-50');
+      return;
+    }
     
     if (totalMarks === 0 && this.evaluationTotalInput === null) {
       this.toast.warning('Please enter marks or rate the criteria');
