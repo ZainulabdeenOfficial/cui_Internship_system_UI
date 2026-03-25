@@ -344,20 +344,47 @@ export class SiteSupervisor implements OnInit {
         internshipId,
         type: this.evaluationType,
         criteria: { ...this.evaluationCriteria },
-        totalMarks: totalMarks,
-        comments: this.evaluationComments
+        totalMarks: Math.round(totalMarks),
+        ...(this.evaluationComments?.trim() ? { comments: this.evaluationComments.trim() } : {})
       };
+      
+      console.log('📤 [submitEvaluation] Sending payload:', payload);
+      
       const res = await this.siteService.submitEvaluation(payload);
+      
+      console.log('✅ [submitEvaluation] Response received:', res);
+      
       this.toast.success(`${this.evaluationType === 'site_mid' ? 'Mid-term' : 'Final'} evaluation submitted successfully`);
+      
       // Store submitted evaluation as loaded state
-      const submitted = { criteria: { ...payload.criteria }, totalMarks: payload.totalMarks, comments: payload.comments, type: payload.type, submittedAt: new Date().toISOString(), ...(res.data || {}) };
+      const submitted = { 
+        criteria: { ...payload.criteria }, 
+        totalMarks: payload.totalMarks, 
+        comments: payload.comments || '', 
+        type: payload.type, 
+        submittedAt: new Date().toISOString(), 
+        ...(res.data || {}) 
+      };
+      
       if (this.evaluationType === 'site_mid') this.loadedEvalMid = submitted;
       else this.loadedEvalFinal = submitted;
+      
+      // Reset form fields
       this.evaluationCriteria = this.defaultCriteria();
       this.evaluationComments = '';
       this.evaluationTotalInput = null;
+      this.selectedId = null;
+      
     } catch (err: any) {
-      this.toast.danger(err?.error?.message || err?.message || 'Failed to submit evaluation');
+      console.error('❌ [submitEvaluation] Error:', {
+        status: err?.status,
+        statusText: err?.statusText,
+        message: err?.message,
+        error: err?.error
+      });
+      
+      const errorMsg = err?.error?.message || err?.error?.errors?.[0] || err?.message || 'Failed to submit evaluation';
+      this.toast.danger(errorMsg);
     } finally {
       this.submittingEvaluation = false;
     }

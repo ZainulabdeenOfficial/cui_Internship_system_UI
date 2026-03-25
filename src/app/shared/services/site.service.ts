@@ -22,7 +22,7 @@ export interface SiteEvaluationPayload {
   type: 'site_mid' | 'site_final';
   criteria: SiteEvaluationCriteria;
   totalMarks: number;
-  comments: string;
+  comments?: string;
 }
 
 export interface SiteEvaluationResponse {
@@ -53,19 +53,42 @@ export class SiteService {
   async submitEvaluation(payload: SiteEvaluationPayload): Promise<SiteEvaluationResponse> {
     const url = `/api/site/evaluations`;
     try {
+      console.log('🔄 [SiteService.submitEvaluation] Posting to:', url);
+      console.log('📦 [SiteService.submitEvaluation] Payload:', payload);
+      
       const res = await firstValueFrom(
         this.http.post<SiteEvaluationResponse>(url, payload, { headers: this.jsonHeaders() })
       );
+      
+      console.log('✅ [SiteService.submitEvaluation] Success response:', res);
       return { success: true, ...res };
     } catch (err: any) {
+      // Log the error details
+      console.error('❌ [SiteService.submitEvaluation] API error:', {
+        status: err?.status,
+        statusText: err?.statusText,
+        message: err?.error?.message || err?.message,
+        fullError: err?.error
+      });
+      
       // Fallback to absolute URL on network/CORS errors
       const status = err?.status ?? 0;
       if (status && status !== 0) throw err;
-      const abs = `${this.base}${url}`;
-      const res = await firstValueFrom(
-        this.http.post<SiteEvaluationResponse>(abs, payload, { headers: this.jsonHeaders() })
-      );
-      return { success: true, ...res };
+      
+      try {
+        const abs = `${this.base}${url}`;
+        console.log('🔄 [SiteService.submitEvaluation] Retrying with absolute URL:', abs);
+        
+        const res = await firstValueFrom(
+          this.http.post<SiteEvaluationResponse>(abs, payload, { headers: this.jsonHeaders() })
+        );
+        
+        console.log('✅ [SiteService.submitEvaluation] Fallback success:', res);
+        return { success: true, ...res };
+      } catch (fallbackErr: any) {
+        console.error('❌ [SiteService.submitEvaluation] Fallback also failed:', fallbackErr);
+        throw fallbackErr;
+      }
     }
   }
   
