@@ -17,30 +17,42 @@
       }
     </div>
     <div class="card-body">
+      <!-- Loading Status -->
       @if (loadingInternships) {
         <div class="alert alert-info">
           <i class="bi bi-hourglass-split me-2"></i>Loading internship data from API...
         </div>
       }
       
+      <!-- No Data Warning -->
       @if (!loadingInternships && myStudents().length === 0) {
         <div class="alert alert-warning">
           <i class="bi bi-exclamation-triangle me-2"></i>No students found. Please check your internship assignments.
         </div>
       }
 
+      <!-- Real-time Debug Info -->
+      <div class="alert alert-secondary small mb-3" *ngIf="!loadingInternships">
+        <strong>📊 Debug:</strong> 
+        API Students: {{ apiStudents().length }} | 
+        Display Students: {{ myStudents().length }} | 
+        Loading: {{ loadingInternships }}
+      </div>
+
+      <!-- Students Table -->
       @if (myStudents().length > 0) {
         <div class="table-responsive">
           <table class="table table-hover align-middle table-card">
             <thead>
-              <tr><th>Name</th><th>Email</th><th>Registration No</th><th>Mid Score</th><th>Final Score</th><th>Action</th></tr>
+              <tr><th>Name</th><th>Email</th><th>Registration No</th><th>Company</th><th>Mid Score</th><th>Final Score</th><th>Action</th></tr>
             </thead>
             <tbody>
               @for (s of (myStudents() | paginate: page.students : pageSize); track s.id) {
               <tr>
-                <td>{{ s.name }}</td>
+                <td><strong>{{ s.name }}</strong></td>
                 <td>{{ s.email }}</td>
-                <td>{{ getStudentRegNo(s.id) || '-' }}</td>
+                <td><span class="badge text-bg-info">{{ getStudentRegNo(s.id) || '-' }}</span></td>
+                <td>{{ siteInternshipsByStudentId[s.id]?.site?.company?.name || '-' }}</td>
                 <td style="width:120px"><input type="number" min="0" class="form-control form-control-sm" [(ngModel)]="batchMid[s.id]" name="bmid{{s.id}}" [placeholder]="midScore(s.id) != null ? (midScore(s.id) + '') : 'Mid'" /></td>
                 <td style="width:120px"><input type="number" min="0" class="form-control form-control-sm" [(ngModel)]="batchFinal[s.id]" name="bfin{{s.id}}" [placeholder]="finalScore(s.id) != null ? (finalScore(s.id) + '') : 'Final'" /></td>
                 <td>

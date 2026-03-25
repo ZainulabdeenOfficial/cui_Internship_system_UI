@@ -53,12 +53,17 @@ export class SiteSupervisor implements OnInit {
   // Computed students from API internships
   apiStudents = computed(() => {
     const internships = this.apiInternships();
-    if (!internships.length) return [];
-    const sid = this.mySiteId();
-    // Map internship data to student-like objects, filtering by siteId
-    return internships
-      .filter(inv => !sid || inv.siteId === sid)
-      .map(inv => ({
+    console.log('🔄 [apiStudents] Recalculating with', internships.length, 'internships');
+    
+    if (!internships.length) {
+      console.log('📭 [apiStudents] No internships available');
+      return [];
+    }
+    
+    // The API already filters by the current site supervisor, so show all returned internships
+    // Don't apply additional siteId filtering - trust the API response
+    const students = internships.map(inv => {
+      const student = {
         id: inv.studentId || inv.student?.id || '',
         name: inv.student?.name || '',
         email: inv.student?.email || '',
@@ -68,18 +73,32 @@ export class SiteSupervisor implements OnInit {
         internshipId: inv.id,
         internshipStatus: inv.status,
         company: inv.site?.company?.name || ''
-      }));
+      };
+      console.log('📌 [apiStudents] Mapped student:', student.name, '→', student.id);
+      return student;
+    });
+    
+    console.log('✅ [apiStudents] Final count:', students.length);
+    return students;
   });
   
   // Use API students if available, otherwise fall back to store students
   myStudents = computed(() => {
     const apiStu = this.apiStudents();
+    console.log('🔄 [myStudents] API students:', apiStu.length);
+    
     if (apiStu.length > 0) {
+      console.log('✅ [myStudents] Using API students (count:', apiStu.length + ')');
       return apiStu;
     }
+    
     // Fallback to store students
     const sid = this.mySiteId();
-    return sid ? this.students().filter(s => s.siteId === sid) : this.students();
+    const storeStu = sid 
+      ? this.students().filter(s => s.siteId === sid) 
+      : this.students();
+    console.log('📦 [myStudents] Using store students (count:', storeStu.length + ', site:', sid + ')');
+    return storeStu;
   });
   // Batch marking buffers
   batchMid: Record<string, number> = {};
@@ -136,8 +155,16 @@ export class SiteSupervisor implements OnInit {
       const raw: any = res.data;
       const list: SiteInternship[] = Array.isArray(raw) ? raw : (raw?.items || []);
       
+      console.log('📥 [SiteSupervisor.loadSiteInternships] Raw API response:', {
+        count: list.length,
+        currentMySiteId: this.mySiteId(),
+        siteIds: list.map(inv => inv.siteId),
+        studentIds: list.map(inv => inv.studentId || inv.student?.id)
+      });
+      
       // Update the signal so UI re-renders with API data
       this.apiInternships.set(list);
+      console.log('📍 [SiteSupervisor] Signal updated with', list.length, 'internships');
       
       this.siteInternships = list;
       this.internshipIdByStudentId = {};
@@ -161,10 +188,17 @@ export class SiteSupervisor implements OnInit {
           });
         }
       }
+      
+      // Force recalculation by logging computed values
+      const apiStudentsCount = this.apiStudents().length;
+      const myStudentsCount = this.myStudents().length;
+      
       console.log(`📊 [SiteSupervisor] Loaded ${list.length} internships`, {
         internshipCount: list.length,
         studentCount: Object.keys(this.internshipIdByStudentId).length,
-        apiStudents: this.apiStudents().length
+        apiStudents: apiStudentsCount,
+        myStudents: myStudentsCount,
+        loadingStatus: this.loadingInternships
       });
     } catch (err: any) {
       console.error('❌ [SiteSupervisor] Failed to load internships:', err?.message);
