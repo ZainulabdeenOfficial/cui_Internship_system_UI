@@ -1,4 +1,4 @@
-import { Component, computed, OnInit } from '@angular/core';
+import { Component, computed, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { StoreService } from '../../shared/services/store.service';
@@ -26,6 +26,9 @@ export class SiteSupervisor implements OnInit {
       });
     } catch {}
   }
+  
+  // Expose Object methods to template
+  readonly Object = Object;
 
   ngOnInit() {
     this.loadSiteInternships();
@@ -43,7 +46,38 @@ export class SiteSupervisor implements OnInit {
   logs() { return this.selectedId ? (this.store.logs()[this.selectedId] ?? []) : []; }
   reports() { return this.selectedId ? (this.store.reports()[this.selectedId] ?? []) : []; }
   mySiteId = computed(() => this.store.currentUser()?.siteId);
+  
+  // Signal to store API internships
+  private apiInternships = signal<SiteInternship[]>([]);
+  
+  // Computed students from API internships
+  apiStudents = computed(() => {
+    const internships = this.apiInternships();
+    if (!internships.length) return [];
+    const sid = this.mySiteId();
+    // Map internship data to student-like objects, filtering by siteId
+    return internships
+      .filter(inv => !sid || inv.siteId === sid)
+      .map(inv => ({
+        id: inv.studentId || inv.student?.id || '',
+        name: inv.student?.name || '',
+        email: inv.student?.email || '',
+        registrationNo: inv.student?.regNo || '',
+        siteId: inv.siteId,
+        // Add internship-specific data
+        internshipId: inv.id,
+        internshipStatus: inv.status,
+        company: inv.site?.company?.name || ''
+      }));
+  });
+  
+  // Use API students if available, otherwise fall back to store students
   myStudents = computed(() => {
+    const apiStu = this.apiStudents();
+    if (apiStu.length > 0) {
+      return apiStu;
+    }
+    // Fallback to store students
     const sid = this.mySiteId();
     return sid ? this.students().filter(s => s.siteId === sid) : this.students();
   });
@@ -101,6 +135,10 @@ export class SiteSupervisor implements OnInit {
       const res = await this.siteService.getSiteInternships('all');
       const raw: any = res.data;
       const list: SiteInternship[] = Array.isArray(raw) ? raw : (raw?.items || []);
+      
+      // Update the signal so UI re-renders with API data
+      this.apiInternships.set(list);
+      
       this.siteInternships = list;
       this.internshipIdByStudentId = {};
       this.siteInternshipsByStudentId = {};
@@ -125,7 +163,8 @@ export class SiteSupervisor implements OnInit {
       }
       console.log(`📊 [SiteSupervisor] Loaded ${list.length} internships`, {
         internshipCount: list.length,
-        studentCount: Object.keys(this.internshipIdByStudentId).length
+        studentCount: Object.keys(this.internshipIdByStudentId).length,
+        apiStudents: this.apiStudents().length
       });
     } catch (err: any) {
       console.error('❌ [SiteSupervisor] Failed to load internships:', err?.message);
@@ -144,9 +183,15 @@ export class SiteSupervisor implements OnInit {
    * Get registration number from API internship data or fallback to store student data
    */
   getStudentRegNo(studentId: string): string | undefined {
+    // First try to get from API internship data
     const internship = this.siteInternshipsByStudentId[studentId];
     if (internship?.student?.regNo) {
       return internship.student.regNo;
+    }
+    // Then try from apiStudents computed array
+    const apiStudent = this.apiStudents().find(s => s.id === studentId);
+    if (apiStudent?.registrationNo) {
+      return apiStudent.registrationNo;
     }
     // Fallback to store student data
     const student = this.store.students().find(s => s.id === studentId);

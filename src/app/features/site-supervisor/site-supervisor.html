@@ -10,34 +10,53 @@
   </ul>
   @if (currentTab==='students') {
   <div class="card mb-3">
-    <div class="card-header bg-light">Assigned Students</div>
+    <div class="card-header bg-light d-flex justify-content-between align-items-center">
+      <span>Assigned Students</span>
+      @if (loadingInternships) {
+        <span class="spinner-border spinner-border-sm text-primary"></span>
+      }
+    </div>
     <div class="card-body">
-      <div class="table-responsive">
-        <table class="table table-hover align-middle table-card">
-          <thead>
-            <tr><th>Name</th><th>Email</th><th>Registration No</th><th>Mid Score</th><th>Final Score</th><th>Action</th></tr>
-          </thead>
-          <tbody>
-            @for (s of (myStudents() | paginate: page.students : pageSize); track s.id) {
-            <tr>
-              <td>{{ s.name }}</td>
-              <td>{{ s.email }}</td>
-              <td>{{ getStudentRegNo(s.id) || '-' }}</td>
-              <td style="width:120px"><input type="number" min="0" class="form-control form-control-sm" [(ngModel)]="batchMid[s.id]" name="bmid{{s.id}}" [placeholder]="midScore(s.id) != null ? (midScore(s.id) + '') : 'Mid'" /></td>
-              <td style="width:120px"><input type="number" min="0" class="form-control form-control-sm" [(ngModel)]="batchFinal[s.id]" name="bfin{{s.id}}" [placeholder]="finalScore(s.id) != null ? (finalScore(s.id) + '') : 'Final'" /></td>
-              <td>
-                <div class="btn-group btn-group-sm">
-                  <button class="btn btn-primary" (click)="saveBatchRow(s.id)">Save</button>
-                  <button class="btn btn-secondary" (click)="selectedId = s.id">Open</button>
-                </div>
-              </td>
-            </tr>
-            }
-          </tbody>
-        </table>
-        <app-paginator [total]="myStudents().length" [(page)]="page.students" [pageSize]="pageSize"></app-paginator>
-      </div>
-      <button class="btn btn-sm btn-primary" (click)="saveBatchAll()">Save All</button>
+      @if (loadingInternships) {
+        <div class="alert alert-info">
+          <i class="bi bi-hourglass-split me-2"></i>Loading internship data from API...
+        </div>
+      }
+      
+      @if (!loadingInternships && myStudents().length === 0) {
+        <div class="alert alert-warning">
+          <i class="bi bi-exclamation-triangle me-2"></i>No students found. Please check your internship assignments.
+        </div>
+      }
+
+      @if (myStudents().length > 0) {
+        <div class="table-responsive">
+          <table class="table table-hover align-middle table-card">
+            <thead>
+              <tr><th>Name</th><th>Email</th><th>Registration No</th><th>Mid Score</th><th>Final Score</th><th>Action</th></tr>
+            </thead>
+            <tbody>
+              @for (s of (myStudents() | paginate: page.students : pageSize); track s.id) {
+              <tr>
+                <td>{{ s.name }}</td>
+                <td>{{ s.email }}</td>
+                <td>{{ getStudentRegNo(s.id) || '-' }}</td>
+                <td style="width:120px"><input type="number" min="0" class="form-control form-control-sm" [(ngModel)]="batchMid[s.id]" name="bmid{{s.id}}" [placeholder]="midScore(s.id) != null ? (midScore(s.id) + '') : 'Mid'" /></td>
+                <td style="width:120px"><input type="number" min="0" class="form-control form-control-sm" [(ngModel)]="batchFinal[s.id]" name="bfin{{s.id}}" [placeholder]="finalScore(s.id) != null ? (finalScore(s.id) + '') : 'Final'" /></td>
+                <td>
+                  <div class="btn-group btn-group-sm">
+                    <button class="btn btn-primary" (click)="saveBatchRow(s.id)">Save</button>
+                    <button class="btn btn-secondary" (click)="selectedId = s.id">Open</button>
+                  </div>
+                </td>
+              </tr>
+              }
+            </tbody>
+          </table>
+          <app-paginator [total]="myStudents().length" [(page)]="page.students" [pageSize]="pageSize"></app-paginator>
+        </div>
+        <button class="btn btn-sm btn-primary" (click)="saveBatchAll()">Save All</button>
+      }
     </div>
   </div>
   }
@@ -439,6 +458,44 @@
     </div>
   </div>
   }
+
+  <!-- Debug Panel for API Data -->
+  <hr class="my-4" />
+  <details class="mb-3" open>
+    <summary class="cursor-pointer"><strong>🔍 Debug Info - API Data Loading</strong></summary>
+    <div class="card mt-2 bg-light">
+      <div class="card-body small">
+        <div class="row">
+          <div class="col-md-6">
+            <p><strong>Loading Status:</strong> {{ loadingInternships ? '⏳ Loading...' : '✅ Complete' }}</p>
+            <p><strong>API Students Found:</strong> {{ apiStudents().length }}</p>
+            <p><strong>Displayed Students:</strong> {{ myStudents().length }}</p>
+            <p><strong>Your Site ID:</strong> <code>{{ mySiteId() || 'None' }}</code></p>
+          </div>
+          <div class="col-md-6">
+            <p><strong>Internship Mappings:</strong> {{ Object.keys(internshipIdByStudentId).length }}</p>
+            <p><strong>Site Internships Cached:</strong> {{ Object.keys(siteInternshipsByStudentId).length }}</p>
+            <p *ngIf="apiStudents().length > 0" class="text-success">✅ API data loaded successfully</p>
+            <p *ngIf="apiStudents().length === 0 && !loadingInternships" class="text-warning">⚠️ No API data - using store students</p>
+          </div>
+        </div>
+        
+        <!-- First few students preview -->
+        <div class="mt-3 pt-3 border-top" *ngIf="myStudents().length > 0">
+          <p><strong>Preview of loaded students:</strong></p>
+          <div class="small text-muted">
+            @for (s of myStudents().slice(0, 3); track s.id) {
+              <div class="mb-2 p-2 bg-white rounded border">
+                <strong>{{ s.name }}</strong> ({{ s.email }})
+                <br/>
+                <small>RegNo: {{ getStudentRegNo(s.id) || '-' }} | Company: {{ siteInternshipsByStudentId[s.id]?.site?.company?.name || '-' }}</small>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+  </details>
 
   <!-- hidden usage to ensure standalone imports are recognized -->
   <ng-template #__ensureImportsSite>
