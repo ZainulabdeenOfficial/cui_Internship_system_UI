@@ -139,7 +139,7 @@
                     <button type="button"
                             class="btn btn-sm btn-outline-info" 
                             title="View Evaluations"
-                            (click)="selectedId = s.id; selectTab('evaluations')"
+                            (click)="selectedId = s.id; selectTab('evaluations'); onEvalStudentChange()"
                             data-bs-toggle="tooltip">
                       <i class="bi bi-award"></i> Eval
                     </button>
