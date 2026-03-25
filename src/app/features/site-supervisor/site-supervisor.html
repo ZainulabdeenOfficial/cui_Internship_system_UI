@@ -454,8 +454,8 @@
         Evaluate: <strong>{{ selectedStudent()?.name }}</strong> 
         <small class="text-muted">({{ evaluationType === 'site_mid' ? 'Mid-Term' : 'Final' }})</small>
       </span>
-      <button class="btn btn-sm btn-outline-secondary" (click)="selectedId = null">
-        <i class="bi bi-x"></i>
+      <button class="btn btn-sm btn-outline-danger" (click)="selectedId = null" title="Close">
+        <i class="bi bi-x-lg"></i> Close
       </button>
     </div>
     <div class="card-body">
