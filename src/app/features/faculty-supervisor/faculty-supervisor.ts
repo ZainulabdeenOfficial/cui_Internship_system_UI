@@ -739,6 +739,22 @@ export class FacultySupervisor {
     return [...enriched, ...apexBOnly];
   }
 
+  /**
+   * Filtered marks tab students with search and mode filter applied.
+   */
+  filteredMarksTabStudents(): Array<any> {
+    const students = this.marksTabStudents();
+    const mf = this.modeFilter;
+    const q = this.search.trim().toLowerCase();
+    
+    return students.filter(x => {
+      const mode = x.internshipMode || '';
+      const modeOk = mf === 'All' || mode === mf;
+      const qOk = !q || x.name.toLowerCase().includes(q) || (x.email?.toLowerCase().includes(q)) || (x.registrationNo?.toLowerCase().includes(q));
+      return modeOk && qOk;
+    });
+  }
+
   /** Load evaluation summary for the currently selected student's internship. */
   async loadEvaluationSummaryForSelected() {
     const id = this.facultyMarksForm.internshipId.trim();
@@ -922,11 +938,17 @@ export class FacultySupervisor {
     this.viewModalStudent = student;
     this.viewModalSummary = null;
     this.showViewModal = true;
+    
+    // Trigger change detection to show modal
+    try { this.cdr.detectChanges(); } catch {}
 
     const internshipId = student?.internshipId || '';
     if (!internshipId) return;
 
     this.viewModalLoading = true;
+    // Trigger change detection to show loading spinner
+    try { this.cdr.detectChanges(); } catch {}
+    
     try {
       const res = await this.facultyApi.getEvaluationSummary(internshipId, {
         skipGlobalLoading: true,
@@ -934,10 +956,17 @@ export class FacultySupervisor {
         forceRefresh: true
       });
       this.viewModalSummary = res?.evaluationSummary ?? null;
+      console.group(`📊 [Faculty] View Modal Evaluation Summary — internshipId: ${internshipId}`);
+      console.log('Response:', res);
+      console.log('Summary loaded:', !!this.viewModalSummary);
+      console.groupEnd();
     } catch (err: any) {
       console.warn(`⚠️ [Faculty] View modal evaluation summary failed (${err?.status}):`, err?.error?.message || err?.message);
+      this.viewModalSummary = null;
     } finally {
       this.viewModalLoading = false;
+      // Trigger final change detection to update UI with loaded data
+      try { this.cdr.detectChanges(); } catch {}
     }
   }
 

@@ -57,6 +57,8 @@
       <li><strong>Freelancing:</strong> Supervisor (60) + Internship Office (40). Office sub-marks are 5 (Proposal) + 5 (Logs) + 10 (Final Report).</li>
     </ul>
   </div>
+  <!-- Filter & Quick Mark Card - Only show on Students & Marks tabs -->
+  @if (currentTab === 'students' || currentTab === 'marks') {
   <div class="card filter-card mb-3">
     <div class="card-body">
       <div class="row g-3 align-items-end">
@@ -78,15 +80,18 @@
           </div>
         </div>
         <div class="col-md-4">
-          <label class="form-label">Faculty Total (0-60)</label>
-          <div class="input-group">
-            <span class="input-group-text"><i class="pi pi-chart-line"></i></span>
-            <input type="number" min="0" max="60" class="form-control" (ngModelChange)="setMarks($event)" [ngModel]="selectedStudent()?.marks?.faculty ?? ''" />
-          </div>
+          @if (currentTab === 'students' && selectedStudent()) {
+            <label class="form-label">Faculty Total (0-60)</label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="pi pi-chart-line"></i></span>
+              <input type="number" min="0" max="60" class="form-control" (ngModelChange)="setMarks($event)" [ngModel]="selectedStudent()?.marks?.faculty ?? ''" />
+            </div>
+          }
         </div>
       </div>
     </div>
   </div>
+  }
 
   @if (currentTab==='students') {
   <div class="table-responsive mb-3">
@@ -714,7 +719,7 @@
     <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
       <span><i class="bi bi-people-fill me-2"></i>My Assigned Students</span>
       <div class="d-flex align-items-center gap-2">
-        <span class="badge text-bg-primary">{{ marksTabStudents().length }} student(s)</span>
+        <span class="badge text-bg-primary">{{ filteredMarksTabStudents().length }} of {{ marksTabStudents().length }} student(s)</span>
         <button class="btn btn-sm btn-outline-secondary" (click)="loadFacultyInternships(true)" [disabled]="loadingFacultyInternships">
           <span *ngIf="loadingFacultyInternships" class="spinner-border spinner-border-sm me-1"></span>
           {{ loadingFacultyInternships ? 'Loading…' : 'Refresh' }}
@@ -736,7 +741,7 @@
             </tr>
           </thead>
           <tbody>
-            @for (s of marksTabStudents(); track s.id) {
+            @for (s of filteredMarksTabStudents(); track s.id) {
               <tr [class.table-primary]="selectedStudentForMarks?.id === s.id">
                 <td>
                   <div class="fw-semibold">{{ s.name }}</div>
@@ -785,9 +790,13 @@
                 </td>
               </tr>
             }
-            @if (marksTabStudents().length === 0) {
+            @if (filteredMarksTabStudents().length === 0) {
               <tr><td colspan="7" class="text-center text-muted py-3">
-                No students assigned to you. Go to the <strong>Student Requests</strong> tab to verify APEX B forms first.
+                @if (marksTabStudents().length === 0) {
+                  No students assigned to you. Go to the <strong>Student Requests</strong> tab to verify APEX B forms first.
+                } @else {
+                  No students match your current filters.
+                }
               </td></tr>
             }
           </tbody>
