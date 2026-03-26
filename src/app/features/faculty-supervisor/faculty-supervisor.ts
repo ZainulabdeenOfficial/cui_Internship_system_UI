@@ -63,6 +63,18 @@ export class FacultySupervisor {
     const fid = this.myFacultyId();
     return fid ? this.students().filter(s => s.facultyId === fid) : this.students();
   });
+  
+  // Helper: normalize internship mode to match filter options (case-insensitive)
+  private normalizeMode(mode: string): string {
+    if (!mode) return '';
+    const normalized = mode.toUpperCase().trim();
+    if (normalized === 'ONSITE' || normalized === 'ON-SITE' || normalized === 'ON_SITE') return 'OnSite';
+    if (normalized === 'VIRTUAL' || normalized === 'REMOTE') return 'Virtual';
+    if (normalized === 'FIVERR') return 'Fiverr';
+    if (normalized === 'UPWORK') return 'Upwork';
+    return mode;
+  }
+
   // UI filters
   modeFilter: 'All'|'Fiverr'|'Upwork'|'OnSite'|'Virtual' = 'All';
   search = '';
@@ -71,14 +83,14 @@ export class FacultySupervisor {
     const mf = this.modeFilter;
     const q = this.search.trim().toLowerCase();
     const filtered = s.filter(x => {
-      const mode = x.internshipMode || '';
+      const mode = this.normalizeMode(x.internshipMode || '');
       const modeOk = mf === 'All' || mode === mf;
       const qOk = !q || x.name.toLowerCase().includes(q) || (x.email?.toLowerCase().includes(q)) || (x.registrationNo?.toLowerCase().includes(q));
       return modeOk && qOk;
     });
     
     // Log filtering for real-time debugging
-    console.log('🔍 [Faculty Filter]', { mode: mf, search: q || '(none)', total: s.length, filtered: filtered.length });
+    console.log('🔍 [Faculty Filter - Students Tab]', { mode: mf, search: q || '(none)', total: s.length, filtered: filtered.length });
     
     return filtered;
   });
@@ -803,13 +815,13 @@ export class FacultySupervisor {
     const q = this.search.trim().toLowerCase();
     
     const filtered = students.filter(x => {
-      const mode = x.internshipMode || '';
+      const mode = this.normalizeMode(x.internshipMode || '');
       const modeOk = mf === 'All' || mode === mf;
       const qOk = !q || x.name.toLowerCase().includes(q) || (x.email?.toLowerCase().includes(q)) || (x.registrationNo?.toLowerCase().includes(q));
       return modeOk && qOk;
     });
     
-    console.log('Marks Tab Filter:', { mode: mf, search: q || '(none)', total: students.length, filtered: filtered.length });
+    console.log('📊 [Faculty Filter - Marks Tab]', { mode: mf, search: q || '(none)', total: students.length, filtered: filtered.length, normalized_modes: students.map(s => this.normalizeMode(s.internshipMode || '')).slice(0, 5) });
     
     return filtered;
   }
