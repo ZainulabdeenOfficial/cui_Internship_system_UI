@@ -15,7 +15,7 @@
       <div class="card stat">
         <div class="card-body">
           <div class="stat-label">My Students</div>
-          <div class="stat-value">{{ getDashboardStudents().length }}</div>
+          <div class="stat-value">{{ getAllDashboardStudents().length }}</div>
         </div>
       </div>
     </div>
@@ -94,6 +94,12 @@
   }
 
   @if (currentTab==='students') {
+  <div class="card mb-3">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <span><i class="bi bi-people-fill me-2"></i>My Students</span>
+      <span class="badge text-bg-primary">{{ filteredStudents().length }} of {{ myStudents().length }} student(s)</span>
+    </div>
+  </div>
   <div class="table-responsive mb-3">
     <table class="table table-hover align-middle shadow-sm table-card">
       <thead>
@@ -126,6 +132,15 @@
             <button class="btn btn-sm btn-primary" (click)="selectedId = s.id">Open</button>
           </td>
         </tr>
+        }
+        @if (filteredStudents().length === 0) {
+        <tr><td colspan="6" class="text-center text-muted py-3">
+          @if (myStudents().length === 0) {
+            No students assigned yet.
+          } @else {
+            No students match your current filters.
+          }
+        </td></tr>
         }
       </tbody>
     </table>

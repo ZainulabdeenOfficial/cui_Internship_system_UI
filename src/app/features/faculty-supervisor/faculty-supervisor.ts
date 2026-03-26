@@ -70,12 +70,17 @@ export class FacultySupervisor {
     const s = this.myStudents();
     const mf = this.modeFilter;
     const q = this.search.trim().toLowerCase();
-    return s.filter(x => {
+    const filtered = s.filter(x => {
       const mode = x.internshipMode || '';
       const modeOk = mf === 'All' || mode === mf;
       const qOk = !q || x.name.toLowerCase().includes(q) || (x.email?.toLowerCase().includes(q)) || (x.registrationNo?.toLowerCase().includes(q));
       return modeOk && qOk;
     });
+    
+    // Log filtering for real-time debugging
+    console.log('🔍 [Faculty Filter]', { mode: mf, search: q || '(none)', total: s.length, filtered: filtered.length });
+    
+    return filtered;
   });
 
   selectedStudent = computed(() => this.selectedId ? this.students().find(s => s.id === this.selectedId!) : undefined);
@@ -135,9 +140,8 @@ export class FacultySupervisor {
     this.toast.success('Assignment marked');
   }
 
-  // Dashboard helper counts for template
-  // Uses combined data: faculty internships (from API) + store students (local cache)
-  getDashboardStudents(): Array<any> {
+  // Dashboard helper: get ALL students (unfiltered) for accurate statistics
+  getAllDashboardStudents(): Array<any> {
     const seen = new Set<string>();
     
     // Primary: Real internship records from API (most reliable)
@@ -154,41 +158,46 @@ export class FacultySupervisor {
         facultyId: i.faculty?.id
       }));
 
-    // Fallback: Store students not in internships
-    const storeStudents = this.filteredStudents();
-    const fromStore = storeStudents.filter(s => !seen.has(s.id) && seen.add(s.id) !== undefined);
+    // Fallback: Get ALL store students (no filter applied) not in internships
+    const fid = this.myFacultyId();
+    const allStoreStudents = fid ? this.students().filter(s => s.facultyId === fid) : this.students();
+    const fromStore = allStoreStudents.filter(s => !seen.has(s.id) && seen.add(s.id) !== undefined);
 
     const result = [...fromInternships, ...fromStore];
     
-    // Log for debugging dashboard stats
-    console.group('📊 [Faculty Dashboard Stats]');
-    console.log('Faculty Internships:', fromInternships.length);
-    console.log('Store Students (filtered):', fromStore.length);
-    console.log('Total Dashboard Students:', result.length);
-    if (result.length > 0) {
-      console.log('Students:', result.map((s: any) => ({
-        name: s.name,
-        mode: s.internshipMode,
-        approved: s.approved,
-        status: s.status || 'N/A'
-      })));
-    }
-    console.groupEnd();
+    // Real-time dashboard stats logging
+    const pending = result.filter(s => !s.approved).length;
+    const onsiteVirtual = result.filter(s => s.internshipMode === 'OnSite' || s.internshipMode === 'Virtual').length;
+    const freelance = result.filter(s => s.internshipMode === 'Fiverr' || s.internshipMode === 'Upwork').length;
+    
+    console.log('Dashboard Stats [Real-Time]:', { 
+      total: result.length, 
+      pending, 
+      onsiteVirtual, 
+      freelance 
+    });
     
     return result;
   }
 
+  // Dashboard helper counts for template (show real statistics regardless of current filters)
   countPending() {
-    const list = this.getDashboardStudents();
-    return list.filter(s => !s.approved).length;
+    const list = this.getAllDashboardStudents();
+    const count = list.filter(s => !s.approved).length;
+    console.log('Count Pending:', count);
+    return count;
   }
   countOnsiteVirtual() {
-    const list = this.getDashboardStudents();
-    return list.filter(s => s.internshipMode === 'OnSite' || s.internshipMode === 'Virtual').length;
+    const list = this.getAllDashboardStudents();
+    const count = list.filter(s => s.internshipMode === 'OnSite' || s.internshipMode === 'Virtual').length;
+    console.log('Count OnSite/Virtual:', count);
+    return count;
   }
   countFiverrUpwork() {
-    const list = this.getDashboardStudents();
-    return list.filter(s => s.internshipMode === 'Fiverr' || s.internshipMode === 'Upwork').length;
+    const list = this.getAllDashboardStudents();
+    const count = list.filter(s => s.internshipMode === 'Fiverr' || s.internshipMode === 'Upwork').length;
+    console.log('Count Fiverr/Upwork:', count);
+    return count;
   }
   pw = { old: '', next: '', confirm: '' };
   changePassword() {
@@ -789,12 +798,16 @@ export class FacultySupervisor {
     const mf = this.modeFilter;
     const q = this.search.trim().toLowerCase();
     
-    return students.filter(x => {
+    const filtered = students.filter(x => {
       const mode = x.internshipMode || '';
       const modeOk = mf === 'All' || mode === mf;
       const qOk = !q || x.name.toLowerCase().includes(q) || (x.email?.toLowerCase().includes(q)) || (x.registrationNo?.toLowerCase().includes(q));
       return modeOk && qOk;
     });
+    
+    console.log('Marks Tab Filter:', { mode: mf, search: q || '(none)', total: students.length, filtered: filtered.length });
+    
+    return filtered;
   }
 
   /** Load evaluation summary for the currently selected student's internship. */
