@@ -765,7 +765,11 @@ export class FacultySupervisor {
         item => (item.student?.id === s.id || item.studentId === s.id) &&
                  (item.facultyVerified === true || item.status === 'approved' || item.adminApprovalStatus === 'APPROVED')
       );
-      return { ...s, internshipId: apexBMatch?.internshipId || s.internshipId || '' };
+      return { 
+        ...s, 
+        internshipId: apexBMatch?.internshipId || s.internshipId || '',
+        internshipMode: apexBMatch?.internshipType || apexBMatch?.mode || s.internshipMode
+      };
     });
 
     // Add APEX B students not present in local store
