@@ -17,11 +17,14 @@ import { CreateAccountRequest } from '../../shared/models/admin/create-account.m
   styleUrl: './admin.css'
 })
 export class Admin {
+  // Track which tabs have been loaded to prevent reloading on tab switch
+  private hasLoadedTab = new Set<string>();
+
   constructor(private store: StoreService, private toast: ToastService, private route: ActivatedRoute, private router: Router, private adminApi: AdminService, private cdr: ChangeDetectorRef) {
     try {
       this.route.queryParamMap.subscribe(p => {
         const t = (p.get('tab') || '').toLowerCase();
-        const allowed = ['requests','announcements','officers','faculty','companies','sites','compliance','complaints','scheme','formsrequest','evaluation','maintenance'] as const;
+        const allowed = ['requests','announcements','officers','faculty','companies','sites','compliance','complaints','scheme','formsrequest','evaluation'] as const;
         if ( (allowed as readonly string[]).includes(t) ) {
           this.currentTab = t as any;
           // Auto-load data when navigating directly via URL (no need to click refresh)
@@ -74,7 +77,7 @@ export class Admin {
   facultyId = '';
   siteId = '';
   selectedId: string | null = null;
-  currentTab: 'requests'|'announcements'|'officers'|'faculty'|'companies'|'sites'|'compliance'|'complaints'|'scheme'|'formsRequest'|'evaluation'|'maintenance' = 'requests';
+  currentTab: 'requests'|'announcements'|'officers'|'faculty'|'companies'|'sites'|'compliance'|'complaints'|'scheme'|'formsRequest'|'evaluation' = 'requests';
   // Maintenance
   cleaningUpTokens = false;
   cleanupResult: { success?: boolean; message?: string; deletedCount?: number; timestamp?: string } | null = null;
@@ -101,10 +104,15 @@ export class Admin {
   selectTab(tab: Admin['currentTab']) {
     this.currentTab = tab;
     try { this.router.navigate([], { relativeTo: this.route, queryParams: { tab }, queryParamsHandling: 'merge' }); } catch {}
-    // Lazy-load companies when Companies tab opens
+    
+    // Load data only once per tab to prevent unnecessary API calls
+    if (this.hasLoadedTab.has(tab)) return;
+    this.hasLoadedTab.add(tab);
+
+    // Lazy-load data on first visit to tab
     if (tab === 'companies' || tab === 'sites') {
       this.refreshCompanies();
-      this.refreshSites();
+      if (tab === 'sites') this.refreshSites();
     }
     if (tab === 'requests') {
       // Reset to default: Pending with empty search
@@ -119,7 +127,6 @@ export class Admin {
       console.log('🔄 [FormRequest Tab] Switching to Forms Request tab, current sub-tab:', this.currentFormsSubTab);
       console.log('📊 [FormRequest Tab] Current APEX A forms count:', this.apexAForms.length);
       
-      // Always load to ensure fresh data
       this.loadApexAForms();
     }
   }

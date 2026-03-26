@@ -136,16 +136,58 @@ export class FacultySupervisor {
   }
 
   // Dashboard helper counts for template
+  // Uses combined data: faculty internships (from API) + store students (local cache)
+  getDashboardStudents(): Array<any> {
+    const seen = new Set<string>();
+    
+    // Primary: Real internship records from API (most reliable)
+    const fromInternships = this.facultyInternships
+      .filter(i => i.student?.id && !seen.has(i.student.id) && seen.add(i.student.id) !== undefined)
+      .map(i => ({
+        id: i.student.id,
+        name: i.student.name,
+        email: i.student.email,
+        registrationNo: i.student.regNo,
+        internshipMode: i.type,
+        status: i.status,
+        approved: i.status !== 'PENDING',
+        facultyId: i.faculty?.id
+      }));
+
+    // Fallback: Store students not in internships
+    const storeStudents = this.filteredStudents();
+    const fromStore = storeStudents.filter(s => !seen.has(s.id) && seen.add(s.id) !== undefined);
+
+    const result = [...fromInternships, ...fromStore];
+    
+    // Log for debugging dashboard stats
+    console.group('📊 [Faculty Dashboard Stats]');
+    console.log('Faculty Internships:', fromInternships.length);
+    console.log('Store Students (filtered):', fromStore.length);
+    console.log('Total Dashboard Students:', result.length);
+    if (result.length > 0) {
+      console.log('Students:', result.map((s: any) => ({
+        name: s.name,
+        mode: s.internshipMode,
+        approved: s.approved,
+        status: s.status || 'N/A'
+      })));
+    }
+    console.groupEnd();
+    
+    return result;
+  }
+
   countPending() {
-    const list = this.filteredStudents();
+    const list = this.getDashboardStudents();
     return list.filter(s => !s.approved).length;
   }
   countOnsiteVirtual() {
-    const list = this.filteredStudents();
+    const list = this.getDashboardStudents();
     return list.filter(s => s.internshipMode === 'OnSite' || s.internshipMode === 'Virtual').length;
   }
   countFiverrUpwork() {
-    const list = this.filteredStudents();
+    const list = this.getDashboardStudents();
     return list.filter(s => s.internshipMode === 'Fiverr' || s.internshipMode === 'Upwork').length;
   }
   pw = { old: '', next: '', confirm: '' };
