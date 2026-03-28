@@ -109,6 +109,48 @@ export class AdminService {
       }))
       .filter(x => !!x.id && !!x.name);
   }
+
+  /**
+   * PUT /api/admin/edit-site-supervisor
+   * Updates site supervisor user information including company assignment
+   * Response: { message: string, siteSupervisor?: {...}, updatedBy?: string }
+   */
+  async editSiteSupervisor(payload: {
+    id: string;
+    email?: string;
+    name?: string;
+    password?: string;
+    companyId?: string;
+  }): Promise<{ message?: string; siteSupervisor?: any; updatedBy?: string }> {
+    const base = 'https://cui-internship-system-git-dev-zas-projects-7d9cf03b.vercel.app';
+    const path = '/api/admin/edit-site-supervisor';
+    const url = `${base}${path}`;
+    const headers = await this.authHeaders(true);
+    
+    // Build request body with only provided fields
+    const body: any = { id: payload.id };
+    if (payload.email !== undefined) body.email = payload.email;
+    if (payload.name !== undefined) body.name = payload.name;
+    if (payload.password !== undefined && payload.password) body.password = payload.password;
+    if (payload.companyId !== undefined) body.companyId = payload.companyId;
+    
+    return await firstValueFrom(this.http.put<any>(url, body, { headers }));
+  }
+
+  /**
+   * DELETE /api/admin/delete-site-supervisor?id=siteSupervisorId
+   * Deletes a site supervisor with safety checks to prevent deletion of supervisors with active internships or evaluations
+   * Response: { message: string, success: boolean, reason?: string (if blocked) }
+   */
+  async deleteSiteSupervisor(siteSupervisorId: string): Promise<{ message?: string; success?: boolean; reason?: string }> {
+    const base = 'https://cui-internship-system-git-dev-zas-projects-7d9cf03b.vercel.app';
+    const path = `/api/admin/delete-site-supervisor?id=${encodeURIComponent(siteSupervisorId)}`;
+    const url = `${base}${path}`;
+    const headers = await this.authHeaders(true);
+    
+    return await firstValueFrom(this.http.delete<any>(url, { headers }));
+  }
+
   private async ensureFreshToken(): Promise<string | null> {
     const get = () => this.getTokenFromStorage();
     let token = get();
