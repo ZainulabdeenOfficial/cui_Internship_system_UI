@@ -20,19 +20,22 @@ import { Form3Form } from './form3-form';
 })
 export class Student implements OnDestroy {
   // Dynamic dropdown options from backend
-  dropdownCompanies: Array<{ id: string; name: string; email?: string; address?: string; website?: string; industry?: string }> = [];
+  dropdownCompanies: Array<{ id: string; name: string; email?: string; phone?: string; address?: string; website?: string; industry?: string; description?: string; supervisorCount?: number }> = [];
   // UI state for professional autocomplete
   isCompanyDropdownOpen = false;
   activeCompanyIndex = -1;
   loadingCompanies = false;
+  companySearchQuery = '';
+  companyIndustryFilter = '';
+  availableIndustries: string[] = [];
   private companySearchDebounceId: any;
   private companySearchRequestId = 0;
-  private companyCache = new Map<string, Array<{ id: string; name: string; email?: string; address?: string; website?: string; industry?: string }>>();
+  private companyCache = new Map<string, Array<{ id: string; name: string; email?: string; phone?: string; address?: string; website?: string; industry?: string; description?: string; supervisorCount?: number }>>();
   private companyCacheKeys: string[] = [];
   private lastFetchedCompanyQuery: string = '';
   private lastCompanyQuery: string = '';
   // Selected/preview company state
-  companyPreview: { id: string; name: string; email?: string; phone?: string; address?: string; website?: string; industry?: string; description?: string } | null = null;
+  companyPreview: { id: string; name: string; email?: string; phone?: string; address?: string; website?: string; industry?: string; description?: string; supervisorCount?: number } | null = null;
   private selectedCompany: { id: string; name: string; email?: string; address?: string; website?: string; industry?: string } | null = null;
 
   isCompanyNotFound(): boolean {
@@ -99,7 +102,7 @@ export class Student implements OnDestroy {
   
   private lockSelection: any;
   // tabs: make each form an explicit tab so AppEx-A is first
-  currentTab: 'appex'|'assignment'|'form3'|'evidence'|'logs'|'reports'|'assignments'|'complaints'|'marks'|'weeklylogs'|'evaluations' = 'appex';
+  currentTab: 'appex'|'assignment'|'form3'|'evidence'|'logs'|'reports'|'assignments'|'complaints'|'marks'|'weeklylogs'|'evaluations'|'company-request' = 'appex';
   // Raw query param value (for debugging why a tab may be set but UI not rendering)
   lastQueryTab: string | null = null;
   // pagination state per tab/list
@@ -192,6 +195,29 @@ export class Student implements OnDestroy {
     return this.store.complaints().filter(c => c.studentId === this.selectedId);
   };
   
+  // Company request
+  companyRequest = {
+    name: '',
+    email: '',
+    phone: '',
+    address: '',
+    website: '',
+    industry: '',
+    description: '',
+    justification: ''
+  };
+  submittingCompanyRequest = false;
+  myCompanyRequests: any[] = [];
+  loadingMyCompanyRequests = false;
+  approvedCompanyRequests: any[] = [];
+  companyRequestStatus: any = null;
+  companyRequestStatistics: any = null;
+  statusFilters = {
+    includePending: true,
+    includeApproved: true,
+    includeRejected: true
+  };
+  
   // Auto-refresh status polling
   private statusPollingInterval: any = null;
   private hasLoadedAppExAOnce = false;
@@ -216,7 +242,7 @@ export class Student implements OnDestroy {
     try {
       this.route.queryParamMap.subscribe(p => {
           const tabParam = p.get('tab');
-          const allowed = ['appex','assignment','form3','evidence','logs','reports','assignments','complaints','marks','weeklylogs','evaluations'] as const;
+          const allowed = ['appex','assignment','form3','evidence','logs','reports','assignments','complaints','marks','weeklylogs','evaluations','company-request'] as const;
           if (tabParam) {
             // record raw value for diagnostics
             this.lastQueryTab = tabParam;
@@ -442,6 +468,7 @@ export class Student implements OnDestroy {
   onCompanyNameInput(value: string) {
     const q = (value || '').trim();
     this.lastCompanyQuery = q;
+    this.companySearchQuery = q;
     // If user types something different than the selected company's name, clear selection
     if (this.selectedCompany && (this.selectedCompany.name || '').toLowerCase() !== q.toLowerCase()) {
       this.selectedCompany = null;
@@ -463,24 +490,35 @@ export class Student implements OnDestroy {
           this.dropdownCompanies = [];
           this.activeCompanyIndex = -1;
           const lower = q.toLowerCase();
+          const cacheKey = `${lower}|${this.companyIndustryFilter}`;
           // Serve from cache if available
-          let results: Array<{ id: string; name: string; email?: string; address?: string; website?: string; industry?: string }> | null = null;
-          if (this.companyCache.has(lower)) {
-            results = this.companyCache.get(lower)!;
+          let results: Array<{ id: string; name: string; email?: string; phone?: string; address?: string; website?: string; industry?: string; description?: string; supervisorCount?: number }> | null = null;
+          if (this.companyCache.has(cacheKey)) {
+            results = this.companyCache.get(cacheKey)!;
           } else {
             const reqId = ++this.companySearchRequestId;
             this.lastFetchedCompanyQuery = lower;
-            const fetched = await this.adminApi.getDropdownCompanies(q);
+            const fetched = await this.studentApi.getDropdownCompanies({
+              search: q,
+              industry: this.companyIndustryFilter || undefined,
+              limit: 50
+            });
             // If a newer request has been made, ignore this response
             if (reqId !== this.companySearchRequestId) return;
-            results = fetched || [];
+            results = (fetched?.data || []) as Array<{ id: string; name: string; email?: string; phone?: string; address?: string; website?: string; industry?: string; description?: string; supervisorCount?: number }>;
             // Cache with simple LRU of size 50
-            this.companyCache.set(lower, results);
-            this.companyCacheKeys.push(lower);
+            this.companyCache.set(cacheKey, results);
+            this.companyCacheKeys.push(cacheKey);
             if (this.companyCacheKeys.length > 50) {
               const oldest = this.companyCacheKeys.shift();
               if (oldest) this.companyCache.delete(oldest);
             }
+            // Extract unique industries for filter dropdown
+            const industries = new Set<string>();
+            (fetched?.data || []).forEach((c: any) => {
+              if (c.industry) industries.add(c.industry);
+            });
+            this.availableIndustries = Array.from(industries).sort();
           }
           // Filter: show only companies whose NAME contains the query (case-insensitive)
           const filtered = (results || []).filter(c => ((c.name || '').toLowerCase()).includes(lower));
@@ -895,9 +933,18 @@ export class Student implements OnDestroy {
     // Reflect in URL for deep links
     try { this.router.navigate([], { relativeTo: this.route, queryParams: { tab }, queryParamsHandling: 'merge' }); } catch {}
     
+    // Auto-load company requests when appex tab is selected to show approved companies
+    if (tab === 'appex' && this.myCompanyRequests.length === 0) {
+      this.loadMyCompanyRequests();
+    }
     // Auto-load weekly logs when weekly logs tab is selected
     if (tab === 'weeklylogs' && this.weeklyLogs.length === 0) {
       this.loadWeeklyLogs();
+    }
+    // Auto-load company requests and status when company request tab is selected
+    if (tab === 'company-request' && this.myCompanyRequests.length === 0) {
+      this.loadMyCompanyRequests();
+      this.loadCompanyRequestStatus();
     }
     // Auto-load evaluations when evaluations tab is selected
     // Retry if: never loaded, or loaded but got 0 results and now have an internship ID
@@ -1102,6 +1149,161 @@ export class Student implements OnDestroy {
     this.toast.success('Complaint submitted');
     this.complaint = { category: 'Other', message: '' };
   }
+  
+  async submitCompanyRequest() {
+    if (!this.selectedId) return;
+    if (!this.ensureMine()) return;
+    
+    const cr = this.companyRequest;
+    if (!cr.name || !cr.email) {
+      this.toast.warning('Please provide at least company name and email address');
+      return;
+    }
+    
+    this.submittingCompanyRequest = true;
+    try {
+      const payload = {
+        name: cr.name.trim(),
+        email: cr.email.trim(),
+        phone: cr.phone?.trim() || '',
+        address: cr.address?.trim() || '',
+        website: cr.website?.trim() || '',
+        industry: cr.industry?.trim() || '',
+        description: cr.description?.trim() || '',
+        justification: cr.justification?.trim() || ''
+      };
+      
+      const result = await this.studentApi.requestToAddCompany(payload);
+      this.toast.success('Company request submitted successfully');
+      
+      // Clear form and reload company requests
+      this.companyRequest = {
+        name: '', email: '', phone: '', address: '', website: '', industry: '', description: '', justification: ''
+      };
+      
+      // Reload the list
+      await this.loadMyCompanyRequests();
+    } catch (err: any) {
+      const msg = err?.error?.message || err?.message || 'Failed to submit company request';
+      this.toast.danger(msg);
+    } finally {
+      this.submittingCompanyRequest = false;
+      this.cdr.markForCheck();
+    }
+  }
+  
+  async loadMyCompanyRequests() {
+    if (!this.selectedId) return;
+    if (!this.ensureMine()) return;
+    
+    this.loadingMyCompanyRequests = true;
+    try {
+      const result = await this.studentApi.getMyCompanyRequests({ 
+        page: 1, 
+        limit: 50,
+        search: ''
+      });
+      this.myCompanyRequests = result?.companyRequests || [];
+      // Filter approved companies for dropdown in AppEx-A form
+      this.approvedCompanyRequests = this.myCompanyRequests.filter(r => r.status === 'APPROVED' || r.status === 'approved');
+      console.log('✅ Company requests loaded:', { total: this.myCompanyRequests.length, approved: this.approvedCompanyRequests.length });
+    } catch (err: any) {
+      const msg = err?.error?.message || err?.message || 'Failed to load company requests';
+      this.toast.danger(msg);
+      this.myCompanyRequests = [];
+      this.approvedCompanyRequests = [];
+    } finally {
+      this.loadingMyCompanyRequests = false;
+      this.cdr.markForCheck();
+    }
+  }
+
+  async loadCompanyRequestStatus() {
+    if (!this.selectedId) return;
+    if (!this.ensureMine()) return;
+    
+    this.loadingMyCompanyRequests = true;
+    try {
+      const result = await this.studentApi.getCompanyRequestStatus({
+        includePending: this.statusFilters.includePending,
+        includeApproved: this.statusFilters.includeApproved,
+        includeRejected: this.statusFilters.includeRejected,
+        page: 1,
+        limit: 50
+      });
+      
+      this.companyRequestStatus = result?.requests || [];
+      this.companyRequestStatistics = result?.statistics || null;
+      
+      console.log('✅ Company request status loaded:', {
+        total: result?.total,
+        statistics: this.companyRequestStatistics
+      });
+    } catch (err: any) {
+      const msg = err?.error?.message || err?.message || 'Failed to load company request status';
+      console.warn('[Student] loadCompanyRequestStatus error:', msg);
+      this.companyRequestStatus = [];
+      this.companyRequestStatistics = null;
+    } finally {
+      this.loadingMyCompanyRequests = false;
+      this.cdr.markForCheck();
+    }
+  }
+
+  async updateCompanyRequestStatusFilter() {
+    // Reload status when filters change
+    await this.loadCompanyRequestStatus();
+  }
+  selectCompanyFromRequest(companyId: string) {
+    const company = this.approvedCompanyRequests.find(c => c.id === companyId);
+    if (!company) return;
+    
+    // Populate AppEx-A form with company details
+    this.appexAForm.organization = company.name || '';
+    this.appexAForm.address = company.address || '';
+    this.appexAForm.industrySector = company.industry || '';
+    this.appexAForm.contactEmail = company.email || '';
+    this.appexAForm.contactPhone = company.phone || '';
+    
+    this.toast.success(`Company "${company.name}" selected`);
+  }
+
+  async onCompanyIndustryFilterChange(industry: string) {
+    this.companyIndustryFilter = industry;
+    // Retrigger search with the new industry filter
+    if (this.companySearchQuery && this.companySearchQuery.length >= 2) {
+      this.onCompanyNameInput(this.companySearchQuery);
+    }
+  }
+
+  selectCompanyFromDropdown(company: { id: string; name: string; email?: string; phone?: string; address?: string; website?: string; industry?: string; description?: string; supervisorCount?: number }) {
+    // Update selected company
+    this.selectedCompany = {
+      id: company.id,
+      name: company.name,
+      email: company.email,
+      address: company.address,
+      website: company.website,
+      industry: company.industry
+    };
+    
+    // Populate AppEx-A form with company details
+    this.appexAForm.organization = company.name || '';
+    this.appexAForm.address = company.address || '';
+    this.appexAForm.industrySector = company.industry || '';
+    this.appexAForm.contactEmail = company.email || '';
+    this.appexAForm.contactPhone = company.phone || '';
+    
+    // Store preview
+    this.companyPreview = company;
+    
+    // Close dropdown and clear search
+    this.isCompanyDropdownOpen = false;
+    this.companySearchQuery = company.name;
+    
+    this.toast.success(`Company "${company.name}" selected from directory`);
+  }
+
   submitDesign() {
     if (!this.selectedId) return;
     if (!this.ensureMine()) return;

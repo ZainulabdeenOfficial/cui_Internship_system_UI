@@ -129,6 +129,118 @@ export class StudentService {
     return { companyRequests: mapped, total };
   }
 
+  // GET /api/dropdown/companies (with search and industry filter)
+  async getDropdownCompanies(params?: {
+    search?: string;
+    industry?: string;
+    limit?: number;
+  }): Promise<any> {
+    const base = 'https://cui-internship-system-git-dev-zas-projects-7d9cf03b.vercel.app';
+    const q: string[] = [];
+    
+    if (params?.search) q.push(`search=${encodeURIComponent(params.search)}`);
+    if (params?.industry) q.push(`industry=${encodeURIComponent(params.industry)}`);
+    if (params?.limit) q.push(`limit=${params.limit}`);
+    
+    const qs = q.length ? `?${q.join('&')}` : '';
+    const url = `${base}/api/dropdown/companies${qs}`;
+    
+    const res = await firstValueFrom(this.http.get<any>(url, {
+      headers: new HttpHeaders({ Accept: 'application/json' })
+    }));
+    
+    // Map response to handle various field name variations
+    const companies = Array.isArray(res?.data) ? res.data : (Array.isArray(res?.companies) ? res.companies : (Array.isArray(res) ? res : []));
+    const mapped = companies.map((c: any) => ({
+      id: (c.id ?? c._id ?? '').toString(),
+      name: c.name ?? c.companyName ?? '',
+      email: c.email ?? '',
+      phone: c.phone ?? '',
+      address: c.address ?? '',
+      website: c.website ?? '',
+      industry: c.industry ?? '',
+      description: c.description ?? '',
+      supervisorCount: c.supervisorCount ?? 0
+    }));
+    
+    return {
+      success: res?.success ?? true,
+      data: mapped,
+      total: res?.total ?? 0
+    };
+  }
+
+  // GET /api/student/company-request-status (with optional boolean parameters)
+  async getCompanyRequestStatus(params?: { 
+    includePending?: boolean; 
+    includeApproved?: boolean; 
+    includeRejected?: boolean;
+    page?: number;
+    limit?: number;
+  }): Promise<any> {
+    const base = 'https://cui-internship-system-git-dev-zas-projects-7d9cf03b.vercel.app';
+    const q: string[] = [];
+    
+    // Add boolean filter parameters
+    if (params?.includePending !== undefined) q.push(`includePending=${params.includePending}`);
+    if (params?.includeApproved !== undefined) q.push(`includeApproved=${params.includeApproved}`);
+    if (params?.includeRejected !== undefined) q.push(`includeRejected=${params.includeRejected}`);
+    
+    // Add pagination parameters
+    if (params?.page !== undefined) q.push(`page=${params.page}`);
+    if (params?.limit !== undefined) q.push(`limit=${params.limit}`);
+    
+    const qs = q.length ? `?${q.join('&')}` : '';
+    const url = `${base}/api/student/company-request-status${qs}`;
+    
+    const res = await firstValueFrom(this.http.get<any>(url, { 
+      headers: new HttpHeaders({ Accept: 'application/json' })
+    }));
+    
+    // Map response to handle various field name variations
+    const requests = Array.isArray(res?.requests) ? res.requests : [];
+    const mapped = requests.map((x: any) => ({
+      id: (x.id ?? x._id ?? '').toString(),
+      name: x.name ?? x.companyName ?? '',
+      email: x.email ?? '',
+      phone: x.phone ?? '',
+      address: x.address ?? '',
+      website: x.website ?? '',
+      industry: x.industry ?? '',
+      description: x.description ?? '',
+      reason: x.reason ?? x.justification ?? '',
+      status: x.status ?? 'PENDING',
+      notes: x.notes ?? '',
+      createdAt: x.createdAt ?? '',
+      updatedAt: x.updatedAt ?? '',
+      reviewedAt: x.reviewedAt ?? '',
+      reviewedBy: x.reviewedBy ?? null,
+      statusInfo: {
+        currentStatus: x.statusInfo?.currentStatus ?? x.status ?? 'PENDING',
+        isPending: x.statusInfo?.isPending ?? (x.status === 'PENDING'),
+        isApproved: x.statusInfo?.isApproved ?? (x.status === 'APPROVED'),
+        isRejected: x.statusInfo?.isRejected ?? (x.status === 'REJECTED'),
+        submittedAt: x.statusInfo?.submittedAt ?? x.createdAt ?? '',
+        lastUpdatedAt: x.statusInfo?.lastUpdatedAt ?? x.updatedAt ?? '',
+        reviewedAt: x.statusInfo?.reviewedAt ?? x.reviewedAt ?? '',
+        hasNotes: x.statusInfo?.hasNotes ?? (!!x.notes)
+      }
+    }));
+    
+    return {
+      requests: mapped,
+      total: res?.total ?? 0,
+      statistics: {
+        total: res?.statistics?.total ?? 0,
+        byStatus: res?.statistics?.byStatus ?? { PENDING: 0, APPROVED: 0, REJECTED: 0 },
+        pendingCount: res?.statistics?.pendingCount ?? 0,
+        approvedCount: res?.statistics?.approvedCount ?? 0,
+        rejectedCount: res?.statistics?.rejectedCount ?? 0
+      },
+      message: res?.message ?? ''
+    };
+  }
+
   // GET /api/student/appex-a
   async getAppExA(options?: StudentRequestOptions): Promise<any> {
     const key = this.cacheKey('appex-a');

@@ -13,6 +13,7 @@
     <li class="nav-item"><button type="button" class="nav-link" [class.active]="isCurrentTab('form3')" (click)="selectTab('form3')">Organization Overview &amp; Scope of Work</button></li>
     <li class="nav-item"><button type="button" class="nav-link" [class.active]="isCurrentTab('weeklylogs')" (click)="selectTab('weeklylogs')">Weekly Logs</button></li>
     <li class="nav-item"><button type="button" class="nav-link" [class.active]="isCurrentTab('evaluations')" (click)="selectTab('evaluations')">My Evaluations</button></li>
+    <li class="nav-item"><button type="button" class="nav-link" [class.active]="isCurrentTab('company-request')" (click)="selectTab('company-request')">Request Company</button></li>
     <li class="nav-item ms-auto"><button type="button" class="nav-link" [class.active]="isCurrentTab('complaints')" (click)="selectTab('complaints')">Complaints</button></li>
   </ul>
 
@@ -193,8 +194,108 @@
     <div class="card mb-3">
     <div class="card-header">Internship Approval (Section A & B)</div>
     <div class="card-body">
+      <!-- Approved Company Requests Section -->
+      <div *ngIf="approvedCompanyRequests.length > 0" class="mb-4 p-3 bg-light border border-success rounded">
+        <div class="d-flex align-items-center mb-3">
+          <i class="bi bi-building text-success me-2"></i>
+          <h6 class="mb-0">Your Approved Company Requests</h6>
+        </div>
+        <div class="row g-3">
+          <div class="col-12">
+            <label class="form-label">Quick Select from Approved Companies</label>
+            <select class="form-select" (ngModelChange)="selectCompanyFromRequest($event)" [ngModel]="''">
+              <option value="">-- Select a company to auto-fill --</option>
+              <option *ngFor="let company of approvedCompanyRequests" [value]="company.id">
+                {{ company.name }} ({{ company.industry || 'N/A' }})
+              </option>
+            </select>
+            <small class="d-block text-muted mt-2">Selecting a company will auto-populate the organization information below.</small>
+          </div>
+        </div>
+      </div>
+
+      <!-- Company Requests Status Card -->
+      <div *ngIf="myCompanyRequests.length > 0" class="mb-4 p-3 bg-light rounded">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h6 class="mb-0">Company Requests Status</h6>
+          <small class="text-muted">{{ approvedCompanyRequests.length }} approved · {{ myCompanyRequests.length - approvedCompanyRequests.length }} pending/other</small>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+          <span *ngFor="let req of myCompanyRequests" class="badge" 
+            [class.text-bg-success]="req.status === 'APPROVED'"
+            [class.text-bg-warning]="req.status === 'PENDING'"
+            [class.text-bg-danger]="req.status === 'REJECTED'"
+            [class.text-bg-secondary]="req.status !== 'APPROVED' && req.status !== 'PENDING' && req.status !== 'REJECTED'">
+            {{ req.name }}: {{ req.status || 'PENDING' }}
+          </span>
+        </div>
+        <small class="d-block text-muted mt-2">
+          <a href="javascript:void(0)" (click)="selectTab('company-request')" class="text-decoration-none">View All Requests &rarr;</a>
+        </small>
+      </div>
+
       <form (ngSubmit)="submitAppExAFromForm()" #iapf="ngForm" class="row g-3">
         <div class="col-12"><div class="section-title">Section A: Organization Information</div></div>
+        
+        <!-- Company Search with Autocomplete -->
+        <div class="col-12">
+          <div class="card bg-light mb-3">
+            <div class="card-body">
+              <label class="form-label"><strong>Search & Select Company from Directory</strong></label>
+              <div class="row g-2">
+                <div class="col-md-8">
+                  <div class="position-relative">
+                    <input type="text" 
+                           class="form-control" 
+                           placeholder="Search company by name (min. 2 characters)..."
+                           (input)="onCompanyNameInput($event.target.value)"
+                           [value]="companySearchQuery"
+                           (focus)="isCompanyDropdownOpen = true"
+                           (blur)="isCompanyDropdownOpen = false"
+                           autocomplete="off" />
+                    <div *ngIf="loadingCompanies" class="position-absolute top-50 end-0 translate-middle-y me-3">
+                      <span class="spinner-border spinner-border-sm text-primary"></span>
+                    </div>
+                    <!-- Autocomplete Dropdown -->
+                    <div *ngIf="isCompanyDropdownOpen && dropdownCompanies.length > 0" class="position-absolute top-100 start-0 end-0 bg-white border rounded mt-1 shadow-lg" style="z-index: 1000;">
+                      <ul class="list-group list-group-flush">
+                        <li *ngFor="let company of dropdownCompanies; let i = index" 
+                            class="list-group-item cursor-pointer" 
+                            [class.active]="i === activeCompanyIndex"
+                            (click)="selectCompanyFromDropdown(company); isCompanyDropdownOpen = false"
+                            (mouseenter)="activeCompanyIndex = i">
+                          <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                              <strong>{{ company.name }}</strong>
+                              <small class="d-block text-muted">{{ company.industry || 'N/A' }}</small>
+                            </div>
+                            <small class="text-muted">{{ company.supervisorCount || 0 }} supervisors</small>
+                          </div>
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <select class="form-select" 
+                          [(ngModel)]="companyIndustryFilter" 
+                          name="companyIndustry"
+                          (ngModelChange)="onCompanyIndustryFilterChange($event)">
+                    <option value="">All Industries</option>
+                    <option *ngFor="let industry of availableIndustries" [value]="industry">
+                      {{ industry }}
+                    </option>
+                  </select>
+                </div>
+              </div>
+              <small class="d-block text-muted mt-2">
+                <i class="bi bi-info-circle me-1"></i>
+                Selecting a company will auto-fill the organization details below.
+              </small>
+            </div>
+          </div>
+        </div>
+
         <div class="col-md-6">
           <label class="form-label">Organization Name</label>
           <input class="form-control" [(ngModel)]="appexAForm.organization" name="orgName" required />
@@ -551,6 +652,231 @@
             <li class="list-group-item" *ngFor="let c of myComplaints()">{{ c.category }} — {{ c.message }} <span class="text-muted">— {{ c.createdAt | date:'short' }}</span></li>
           </ul>
           <div class="text-muted" *ngIf="myComplaints().length === 0">No complaints yet.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Company Request tab content -->
+  <div *ngIf="isCurrentTab('company-request')">
+    <div class="card mb-3">
+      <div class="card-header">Request to Add Company</div>
+      <div class="card-body">
+        <form (ngSubmit)="submitCompanyRequest()" #crf="ngForm" class="row g-3">
+          <div class="col-12">
+            <p class="text-muted"><i class="bi bi-info-circle me-2"></i>Use this form to request addition of a new company to the system if your internship organization is not available in the existing list.</p>
+          </div>
+          
+          <div class="col-md-6">
+            <label class="form-label">Company Name <span class="text-danger">*</span></label>
+            <input class="form-control" [(ngModel)]="companyRequest.name" name="comp_name" placeholder="e.g., ABC Technologies" required />
+          </div>
+          
+          <div class="col-md-6">
+            <label class="form-label">Email Address <span class="text-danger">*</span></label>
+            <input type="email" class="form-control" [(ngModel)]="companyRequest.email" name="comp_email" placeholder="company@example.com" required />
+          </div>
+          
+          <div class="col-md-6">
+            <label class="form-label">Phone Number</label>
+            <input class="form-control" [(ngModel)]="companyRequest.phone" name="comp_phone" placeholder="e.g., +92-300-1234567" />
+          </div>
+          
+          <div class="col-md-6">
+            <label class="form-label">Industry</label>
+            <input class="form-control" [(ngModel)]="companyRequest.industry" name="comp_industry" placeholder="e.g., Information Technology, Finance" />
+          </div>
+          
+          <div class="col-12">
+            <label class="form-label">Address</label>
+            <input class="form-control" [(ngModel)]="companyRequest.address" name="comp_address" placeholder="e.g., 123 Business Street, City, Country" />
+          </div>
+          
+          <div class="col-12">
+            <label class="form-label">Website</label>
+            <input type="url" class="form-control" [(ngModel)]="companyRequest.website" name="comp_website" placeholder="https://www.example.com" />
+          </div>
+          
+          <div class="col-12">
+            <label class="form-label">Company Description</label>
+            <textarea class="form-control" [(ngModel)]="companyRequest.description" name="comp_description" rows="3" placeholder="Brief description of the company, its products/services, and business focus..."></textarea>
+          </div>
+          
+          <div class="col-12">
+            <label class="form-label">Justification for Adding Company</label>
+            <textarea class="form-control" [(ngModel)]="companyRequest.justification" name="comp_justification" rows="3" placeholder="Explain why this company should be added to the system. Why didn't you find it in the existing list?"></textarea>
+          </div>
+          
+          <div class="col-12">
+            <button class="btn btn-primary" [disabled]="!crf.form.valid || submittingCompanyRequest" type="submit">
+              <span *ngIf="submittingCompanyRequest" class="spinner-border spinner-border-sm me-2"></span>
+              {{ submittingCompanyRequest ? 'Submitting...' : 'Submit Company Request' }}
+            </button>
+          </div>
+        </form>
+
+        <div class="mt-4" *ngIf="myCompanyRequests.length > 0 || loadingMyCompanyRequests || companyRequestStatus">
+          <h6>Your Company Requests</h6>
+          
+          <!-- Statistics Card -->
+          <div *ngIf="companyRequestStatistics" class="card mb-3 border-primary">
+            <div class="card-header bg-primary text-white">
+              <i class="bi bi-graph-up me-2"></i>
+              Request Statistics
+            </div>
+            <div class="card-body">
+              <div class="row g-3">
+                <div class="col-md-3 text-center">
+                  <div class="d-flex flex-column align-items-center">
+                    <h4 class="mb-0">{{ companyRequestStatistics.total }}</h4>
+                    <small class="text-muted">Total Requests</small>
+                  </div>
+                </div>
+                <div class="col-md-3 text-center">
+                  <div class="d-flex flex-column align-items-center">
+                    <h4 class="mb-0 text-warning">{{ companyRequestStatistics.pendingCount }}</h4>
+                    <small class="text-muted">Pending</small>
+                  </div>
+                </div>
+                <div class="col-md-3 text-center">
+                  <div class="d-flex flex-column align-items-center">
+                    <h4 class="mb-0 text-success">{{ companyRequestStatistics.approvedCount }}</h4>
+                    <small class="text-muted">Approved</small>
+                  </div>
+                </div>
+                <div class="col-md-3 text-center">
+                  <div class="d-flex flex-column align-items-center">
+                    <h4 class="mb-0 text-danger">{{ companyRequestStatistics.rejectedCount }}</h4>
+                    <small class="text-muted">Rejected</small>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Status Filters -->
+          <div class="card mb-3 bg-light">
+            <div class="card-body p-3">
+              <label class="form-label mb-2"><strong>Filter by Status:</strong></label>
+              <div class="d-flex gap-3 flex-wrap">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" [(ngModel)]="statusFilters.includePending" (ngModelChange)="updateCompanyRequestStatusFilter()" name="filter_pending" />
+                  <label class="form-check-label">
+                    <span class="badge text-bg-warning">Pending</span>
+                  </label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" [(ngModel)]="statusFilters.includeApproved" (ngModelChange)="updateCompanyRequestStatusFilter()" name="filter_approved" />
+                  <label class="form-check-label">
+                    <span class="badge text-bg-success">Approved</span>
+                  </label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" [(ngModel)]="statusFilters.includeRejected" (ngModelChange)="updateCompanyRequestStatusFilter()" name="filter_rejected" />
+                  <label class="form-check-label">
+                    <span class="badge text-bg-danger">Rejected</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Detailed Status Table -->
+          <div *ngIf="loadingMyCompanyRequests" class="text-center text-muted my-3">
+            <span class="spinner-border spinner-border-sm me-2"></span>
+            Loading company request status...
+          </div>
+          
+          <div *ngIf="!loadingMyCompanyRequests && companyRequestStatus && companyRequestStatus.length > 0" class="table-responsive">
+            <table class="table table-sm table-hover">
+              <thead class="table-light">
+                <tr>
+                  <th>Company Name</th>
+                  <th>Status</th>
+                  <th>Flags</th>
+                  <th>Submitted</th>
+                  <th>Last Updated</th>
+                  <th>Notes</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let req of companyRequestStatus">
+                  <td>
+                    <strong>{{ req.name }}</strong>
+                    <small class="d-block text-muted">{{ req.email }}</small>
+                  </td>
+                  <td>
+                    <span class="badge" 
+                      [class.text-bg-warning]="req.statusInfo?.isPending"
+                      [class.text-bg-success]="req.statusInfo?.isApproved"
+                      [class.text-bg-danger]="req.statusInfo?.isRejected"
+                      [class.text-bg-secondary]="!req.statusInfo?.isPending && !req.statusInfo?.isApproved && !req.statusInfo?.isRejected">
+                      {{ req.statusInfo?.currentStatus || req.status || 'PENDING' }}
+                    </span>
+                  </td>
+                  <td>
+                    <div class="small">
+                      <span *ngIf="req.statusInfo?.isPending" class="badge text-bg-warning me-1">Pending</span>
+                      <span *ngIf="req.statusInfo?.isApproved" class="badge text-bg-success me-1">✓ Approved</span>
+                      <span *ngIf="req.statusInfo?.isRejected" class="badge text-bg-danger me-1">✗ Rejected</span>
+                    </div>
+                  </td>
+                  <td>
+                    <small>{{ req.statusInfo?.submittedAt | date:'short' }}</small>
+                  </td>
+                  <td>
+                    <small>{{ req.statusInfo?.lastUpdatedAt | date:'short' }}</small>
+                  </td>
+                  <td>
+                    <small *ngIf="req.statusInfo?.hasNotes">
+                      <i class="bi bi-chat-dots text-info"></i>
+                      {{ req.notes || req.reason || '-' }}
+                    </small>
+                    <small *ngIf="!req.statusInfo?.hasNotes" class="text-muted">-</small>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Fallback to simple list if status not available -->
+          <div *ngIf="!loadingMyCompanyRequests && (!companyRequestStatus || companyRequestStatus.length === 0) && myCompanyRequests.length > 0" class="table-responsive">
+            <table class="table table-sm table-hover">
+              <thead class="table-light">
+                <tr>
+                  <th>Company Name</th>
+                  <th>Industry</th>
+                  <th>Status</th>
+                  <th>Submitted</th>
+                  <th>Notes</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let req of myCompanyRequests">
+                  <td>
+                    <strong>{{ req.name }}</strong>
+                    <small class="d-block text-muted">{{ req.email }}</small>
+                  </td>
+                  <td>{{ req.industry || '-' }}</td>
+                  <td>
+                    <span class="badge" 
+                      [class.text-bg-warning]="req.status === 'PENDING'"
+                      [class.text-bg-success]="req.status === 'APPROVED'"
+                      [class.text-bg-danger]="req.status === 'REJECTED'"
+                      [class.text-bg-secondary]="req.status !== 'PENDING' && req.status !== 'APPROVED' && req.status !== 'REJECTED'">
+                      {{ req.status || 'PENDING' }}
+                    </span>
+                  </td>
+                  <td>{{ req.createdAt | date:'short' }}</td>
+                  <td><small>{{ req.notes || req.reason || '-' }}</small></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          
+          <div *ngIf="!loadingMyCompanyRequests && (!companyRequestStatus || companyRequestStatus.length === 0) && myCompanyRequests.length === 0" class="text-muted">
+            No company requests yet.
+          </div>
         </div>
       </div>
     </div>
