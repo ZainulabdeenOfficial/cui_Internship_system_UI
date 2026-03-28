@@ -226,6 +226,8 @@ export class Student implements OnDestroy {
   private hasLoadedAppExAOnce = false;
   private hasLoadedApexBStatusOnce = false;
   private hasLoadedWeeklyLogsOnce = false;
+  private hasLoadedMyCompanyRequestsOnce = false;
+  private hasLoadedCompanyRequestStatusOnce = false;
   
   constructor(private store: StoreService, private toast: ToastService, private route: ActivatedRoute, private router: Router, private studentApi: StudentService, private adminApi: AdminService, private cdr: ChangeDetectorRef) {
     this.lockSelection = effect(() => {
@@ -937,16 +939,18 @@ export class Student implements OnDestroy {
     try { this.router.navigate([], { relativeTo: this.route, queryParams: { tab }, queryParamsHandling: 'merge' }); } catch {}
     
     // Auto-load company requests when appex tab is selected to show approved companies
-    if (tab === 'appex' && this.myCompanyRequests.length === 0) {
+    if (tab === 'appex' && !this.hasLoadedMyCompanyRequestsOnce) {
       this.loadMyCompanyRequests();
     }
     // Auto-load weekly logs when weekly logs tab is selected
-    if (tab === 'weeklylogs' && this.weeklyLogs.length === 0) {
+    if (tab === 'weeklylogs' && !this.hasLoadedWeeklyLogsOnce) {
       this.loadWeeklyLogs();
     }
     // Auto-load company requests and status when company request tab is selected
-    if (tab === 'company-request' && this.myCompanyRequests.length === 0) {
+    if (tab === 'company-request' && !this.hasLoadedMyCompanyRequestsOnce) {
       this.loadMyCompanyRequests();
+    }
+    if (tab === 'company-request' && !this.hasLoadedCompanyRequestStatusOnce) {
       this.loadCompanyRequestStatus();
     }
     // Auto-load evaluations when evaluations tab is selected
@@ -1209,6 +1213,7 @@ export class Student implements OnDestroy {
       this.myCompanyRequests = result?.companyRequests || [];
       // Filter approved companies for dropdown in AppEx-A form
       this.approvedCompanyRequests = this.myCompanyRequests.filter(r => r.status === 'APPROVED' || r.status === 'approved');
+      this.hasLoadedMyCompanyRequestsOnce = true;
       console.log('✅ Company requests loaded:', { total: this.myCompanyRequests.length, approved: this.approvedCompanyRequests.length });
     } catch (err: any) {
       const msg = err?.error?.message || err?.message || 'Failed to load company requests';
@@ -1237,6 +1242,7 @@ export class Student implements OnDestroy {
       
       this.companyRequestStatus = result?.requests || [];
       this.companyRequestStatistics = result?.statistics || null;
+      this.hasLoadedCompanyRequestStatusOnce = true;
       
       console.log('✅ Company request status loaded:', {
         total: result?.total,
