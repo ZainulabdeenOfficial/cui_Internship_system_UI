@@ -149,12 +149,12 @@ export class AuthService {
       return this.http.get<RefreshTokenResponse>(urlWithParams, { headers: new HttpHeaders(headers), withCredentials: true });
     };
 
-    // Try POST first (standard), then GET if POST returns 405.
+    // Try GET first (since backend only supports GET for refresh-token), then POST as fallback.
     // Also try both path variants (with and without trailing slash).
     const pathCandidates = [rel, `${rel}/`];
     const methodCandidates: Array<[string, (u: string) => any]> = [
-      ['POST', post],
-      ['GET', get]
+      ['GET', get],
+      ['POST', post]
     ];
 
     let res: RefreshTokenResponse | null = null;
@@ -174,9 +174,9 @@ export class AuthService {
             const candidateStatus: number = candidateErr?.status ?? 0;
             console.warn(`⚠️ [TokenRefresh] ${methodName} ${candidate} failed (HTTP ${candidateStatus})`);
             lastErr = candidateErr;
-            // For non-405 server responses on first method (POST), fail fast.
-            // For 405 on POST, try GET; for 405 on GET, continue to absolute URL fallback.
-            if (candidateStatus !== 405 && methodName === 'POST') {
+            // For non-405 server responses on first method (GET), fail fast.
+            // For 405 on GET, try POST; for 405 on POST, continue to absolute URL fallback.
+            if (candidateStatus !== 405 && methodName === 'GET') {
               throw candidateErr;
             }
           }
@@ -214,7 +214,7 @@ export class AuthService {
               const candidateStatus: number = candidateErr?.status ?? 0;
               console.warn(`⚠️ [TokenRefresh] ${methodName} failed (HTTP ${candidateStatus})`);
               lastErr = candidateErr;
-              if (candidateStatus !== 405 && methodName === 'POST') {
+              if (candidateStatus !== 405 && methodName === 'GET') {
                 throw candidateErr;
               }
             }

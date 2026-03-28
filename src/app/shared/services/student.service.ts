@@ -94,20 +94,30 @@ export class StudentService {
     return await firstValueFrom(this.http.post<any>(url, payload, { headers: this.jsonHeaders() }));
   }
 
-  // GET student company requests via admin review endpoint (supports page/limit/status/search)
+  // GET /api/student/company-request-status (get my submitted company requests)
   async getMyCompanyRequests(params?: { page?: number; limit?: number; status?: string; search?: string }): Promise<{ companyRequests: any[]; total?: number; message?: string }> {
     const base = 'https://cui-internship-system-git-dev-zas-projects-7d9cf03b.vercel.app';
     const q: string[] = [];
     const page = params?.page ?? 1;
-    const limit = params?.limit ?? 10;
+    const limit = params?.limit ?? 50;
     q.push(`page=${encodeURIComponent(String(page))}`);
     q.push(`limit=${encodeURIComponent(String(limit))}`);
-    if (params?.status) q.push(`status=${encodeURIComponent(params.status)}`);
-    if (params?.search) q.push(`search=${encodeURIComponent(params.search)}`);
+    
+    // Map status filter parameter if provided
+    if (params?.status) {
+      if (params.status === 'PENDING' || params.status === 'pending') {
+        q.push('includePending=true');
+      } else if (params.status === 'APPROVED' || params.status === 'approved') {
+        q.push('includeApproved=true');
+      } else if (params.status === 'REJECTED' || params.status === 'rejected') {
+        q.push('includeRejected=true');
+      }
+    }
+    
     const qs = q.length ? `?${q.join('&')}` : '';
-    const url = `${base}/api/admin/review-company${qs}`;
+    const url = `${base}/api/student/company-request-status${qs}`;
     const res = await firstValueFrom(this.http.get<any>(url, { headers: new HttpHeaders({ Accept: 'application/json' }) }));
-    const items: any[] = Array.isArray(res?.requests) ? res.requests : (Array.isArray(res?.data) ? res.data : (Array.isArray(res?.items) ? res.items : (Array.isArray(res) ? res : [])));
+    const items: any[] = Array.isArray(res?.requests) ? res.requests : [];
     const mapped = items.map((x: any) => ({
       id: (x.id ?? x._id ?? x.requestId ?? '').toString(),
       name: x.name ?? x.companyName ?? x.company?.name,
