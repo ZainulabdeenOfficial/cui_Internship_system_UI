@@ -40,18 +40,51 @@ export class AdminService {
   }
 
   // Search faculty supervisors by query (name, email, company name, company email)
-  async searchFaculty(query: string): Promise<Array<{ id: string; name: string; email?: string; companyName?: string; companyEmail?: string }>> {
-    const base = environment.apiBaseUrl.replace(/\/$/, '');
+  // Search faculty members by name, email, department, or designation
+  // Returns up to 50 results. If no query provided, returns all faculty members.
+  // Supports both 'q' and 'search' parameters
+  async searchFaculty(query?: string): Promise<Array<{ 
+    id: string; 
+    name: string; 
+    email?: string; 
+    role?: string;
+    verified?: boolean;
+    profile?: {
+      department?: string;
+      designation?: string;
+      phone?: string;
+      office?: string;
+      bio?: string;
+      avatarUrl?: string;
+      qualifications?: string;
+      expertise?: string;
+    };
+    companyName?: string; 
+    companyEmail?: string 
+  }>> {
+    const base = 'https://cui-internship-system-git-dev-zas-projects-7d9cf03b.vercel.app';
     const path = '/api/admin/search-faculty';
     const qs = query && query.trim() ? `?q=${encodeURIComponent(query.trim())}` : '';
-    const url = environment.production ? `${path}${qs}` : `${base}${path}${qs}`;
+    const url = `${base}${path}${qs}`;
     const res = await firstValueFrom(this.http.get<any>(url, { headers: await this.authHeaders() }));
     const list: any[] = Array.isArray(res?.faculty) ? res.faculty : (Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []));
     return list
       .map((x: any) => ({
         id: (x.id ?? x._id ?? '').toString(),
-        name: x.name ?? '',
+        name: x.name ?? x.fullName ?? '',
         email: x.email,
+        role: x.role,
+        verified: x.verified,
+        profile: x.profile ? {
+          department: x.profile.department,
+          designation: x.profile.designation,
+          phone: x.profile.phone,
+          office: x.profile.office,
+          bio: x.profile.bio,
+          avatarUrl: x.profile.avatarUrl,
+          qualifications: x.profile.qualifications,
+          expertise: x.profile.expertise
+        } : undefined,
         companyName: x.companyName,
         companyEmail: x.companyEmail
       }))
@@ -308,18 +341,20 @@ export class AdminService {
     // Use absolute Vercel URL for review action too
     const base = 'https://cui-internship-system-git-dev-zas-projects-7d9cf03b.vercel.app';
     const headers = await this.authHeaders(true);
+    // Convert decision to action format expected by backend
+    const action = input.decision === 'APPROVED' ? 'APPROVE' : 'REJECT';
     // Try primary endpoint: POST /api/admin/review-company
     const postJson = async (path: string, body: any) => {
       const url = path.startsWith('http') ? path : `${base}${path.startsWith('/') ? '' : '/'}${path}`;
       return await firstValueFrom(this.http.post<any>(url, body, { headers }));
     };
     try {
-      const res = await postJson('/api/admin/review-company', { requestId: input.requestId, action: input.decision, notes: input.notes });
+      const res = await postJson('/api/admin/review-company', { requestId: input.requestId, action: action, notes: input.notes });
       return res;
     } catch (errPrimary) {
       // Fallback split endpoints: /approve or /reject
       try {
-        const suffix = input.decision === 'APPROVED' ? 'approve' : 'reject';
+        const suffix = action === 'APPROVE' ? 'approve' : 'reject';
         const res = await postJson(`/api/admin/review-company/${suffix}`, { requestId: input.requestId });
         return res;
       } catch (err) {
@@ -575,6 +610,54 @@ export class AdminService {
     const path = `/api/admin/office-evaluation?internshipId=${encodeURIComponent(internshipId)}`;
     const url = environment.production ? path : `${base}${path}`;
     return await firstValueFrom(this.http.get<any>(url, { headers: await this.authHeaders() }));
+  }
+
+  /**
+   * PUT /api/admin/edit-faculty
+   * Updates faculty user information and profile details (department, designation, phone, office, bio, avatarUrl, qualifications, expertise)
+   * Response: { message, faculty: { id, email, name, role, verified, profile: {...}, updatedAt }, updatedBy }
+   */
+  async editFaculty(payload: { 
+    facultyId: string;
+    name?: string;
+    email?: string;
+    profile?: {
+      department?: string;
+      designation?: string;
+      phone?: string;
+      office?: string;
+      bio?: string;
+      avatarUrl?: string;
+      qualifications?: string;
+      expertise?: string;
+    }
+  }): Promise<{ message?: string; faculty?: any; updatedBy?: string }> {
+    const base = 'https://cui-internship-system-git-dev-zas-projects-7d9cf03b.vercel.app';
+    const path = '/api/admin/edit-faculty';
+    const url = `${base}${path}`;
+    const headers = await this.authHeaders(true);
+    
+    // Build request body with only provided fields
+    const body: any = { facultyId: payload.facultyId };
+    if (payload.name !== undefined) body.name = payload.name;
+    if (payload.email !== undefined) body.email = payload.email;
+    if (payload.profile) body.profile = payload.profile;
+    
+    return await firstValueFrom(this.http.put<any>(url, body, { headers }));
+  }
+
+  /**
+   * DELETE /api/admin/delete-faculty?id=facultyId
+   * Deletes a faculty member with safety checks to prevent deletion of faculty with active internships or evaluations
+   * Response: { message: string, success: boolean, reason?: string (if blocked) }
+   */
+  async deleteFaculty(facultyId: string): Promise<{ message?: string; success?: boolean; reason?: string }> {
+    const base = 'https://cui-internship-system-git-dev-zas-projects-7d9cf03b.vercel.app';
+    const path = `/api/admin/delete-faculty?id=${encodeURIComponent(facultyId)}`;
+    const url = `${base}${path}`;
+    const headers = await this.authHeaders(true);
+    
+    return await firstValueFrom(this.http.delete<any>(url, { headers }));
   }
 
   /** POST /api/maintenance/cleanup-tokens — removes expired/revoked tokens from the database */
