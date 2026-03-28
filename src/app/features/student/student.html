@@ -797,10 +797,11 @@
                   <th>Submitted</th>
                   <th>Last Updated</th>
                   <th>Notes</th>
+                  <th>Action</th>
                 </tr>
               </thead>
               <tbody>
-                <tr *ngFor="let req of companyRequestStatus">
+                <tr *ngFor="let req of companyRequestStatus" style="cursor: pointer;" (click)="loadCompanyRequestDetail(req.id)">
                   <td>
                     <strong>{{ req.name }}</strong>
                     <small class="d-block text-muted">{{ req.email }}</small>
@@ -833,6 +834,14 @@
                       {{ req.notes || req.reason || '-' }}
                     </small>
                     <small *ngIf="!req.statusInfo?.hasNotes" class="text-muted">-</small>
+                  </td>
+                  <td>
+                    <button class="btn btn-sm btn-outline-primary" 
+                            (click)="$event.stopPropagation(); loadCompanyRequestDetail(req.id)"
+                            [disabled]="loadingCompanyRequestDetail">
+                      <i class="bi bi-eye me-1"></i>
+                      View
+                    </button>
                   </td>
                 </tr>
               </tbody>
@@ -881,6 +890,164 @@
       </div>
     </div>
   </div>
+
+  <!-- Company Request Detail Modal -->
+  <div class="modal" [class.show]="showCompanyRequestDetailModal" [style.display]="showCompanyRequestDetailModal ? 'block' : 'none'" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Company Request Details</h5>
+          <button type="button" class="btn-close" (click)="closeCompanyRequestDetailModal()"></button>
+        </div>
+        <div class="modal-body">
+          <div *ngIf="loadingCompanyRequestDetail" class="text-center text-muted">
+            <span class="spinner-border spinner-border-sm me-2"></span>
+            Loading details...
+          </div>
+
+          <div *ngIf="!loadingCompanyRequestDetail && selectedCompanyRequestDetail">
+            <!-- Status Section -->
+            <div class="mb-4">
+              <h6 class="mb-3"><i class="bi bi-info-circle me-2"></i>Request Status</h6>
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <div class="d-flex align-items-center">
+                    <span class="badge me-2" 
+                      [class.text-bg-warning]="selectedCompanyRequestDetail.statusInfo?.isPending"
+                      [class.text-bg-success]="selectedCompanyRequestDetail.statusInfo?.isApproved"
+                      [class.text-bg-danger]="selectedCompanyRequestDetail.statusInfo?.isRejected">
+                      {{ selectedCompanyRequestDetail.statusInfo?.currentStatus || 'PENDING' }}
+                    </span>
+                    <small class="text-muted">Current Status</small>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <small class="text-muted d-block">Request ID</small>
+                  <code>{{ selectedCompanyRequestDetail.request?.id }}</code>
+                </div>
+              </div>
+            </div>
+
+            <!-- Company Information -->
+            <div class="mb-4">
+              <h6 class="mb-3"><i class="bi bi-building me-2"></i>Company Information</h6>
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <small class="text-muted d-block">Company Name</small>
+                  <strong>{{ selectedCompanyRequestDetail.request?.name }}</strong>
+                </div>
+                <div class="col-md-6">
+                  <small class="text-muted d-block">Industry</small>
+                  <strong>{{ selectedCompanyRequestDetail.request?.industry || '-' }}</strong>
+                </div>
+                <div class="col-md-6">
+                  <small class="text-muted d-block">Email</small>
+                  <a [href]="'mailto:' + selectedCompanyRequestDetail.request?.email" class="text-decoration-none">
+                    {{ selectedCompanyRequestDetail.request?.email }}
+                  </a>
+                </div>
+                <div class="col-md-6">
+                  <small class="text-muted d-block">Phone</small>
+                  {{ selectedCompanyRequestDetail.request?.phone || '-' }}
+                </div>
+                <div class="col-12">
+                  <small class="text-muted d-block">Address</small>
+                  {{ selectedCompanyRequestDetail.request?.address || '-' }}
+                </div>
+                <div class="col-12">
+                  <small class="text-muted d-block">Website</small>
+                  <a *ngIf="selectedCompanyRequestDetail.request?.website" [href]="selectedCompanyRequestDetail.request?.website" target="_blank" class="text-decoration-none">
+                    {{ selectedCompanyRequestDetail.request?.website }}
+                  </a>
+                  <span *ngIf="!selectedCompanyRequestDetail.request?.website" class="text-muted">-</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Description -->
+            <div class="mb-4" *ngIf="selectedCompanyRequestDetail.request?.description">
+              <h6 class="mb-2"><i class="bi bi-file-text me-2"></i>Company Description</h6>
+              <p class="mb-0 text-muted">{{ selectedCompanyRequestDetail.request?.description }}</p>
+            </div>
+
+            <!-- Justification / Reason -->
+            <div class="mb-4" *ngIf="selectedCompanyRequestDetail.request?.reason">
+              <h6 class="mb-2"><i class="bi bi-chat-left-text me-2"></i>Justification for Request</h6>
+              <p class="mb-0 text-muted">{{ selectedCompanyRequestDetail.request?.reason }}</p>
+            </div>
+
+            <!-- Timeline -->
+            <div class="mb-4">
+              <h6 class="mb-3"><i class="bi bi-calendar-event me-2"></i>Timeline</h6>
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <small class="text-muted d-block">Submitted</small>
+                  <strong>{{ selectedCompanyRequestDetail.statusInfo?.submittedAt | date:'medium' }}</strong>
+                </div>
+                <div class="col-md-6">
+                  <small class="text-muted d-block">Last Updated</small>
+                  <strong>{{ selectedCompanyRequestDetail.statusInfo?.lastUpdatedAt | date:'medium' }}</strong>
+                </div>
+                <div class="col-12" *ngIf="selectedCompanyRequestDetail.statusInfo?.reviewedAt && (selectedCompanyRequestDetail.statusInfo?.isApproved || selectedCompanyRequestDetail.statusInfo?.isRejected)">
+                  <small class="text-muted d-block">Reviewed On</small>
+                  <strong>{{ selectedCompanyRequestDetail.statusInfo?.reviewedAt | date:'medium' }}</strong>
+                </div>
+              </div>
+            </div>
+
+            <!-- Requester Information -->
+            <div class="mb-4" *ngIf="selectedCompanyRequestDetail.request?.requestedBy">
+              <h6 class="mb-3"><i class="bi bi-person-badge me-2"></i>Submitted By</h6>
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <small class="text-muted d-block">Name</small>
+                  <strong>{{ selectedCompanyRequestDetail.request?.requestedBy?.name }}</strong>
+                </div>
+                <div class="col-md-6">
+                  <small class="text-muted d-block">Registration No.</small>
+                  <strong>{{ selectedCompanyRequestDetail.request?.requestedBy?.regNo || '-' }}</strong>
+                </div>
+                <div class="col-12">
+                  <small class="text-muted d-block">Email</small>
+                  <a [href]="'mailto:' + selectedCompanyRequestDetail.request?.requestedBy?.email" class="text-decoration-none">
+                    {{ selectedCompanyRequestDetail.request?.requestedBy?.email }}
+                  </a>
+                </div>
+              </div>
+            </div>
+
+            <!-- Reviewed By Information -->
+            <div class="mb-4 p-3 bg-light rounded" *ngIf="selectedCompanyRequestDetail.request?.reviewedBy">
+              <h6 class="mb-3"><i class="bi bi-check-circle me-2"></i>Reviewed By</h6>
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <small class="text-muted d-block">Reviewer Name</small>
+                  <strong>{{ selectedCompanyRequestDetail.request?.reviewedBy?.name }}</strong>
+                </div>
+                <div class="col-12">
+                  <small class="text-muted d-block">Reviewer Email</small>
+                  <a [href]="'mailto:' + selectedCompanyRequestDetail.request?.reviewedBy?.email" class="text-decoration-none">
+                    {{ selectedCompanyRequestDetail.request?.reviewedBy?.email }}
+                  </a>
+                </div>
+              </div>
+            </div>
+
+            <!-- Admin Notes -->
+            <div class="mb-4 p-3 bg-warning bg-opacity-10 rounded" *ngIf="selectedCompanyRequestDetail.statusInfo?.hasNotes && selectedCompanyRequestDetail.request?.notes">
+              <h6 class="mb-2"><i class="bi bi-chat-dots text-warning me-2"></i>Admin Notes</h6>
+              <p class="mb-0">{{ selectedCompanyRequestDetail.request?.notes }}</p>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" (click)="closeCompanyRequestDetailModal()">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- Modal Backdrop -->
+  <div class="modal-backdrop fade" [class.show]="showCompanyRequestDetailModal" *ngIf="showCompanyRequestDetailModal"></div>
 
   <!-- Evaluations tab content -->
   <div *ngIf="isCurrentTab('evaluations')">

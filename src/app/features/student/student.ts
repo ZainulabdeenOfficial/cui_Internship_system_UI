@@ -217,6 +217,9 @@ export class Student implements OnDestroy {
     includeApproved: true,
     includeRejected: true
   };
+  selectedCompanyRequestDetail: any = null;
+  loadingCompanyRequestDetail = false;
+  showCompanyRequestDetailModal = false;
   
   // Auto-refresh status polling
   private statusPollingInterval: any = null;
@@ -1253,6 +1256,31 @@ export class Student implements OnDestroy {
   async updateCompanyRequestStatusFilter() {
     // Reload status when filters change
     await this.loadCompanyRequestStatus();
+  }
+
+  async loadCompanyRequestDetail(requestId: string) {
+    if (!this.selectedId) return;
+    if (!this.ensureMine()) return;
+    
+    this.loadingCompanyRequestDetail = true;
+    try {
+      const result = await this.studentApi.getCompanyRequestDetail(requestId);
+      this.selectedCompanyRequestDetail = result;
+      this.showCompanyRequestDetailModal = true;
+      console.log('✅ Company request detail loaded:', result);
+    } catch (err: any) {
+      const msg = err?.error?.message || err?.message || 'Failed to load company request detail';
+      this.toast.danger(msg);
+      this.selectedCompanyRequestDetail = null;
+    } finally {
+      this.loadingCompanyRequestDetail = false;
+      this.cdr.markForCheck();
+    }
+  }
+
+  closeCompanyRequestDetailModal() {
+    this.showCompanyRequestDetailModal = false;
+    this.selectedCompanyRequestDetail = null;
   }
   selectCompanyFromRequest(companyId: string) {
     const company = this.approvedCompanyRequests.find(c => c.id === companyId);

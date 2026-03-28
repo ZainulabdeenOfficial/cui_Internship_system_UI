@@ -170,6 +170,60 @@ export class StudentService {
     };
   }
 
+  // GET /api/student/company-request-status/:id (get detailed info about a specific request)
+  async getCompanyRequestDetail(requestId: string): Promise<any> {
+    const base = 'https://cui-internship-system-git-dev-zas-projects-7d9cf03b.vercel.app';
+    const url = `${base}/api/student/company-request-status/${encodeURIComponent(requestId)}`;
+    
+    const res = await firstValueFrom(this.http.get<any>(url, {
+      headers: new HttpHeaders({ Accept: 'application/json' })
+    }));
+    
+    // Map request data
+    const request = res?.request ?? {};
+    const statusInfo = res?.statusInfo ?? {};
+    
+    return {
+      request: {
+        id: (request.id ?? request._id ?? '').toString(),
+        name: request.name ?? request.companyName ?? '',
+        email: request.email ?? '',
+        phone: request.phone ?? '',
+        address: request.address ?? '',
+        website: request.website ?? '',
+        industry: request.industry ?? '',
+        description: request.description ?? '',
+        reason: request.reason ?? request.justification ?? '',
+        status: request.status ?? 'PENDING',
+        notes: request.notes ?? '',
+        createdAt: request.createdAt ?? '',
+        updatedAt: request.updatedAt ?? '',
+        reviewedAt: request.reviewedAt ?? '',
+        requestedBy: {
+          id: (request.requestedBy?.id ?? request.requestedBy?._id ?? '').toString(),
+          name: request.requestedBy?.name ?? '',
+          email: request.requestedBy?.email ?? '',
+          regNo: request.requestedBy?.regNo ?? ''
+        },
+        reviewedBy: request.reviewedBy ? {
+          id: (request.reviewedBy.id ?? request.reviewedBy._id ?? '').toString(),
+          name: request.reviewedBy.name ?? '',
+          email: request.reviewedBy.email ?? ''
+        } : null
+      },
+      statusInfo: {
+        currentStatus: statusInfo.currentStatus ?? request.status ?? 'PENDING',
+        isPending: statusInfo.isPending ?? (request.status === 'PENDING'),
+        isApproved: statusInfo.isApproved ?? (request.status === 'APPROVED'),
+        isRejected: statusInfo.isRejected ?? (request.status === 'REJECTED'),
+        submittedAt: statusInfo.submittedAt ?? request.createdAt ?? '',
+        lastUpdatedAt: statusInfo.lastUpdatedAt ?? request.updatedAt ?? '',
+        reviewedAt: statusInfo.reviewedAt ?? request.reviewedAt ?? '',
+        hasNotes: statusInfo.hasNotes ?? (!!request.notes)
+      }
+    };
+  }
+
   // GET /api/student/company-request-status (with optional boolean parameters)
   async getCompanyRequestStatus(params?: { 
     includePending?: boolean; 
