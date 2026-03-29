@@ -25,7 +25,6 @@ export class Student implements OnDestroy {
   isCompanyDropdownOpen = false;
   activeCompanyIndex = -1;
   loadingCompanies = false;
-  companySearchQuery = '';
   companyIndustryFilter = '';
   availableIndustries: string[] = [];
   private companySearchDebounceId: any;
@@ -472,8 +471,8 @@ export class Student implements OnDestroy {
 
   onCompanyNameInput(value: string) {
     const q = (value || '').trim();
+    this.appexAForm.organization = q;
     this.lastCompanyQuery = q;
-    this.companySearchQuery = q;
     // If user types something different than the selected company's name, clear selection
     if (this.selectedCompany && (this.selectedCompany.name || '').toLowerCase() !== q.toLowerCase()) {
       this.selectedCompany = null;
@@ -639,15 +638,19 @@ export class Student implements OnDestroy {
 
   onCompanyInputFocus() {
     const q = (this.appexAForm?.organization || '').trim();
-    this.isCompanyDropdownOpen = q.length >= 2 && ((this.dropdownCompanies?.length || 0) > 0 || this.loadingCompanies || this.isCompanyNotFound());
+    // Open dropdown if: has search query and has results, or has search query but loading, or exact match not found
+    const hasResults = (this.dropdownCompanies?.length || 0) > 0;
+    const isLoading = this.loadingCompanies;
+    const hasSearchQuery = q.length >= 2;
+    this.isCompanyDropdownOpen = hasSearchQuery && (hasResults || isLoading || this.isCompanyNotFound());
   }
 
   onCompanyInputBlur() {
-    // Delay closing to allow click selection
+    // Delay closing to allow click selection - increased to 300ms for better UX
     setTimeout(() => {
       this.isCompanyDropdownOpen = false;
       this.activeCompanyIndex = -1;
-    }, 150);
+    }, 300);
   }
 
   highlightCompanyName(name: string): string {
@@ -938,6 +941,10 @@ export class Student implements OnDestroy {
     // Reflect in URL for deep links
     try { this.router.navigate([], { relativeTo: this.route, queryParams: { tab }, queryParamsHandling: 'merge' }); } catch {}
     
+    // Auto-load internship approval status when appex tab is selected
+    if (tab === 'appex') {
+      this.loadApexBStatus(true);
+    }
     // Auto-load company requests when appex tab is selected to show approved companies
     if (tab === 'appex' && !this.hasLoadedMyCompanyRequestsOnce) {
       this.loadMyCompanyRequests();
@@ -1305,8 +1312,9 @@ export class Student implements OnDestroy {
   async onCompanyIndustryFilterChange(industry: string) {
     this.companyIndustryFilter = industry;
     // Retrigger search with the new industry filter
-    if (this.companySearchQuery && this.companySearchQuery.length >= 2) {
-      this.onCompanyNameInput(this.companySearchQuery);
+    const currentQuery = (this.appexAForm.organization || '').trim();
+    if (currentQuery && currentQuery.length >= 2) {
+      this.onCompanyNameInput(currentQuery);
     }
   }
 
@@ -1331,9 +1339,9 @@ export class Student implements OnDestroy {
     // Store preview
     this.companyPreview = company;
     
-    // Close dropdown and clear search
+    // Close dropdown and clear suggestions
     this.isCompanyDropdownOpen = false;
-    this.companySearchQuery = company.name;
+    this.dropdownCompanies = [];
     
     this.toast.success(`Company "${company.name}" selected from directory`);
   }

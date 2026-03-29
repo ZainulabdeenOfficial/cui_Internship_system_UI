@@ -249,21 +249,22 @@
                            class="form-control" 
                            placeholder="Search company by name (min. 2 characters)..."
                            (input)="onCompanyNameInput($event.target.value)"
-                           [value]="companySearchQuery"
-                           (focus)="isCompanyDropdownOpen = true"
-                           (blur)="isCompanyDropdownOpen = false"
+                           [value]="appexAForm.organization"
+                           (focus)="onCompanyInputFocus()"
+                           (blur)="onCompanyInputBlur()"
+                           (keydown)="onCompanyKeydown($event)"
                            autocomplete="off" />
                     <div *ngIf="loadingCompanies" class="position-absolute top-50 end-0 translate-middle-y me-3">
                       <span class="spinner-border spinner-border-sm text-primary"></span>
                     </div>
-                    <!-- Autocomplete Dropdown -->
-                    <div *ngIf="isCompanyDropdownOpen && dropdownCompanies.length > 0" class="position-absolute top-100 start-0 end-0 bg-white border rounded mt-1 shadow-lg" style="z-index: 1000;">
-                      <ul class="list-group list-group-flush">
+                    <!-- Autocomplete Dropdown - Show by default when results available -->
+                    <div *ngIf="isCompanyDropdownOpen && (dropdownCompanies.length > 0 || loadingCompanies)" class="position-absolute top-100 start-0 end-0 bg-white border rounded mt-1 shadow-lg" style="z-index: 1000;">
+                      <ul class="list-group list-group-flush" *ngIf="dropdownCompanies.length > 0">
                         <li *ngFor="let company of dropdownCompanies; let i = index" 
-                            class="list-group-item cursor-pointer" 
+                            class="list-group-item p-2 cursor-pointer" 
                             [class.active]="i === activeCompanyIndex"
-                            (click)="selectCompanyFromDropdown(company); isCompanyDropdownOpen = false"
-                            (mouseenter)="activeCompanyIndex = i">
+                            (mouseenter)="activeCompanyIndex = i"
+                            (click)="selectCompanyFromDropdown(company)">
                           <div class="d-flex justify-content-between align-items-start">
                             <div>
                               <strong>{{ company.name }}</strong>

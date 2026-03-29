@@ -762,8 +762,8 @@ export class StudentService {
   }
 
   /**
-   * GET /api/student/internship  — resolves the student's own internship record & ID.
-   * Falls back to GET /api/student/appex-a which wraps response in { internship: { id, appexA } }.
+   * GET /api/student/appex-a — resolves the student's own internship record & ID.
+   * Returns { internship: { id, appexA } }.
    */
   async getMyInternship(options?: StudentRequestOptions): Promise<any> {
     const key = this.cacheKey('my-internship');
@@ -775,19 +775,14 @@ export class StudentService {
       ...(this.getAuthToken() ? { Authorization: `Bearer ${this.getAuthToken()}` } : {})
     }), opt);
 
-    // Primary: /api/student/internship
+    // Use /api/student/appex-a which returns { internship: { id, appexA } }
     try {
-      const res = await firstValueFrom(this.http.get<any>(this.abs('/api/student/internship'), { headers: headers(options), context: this.buildContext(options) }));
-      this.writeCache(key, res, options?.cacheTtlMs ?? 60 * 1000);
+      const fallbackOpts = { skipGlobalLoading: true };
+      const res = await firstValueFrom(this.http.get<any>(this.abs('/api/student/appex-a'), { headers: headers(fallbackOpts), context: this.buildContext(fallbackOpts) }));
+      this.writeCache(key, res, 60 * 1000);
       return res;
-    } catch (primary) {
-      // Fallback: /api/student/appex-a also returns { internship: { id, appexA } }
-      try {
-        const fallbackOpts = { skipGlobalLoading: true };
-        const res = await firstValueFrom(this.http.get<any>(this.abs('/api/student/appex-a'), { headers: headers(fallbackOpts), context: this.buildContext(fallbackOpts) }));
-        this.writeCache(key, res, 60 * 1000);
-        return res;
-      } catch { throw primary; }
+    } catch (err) {
+      throw err;
     }
   }
 

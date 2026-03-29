@@ -129,105 +129,60 @@ export class AuthService {
   }
 
   async refreshAccessToken(): Promise<RefreshTokenResponse> {
-    const rel = '/api/auth/refresh-token';
-    // The backend stores the refresh token as an httpOnly cookie.
-    // withCredentials: true tells the browser to send that cookie automatically.
-    // Also include any localStorage refresh token as a body fallback for backends
-    // that accept both cookie and body-based refresh tokens.
-    const bodyRefreshToken = (() => { try { return localStorage.getItem('refreshToken') || undefined; } catch { return undefined; } })();
-
+    const endpoint = '/api/auth/refresh-token';
     const headers = { Accept: 'application/json' };
 
-    const post = (u: string) => this.http.post<RefreshTokenResponse>(
-      u,
-      bodyRefreshToken ? { refreshToken: bodyRefreshToken } : null,
+    // Use GET method with cookies (withCredentials: true sends refresh token from httpOnly cookie)
+    const get = (url: string) => this.http.get<RefreshTokenResponse>(
+      url,
       { headers: new HttpHeaders(headers), withCredentials: true }
     );
 
-    const get = (u: string) => {
-      const urlWithParams = bodyRefreshToken ? `${u}?refreshToken=${encodeURIComponent(bodyRefreshToken)}` : u;
-      return this.http.get<RefreshTokenResponse>(urlWithParams, { headers: new HttpHeaders(headers), withCredentials: true });
-    };
-
-    // Try GET first (since backend only supports GET for refresh-token), then POST as fallback.
-    // Also try both path variants (with and without trailing slash).
-    const pathCandidates = [rel, `${rel}/`];
-    const methodCandidates: Array<[string, (u: string) => any]> = [
-      ['GET', get],
-      ['POST', post]
-    ];
-
+    const pathVariants = [endpoint, `${endpoint}/`];
     let res: RefreshTokenResponse | null = null;
     let lastErr: any = null;
 
     try {
-      // Prefer same-origin (proxy) so the cookie domain matches.
-      for (const [methodName, method] of methodCandidates) {
-        for (const candidate of pathCandidates) {
+      // Try same-origin (proxy) first so cookie domain matches
+      for (const candidate of pathVariants) {
+        try {
+          console.log(`🔄 [TokenRefresh] GET ${candidate}`);
+          res = await firstValueFrom(get(candidate));
+          console.log(`✅ [TokenRefresh] GET ${candidate} succeeded`);
+          break;
+        } catch (err: any) {
+          const status: number = err?.status ?? 0;
+          console.warn(`⚠️ [TokenRefresh] GET ${candidate} failed (HTTP ${status})`);
+          lastErr = err;
+        }
+      }
+
+      // If same-origin failed, try absolute URL
+      if (!res && lastErr) {
+        const absBase = this.absBase;
+        console.log(`🔄 [TokenRefresh] Fallback to absolute URL: ${absBase}`);
+        
+        for (const candidate of pathVariants) {
           try {
-            console.log(`🔄 [TokenRefresh] Trying ${methodName} ${candidate}`);
-            res = await firstValueFrom(method(candidate));
-            console.log(`✅ [TokenRefresh] ${methodName} ${candidate} succeeded`);
-            lastErr = null;
+            const absUrl = `${absBase}${candidate}`;
+            console.log(`🔄 [TokenRefresh] GET ${absUrl}`);
+            res = await firstValueFrom(get(absUrl));
+            console.log(`✅ [TokenRefresh] GET ${absUrl} succeeded`);
             break;
-          } catch (candidateErr: any) {
-            const candidateStatus: number = candidateErr?.status ?? 0;
-            console.warn(`⚠️ [TokenRefresh] ${methodName} ${candidate} failed (HTTP ${candidateStatus})`);
-            lastErr = candidateErr;
-            // For non-405 server responses on first method (GET), fail fast.
-            // For 405 on GET, try POST; for 405 on POST, continue to absolute URL fallback.
-            if (candidateStatus !== 405 && methodName === 'GET') {
-              throw candidateErr;
-            }
+          } catch (absErr: any) {
+            const status: number = absErr?.status ?? 0;
+            console.warn(`⚠️ [TokenRefresh] GET failed (HTTP ${status})`);
+            lastErr = absErr;
           }
         }
-        // If we got a successful response, stop trying methods
-        if (res) break;
       }
-      if (lastErr && !res) {
+
+      if (!res) {
         throw lastErr;
       }
     } catch (err: any) {
-      const status: number = err?.status ?? 0;
-      // Only fall back to absolute URL for network/CORS errors (status 0).
-      // For 4xx/5xx, retry once more with absolute URL before giving up.
-      if (status !== 0 && status !== 405) {
-        console.error('❌ Token refresh failed:', err?.message || err);
-        throw err;
-      }
-
-      // Fallback: try absolute URL with both methods and path variants
-      const absBase = this.absBase;
-      console.log(`🔄 [TokenRefresh] Fallback to absolute URL: ${absBase}`);
-      
-      try {
-        for (const [methodName, method] of methodCandidates) {
-          for (const candidate of pathCandidates) {
-            try {
-              const absUrl = `${absBase}${candidate}`;
-              console.log(`🔄 [TokenRefresh] Trying ${methodName} ${absUrl}`);
-              res = await firstValueFrom(method(absUrl));
-              console.log(`✅ [TokenRefresh] ${methodName} ${absUrl} succeeded`);
-              lastErr = null;
-              break;
-            } catch (candidateErr: any) {
-              const candidateStatus: number = candidateErr?.status ?? 0;
-              console.warn(`⚠️ [TokenRefresh] ${methodName} failed (HTTP ${candidateStatus})`);
-              lastErr = candidateErr;
-              if (candidateStatus !== 405 && methodName === 'GET') {
-                throw candidateErr;
-              }
-            }
-          }
-          if (res) break;
-        }
-        if (lastErr && !res) {
-          throw lastErr;
-        }
-      } catch (absErr: any) {
-        console.error('❌ Token refresh failed:', absErr?.message || absErr);
-        throw absErr;
-      }
+      console.error('❌ Token refresh failed:', err?.message || err);
+      throw err;
     }
     
     // Validate and save tokens from response
