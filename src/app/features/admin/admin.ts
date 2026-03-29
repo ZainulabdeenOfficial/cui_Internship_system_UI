@@ -2058,10 +2058,14 @@ export class Admin {
     };
     this.officeEvalResult = null;
     this.internshipDetails = null;
-    if (internshipId) {
-      this.loadInternshipDetails(internshipId);
-      this.loadOfficeEvaluation(internshipId);
+    
+    if (!internshipId) {
+      this.toast.warning('This student does not have an internship ID assigned yet.');
+      return;
     }
+    
+    this.loadInternshipDetails(internshipId);
+    this.loadOfficeEvaluation(internshipId);
   }
 
   async loadInternshipDetails(internshipId: string) {
@@ -2099,8 +2103,11 @@ export class Admin {
   }
 
   async submitOfficeEvaluation() {
-    const id = this.officeEvalForm.internshipId.trim();
-    if (!id) { this.toast.warning('Enter the internship ID'); return; }
+    const id = this.officeEvalForm.internshipId?.trim();
+    if (!id) { 
+      this.toast.warning('Internship ID not available. Please select a student with a valid internship.');
+      return;
+    }
     this.submittingOfficeEval = true;
     try {
       const res = await this.adminApi.submitOfficeEvaluation({
