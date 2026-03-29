@@ -1382,6 +1382,77 @@
         </div>
       </div>
 
+      <!-- ⓪ Internship List (for browsing all internships) -->
+      <div class="card mb-3">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <span><i class="bi bi-briefcase me-2"></i>All Internships</span>
+          <span class="badge text-bg-info">{{ internships.length }} internship(s)</span>
+        </div>
+        <div class="card-body p-0">
+          @if (loadingInternships) {
+            <div class="text-center py-3">
+              <div class="spinner-border spinner-border-sm" role="status">
+                <span class="visually-hidden">Loading...</span>
+              </div>
+              <span class="ms-2">Loading internships...</span>
+            </div>
+          } @else if (internships.length === 0) {
+            <div class="text-center py-3 text-muted">
+              <i class="bi bi-inbox"></i> No internships found.
+            </div>
+          } @else {
+            <div class="table-responsive">
+              <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th>Student</th>
+                    <th>Reg. No</th>
+                    <th>Company</th>
+                    <th>Status</th>
+                    <th>Final Result</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (internship of internships; track internship.id) {
+                    <tr>
+                      <td>
+                        <div class="fw-semibold">{{ internship.student?.name || '-' }}</div>
+                        <small class="text-muted">{{ internship.student?.email || '-' }}</small>
+                      </td>
+                      <td>{{ internship.student?.regNo || '-' }}</td>
+                      <td>{{ internship.company?.name || internship.companyName || '-' }}</td>
+                      <td>
+                        <span class="badge"
+                          [class.text-bg-warning]="internship.status === 'ongoing'"
+                          [class.text-bg-success]="internship.status === 'completed'"
+                          [class.text-bg-info]="internship.status === 'pending'">
+                          {{ internship.status || 'pending' }}
+                        </span>
+                      </td>
+                      <td>
+                        <span class="badge"
+                          [class.text-bg-success]="internship.finalResult && internship.finalResult >= 70"
+                          [class.text-bg-warning]="internship.finalResult && internship.finalResult >= 50 && internship.finalResult < 70"
+                          [class.text-bg-danger]="internship.finalResult && internship.finalResult < 50"
+                          [class.text-bg-secondary]="!internship.finalResult">
+                          {{ internship.finalResult || 'N/A' }}{{ internship.finalResult ? '%' : '' }}
+                        </span>
+                      </td>
+                      <td>
+                        <button class="btn btn-sm btn-outline-primary" (click)="selectStudentForEval({id: internship.student?.id, ...internship.student, internshipId: internship.id})">
+                          <i class="bi bi-clipboard2-check me-1"></i>Evaluate
+                        </button>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        </div>
+      </div>
+
       <!-- ① Student list -->
       <div class="card mb-3">
         <div class="card-header d-flex justify-content-between align-items-center">

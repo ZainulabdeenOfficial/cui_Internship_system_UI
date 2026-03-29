@@ -129,6 +129,10 @@ export class Admin {
       
       this.loadApexAForms();
     }
+    if (tab === 'evaluation') {
+      // Load all internships for browsing/selection
+      this.loadAllInternships();
+    }
   }
   get officers() { return this.store.internshipOfficers; }
   officer = { name: '', email: '' };
@@ -2042,6 +2046,11 @@ export class Admin {
   // Full internship details from /api/admin/internships/{internshipId}
   internshipDetails: any = null;
   loadingInternshipDetails = false;
+  // List of all internships for browsing/selection
+  internships: Array<any> = [];
+  loadingInternships = false;
+  internshipsPage = 1;
+  internshipsPageSize = 10;
 
   get officeEvalTotal(): number {
     const c = this.officeEvalForm.criteria;
@@ -2099,6 +2108,23 @@ export class Admin {
       }
     } finally {
       this.loadingOfficeEval = false;
+    }
+  }
+
+  async loadAllInternships() {
+    if (this.loadingInternships) return;
+    this.loadingInternships = true;
+    try {
+      const res = await this.adminApi.getAllInternships();
+      const data = res?.data || [];
+      this.internships = Array.isArray(data) ? data : [];
+      console.log('✅ Internships list loaded:', this.internships.length, 'internships');
+    } catch (err: any) {
+      const msg = err?.error?.message || err?.message || 'Failed to load internships';
+      this.toast.danger(msg);
+      this.internships = [];
+    } finally {
+      this.loadingInternships = false;
     }
   }
 
