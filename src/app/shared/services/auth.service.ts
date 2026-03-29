@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
-import { StudentRegisterRequest, RegisterResponse, LoginRequest, LoginResponse, SendVerificationEmailRequest, SendVerificationEmailResponse, RefreshTokenResponse } from '../models/auth.models';
+import { StudentRegisterRequest, RegisterResponse, LoginRequest, LoginResponse, SendVerificationEmailRequest, SendVerificationEmailResponse, RefreshTokenResponse, SessionsResponse } from '../models/auth.models';
 import { ResetPasswordRequest, ResetPasswordResponse } from '../models/auth/forgot-reset.models';
 import { GeneratePasswordResponse } from '../models/auth/generate-password.response';
 import { VerifyEmailRequest, VerifyEmailResponse } from '../models/auth/verify-email.models';
@@ -38,6 +38,20 @@ export class AuthService {
       if (status && status !== 0) throw err;
       const abs = `${this.absBase}${urlRel}`;
       const req2$ = this.http.get<T>(abs, { headers: new HttpHeaders({ Accept: 'application/json' }) });
+      return await firstValueFrom(opts?.timeoutMs ? req2$.pipe(timeout(opts.timeoutMs)) : req2$);
+    }
+  }
+
+  private async getJsonWithCredentials<T>(path: string, opts?: { timeoutMs?: number }) {
+    const urlRel = this.rel(path);
+    const httpOpts = { headers: new HttpHeaders({ Accept: 'application/json' }), withCredentials: true };
+    const req$ = this.http.get<T>(urlRel, httpOpts);
+    try { return await firstValueFrom(opts?.timeoutMs ? req$.pipe(timeout(opts.timeoutMs)) : req$); }
+    catch (err: any) {
+      const status = err?.status ?? err?.error?.status ?? 0;
+      if (status && status !== 0) throw err;
+      const abs = `${this.absBase}${urlRel}`;
+      const req2$ = this.http.get<T>(abs, httpOpts);
       return await firstValueFrom(opts?.timeoutMs ? req2$.pipe(timeout(opts.timeoutMs)) : req2$);
     }
   }
@@ -207,6 +221,15 @@ export class AuthService {
 
   async generatePassword(): Promise<GeneratePasswordResponse> {
     return await this.getJson<GeneratePasswordResponse>('/api/auth/generate-password');
+  }
+
+  /**
+   * GET /api/auth/sessions - Retrieve all active sessions for the authenticated user
+   * Uses httpOnly cookies for authentication (withCredentials: true)
+   * Returns: { sessions: [ { id, createdAt, expiresAt, isCurrent, tokenPreview } ], totalActive: number }
+   */
+  async getActiveSessions(): Promise<SessionsResponse> {
+    return await this.getJsonWithCredentials<SessionsResponse>('/api/auth/sessions');
   }
 
   clearTokens() {

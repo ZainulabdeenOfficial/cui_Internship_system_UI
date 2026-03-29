@@ -4,4 +4,5 @@ export * from './auth/refresh-token.response';
 export * from './auth/verify-email.models';
 export * from './auth/forgot-reset.models';
 export * from './auth/generate-password.response';
+export * from './auth/sessions.response';
 export * from './user.models';
