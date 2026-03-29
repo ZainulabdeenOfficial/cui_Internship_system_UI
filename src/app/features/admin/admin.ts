@@ -2039,6 +2039,9 @@ export class Admin {
   submittingOfficeEval = false;
   loadingOfficeEval = false;
   selectedStudentForEval: any = null;
+  // Full internship details from /api/admin/internships/{internshipId}
+  internshipDetails: any = null;
+  loadingInternshipDetails = false;
 
   get officeEvalTotal(): number {
     const c = this.officeEvalForm.criteria;
@@ -2054,7 +2057,27 @@ export class Admin {
       comments: ''
     };
     this.officeEvalResult = null;
-    if (internshipId) this.loadOfficeEvaluation(internshipId);
+    this.internshipDetails = null;
+    if (internshipId) {
+      this.loadInternshipDetails(internshipId);
+      this.loadOfficeEvaluation(internshipId);
+    }
+  }
+
+  async loadInternshipDetails(internshipId: string) {
+    if (!internshipId || this.loadingInternshipDetails) return;
+    this.loadingInternshipDetails = true;
+    try {
+      const res = await this.adminApi.getInternshipDetails(internshipId);
+      this.internshipDetails = res;
+      console.log('✅ Internship details loaded:', res);
+    } catch (err: any) {
+      const msg = err?.error?.message || err?.message || 'Failed to load internship details';
+      this.toast.danger(msg);
+      this.internshipDetails = null;
+    } finally {
+      this.loadingInternshipDetails = false;
+    }
   }
 
   async loadOfficeEvaluation(internshipId: string) {

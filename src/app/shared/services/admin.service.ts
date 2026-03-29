@@ -655,6 +655,17 @@ export class AdminService {
   }
 
   /**
+   * GET /api/admin/internships/{internshipId}
+   * Returns one internship with AppEx records (on the student), reports, weekly logs, evaluations (with evaluator), and final result.
+   */
+  async getInternshipDetails(internshipId: string): Promise<any> {
+    const base = environment.apiBaseUrl.replace(/\/$/, '');
+    const path = `/api/admin/internships/${encodeURIComponent(internshipId)}`;
+    const url = environment.production ? path : `${base}${path}`;
+    return await firstValueFrom(this.http.get<any>(url, { headers: await this.authHeaders() }));
+  }
+
+  /**
    * PUT /api/admin/edit-faculty
    * Updates faculty user information and profile details (department, designation, phone, office, bio, avatarUrl, qualifications, expertise)
    * Response: { message, faculty: { id, email, name, role, verified, profile: {...}, updatedAt }, updatedBy }
