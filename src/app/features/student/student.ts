@@ -304,6 +304,11 @@ export class Student implements OnDestroy {
       effect(() => {
         const sid = this.selectedId;
         if (!sid) return;
+        // Reset all data-loading flags when student changes so they'll reload for the new student
+        this.hasLoadedMyCompanyRequestsOnce = false;
+        this.hasLoadedWeeklyLogsOnce = false;
+        this.hasLoadedCompanyRequestStatusOnce = false;
+        this.evaluationsLoadedOnce = false;
         (async () => {
           // 1) Try to load from server
           let serverHas = false;
@@ -366,6 +371,16 @@ export class Student implements OnDestroy {
               }
             }
           } catch {}
+
+          // 3) Auto-load approved company requests for display in AppEx-A form
+          try {
+            if (!this.hasLoadedMyCompanyRequestsOnce) {
+              await this.loadMyCompanyRequests();
+            }
+          } catch (err) {
+            // Silently fail — company requests are optional
+            console.warn('Failed to load company requests:', err);
+          }
         })();
       });
     } catch {}
@@ -945,18 +960,13 @@ export class Student implements OnDestroy {
     if (tab === 'appex') {
       this.loadApexBStatus(true);
     }
-    // Auto-load company requests when appex tab is selected to show approved companies
-    if (tab === 'appex' && !this.hasLoadedMyCompanyRequestsOnce) {
-      this.loadMyCompanyRequests();
-    }
+    // Company requests are pre-loaded when student is selected, so no need to load here again
+    
     // Auto-load weekly logs when weekly logs tab is selected
     if (tab === 'weeklylogs' && !this.hasLoadedWeeklyLogsOnce) {
       this.loadWeeklyLogs();
     }
-    // Auto-load company requests and status when company request tab is selected
-    if (tab === 'company-request' && !this.hasLoadedMyCompanyRequestsOnce) {
-      this.loadMyCompanyRequests();
-    }
+    // Auto-load company request status when company request tab is selected
     if (tab === 'company-request' && !this.hasLoadedCompanyRequestStatusOnce) {
       this.loadCompanyRequestStatus();
     }
