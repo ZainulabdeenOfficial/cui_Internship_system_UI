@@ -90,53 +90,91 @@ export class StudentService {
 
   // POST /api/student/request-to-add-company
   async requestToAddCompany(payload: { name: string; email: string; phone?: string; address?: string; website?: string; industry?: string; description?: string; justification?: string }) {
-    const url = 'https://cui-internship-system-git-dev-zas-projects-7d9cf03b.vercel.app/api/student/request-to-add-company';
-    return await firstValueFrom(this.http.post<any>(url, payload, { headers: this.jsonHeaders() }));
+    try {
+      const url = this.abs('/api/student/request-to-add-company');
+      console.log('[StudentService] Requesting to add company:', url, payload);
+      
+      const result = await firstValueFrom(this.http.post<any>(url, payload, { 
+        headers: this.jsonHeaders(),
+        context: this.buildContext({ skipGlobalLoading: false })
+      }));
+      
+      console.log('[StudentService] Request to add company response:', result);
+      return result;
+    } catch (error: any) {
+      console.error('[StudentService] Error requesting to add company:', error);
+      console.error('[StudentService] Error details:', {
+        message: error?.message,
+        status: error?.status,
+        error: error?.error
+      });
+      throw error;
+    }
   }
 
   // GET /api/student/company-request-status (get my submitted company requests)
   async getMyCompanyRequests(params?: { page?: number; limit?: number; status?: string; search?: string }): Promise<{ companyRequests: any[]; total?: number; message?: string }> {
-    const base = 'https://cui-internship-system-git-dev-zas-projects-7d9cf03b.vercel.app';
-    const q: string[] = [];
-    const page = params?.page ?? 1;
-    const limit = params?.limit ?? 50;
-    q.push(`page=${encodeURIComponent(String(page))}`);
-    q.push(`limit=${encodeURIComponent(String(limit))}`);
-    
-    // Map status filter parameter if provided
-    if (params?.status) {
-      if (params.status === 'PENDING' || params.status === 'pending') {
-        q.push('includePending=true');
-      } else if (params.status === 'APPROVED' || params.status === 'approved') {
-        q.push('includeApproved=true');
-      } else if (params.status === 'REJECTED' || params.status === 'rejected') {
-        q.push('includeRejected=true');
+    try {
+      const q: string[] = [];
+      const page = params?.page ?? 1;
+      const limit = params?.limit ?? 50;
+      q.push(`page=${encodeURIComponent(String(page))}`);
+      q.push(`limit=${encodeURIComponent(String(limit))}`);
+      
+      // Map status filter parameter if provided
+      if (params?.status) {
+        if (params.status === 'PENDING' || params.status === 'pending') {
+          q.push('includePending=true');
+        } else if (params.status === 'APPROVED' || params.status === 'approved') {
+          q.push('includeApproved=true');
+        } else if (params.status === 'REJECTED' || params.status === 'rejected') {
+          q.push('includeRejected=true');
+        }
       }
+      
+      const qs = q.length ? `?${q.join('&')}` : '';
+      const url = this.abs(`/api/student/company-request-status${qs}`);
+      
+      console.log('[StudentService] Fetching my company requests from:', url);
+      
+      const res = await firstValueFrom(this.http.get<any>(url, { 
+        headers: this.jsonHeaders(),
+        context: this.buildContext({ skipGlobalLoading: false })
+      }));
+      
+      console.log('[StudentService] My company requests response:', res);
+      
+      const items: any[] = Array.isArray(res?.requests) ? res.requests : [];
+      const mapped = items.map((x: any) => ({
+        id: (x.id ?? x._id ?? x.requestId ?? '').toString(),
+        name: x.name ?? x.companyName ?? x.company?.name,
+        email: x.email ?? x.requestedBy?.email,
+        phone: x.phone,
+        address: x.address,
+        website: x.website,
+        industry: x.industry,
+        description: x.description,
+        reason: x.reason ?? x.justification,
+        status: x.status ?? x.state ?? 'PENDING',
+        notes: x.notes,
+        createdAt: x.createdAt ?? x.requestedAt,
+        reviewedAt: x.reviewedAt,
+        requestedBy: x.requestedBy,
+        reviewedBy: x.reviewedBy
+      }));
+      const total: number | undefined = (typeof res?.total === 'number') ? res.total : (typeof res?.count === 'number' ? res.count : (typeof res?.totalItems === 'number' ? res.totalItems : undefined));
+      return { companyRequests: mapped, total };
+    } catch (error: any) {
+      console.error('[StudentService] Error fetching my company requests:', error);
+      console.error('[StudentService] Error details:', {
+        message: error?.message,
+        status: error?.status,
+        statusText: error?.statusText,
+        url: error?.url,
+        error: error?.error
+      });
+      throw error;
     }
-    
-    const qs = q.length ? `?${q.join('&')}` : '';
-    const url = `${base}/api/student/company-request-status${qs}`;
-    const res = await firstValueFrom(this.http.get<any>(url, { headers: new HttpHeaders({ Accept: 'application/json' }) }));
-    const items: any[] = Array.isArray(res?.requests) ? res.requests : [];
-    const mapped = items.map((x: any) => ({
-      id: (x.id ?? x._id ?? x.requestId ?? '').toString(),
-      name: x.name ?? x.companyName ?? x.company?.name,
-      email: x.email ?? x.requestedBy?.email,
-      phone: x.phone,
-      address: x.address,
-      website: x.website,
-      industry: x.industry,
-      description: x.description,
-      reason: x.reason ?? x.justification,
-      status: x.status ?? x.state ?? 'PENDING',
-      notes: x.notes,
-      createdAt: x.createdAt ?? x.requestedAt,
-      reviewedAt: x.reviewedAt,
-      requestedBy: x.requestedBy,
-      reviewedBy: x.reviewedBy
-    }));
-    const total: number | undefined = (typeof res?.total === 'number') ? res.total : (typeof res?.count === 'number' ? res.count : (typeof res?.totalItems === 'number' ? res.totalItems : undefined));
-    return { companyRequests: mapped, total };
   }
 
   // GET /api/dropdown/companies (with search and industry filter)
@@ -145,93 +183,127 @@ export class StudentService {
     industry?: string;
     limit?: number;
   }): Promise<any> {
-    const base = 'https://cui-internship-system-git-dev-zas-projects-7d9cf03b.vercel.app';
-    const q: string[] = [];
-    
-    if (params?.search) q.push(`search=${encodeURIComponent(params.search)}`);
-    if (params?.industry) q.push(`industry=${encodeURIComponent(params.industry)}`);
-    if (params?.limit) q.push(`limit=${params.limit}`);
-    
-    const qs = q.length ? `?${q.join('&')}` : '';
-    const url = `${base}/api/dropdown/companies${qs}`;
-    
-    const res = await firstValueFrom(this.http.get<any>(url, {
-      headers: new HttpHeaders({ Accept: 'application/json' })
-    }));
-    
-    // Map response to handle various field name variations
-    const companies = Array.isArray(res?.data) ? res.data : (Array.isArray(res?.companies) ? res.companies : (Array.isArray(res) ? res : []));
-    const mapped = companies.map((c: any) => ({
-      id: (c.id ?? c._id ?? '').toString(),
-      name: c.name ?? c.companyName ?? '',
-      email: c.email ?? '',
-      phone: c.phone ?? '',
-      address: c.address ?? '',
-      website: c.website ?? '',
-      industry: c.industry ?? '',
-      description: c.description ?? '',
-      supervisorCount: c.supervisorCount ?? 0
-    }));
-    
-    return {
-      success: res?.success ?? true,
-      data: mapped,
-      total: res?.total ?? 0
-    };
+    try {
+      const q: string[] = [];
+      
+      if (params?.search) q.push(`search=${encodeURIComponent(params.search)}`);
+      if (params?.industry) q.push(`industry=${encodeURIComponent(params.industry)}`);
+      if (params?.limit) q.push(`limit=${params.limit}`);
+      
+      const qs = q.length ? `?${q.join('&')}` : '';
+      const url = this.abs(`/api/dropdown/companies${qs}`);
+      
+      console.log('[StudentService] Fetching companies from:', url);
+      
+      const res = await firstValueFrom(this.http.get<any>(url, {
+        headers: this.jsonHeaders(),
+        context: this.buildContext({ skipGlobalLoading: false })
+      }));
+      
+      console.log('[StudentService] Companies response:', res);
+      
+      // Map response to handle various field name variations
+      const companies = Array.isArray(res?.data) ? res.data : (Array.isArray(res?.companies) ? res.companies : (Array.isArray(res) ? res : []));
+      console.log('[StudentService] Mapped companies count:', companies.length);
+      
+      const mapped = companies.map((c: any) => ({
+        id: (c.id ?? c._id ?? '').toString(),
+        name: c.name ?? c.companyName ?? '',
+        email: c.email ?? '',
+        phone: c.phone ?? '',
+        address: c.address ?? '',
+        website: c.website ?? '',
+        industry: c.industry ?? '',
+        description: c.description ?? '',
+        supervisorCount: c.supervisorCount ?? 0
+      }));
+      
+      return {
+        success: res?.success ?? true,
+        data: mapped,
+        total: res?.total ?? 0
+      };
+    } catch (error: any) {
+      console.error('[StudentService] Error fetching companies:', error);
+      console.error('[StudentService] Error details:', {
+        message: error?.message,
+        status: error?.status,
+        statusText: error?.statusText,
+        url: error?.url,
+        error: error?.error
+      });
+      throw error;
+    }
   }
 
   // GET /api/student/company-request-status/:id (get detailed info about a specific request)
   async getCompanyRequestDetail(requestId: string): Promise<any> {
-    const base = 'https://cui-internship-system-git-dev-zas-projects-7d9cf03b.vercel.app';
-    const url = `${base}/api/student/company-request-status/${encodeURIComponent(requestId)}`;
-    
-    const res = await firstValueFrom(this.http.get<any>(url, {
-      headers: new HttpHeaders({ Accept: 'application/json' })
-    }));
-    
-    // Map request data
-    const request = res?.request ?? {};
-    const statusInfo = res?.statusInfo ?? {};
-    
-    return {
-      request: {
-        id: (request.id ?? request._id ?? '').toString(),
-        name: request.name ?? request.companyName ?? '',
-        email: request.email ?? '',
-        phone: request.phone ?? '',
-        address: request.address ?? '',
-        website: request.website ?? '',
-        industry: request.industry ?? '',
-        description: request.description ?? '',
-        reason: request.reason ?? request.justification ?? '',
-        status: request.status ?? 'PENDING',
-        notes: request.notes ?? '',
-        createdAt: request.createdAt ?? '',
-        updatedAt: request.updatedAt ?? '',
-        reviewedAt: request.reviewedAt ?? '',
-        requestedBy: {
-          id: (request.requestedBy?.id ?? request.requestedBy?._id ?? '').toString(),
-          name: request.requestedBy?.name ?? '',
-          email: request.requestedBy?.email ?? '',
-          regNo: request.requestedBy?.regNo ?? ''
+    try {
+      const url = this.abs(`/api/student/company-request-status/${encodeURIComponent(requestId)}`);
+      
+      console.log('[StudentService] Fetching company request detail from:', url);
+      
+      const res = await firstValueFrom(this.http.get<any>(url, {
+        headers: this.jsonHeaders(),
+        context: this.buildContext({ skipGlobalLoading: false })
+      }));
+      
+      console.log('[StudentService] Company request detail response:', res);
+      
+      // Map request data
+      const request = res?.request ?? {};
+      const statusInfo = res?.statusInfo ?? {};
+      
+      return {
+        request: {
+          id: (request.id ?? request._id ?? '').toString(),
+          name: request.name ?? request.companyName ?? '',
+          email: request.email ?? '',
+          phone: request.phone ?? '',
+          address: request.address ?? '',
+          website: request.website ?? '',
+          industry: request.industry ?? '',
+          description: request.description ?? '',
+          reason: request.reason ?? request.justification ?? '',
+          status: request.status ?? 'PENDING',
+          notes: request.notes ?? '',
+          createdAt: request.createdAt ?? '',
+          updatedAt: request.updatedAt ?? '',
+          reviewedAt: request.reviewedAt ?? '',
+          requestedBy: {
+            id: (request.requestedBy?.id ?? request.requestedBy?._id ?? '').toString(),
+            name: request.requestedBy?.name ?? '',
+            email: request.requestedBy?.email ?? '',
+            regNo: request.requestedBy?.regNo ?? ''
+          },
+          reviewedBy: request.reviewedBy ? {
+            id: (request.reviewedBy.id ?? request.reviewedBy._id ?? '').toString(),
+            name: request.reviewedBy.name ?? '',
+            email: request.reviewedBy.email ?? ''
+          } : null
         },
-        reviewedBy: request.reviewedBy ? {
-          id: (request.reviewedBy.id ?? request.reviewedBy._id ?? '').toString(),
-          name: request.reviewedBy.name ?? '',
-          email: request.reviewedBy.email ?? ''
-        } : null
-      },
-      statusInfo: {
-        currentStatus: statusInfo.currentStatus ?? request.status ?? 'PENDING',
-        isPending: statusInfo.isPending ?? (request.status === 'PENDING'),
-        isApproved: statusInfo.isApproved ?? (request.status === 'APPROVED'),
-        isRejected: statusInfo.isRejected ?? (request.status === 'REJECTED'),
-        submittedAt: statusInfo.submittedAt ?? request.createdAt ?? '',
-        lastUpdatedAt: statusInfo.lastUpdatedAt ?? request.updatedAt ?? '',
-        reviewedAt: statusInfo.reviewedAt ?? request.reviewedAt ?? '',
-        hasNotes: statusInfo.hasNotes ?? (!!request.notes)
-      }
-    };
+        statusInfo: {
+          currentStatus: statusInfo.currentStatus ?? request.status ?? 'PENDING',
+          isPending: statusInfo.isPending ?? (request.status === 'PENDING'),
+          isApproved: statusInfo.isApproved ?? (request.status === 'APPROVED'),
+          isRejected: statusInfo.isRejected ?? (request.status === 'REJECTED'),
+          submittedAt: statusInfo.submittedAt ?? request.createdAt ?? '',
+          lastUpdatedAt: statusInfo.lastUpdatedAt ?? request.updatedAt ?? '',
+          reviewedAt: statusInfo.reviewedAt ?? request.reviewedAt ?? '',
+          hasNotes: statusInfo.hasNotes ?? (!!request.notes)
+        }
+      };
+    } catch (error: any) {
+      console.error('[StudentService] Error fetching company request detail:', error);
+      console.error('[StudentService] Error details:', {
+        message: error?.message,
+        status: error?.status,
+        statusText: error?.statusText,
+        url: error?.url,
+        error: error?.error
+      });
+      throw error;
+    }
   }
 
   // GET /api/student/company-request-status (with optional boolean parameters)
@@ -242,67 +314,83 @@ export class StudentService {
     page?: number;
     limit?: number;
   }): Promise<any> {
-    const base = 'https://cui-internship-system-git-dev-zas-projects-7d9cf03b.vercel.app';
-    const q: string[] = [];
-    
-    // Add boolean filter parameters
-    if (params?.includePending !== undefined) q.push(`includePending=${params.includePending}`);
-    if (params?.includeApproved !== undefined) q.push(`includeApproved=${params.includeApproved}`);
-    if (params?.includeRejected !== undefined) q.push(`includeRejected=${params.includeRejected}`);
-    
-    // Add pagination parameters
-    if (params?.page !== undefined) q.push(`page=${params.page}`);
-    if (params?.limit !== undefined) q.push(`limit=${params.limit}`);
-    
-    const qs = q.length ? `?${q.join('&')}` : '';
-    const url = `${base}/api/student/company-request-status${qs}`;
-    
-    const res = await firstValueFrom(this.http.get<any>(url, { 
-      headers: new HttpHeaders({ Accept: 'application/json' })
-    }));
-    
-    // Map response to handle various field name variations
-    const requests = Array.isArray(res?.requests) ? res.requests : [];
-    const mapped = requests.map((x: any) => ({
-      id: (x.id ?? x._id ?? '').toString(),
-      name: x.name ?? x.companyName ?? '',
-      email: x.email ?? '',
-      phone: x.phone ?? '',
-      address: x.address ?? '',
-      website: x.website ?? '',
-      industry: x.industry ?? '',
-      description: x.description ?? '',
-      reason: x.reason ?? x.justification ?? '',
-      status: x.status ?? 'PENDING',
-      notes: x.notes ?? '',
-      createdAt: x.createdAt ?? '',
-      updatedAt: x.updatedAt ?? '',
-      reviewedAt: x.reviewedAt ?? '',
-      reviewedBy: x.reviewedBy ?? null,
-      statusInfo: {
-        currentStatus: x.statusInfo?.currentStatus ?? x.status ?? 'PENDING',
-        isPending: x.statusInfo?.isPending ?? (x.status === 'PENDING'),
-        isApproved: x.statusInfo?.isApproved ?? (x.status === 'APPROVED'),
-        isRejected: x.statusInfo?.isRejected ?? (x.status === 'REJECTED'),
-        submittedAt: x.statusInfo?.submittedAt ?? x.createdAt ?? '',
-        lastUpdatedAt: x.statusInfo?.lastUpdatedAt ?? x.updatedAt ?? '',
-        reviewedAt: x.statusInfo?.reviewedAt ?? x.reviewedAt ?? '',
-        hasNotes: x.statusInfo?.hasNotes ?? (!!x.notes)
-      }
-    }));
-    
-    return {
-      requests: mapped,
-      total: res?.total ?? 0,
-      statistics: {
-        total: res?.statistics?.total ?? 0,
-        byStatus: res?.statistics?.byStatus ?? { PENDING: 0, APPROVED: 0, REJECTED: 0 },
-        pendingCount: res?.statistics?.pendingCount ?? 0,
-        approvedCount: res?.statistics?.approvedCount ?? 0,
-        rejectedCount: res?.statistics?.rejectedCount ?? 0
-      },
-      message: res?.message ?? ''
-    };
+    try {
+      const q: string[] = [];
+      
+      // Add boolean filter parameters
+      if (params?.includePending !== undefined) q.push(`includePending=${params.includePending}`);
+      if (params?.includeApproved !== undefined) q.push(`includeApproved=${params.includeApproved}`);
+      if (params?.includeRejected !== undefined) q.push(`includeRejected=${params.includeRejected}`);
+      
+      // Add pagination parameters
+      if (params?.page !== undefined) q.push(`page=${params.page}`);
+      if (params?.limit !== undefined) q.push(`limit=${params.limit}`);
+      
+      const qs = q.length ? `?${q.join('&')}` : '';
+      const url = this.abs(`/api/student/company-request-status${qs}`);
+      
+      console.log('[StudentService] Fetching company request status from:', url);
+      
+      const res = await firstValueFrom(this.http.get<any>(url, { 
+        headers: this.jsonHeaders(),
+        context: this.buildContext({ skipGlobalLoading: false })
+      }));
+      
+      console.log('[StudentService] Company request status response:', res);
+      
+      // Map response to handle various field name variations
+      const requests = Array.isArray(res?.requests) ? res.requests : [];
+      const mapped = requests.map((x: any) => ({
+        id: (x.id ?? x._id ?? '').toString(),
+        name: x.name ?? x.companyName ?? '',
+        email: x.email ?? '',
+        phone: x.phone ?? '',
+        address: x.address ?? '',
+        website: x.website ?? '',
+        industry: x.industry ?? '',
+        description: x.description ?? '',
+        reason: x.reason ?? x.justification ?? '',
+        status: x.status ?? 'PENDING',
+        notes: x.notes ?? '',
+        createdAt: x.createdAt ?? '',
+        updatedAt: x.updatedAt ?? '',
+        reviewedAt: x.reviewedAt ?? '',
+        reviewedBy: x.reviewedBy ?? null,
+        statusInfo: {
+          currentStatus: x.statusInfo?.currentStatus ?? x.status ?? 'PENDING',
+          isPending: x.statusInfo?.isPending ?? (x.status === 'PENDING'),
+          isApproved: x.statusInfo?.isApproved ?? (x.status === 'APPROVED'),
+          isRejected: x.statusInfo?.isRejected ?? (x.status === 'REJECTED'),
+          submittedAt: x.statusInfo?.submittedAt ?? x.createdAt ?? '',
+          lastUpdatedAt: x.statusInfo?.lastUpdatedAt ?? x.updatedAt ?? '',
+          reviewedAt: x.statusInfo?.reviewedAt ?? x.reviewedAt ?? '',
+          hasNotes: x.statusInfo?.hasNotes ?? (!!x.notes)
+        }
+      }));
+      
+      return {
+        requests: mapped,
+        total: res?.total ?? 0,
+        statistics: {
+          total: res?.statistics?.total ?? 0,
+          byStatus: res?.statistics?.byStatus ?? { PENDING: 0, APPROVED: 0, REJECTED: 0 },
+          pendingCount: res?.statistics?.pendingCount ?? 0,
+          approvedCount: res?.statistics?.approvedCount ?? 0,
+          rejectedCount: res?.statistics?.rejectedCount ?? 0
+        },
+        message: res?.message ?? ''
+      };
+    } catch (error: any) {
+      console.error('[StudentService] Error fetching company request status:', error);
+      console.error('[StudentService] Error details:', {
+        message: error?.message,
+        status: error?.status,
+        statusText: error?.statusText,
+        url: error?.url,
+        error: error?.error
+      });
+      throw error;
+    }
   }
 
   // GET /api/student/appex-a
