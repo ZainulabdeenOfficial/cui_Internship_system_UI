@@ -1440,7 +1440,7 @@
                         </span>
                       </td>
                       <td>
-                        <button class="btn btn-sm btn-outline-primary" (click)="selectStudentForEval({id: internship.student?.id, ...internship.student, internshipId: internship.id})">
+                        <button class="btn btn-sm btn-outline-primary" (click)="selectStudentForEval(prepareStudentForEval(internship))">
                           <i class="bi bi-clipboard2-check me-1"></i>Evaluate
                         </button>
                       </td>

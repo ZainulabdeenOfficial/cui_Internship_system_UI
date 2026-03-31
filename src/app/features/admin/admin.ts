@@ -2057,6 +2057,14 @@ export class Admin {
     return (c.internshipReport || 0) + (c.portfolioEvidence || 0) + (c.timeManagement || 0) + (c.overallInternshipImpact || 0);
   }
 
+  prepareStudentForEval(internship: any) {
+    return {
+      id: internship.student?.id,
+      ...internship.student,
+      internshipId: internship.id
+    };
+  }
+
   selectStudentForEval(student: any) {
     this.selectedStudentForEval = student;
     const internshipId = student?.internshipId || student?.apexBInternshipId || '';

@@ -52,61 +52,7 @@ function normalizePath(req: HttpRequest<any>): string {
   return raw.split('?')[0];
 }
 
-/** 
- * Uses native fetch (bypasses Angular interceptors) to call GET /api/auth/sessions.
- * The backend authenticates via httpOnly session cookie (withCredentials).
- * Returns an access token string if the server provides one, empty string '' if the
- * session is valid but no token is in the response, or null if session is invalid/expired.
- * Times out after 2 seconds to prevent hanging requests when session endpoint is slow.
- */
-async function trySessionFetch(): Promise<string | null> {
-  const urls = ['/api/auth/sessions', API_BASE ? `${API_BASE}/api/auth/sessions` : null].filter(Boolean) as string[];
-  const FETCH_TIMEOUT_MS = 2000; // 2 second timeout for session check
-  
-  for (const url of urls) {
-    try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
-      
-      const res = await fetch(url, { 
-        credentials: 'include', 
-        headers: { Accept: 'application/json' },
-        signal: controller.signal 
-      });
-      clearTimeout(timeoutId);
-      
-      if (res.status === 401 || res.status === 403) return null; // genuinely expired
-      if (!res.ok) continue;
-      const data = await res.json();
-      // Extract token from various response shapes
-      const sessions = Array.isArray(data) ? data : Array.isArray(data?.sessions) ? data.sessions : null;
-      const token = data?.accessToken || data?.token
-        || data?.data?.accessToken || data?.data?.token
-        || (sessions?.[0]?.accessToken) || (sessions?.[0]?.token);
-      if (token) {
-        _cachedToken = token;
-        try {
-          sessionStorage.setItem('authToken', token);
-          sessionStorage.setItem('accessToken', token);
-          localStorage.setItem('authToken', token);
-          localStorage.setItem('accessToken', token);
-        } catch {}
-        return token;
-      }
-      // Session exists on server (200 OK) but no token in body — session is valid
-      return '';
-    } catch (err) { 
-      // Treat timeout as "no session" - be lenient and continue
-      if (err instanceof DOMException && err.name === 'AbortError') {
-        console.warn('⚠️ [trySessionFetch] Session check timed out for:', url);
-        continue;
-      }
-      // Other errors also just continue to next URL
-      continue; 
-    }
-  }
-  return null;
-}
+
 
 // Prevents duplicate concurrent refreshes (many parallel API calls all seeing no token).
 let isRefreshingGlobally = false;
@@ -141,46 +87,10 @@ export const authTokenInterceptor: HttpInterceptorFn = (req, next) => {
       // Without one, redirect to login immediately to avoid unnecessary 405 errors.
       const hasRefreshToken = (() => { try { return !!localStorage.getItem('refreshToken'); } catch { return false; } })();
       if (!hasRefreshToken && !_cachedToken) {
-        // No refresh token in storage and no in-memory cache.
-        // Before logging out, check if the session cookie is still valid via GET /api/auth/sessions.
-        // This handles Edge Tracking Prevention which blocks localStorage but leaves httpOnly cookies intact.
-        if (isRefreshingGlobally) {
-          return from(new Promise<void>(r => setTimeout(r, 800))).pipe(
-            switchMap(() => {
-              const t = getSessionToken();
-              return next(t ? req.clone({ setHeaders: { Authorization: `Bearer ${t}` } }) : req);
-            })
-          );
-        }
-        console.log('🔍 [authTokenInterceptor] No token in storage or cache — checking session cookie via /api/auth/sessions');
-        isRefreshingGlobally = true;
-        return from(trySessionFetch()).pipe(
-          switchMap((sessionToken) => {
-            isRefreshingGlobally = false;
-            if (sessionToken === null) {
-              // Definitely no valid session
-              console.warn('⚠️ [authTokenInterceptor] Session invalid, redirecting to login');
-              triggerLogout(auth);
-              return throwError(() => new Error('Session expired. Please log in again.'));
-            }
-            const freshToken = getSessionToken();
-            if (freshToken) {
-              console.log('✅ [authTokenInterceptor] Session active, token retrieved, retrying:', path);
-              return next(req.clone({ setHeaders: { Authorization: `Bearer ${freshToken}` } }));
-            }
-            // Session is valid (cookie) but backend didn't return a new token — proceed without bearer
-            // and let the 401 handler below do a final retry.
-            console.log('ℹ️ [authTokenInterceptor] Session valid via cookie but no bearer token available, proceeding without bearer');
-            return next(req);
-          }),
-          catchError((err) => {
-            isRefreshingGlobally = false;
-            // If session check timed out or failed, be lenient - don't force a logout
-            // The request can still proceed or be retried by the 401 handler
-            console.warn('⚠️ [authTokenInterceptor] Session check failed (possibly timed out), proceeding without token:', err?.message);
-            return next(req);
-          })
-        );
+        // No refresh token in storage and no in-memory cache — redirect to login
+        console.warn('⚠️ [authTokenInterceptor] No token in storage or cache, redirecting to login');
+        triggerLogout(auth);
+        return throwError(() => new Error('Session expired. Please log in again.'));
       }
       if (!hasRefreshToken) {
         // Memory cache has a token but storage is blocked — use it directly
