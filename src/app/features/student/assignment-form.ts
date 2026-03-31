@@ -27,6 +27,7 @@ export class AssignmentForm {
   // Company search dropdown state
   companySearchQuery: string = '';
   filteredCompanies: Array<any> = [];
+  allCompanies: Array<any> = [];
   selectedCompany: any = null;
   companyDropdownOpen: boolean = false;
   loadingCompanies: boolean = false;
@@ -410,77 +411,62 @@ export class AssignmentForm {
       clearTimeout(this.companySearchDebounceId);
     }
 
+    // Always show dropdown when typing
+    this.companyDropdownOpen = true;
+
+    // If query is empty, show all companies
     if (!query || query.trim().length === 0) {
-      console.log('[AssignmentForm] Empty search query - clearing filtered companies');
-      this.filteredCompanies = [];
+      console.log('[AssignmentForm] Empty search query - showing all companies');
+      this.filteredCompanies = [...this.allCompanies];
       return;
     }
 
     // Debounce the search request
     this.companySearchDebounceId = setTimeout(() => {
       console.log('[AssignmentForm] Executing debounced search for:', query);
-      this.searchCompanies(query);
+      this.filterCompaniesLocallyWithQuery(query);
     }, 300);
   }
 
-  private async searchCompanies(query: string) {
-    try {
-      console.log('[AssignmentForm] Starting company search with query:', query);
-      this.loadingCompanies = true;
+  async onCompanyDropdownFocus() {
+    console.log('[AssignmentForm] Company dropdown focus triggered');
+    this.companyDropdownOpen = true;
 
-      // Get all companies from store or API
-      const companies = this.store.companies();
-      console.log('[AssignmentForm] Total companies available in store:', companies?.length || 0, companies);
-
-      if (!companies || companies.length === 0) {
-        console.warn('[AssignmentForm] No companies found in store, attempting to load from API...');
-        // Try to load companies if not available
-        try {
-          const response = await this.studentService.getDropdownCompanies({ search: query, limit: 10 });
-          console.log('[AssignmentForm] Companies loaded from API:', response?.data?.length || 0);
-          console.log('[AssignmentForm] API Response:', response);
-          
-          if (response?.data && Array.isArray(response.data)) {
-            this.filteredCompanies = response.data;
-            console.log('[AssignmentForm] Found', this.filteredCompanies.length, 'companies matching query');
-          } else {
-            console.error('[AssignmentForm] Invalid companies response from API - data field not an array:', response?.data);
-            this.filteredCompanies = [];
-          }
-        } catch (apiError) {
-          console.error('[AssignmentForm] Failed to load companies from API:', apiError);
-          console.error('[AssignmentForm] API Error details:', {
-            message: (apiError as any)?.message,
-            status: (apiError as any)?.status,
-            url: (apiError as any)?.url,
-            error: apiError
-          });
-          this.filteredCompanies = [];
-          this.toast.danger('Failed to load companies from API: ' + (apiError as any)?.message);
-        }
-      } else {
-        // Filter from existing companies
-        console.log('[AssignmentForm] Filtering from store companies with query:', query);
-        this.filteredCompanies = this.filterCompanies(companies, query);
-      }
-
-      console.log('[AssignmentForm] Final filtered companies count:', this.filteredCompanies.length);
-      if (this.filteredCompanies.length === 0) {
-        console.warn('[AssignmentForm] No companies match the search query:', query);
-      }
-      this.companyDropdownOpen = true;
-    } catch (error) {
-      console.error('[AssignmentForm] Error searching companies:', error);
-      console.error('[AssignmentForm] Error details:', {
-        message: (error as any)?.message,
-        stack: (error as any)?.stack,
-        error: error
-      });
-      this.toast.danger('Error searching companies: ' + (error as any)?.message);
-      this.filteredCompanies = [];
-    } finally {
-      this.loadingCompanies = false;
+    // If companies not already loaded, load them
+    if (this.allCompanies.length === 0) {
+      console.log('[AssignmentForm] Companies not loaded yet, loading now...');
+      await this.loadAllCompanies();
+    } else {
+      // Show all companies sorted alphabetically
+      this.filteredCompanies = this.sortCompaniesByName(this.allCompanies);
+      console.log('[AssignmentForm] Showing all companies, count:', this.filteredCompanies.length);
     }
+  }
+
+  private filterCompaniesLocallyWithQuery(query: string): void {
+    const lowerQuery = query.toLowerCase();
+    console.log('[AssignmentForm] Filtering', this.allCompanies.length, 'companies with query:', lowerQuery);
+    
+    const filtered = this.allCompanies.filter((company, index) => {
+      try {
+        const name = company?.name?.toLowerCase() || '';
+        const industry = company?.industry?.toLowerCase() || '';
+        const address = company?.address?.toLowerCase() || '';
+        
+        const matches = name.includes(lowerQuery) || industry.includes(lowerQuery) || address.includes(lowerQuery);
+        if (matches && index < 5) {
+          console.log(`[AssignmentForm] Company matched:`, { name: company?.name, industry, address });
+        }
+        return matches;
+      } catch (err) {
+        console.warn('[AssignmentForm] Error filtering company:', err);
+        return false;
+      }
+    });
+
+    // Sort filtered results alphabetically
+    this.filteredCompanies = this.sortCompaniesByName(filtered);
+    console.log('[AssignmentForm] Filter result:', this.filteredCompanies.length, 'companies matched');
   }
 
   private filterCompanies(companies: Array<any>, query: string): Array<any> {
@@ -513,13 +499,14 @@ export class AssignmentForm {
       console.log('[AssignmentForm] Loading all companies from directory');
       this.loadingCompanies = true;
 
-      const response = await this.studentService.getDropdownCompanies({ limit: 10 });
+      const response = await this.studentService.getDropdownCompanies({ limit: 100 });
       console.log('[AssignmentForm] All companies loaded:', response?.data?.length || 0);
-      console.log('[AssignmentForm] Companies data:', response);
 
       if (response?.data && Array.isArray(response.data)) {
-        this.filteredCompanies = response.data;
-        console.log('[AssignmentForm] Displaying', this.filteredCompanies.length, 'companies');
+        // Sort companies alphabetically by name
+        this.allCompanies = this.sortCompaniesByName(response.data);
+        this.filteredCompanies = [...this.allCompanies];
+        console.log('[AssignmentForm] Displaying', this.filteredCompanies.length, 'companies sorted alphabetically');
       } else {
         console.error('[AssignmentForm] Invalid companies response format:', {
           dataType: typeof response?.data,
@@ -527,6 +514,7 @@ export class AssignmentForm {
           data: response?.data
         });
         this.toast.danger('Failed to load companies. Invalid response format.');
+        this.allCompanies = [];
         this.filteredCompanies = [];
       }
       this.companyDropdownOpen = true;
@@ -539,10 +527,19 @@ export class AssignmentForm {
         error: error
       });
       this.toast.danger('Error loading companies: ' + (error as any)?.message);
+      this.allCompanies = [];
       this.filteredCompanies = [];
     } finally {
       this.loadingCompanies = false;
     }
+  }
+
+  private sortCompaniesByName(companies: Array<any>): Array<any> {
+    return [...companies].sort((a, b) => {
+      const nameA = (a?.name || '').toLowerCase().trim();
+      const nameB = (b?.name || '').toLowerCase().trim();
+      return nameA.localeCompare(nameB);
+    });
   }
 
   selectCompany(company: any) {
@@ -575,6 +572,7 @@ export class AssignmentForm {
       address: this.model.address
     });
     
+    // Close dropdown and clear search
     this.companyDropdownOpen = false;
     this.companySearchQuery = '';
     this.filteredCompanies = [];
@@ -587,6 +585,11 @@ export class AssignmentForm {
     this.selectedCompany = null;
     this.companySearchQuery = '';
     this.filteredCompanies = [];
+    this.companyDropdownOpen = false;
+    this.allCompanies = [];
+  }
+
+  closeCompanyDropdown() {
     this.companyDropdownOpen = false;
   }
 }
