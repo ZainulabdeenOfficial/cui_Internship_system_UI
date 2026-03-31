@@ -78,6 +78,74 @@
         <input class="form-control" [(ngModel)]="model.preferredField" name="preferredField" placeholder="e.g., Software Development, Data Science" required />
       </div>
 
+      <!-- Organization/Company Information (Optional) -->
+      <div class="col-12 mt-4"><h5 class="mb-3">Organization Information (Optional - Select from Directory or Enter Manually)</h5></div>
+      
+      <div class="col-12">
+        <label class="form-label">Search & Select Company from Directory</label>
+        <div class="input-group">
+          <input 
+            type="text" 
+            class="form-control" 
+            placeholder="Type company name to search..." 
+            [(ngModel)]="companySearchQuery" 
+            (ngModelChange)="onCompanySearchChange($event)"
+            (focus)="companyDropdownOpen = true"
+            name="companySearch"
+            autocomplete="off" />
+          <button class="btn btn-outline-secondary" type="button" (click)="loadAllCompanies()" [disabled]="loadingCompanies">
+            <span *ngIf="!loadingCompanies"><i class="bi bi-search me-1"></i>Search</span>
+            <span *ngIf="loadingCompanies"><span class="spinner-border spinner-border-sm me-1"></span>Loading...</span>
+          </button>
+        </div>
+        <small class="text-muted d-block mt-1">Start typing to search for companies or click Search to load all available companies</small>
+      </div>
+
+      <!-- Company List Dropdown -->
+      <div class="col-12" *ngIf="companyDropdownOpen && filteredCompanies.length > 0" style="max-height: 300px; overflow-y: auto; border: 1px solid #ddd; border-radius: 4px;">
+        <div class="list-group list-group-flush">
+          <button 
+            type="button" 
+            class="list-group-item list-group-item-action" 
+            *ngFor="let company of filteredCompanies" 
+            (click)="selectCompany(company)">
+            <div class="d-flex justify-content-between align-items-start">
+              <div>
+                <h6 class="mb-1">{{ company.name }}</h6>
+                <small class="text-muted d-block" *ngIf="company.industry">Industry: {{ company.industry }}</small>
+                <small class="text-muted d-block" *ngIf="company.address">{{ company.address }}</small>
+              </div>
+            </div>
+          </button>
+        </div>
+      </div>
+
+      <!-- Selected Company Display -->
+      <div class="col-12" *ngIf="selectedCompany">
+        <div class="alert alert-info d-flex justify-content-between align-items-start">
+          <div>
+            <i class="bi bi-building me-2"></i>
+            <strong>Selected Company:</strong> {{ selectedCompany.name }}
+            <small class="d-block text-muted mt-1" *ngIf="selectedCompany.industry">Industry: {{ selectedCompany.industry }}</small>
+            <small class="d-block text-muted" *ngIf="selectedCompany.address">Address: {{ selectedCompany.address }}</small>
+          </div>
+          <button type="button" class="btn btn-sm btn-outline-danger" (click)="clearSelectedCompany()">
+            <i class="bi bi-x"></i> Clear
+          </button>
+        </div>
+      </div>
+
+      <!-- Manual Company Entry (if not selected) -->
+      <div class="col-md-6" *ngIf="!selectedCompany">
+        <label class="form-label">Organization Name</label>
+        <input class="form-control" [(ngModel)]="model.organization" name="organization" placeholder="Enter company/organization name" />
+      </div>
+      
+      <div class="col-md-6" *ngIf="!selectedCompany">
+        <label class="form-label">Industry Sector</label>
+        <input class="form-control" [(ngModel)]="model.industrySector" name="industrySector" placeholder="e.g., IT, Finance, Healthcare" />
+      </div>
+
       <!-- Agreement Section -->
       <div class="col-12 mt-4"><h5 class="mb-3">Student Internship Agreement Statement</h5></div>
       <div class="col-12">

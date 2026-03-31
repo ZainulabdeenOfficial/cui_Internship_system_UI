@@ -2075,21 +2075,26 @@ export class Admin {
     };
     this.officeEvalResult = null;
     this.internshipDetails = null;
-    this.loadingInternshipDetails = false;
-    this.loadingOfficeEval = false;
+    // Set loading to true immediately so loading state appears
+    this.loadingInternshipDetails = true;
+    this.loadingOfficeEval = true;
     
     if (!internshipId) {
       this.toast.warning('This student does not have an internship ID assigned yet.');
+      this.loadingInternshipDetails = false;
+      this.loadingOfficeEval = false;
       return;
     }
     
+    // Automatically load data immediately - no click needed
     this.loadInternshipDetails(internshipId);
     this.loadOfficeEvaluation(internshipId);
   }
 
   async loadInternshipDetails(internshipId: string) {
     if (!internshipId) return;
-    this.loadingInternshipDetails = true;
+    // Don't reset if already loading - loadingInternshipDetails should already be true from selectStudentForEval
+    if (!this.loadingInternshipDetails) this.loadingInternshipDetails = true;
     try {
       const res = await this.adminApi.getInternshipDetails(internshipId);
       this.internshipDetails = res;
@@ -2105,7 +2110,8 @@ export class Admin {
 
   async loadOfficeEvaluation(internshipId: string) {
     if (!internshipId) return;
-    this.loadingOfficeEval = true;
+    // Don't reset if already loading - loadingOfficeEval should already be true from selectStudentForEval
+    if (!this.loadingOfficeEval) this.loadingOfficeEval = true;
     try {
       const res = await this.adminApi.getOfficeEvaluation(internshipId);
       this.officeEvalResult = res?.evaluation ?? null;
