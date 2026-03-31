@@ -2075,6 +2075,8 @@ export class Admin {
     };
     this.officeEvalResult = null;
     this.internshipDetails = null;
+    this.loadingInternshipDetails = false;
+    this.loadingOfficeEval = false;
     
     if (!internshipId) {
       this.toast.warning('This student does not have an internship ID assigned yet.');
@@ -2086,7 +2088,7 @@ export class Admin {
   }
 
   async loadInternshipDetails(internshipId: string) {
-    if (!internshipId || this.loadingInternshipDetails) return;
+    if (!internshipId) return;
     this.loadingInternshipDetails = true;
     try {
       const res = await this.adminApi.getInternshipDetails(internshipId);
@@ -2102,7 +2104,7 @@ export class Admin {
   }
 
   async loadOfficeEvaluation(internshipId: string) {
-    if (!internshipId || this.loadingOfficeEval) return;
+    if (!internshipId) return;
     this.loadingOfficeEval = true;
     try {
       const res = await this.adminApi.getOfficeEvaluation(internshipId);

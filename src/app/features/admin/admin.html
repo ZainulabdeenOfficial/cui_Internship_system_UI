@@ -1546,92 +1546,97 @@
             </div>
           }
 
-          <!-- Submit form -->
-          <div class="card border mb-3">
-            <div class="card-header fw-semibold bg-light">Submit Office Evaluation</div>
-            <div class="card-body">
-              <div class="row g-3">
+          <!-- Show form only after internship details are loaded -->
+          @if (!loadingInternshipDetails && internshipDetails) {
+            <!-- Submit form -->
+            <div class="card border mb-3">
+              <div class="card-header fw-semibold bg-light">Submit Office Evaluation</div>
+              <div class="card-body">
+                <div class="row g-3">
 
-                <div class="col-md-6">
-                  <label class="form-label">Internship ID</label>
-                  <div class="input-group">
-                    <span class="input-group-text bg-light" title="Automatically fetched from student selection">
-                      <i class="bi bi-key me-2"></i>{{ officeEvalForm.internshipId || 'Not available' }}
-                    </span>
+                  <div class="col-md-6">
+                    <label class="form-label">Internship ID</label>
+                    <div class="input-group">
+                      <span class="input-group-text bg-light" title="Automatically fetched from student selection">
+                        <i class="bi bi-key me-2"></i>{{ officeEvalForm.internshipId || 'Not available' }}
+                      </span>
+                    </div>
+                    <small class="text-muted d-block mt-1">
+                      <i class="bi bi-info-circle me-1"></i>Automatically retrieved from selected student
+                    </small>
                   </div>
-                  <small class="text-muted d-block mt-1">
-                    <i class="bi bi-info-circle me-1"></i>Automatically retrieved from selected student
-                  </small>
-                </div>
 
-                <div class="col-md-6">
-                  <label class="form-label">Total Score (auto-calculated)</label>
-                  <div class="input-group">
-                    <span class="input-group-text fw-bold">{{ officeEvalTotal }}</span>
-                    <span class="input-group-text text-muted">/40 &mdash; Scaled to {{ (officeEvalTotal / 2) | number:'1.0-1' }}/20</span>
+                  <div class="col-md-6">
+                    <label class="form-label">Total Score (auto-calculated)</label>
+                    <div class="input-group">
+                      <span class="input-group-text fw-bold">{{ officeEvalTotal }}</span>
+                      <span class="input-group-text text-muted">/40 &mdash; Scaled to {{ (officeEvalTotal / 2) | number:'1.0-1' }}/20</span>
+                    </div>
                   </div>
-                </div>
 
-                <!-- Criterion 1: Internship Report -->
-                <div class="col-md-6">
-                  <label class="form-label">Internship Report</label>
-                  <select class="form-select" [(ngModel)]="officeEvalForm.criteria.internshipReport" name="cr_report">
-                    <option *ngFor="let o of criteriaOptions" [ngValue]="o.value">{{ o.label }} ({{ o.value }})</option>
-                  </select>
-                </div>
+                  <!-- Criterion 1: Internship Report -->
+                  <div class="col-md-6">
+                    <label class="form-label">Internship Report</label>
+                    <select class="form-select" [(ngModel)]="officeEvalForm.criteria.internshipReport" name="cr_report">
+                      <option *ngFor="let o of criteriaOptions" [ngValue]="o.value">{{ o.label }} ({{ o.value }})</option>
+                    </select>
+                  </div>
 
-                <!-- Criterion 2: Portfolio Evidence -->
-                <div class="col-md-6">
-                  <label class="form-label">Portfolio Evidence</label>
-                  <select class="form-select" [(ngModel)]="officeEvalForm.criteria.portfolioEvidence" name="cr_portfolio">
-                    <option *ngFor="let o of criteriaOptions" [ngValue]="o.value">{{ o.label }} ({{ o.value }})</option>
-                  </select>
-                </div>
+                  <!-- Criterion 2: Portfolio Evidence -->
+                  <div class="col-md-6">
+                    <label class="form-label">Portfolio Evidence</label>
+                    <select class="form-select" [(ngModel)]="officeEvalForm.criteria.portfolioEvidence" name="cr_portfolio">
+                      <option *ngFor="let o of criteriaOptions" [ngValue]="o.value">{{ o.label }} ({{ o.value }})</option>
+                    </select>
+                  </div>
 
-                <!-- Criterion 3: Time Management -->
-                <div class="col-md-6">
-                  <label class="form-label">Time Management</label>
-                  <select class="form-select" [(ngModel)]="officeEvalForm.criteria.timeManagement" name="cr_time">
-                    <option *ngFor="let o of criteriaOptions" [ngValue]="o.value">{{ o.label }} ({{ o.value }})</option>
-                  </select>
-                </div>
+                  <!-- Criterion 3: Time Management -->
+                  <div class="col-md-6">
+                    <label class="form-label">Time Management</label>
+                    <select class="form-select" [(ngModel)]="officeEvalForm.criteria.timeManagement" name="cr_time">
+                      <option *ngFor="let o of criteriaOptions" [ngValue]="o.value">{{ o.label }} ({{ o.value }})</option>
+                    </select>
+                  </div>
 
-                <!-- Criterion 4: Overall Internship Impact -->
-                <div class="col-md-6">
-                  <label class="form-label">Overall Internship Impact</label>
-                  <select class="form-select" [(ngModel)]="officeEvalForm.criteria.overallInternshipImpact" name="cr_impact">
-                    <option *ngFor="let o of criteriaOptions" [ngValue]="o.value">{{ o.label }} ({{ o.value }})</option>
-                  </select>
-                </div>
+                  <!-- Criterion 4: Overall Internship Impact -->
+                  <div class="col-md-6">
+                    <label class="form-label">Overall Internship Impact</label>
+                    <select class="form-select" [(ngModel)]="officeEvalForm.criteria.overallInternshipImpact" name="cr_impact">
+                      <option *ngFor="let o of criteriaOptions" [ngValue]="o.value">{{ o.label }} ({{ o.value }})</option>
+                    </select>
+                  </div>
 
-                <div class="col-12">
-                  <label class="form-label">Comments <small class="text-muted">(optional)</small></label>
-                  <textarea class="form-control" rows="2" [(ngModel)]="officeEvalForm.comments" name="officeEvalComments"
-                            placeholder="Additional feedback for the student..."></textarea>
-                </div>
+                  <div class="col-12">
+                    <label class="form-label">Comments <small class="text-muted">(optional)</small></label>
+                    <textarea class="form-control" rows="2" [(ngModel)]="officeEvalForm.comments" name="officeEvalComments"
+                              placeholder="Additional feedback for the student..."></textarea>
+                  </div>
 
-                <div class="col-12">
-                  <button class="btn btn-primary"
-                          (click)="submitOfficeEvaluation()"
-                          [disabled]="submittingOfficeEval || !officeEvalForm.internshipId">
-                    <span *ngIf="submittingOfficeEval" class="spinner-border spinner-border-sm me-1"></span>
-                    <i *ngIf="!submittingOfficeEval" class="bi bi-send me-1"></i>
-                    Submit Evaluation
-                  </button>
-                </div>
+                  <div class="col-12">
+                    <button class="btn btn-primary"
+                            (click)="submitOfficeEvaluation()"
+                            [disabled]="submittingOfficeEval || !officeEvalForm.internshipId">
+                      <span *ngIf="submittingOfficeEval" class="spinner-border spinner-border-sm me-1"></span>
+                      <i *ngIf="!submittingOfficeEval" class="bi bi-send me-1"></i>
+                      Submit Evaluation
+                    </button>
+                  </div>
 
+                </div>
               </div>
             </div>
-          </div>
 
-          <!-- Loading -->
-          <div *ngIf="loadingOfficeEval" class="text-center py-3">
-            <span class="spinner-border text-primary"></span>
-            <p class="mt-2 text-muted">Loading evaluation data…</p>
-          </div>
+            <!-- Loading evaluation data -->
+            @if (loadingOfficeEval) {
+              <div class="text-center py-3">
+                <span class="spinner-border text-primary"></span>
+                <p class="mt-2 text-muted">Loading evaluation data…</p>
+              </div>
+            }
+          }
 
           <!-- Existing Evaluation Result -->
-          @if (!loadingOfficeEval && officeEvalResult) {
+          @if (!loadingOfficeEval && officeEvalResult && !loadingInternshipDetails) {
           <div class="card border-success">
             <div class="card-header bg-success text-white">
               <i class="bi bi-check-circle-fill me-2"></i>Submitted Office Evaluation
@@ -1722,7 +1727,7 @@
           </div>
           }
 
-          @if (!loadingOfficeEval && !officeEvalResult && officeEvalForm.internshipId) {
+          @if (!loadingOfficeEval && !officeEvalResult && officeEvalForm.internshipId && !loadingInternshipDetails) {
             <div class="alert alert-info">
               <i class="bi bi-info-circle me-2"></i>No office evaluation submitted yet for this internship. Use the form above to submit.
             </div>
