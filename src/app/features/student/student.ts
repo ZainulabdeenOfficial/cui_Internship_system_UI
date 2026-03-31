@@ -219,6 +219,8 @@ export class Student implements OnDestroy {
   selectedCompanyRequestDetail: any = null;
   loadingCompanyRequestDetail = false;
   showCompanyRequestDetailModal = false;
+  private lastCompanyRequestClickTime: number = 0;
+  private companyRequestClickDebounceMs: number = 300;
   
   // Auto-refresh status polling
   private statusPollingInterval: any = null;
@@ -1282,6 +1284,14 @@ export class Student implements OnDestroy {
   }
 
   async loadCompanyRequestDetail(requestId: string) {
+    // Debounce: prevent multiple rapid clicks
+    const now = Date.now();
+    if (now - this.lastCompanyRequestClickTime < this.companyRequestClickDebounceMs) {
+      console.log('[Student] Click ignored - too soon (debounce)');
+      return;
+    }
+    this.lastCompanyRequestClickTime = now;
+    
     if (!this.selectedId) return;
     if (!this.ensureMine()) return;
     
