@@ -197,7 +197,7 @@ export class StudentService {
       
       const res = await firstValueFrom(this.http.get<any>(url, {
         headers: this.jsonHeaders(),
-        context: this.buildContext({ skipGlobalLoading: false })
+        context: this.buildContext({ skipGlobalLoading: true, silentError: false })
       }));
       
       console.log('[StudentService] Companies response:', res);
