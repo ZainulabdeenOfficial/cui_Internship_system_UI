@@ -691,6 +691,10 @@ export class Student implements OnDestroy {
   async apiCreateInternship(type: 'ONSITE'|'REMOTE'|'VIRTUAL'|'HYBRID', siteId?: string, facultyId?: string) {
     try {
       const res = await this.studentApi.createInternship({ type, siteId, facultyId });
+      const internshipId = res?.internship?.id;
+      if (internshipId) {
+        console.log(`🌐 [Student] New internship created: ${internshipId}`);
+      }
       this.toast.success(res?.message || 'Internship request created');
       return res;
     } catch (err: any) {
@@ -902,7 +906,23 @@ export class Student implements OnDestroy {
     const type = this.createInternshipModel.type;
     const siteId = (this.createInternshipModel.siteId || '').trim() || undefined;
     const facultyId = (this.createInternshipModel.facultyId || '').trim() || undefined;
-    await this.apiCreateInternship(type, siteId, facultyId);
+    const res = await this.apiCreateInternship(type, siteId, facultyId);
+    
+    // Capture internship ID from response and store it for later use
+    if (res?.internship?.id) {
+      this.studentInternshipId = res.internship.id;
+      console.log('✅ [Student] Internship created with ID:', this.studentInternshipId);
+      
+      // Reset evaluation loading flag so it will reload when evaluations tab is selected
+      this.evaluationsLoadedOnce = false;
+      console.log('🔄 [Student] Evaluation cache cleared - ready to fetch final results');
+      
+      // If evaluations tab is already selected, load the final result immediately
+      if (this.isCurrentTab('evaluations')) {
+        console.log('📊 [Student] Evaluations tab is active - fetching final result now...');
+        this.loadFinalResult(false);
+      }
+    }
   }
   
   async loadAppExA() {
@@ -1537,13 +1557,19 @@ export class Student implements OnDestroy {
    * - GET /api/admin/office-evaluation (office/admin evaluation)
    * Also refreshes the evaluation summary.
    */
-  /** Load student's final result from /api/student/final-result API */
+  /** Load student's final result from /api/admin/internships/{internshipId} API */
   async loadFinalResult(forceRefresh = false) {
-    // Resolve internship ID from all available sources
-    const internshipId =
-      this.studentInternshipId ||
-      this.apexBStatus?.internshipId ||
-      null;
+    // Resolve internship ID from all available sources (in priority order)
+    let internshipIdSource = '';
+    let internshipId: string | null = null;
+
+    if (this.studentInternshipId) {
+      internshipId = this.studentInternshipId;
+      internshipIdSource = 'from stored studentInternshipId';
+    } else if (this.apexBStatus?.internshipId) {
+      internshipId = this.apexBStatus.internshipId;
+      internshipIdSource = 'from apexBStatus';
+    }
 
     if (!internshipId) {
       // Attempt to load internship first, then retry
@@ -1553,14 +1579,14 @@ export class Student implements OnDestroy {
         console.warn('⚠️ [Student] Still no internshipId after fetch — cannot load final result');
         return;
       }
+      internshipId = this.studentInternshipId;
+      internshipIdSource = 'from loadStudentInternship()';
     }
-
-    const idToUse = this.studentInternshipId || internshipId!;
 
     // Clear cache if forceRefresh is true
     if (forceRefresh) {
-      console.log(`🔄 [Student] Clearing final result cache for internshipId: ${idToUse}`);
-      this.adminApi.clearFinalResultCache(idToUse);
+      console.log(`🔄 [Student] Clearing final result cache for internshipId: ${internshipId}`);
+      this.adminApi.clearFinalResultCache(internshipId);
     }
 
     if (this.loadingEvaluations) {
@@ -1570,16 +1596,16 @@ export class Student implements OnDestroy {
     this.loadingEvaluations = true;
     this.cdr.markForCheck();
     try {
-      console.log(`🌐 [Student] Fetching final result for internshipId: ${idToUse}`);
+      console.log(`🌐 [Student] Fetching final result using internshipId (${internshipIdSource}): ${internshipId}`);
       
-      // Call the new /api/student/final-result endpoint
-      const res = await this.adminApi.getStudentFinalResult(idToUse);
+      // Call the /api/admin/internships/{internshipId} endpoint
+      const res = await this.adminApi.getStudentFinalResult(internshipId);
       
       // Store the entire response (contains finalResult and internship data)
       this.studentFinalResult = res ?? null;
       this.evaluationsLoadedOnce = true;
       
-      console.log('✅ Final result loaded:', this.studentFinalResult);
+      console.log('✅ [Student] Final result loaded:', this.studentFinalResult);
     } catch (err: any) {
       const status = err?.status ?? 0;
       if (status === 404 || status === 400) {

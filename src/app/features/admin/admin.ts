@@ -2200,7 +2200,7 @@ export class Admin {
       
       console.log('✅ Internships list loaded:', this.internships.length, 'internships');
       
-      // Load final results for all internships using /api/student/final-result API
+      // Load final results for all internships using /api/admin/internships/{internshipId}
       this.loadStudentFinalResultsForAll();
       
       // Preload details for first 3 internships in background (don't show loading)

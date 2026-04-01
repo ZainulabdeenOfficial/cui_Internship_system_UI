@@ -798,16 +798,26 @@ export class AdminService {
 
     try {
       const base = environment.apiBaseUrl.replace(/\/$/, '');
-      const url = `${base}/api/student/final-result?internshipId=${encodeURIComponent(internshipId)}`;
+      const path = `/api/admin/internships/${encodeURIComponent(internshipId)}`;
+      const url = environment.production ? path : `${base}${path}`;
       const result = await firstValueFrom(
         this.http.get<any>(url, { headers: await this.authHeaders() })
       );
 
-      // API returns: { message: string, finalResult: {...}, internship: {...} }
+      // API returns internship object with finalResult nested inside
+      // Extract finalResult and internship data for compatibility
       const response = {
         message: result?.message || 'Student final result loaded',
         finalResult: result?.finalResult || null,
-        internship: result?.internship || null
+        internship: {
+          id: result?.id || null,
+          type: result?.type || null,
+          status: result?.status || null,
+          startDate: result?.startDate || null,
+          endDate: result?.endDate || null,
+          faculty: result?.faculty || null,
+          site: result?.site || null
+        }
       };
 
       // Cache the response for 5 minutes
