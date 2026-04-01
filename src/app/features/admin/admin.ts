@@ -2189,6 +2189,7 @@ export class Admin {
           company: item.site?.company || {}
         },
         status: item.status || 'pending',
+        approvalStatus: item.approvedByHOD ? 'approved' : (item.verified ? 'verified' : 'pending'),
         internshipType: item.type || 'ONSITE',
         startDate: item.startDate,
         endDate: item.endDate,

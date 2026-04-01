@@ -1515,6 +1515,13 @@
                   <div style="font-size: 0.9rem; margin-top: 0.5rem; color: #333;">
                     <strong>Type:</strong> {{ studentFinalResult.internship.type || 'N/A' }}<br>
                     <strong>Status:</strong> {{ studentFinalResult.internship.status || 'N/A' }}<br>
+                    <strong>Approved Status:</strong>
+                    <span class="badge"
+                      [class.text-bg-success]="selectedStudentForEval?.approvalStatus?.toLowerCase() === 'approved' || selectedStudentForEval?.approvalStatus?.toLowerCase() === 'verified'"
+                      [class.text-bg-warning]="selectedStudentForEval?.approvalStatus?.toLowerCase() === 'pending'"
+                      [class.text-bg-secondary]="!selectedStudentForEval?.approvalStatus">
+                      {{ (selectedStudentForEval?.approvalStatus || 'pending') | titlecase }}
+                    </span><br>
                     <strong>Start Date:</strong> {{ studentFinalResult.internship.startDate ? (studentFinalResult.internship.startDate | date:'mediumDate') : 'N/A' }}<br>
                     <strong>End Date:</strong> {{ studentFinalResult.internship.endDate ? (studentFinalResult.internship.endDate | date:'mediumDate') : 'N/A' }}
                   </div>
