@@ -73,14 +73,9 @@ export class Student implements OnDestroy {
   } | null = null;
 
   // Evaluations
-  evaluations: any[] = [];
+  studentFinalResult: any = null;
   evaluationsLoadedOnce = false;
   loadingEvaluations = false;
-  evaluationTypeFilter: 'all' | 'site_mid' | 'site_final' | 'faculty' | 'office' = 'all';
-  evaluationSummary: any = null;
-  loadingEvaluationSummary = false;
-  /** Sequence counter used to discard stale API responses when the filter changes mid-flight. */
-  private _evalLoadSeq = 0;
   /** Internship ID resolved from any available API response; drives evaluations fetch. */
   studentInternshipId: string | null = null;
   loadingApexBStatus = false;
@@ -973,10 +968,10 @@ export class Student implements OnDestroy {
       this.loadCompanyRequestStatus();
     }
     // Auto-load evaluations when evaluations tab is selected
-    // Retry if: never loaded, or loaded but got 0 results and now have an internship ID
+    // Retry if: never loaded before
     if (tab === 'evaluations' && !this.loadingEvaluations) {
       const hasId = !!(this.studentInternshipId || this.apexBStatus?.internshipId);
-      const shouldLoad = !this.evaluationsLoadedOnce || (hasId && this.evaluations.length === 0);
+      const shouldLoad = !this.evaluationsLoadedOnce || hasId;
       if (shouldLoad) this.loadEvaluations();
     }
   }
@@ -1542,14 +1537,8 @@ export class Student implements OnDestroy {
    * - GET /api/admin/office-evaluation (office/admin evaluation)
    * Also refreshes the evaluation summary.
    */
-  /** Called when the type filter dropdown changes — clears stale results immediately and reloads. */
-  onEvaluationFilterChange() {
-    this.evaluations = [];
-    this.evaluationSummary = null;
-    this.loadEvaluations(true);
-  }
-
-  async loadEvaluations(forceRefresh = false) {
+  /** Load student's final result from /api/student/final-result API */
+  async loadFinalResult(forceRefresh = false) {
     // Resolve internship ID from all available sources
     const internshipId =
       this.studentInternshipId ||
@@ -1557,138 +1546,62 @@ export class Student implements OnDestroy {
       null;
 
     if (!internshipId) {
-      // Attempt to load internship first, then retry evaluations
+      // Attempt to load internship first, then retry
       console.warn('⚠️ [Student] No internshipId yet — fetching internship first...');
       await this.loadStudentInternship(true);
       if (!this.studentInternshipId) {
-        console.warn('⚠️ [Student] Still no internshipId after fetch — cannot load evaluations');
+        console.warn('⚠️ [Student] Still no internshipId after fetch — cannot load final result');
         return;
       }
     }
 
     const idToUse = this.studentInternshipId || internshipId!;
 
-    // Abort any in-flight request: increment the sequence number so the previous load
-    // knows its response is stale and should be discarded.
-    const seq = ++this._evalLoadSeq;
-
     if (this.loadingEvaluations) {
-      // Wait a tick so the previous finally block can reset loadingEvaluations first,
-      // then fall through and let the current call own the loading state.
       await new Promise<void>(r => setTimeout(r, 0));
     }
-
-    // If another load started after ours, bail out.
-    if (seq !== this._evalLoadSeq) return;
 
     this.loadingEvaluations = true;
     this.cdr.markForCheck();
     try {
-      const typeFilter = this.evaluationTypeFilter === 'all' ? undefined : this.evaluationTypeFilter;
-
-      // Log the exact API URLs being called
-      console.group(`🌐 [Student Evaluations] API calls for internshipId: ${idToUse}`);
-      const fetchSiteLog = !typeFilter || typeFilter === 'site_mid' || typeFilter === 'site_final';
-      if (fetchSiteLog) console.log(`📡 GET /api/site/evaluations?internshipId=${idToUse}${typeFilter ? '&type=' + typeFilter : ''}`);
-      if (!typeFilter || typeFilter === 'faculty') console.log(`📡 GET /api/faculty/evaluation-form?internshipId=${idToUse}`);
-      if (!typeFilter || typeFilter === 'office') console.log(`📡 GET /api/admin/office-evaluation?internshipId=${idToUse}`);
-      console.groupEnd();
-
-      // Fetch from all three sources in parallel
-      // Site evaluations apply when filter is 'all', 'site_mid', or 'site_final'
-      const fetchSite = !typeFilter || typeFilter === 'site_mid' || typeFilter === 'site_final';
-      // Faculty evaluation form applies when filter is 'all' or 'faculty'
-      const fetchFaculty = !typeFilter || typeFilter === 'faculty';
-      // Office evaluation applies when filter is 'all' or 'office'
-      const fetchOffice = !typeFilter || typeFilter === 'office';
-      const [siteResult, facultyResult, officeResult] = await Promise.allSettled([
-        fetchSite
-          ? this.studentApi.getEvaluations(idToUse, typeFilter, { skipGlobalLoading: true, silentError: true, forceRefresh })
-          : Promise.resolve(null),
-        fetchFaculty
-          ? this.studentApi.getFacultyEvaluationForm(idToUse, { skipGlobalLoading: true, silentError: true, forceRefresh })
-          : Promise.resolve(null),
-        fetchOffice
-          ? this.studentApi.getAdminOfficeEvaluation(idToUse, { skipGlobalLoading: true, silentError: true, forceRefresh })
-          : Promise.resolve(null)
-      ]);
-
-      // Discard stale results if a newer load was triggered (e.g. filter changed mid-flight)
-      if (seq !== this._evalLoadSeq) return;
-
-      const allEvaluations: any[] = [];
-
-      // ── RAW API RESPONSES ──────────────────────────────────────────────────
-      console.group(`📊 [Student Evaluations] Raw API responses for internshipId: ${idToUse}`);
-
-      // Site evaluations
-      if (siteResult.status === 'fulfilled' && siteResult.value) {
-        const evals = Array.isArray(siteResult.value?.evaluations) ? siteResult.value.evaluations : [];
-        console.log(`🏢 Site evaluations (${evals.length}):`, evals);
-        allEvaluations.push(...evals);
-      } else if (siteResult.status === 'rejected') {
-        console.warn('🏢 Site evaluations — request failed:', siteResult.reason);
-      } else {
-        console.log('🏢 Site evaluations — no data returned:', siteResult.value);
-      }
-
-      // Faculty evaluation form
-      if (facultyResult.status === 'fulfilled' && facultyResult.value?.evaluation) {
-        const fev = facultyResult.value.evaluation;
-        console.log('🎓 Faculty evaluation form:', fev);
-        // Only add if not already present
-        if (!allEvaluations.some(e => e.type === 'faculty' || e.id === fev.id)) {
-          allEvaluations.push({ ...fev, type: fev.type || 'faculty' });
-        }
-      } else if (facultyResult.status === 'rejected') {
-        console.warn('🎓 Faculty evaluation form — request failed:', facultyResult.reason);
-      } else {
-        console.log('🎓 Faculty evaluation form — no data:', facultyResult.status === 'fulfilled' ? facultyResult.value : '(skipped by filter)');
-      }
-
-      // Admin/office evaluation form
-      if (officeResult.status === 'fulfilled' && officeResult.value?.evaluation) {
-        const oev = officeResult.value.evaluation;
-        console.log('🏛️ Office evaluation form:', oev);
-        if (!allEvaluations.some(e => e.type === 'office' || e.id === oev.id)) {
-          allEvaluations.push({ ...oev, type: oev.type || 'office' });
-        }
-      } else if (officeResult.status === 'rejected') {
-        console.warn('🏛️ Office evaluation form — request failed:', officeResult.reason);
-      } else {
-        console.log('🏛️ Office evaluation form — no data:', officeResult.status === 'fulfilled' ? officeResult.value : '(skipped by filter)');
-      }
-
-      console.log(`✅ Merged evaluation list (${allEvaluations.length} total):`, allEvaluations);
-      console.table(allEvaluations.map(e => ({
-        id: e.id,
-        type: e.type,
-        totalMarks: e.totalMarks ?? e.facultyMarksScaled ?? e.officeMarksScaled ?? '-',
-        submittedAt: e.submittedAt || e.createdAt || '-',
-        submittedBy: e.submittedBy?.name || e.evaluator?.name || '-'
-      })));
-      console.groupEnd();
-      // ──────────────────────────────────────────────────────────────────────
-
-      this.evaluations = allEvaluations;
+      console.log(`🌐 [Student] Fetching final result for internshipId: ${idToUse}`);
+      
+      // Call the new /api/student/final-result endpoint
+      const res = await this.adminApi.getStudentFinalResult(idToUse);
+      
+      // Store the entire response (contains finalResult and internship data)
+      this.studentFinalResult = res ?? null;
       this.evaluationsLoadedOnce = true;
-      // Also refresh the evaluation summary, propagating forceRefresh
-      this.loadEvaluationSummary(forceRefresh);
+      
+      console.log('✅ Final result loaded:', this.studentFinalResult);
     } catch (err: any) {
-      if (seq !== this._evalLoadSeq) return;
       const status = err?.status ?? 0;
       if (status === 404 || status === 400) {
-        this.evaluations = [];
+        console.log('ℹ️ [Student] Final result not available (404/400)');
       } else {
-        const msg = err?.error?.message || err?.message || 'Failed to load evaluations';
-        this.toast.danger(msg);
+        const msg = err?.error?.message || err?.message || 'Failed to load final result';
+        console.warn('[Student] Error loading final result:', msg);
       }
+      this.studentFinalResult = null;
     } finally {
-      if (seq === this._evalLoadSeq) {
-        this.loadingEvaluations = false;
-        this.cdr.markForCheck();
-      }
+      this.loadingEvaluations = false;
+      try { this.cdr.detectChanges(); } catch {}
     }
+  }
+
+  async loadEvaluations(forceRefresh = false) {
+    // Redirect to new loadFinalResult method
+    return this.loadFinalResult(forceRefresh);
+  }
+
+  onEvaluationFilterChange() {
+    // No longer needed - removed filter functionality
+    this.loadFinalResult(true);
+  }
+
+  async loadEvaluationSummary(forceRefresh = false) {
+    // Merged into loadFinalResult - no longer separate
+    return;
   }
 
   /** Convert criteria (either array or object) to uniform label/value pairs for display. */
@@ -1704,30 +1617,6 @@ export class Student implements OnDestroy {
       label: key.replace(/([A-Z])/g, ' $1').trim(), // camelCase → words
       value
     }));
-  }
-
-  async loadEvaluationSummary(forceRefresh = false) {
-    const internshipId = this.studentInternshipId || this.apexBStatus?.internshipId;
-    if (!internshipId || this.loadingEvaluationSummary) return;
-    this.loadingEvaluationSummary = true;
-    try { this.cdr.detectChanges(); } catch {}
-    try {
-      const res = await this.studentApi.getEvaluationSummary(internshipId, {
-        skipGlobalLoading: true,
-        silentError: true,
-        forceRefresh
-      });
-      this.evaluationSummary = res?.evaluationSummary ?? null;
-    } catch (err: any) {
-      if ((err?.status ?? 0) !== 404) {
-        const msg = err?.error?.message || err?.message || 'Failed to load evaluation summary';
-        console.warn('[Student] loadEvaluationSummary error:', msg);
-      }
-      this.evaluationSummary = null;
-    } finally {
-      this.loadingEvaluationSummary = false;
-      try { this.cdr.detectChanges(); } catch {}
-    }
   }
 
   async submitWeeklyLog() {

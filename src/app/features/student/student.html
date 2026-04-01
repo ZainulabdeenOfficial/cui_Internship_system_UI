@@ -1055,185 +1055,153 @@
   <div *ngIf="isCurrentTab('evaluations')">
     <div class="card mb-3">
       <div class="card-header d-flex justify-content-between align-items-center">
-        <span>My Evaluations</span>
-        <div class="d-flex gap-2 align-items-center">
-          <select class="form-select form-select-sm" style="width:auto"
-                  [(ngModel)]="evaluationTypeFilter"
-                  name="evalTypeFilter"
-                  (ngModelChange)="onEvaluationFilterChange()">
-            <option value="all">All Evaluation Types</option>
-            <option value="site_mid">Site Mid-Term (site_mid)</option>
-            <option value="site_final">Site Final (site_final)</option>
-            <option value="faculty">Faculty Supervisor (faculty)</option>
-            <option value="office">Internship Office (office)</option>
-          </select>
-          <button class="btn btn-sm btn-outline-secondary" (click)="loadEvaluations(true)" [disabled]="loadingEvaluations">
-            <span *ngIf="loadingEvaluations" class="spinner-border spinner-border-sm me-1"></span>
-            {{ loadingEvaluations ? 'Loading...' : 'Refresh' }}
-          </button>
-        </div>
+        <span><i class="bi bi-award-fill me-2"></i>My Final Result</span>
+        <button class="btn btn-sm btn-outline-secondary" (click)="loadFinalResult(true)" [disabled]="loadingEvaluations">
+          <span *ngIf="loadingEvaluations" class="spinner-border spinner-border-sm me-1"></span>
+          {{ loadingEvaluations ? 'Loading...' : 'Refresh' }}
+        </button>
       </div>
       <div class="card-body">
 
         <!-- No internship ID yet -->
         <div *ngIf="!studentInternshipId" class="alert alert-warning">
-          Evaluations will be available once your internship is fully approved and an internship record has been created.
-        </div>
-
-        <!-- Evaluation Summary Card -->
-        <!-- Loading skeleton while summary is being fetched -->
-        <div *ngIf="studentInternshipId && loadingEvaluationSummary && !evaluationSummary" class="card border-secondary mb-3">
-          <div class="card-header bg-secondary text-white d-flex align-items-center gap-2">
-            <span class="spinner-border spinner-border-sm"></span>
-            <span>Loading Evaluation Summary&hellip;</span>
-          </div>
-        </div>
-
-        <div *ngIf="studentInternshipId && evaluationSummary" class="card border-primary mb-3">
-          <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-            <span><i class="bi bi-bar-chart-line me-2"></i>Evaluation Summary</span>
-            <span class="badge"
-                  [class.text-bg-success]="evaluationSummary.status === 'pass'"
-                  [class.text-bg-danger]="evaluationSummary.status !== 'pass'">
-              {{ evaluationSummary.status | titlecase }}
-            </span>
-          </div>
-          <div class="card-body">
-            <div class="row text-center g-2">
-              <div class="col-6 col-md-3">
-                <div class="border rounded p-2">
-                  <div class="fw-bold fs-5">{{ evaluationSummary.facultyMarks ?? '-' }}</div>
-                  <small class="text-muted">Faculty
-                    <span *ngIf="evaluationSummary.maximumMarks?.faculty">/ {{ evaluationSummary.maximumMarks.faculty }}</span>
-                  </small>
-                </div>
-              </div>
-              <div class="col-6 col-md-3">
-                <div class="border rounded p-2">
-                  <div class="fw-bold fs-5">{{ evaluationSummary.siteMarks ?? '-' }}</div>
-                  <small class="text-muted">Site
-                    <span *ngIf="evaluationSummary.maximumMarks?.site">/ {{ evaluationSummary.maximumMarks.site }}</span>
-                  </small>
-                </div>
-              </div>
-              <div class="col-6 col-md-3">
-                <div class="border rounded p-2">
-                  <div class="fw-bold fs-5">{{ evaluationSummary.officeMarks ?? '-' }}</div>
-                  <small class="text-muted">Office
-                    <span *ngIf="evaluationSummary.maximumMarks?.office">/ {{ evaluationSummary.maximumMarks.office }}</span>
-                  </small>
-                </div>
-              </div>
-              <div class="col-6 col-md-3">
-                <div class="border rounded p-2 bg-light">
-                  <div class="fw-bold fs-5">{{ evaluationSummary.totalMarks ?? '-' }}</div>
-                  <small class="text-muted">Total
-                    <span *ngIf="evaluationSummary.maximumMarks?.total">/ {{ evaluationSummary.maximumMarks.total }}</span>
-                  </small>
-                </div>
-              </div>
-            </div>
-          </div>
+          <i class="bi bi-info-circle me-2"></i>Your final result will be available once your internship is fully approved.
         </div>
 
         <!-- Loading -->
         <div *ngIf="studentInternshipId && loadingEvaluations" class="text-center py-4">
           <span class="spinner-border text-primary"></span>
-          <p class="mt-2 text-muted">Loading evaluations&hellip;</p>
+          <p class="mt-2 text-muted">Loading final result...</p>
         </div>
 
-        <!-- No evaluations yet -->
-        <div *ngIf="studentInternshipId && !loadingEvaluations && evaluations.length === 0" class="text-muted text-center py-3">
-          No evaluations recorded yet.
-        </div>
-
-        <!-- Evaluations list -->
-        <div *ngIf="!loadingEvaluations && evaluations.length > 0">
-          <div class="row g-3">
-            <div class="col-12 col-md-6" *ngFor="let ev of evaluations">
-              <div class="card border h-100">
-                <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
-                  <div class="d-flex align-items-center gap-2">
-                    <span class="badge"
-                          [class.text-bg-warning]="ev.type === 'site_mid'"
-                          [class.text-bg-success]="ev.type === 'site_final'"
-                          [class.text-bg-primary]="ev.type === 'faculty'"
-                          [class.text-bg-info]="ev.type === 'office'"
-                          [class.text-bg-secondary]="ev.type !== 'site_mid' && ev.type !== 'site_final' && ev.type !== 'faculty' && ev.type !== 'office'">
-                      {{ ev.type }}
-                    </span>
-                    <span class="fw-semibold">
-                      {{ ev.type === 'site_mid' ? 'Site Mid-Term Evaluation'
-                       : ev.type === 'site_final' ? 'Site Final Evaluation'
-                       : ev.type === 'faculty' ? 'Faculty Supervisor Evaluation'
-                       : ev.type === 'office' ? 'Internship Office Evaluation'
-                       : ev.type }}
-                    </span>
-                  </div>
-                  <!-- For faculty: show scaled/40 prominently; raw total shown below -->
-                  <div class="d-flex align-items-center gap-2">
-                    <span *ngIf="ev.type === 'faculty' && ev.facultyMarksScaled != null"
-                          class="badge text-bg-primary">
-                      {{ ev.facultyMarksScaled }} / {{ ev.maxMarks ?? 40 }} (scaled)
-                    </span>
-                    <span *ngIf="ev.type !== 'faculty' || ev.facultyMarksScaled == null"
-                          class="badge text-bg-primary">
-                      {{ ev.totalMarks ?? ev.officeMarksScaled ?? '-' }}
-                      <span *ngIf="ev.maxMarks"> / {{ ev.maxMarks }}</span>
-                    </span>
-                  </div>
+        <!-- Final Result Summary Card -->
+        <div *ngIf="studentInternshipId && !loadingEvaluations && studentFinalResult?.finalResult" class="card border-success mb-3">
+          <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+            <span><i class="bi bi-check-circle me-2"></i>Final Result</span>
+            <span class="badge"
+                  [class.text-bg-success]="studentFinalResult.finalResult.status?.toLowerCase() === 'pass'"
+                  [class.text-bg-danger]="studentFinalResult.finalResult.status?.toLowerCase() === 'fail'"
+                  [class.text-bg-warning]="studentFinalResult.finalResult.status?.toLowerCase() === 'pending'"
+                  [class.text-bg-secondary]="!(studentFinalResult.finalResult.status || '')">
+              {{ (studentFinalResult.finalResult.status || 'N/A') | titlecase }}
+            </span>
+          </div>
+          <div class="card-body">
+            <div class="row text-center g-2 mb-3">
+              <div class="col-6 col-md-2">
+                <div class="border rounded p-2">
+                  <div class="fw-bold fs-5" style="color: #333;">{{ studentFinalResult.finalResult.facultyMarks ?? '-' }}</div>
+                  <small class="text-muted">Faculty Marks</small>
                 </div>
-                <div class="card-body">
-
-                  <!-- Faculty: raw score vs scaled score -->
-                  <div *ngIf="ev.type === 'faculty' && ev.totalMarks != null" class="d-flex gap-3 mb-3 flex-wrap">
-                    <div class="border rounded px-3 py-2 text-center">
-                      <div class="fw-bold fs-5 text-primary">{{ ev.facultyMarksScaled ?? '—' }}</div>
-                      <small class="text-muted">Scaled / {{ ev.maxMarks ?? 40 }}</small>
-                    </div>
-                    <div class="border rounded px-3 py-2 text-center">
-                      <div class="fw-bold fs-5">{{ ev.totalMarks }}</div>
-                      <small class="text-muted">Raw / 60</small>
-                    </div>
-                  </div>
-
-                  <!-- Criteria breakdown -->
-                  <div *ngIf="ev.criteria" class="mb-3">
-                    <h6 class="text-muted mb-2">Criteria Scores</h6>
-                    <div class="row g-1">
-                      <div class="col-6" *ngFor="let c of criteriaEntries(ev.criteria)">
-                        <div class="d-flex justify-content-between border-bottom py-1">
-                          <small class="text-capitalize">{{ c.label }}</small>
-                          <small class="fw-semibold">{{ c.value }}<span class="text-muted">/10</span></small>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- Comments -->
-                  <div *ngIf="ev.comments" class="mb-2">
-                    <small class="text-muted d-block">Comments</small>
-                    <p class="mb-0 small">{{ ev.comments }}</p>
-                  </div>
-
-                  <!-- Submitted by / date — handles all field name variants -->
-                  <div class="d-flex gap-3 mt-2 flex-wrap">
-                    <small class="text-muted"
-                           *ngIf="ev.submittedBy?.name || ev.evaluator?.name || ev.evaluator?.email">
-                      <i class="bi bi-person me-1"></i>
-                      {{ ev.submittedBy?.name || ev.evaluator?.name || ev.evaluator?.email }}
-                    </small>
-                    <small class="text-muted"
-                           *ngIf="ev.createdAt || ev.submittedAt || ev.submittedDate">
-                      <i class="bi bi-calendar3 me-1"></i>
-                      {{ (ev.createdAt || ev.submittedAt || ev.submittedDate) | date:'mediumDate' }}
-                    </small>
-                  </div>
-
+              </div>
+              <div class="col-6 col-md-2">
+                <div class="border rounded p-2">
+                  <div class="fw-bold fs-5" style="color: #333;">{{ studentFinalResult.finalResult.siteMarks ?? '-' }}</div>
+                  <small class="text-muted">Site Marks</small>
+                </div>
+              </div>
+              <div class="col-6 col-md-2">
+                <div class="border rounded p-2">
+                  <div class="fw-bold fs-5" style="color: #333;">{{ studentFinalResult.finalResult.officeMarks ?? '-' }}</div>
+                  <small class="text-muted">Office Marks</small>
+                </div>
+              </div>
+              <div class="col-6 col-md-2">
+                <div class="border rounded p-2">
+                  <div class="fw-bold fs-5" style="color: #333;">{{ studentFinalResult.finalResult.presentationMarks ?? '-' }}</div>
+                  <small class="text-muted">Presentation</small>
+                </div>
+              </div>
+              <div class="col-12 col-md-4">
+                <div class="border rounded p-2 bg-light">
+                  <div class="fw-bold fs-4" style="color: #0066cc;">{{ studentFinalResult.finalResult.totalMarks ?? '-' }}</div>
+                  <small class="text-muted">Total Marks</small>
                 </div>
               </div>
             </div>
+
+            <!-- HOD Signature Link -->
+            <div *ngIf="studentFinalResult.finalResult.hodSignatureUrl" class="p-3 border rounded bg-light">
+              <i class="bi bi-file-pdf me-2"></i>
+              <a [href]="studentFinalResult.finalResult.hodSignatureUrl" target="_blank" class="btn btn-sm btn-outline-primary">
+                <i class="bi bi-file-pdf me-1"></i>View HOD Signature
+              </a>
+            </div>
           </div>
+        </div>
+
+        <!-- Internship Information Card -->
+        <div *ngIf="studentInternshipId && !loadingEvaluations && studentFinalResult?.internship" class="card border-info mb-3">
+          <div class="card-header bg-info text-white">
+            <i class="bi bi-briefcase me-2"></i>Internship Details
+          </div>
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <small class="text-muted d-block">Type</small>
+                <strong style="color: #333;">{{ studentFinalResult.internship.type || 'N/A' }}</strong>
+              </div>
+              <div class="col-md-6">
+                <small class="text-muted d-block">Status</small>
+                <strong style="color: #333;">{{ studentFinalResult.internship.status || 'N/A' }}</strong>
+              </div>
+              <div class="col-md-6">
+                <small class="text-muted d-block">Start Date</small>
+                <strong style="color: #333;">{{ studentFinalResult.internship.startDate ? (studentFinalResult.internship.startDate | date:'mediumDate') : 'N/A' }}</strong>
+              </div>
+              <div class="col-md-6">
+                <small class="text-muted d-block">End Date</small>
+                <strong style="color: #333;">{{ studentFinalResult.internship.endDate ? (studentFinalResult.internship.endDate | date:'mediumDate') : 'N/A' }}</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Faculty Supervisor Card -->
+        <div *ngIf="studentFinalResult?.internship?.faculty" class="card border-primary mb-3">
+          <div class="card-header bg-primary text-white">
+            <i class="bi bi-person-badge me-2"></i>Faculty Supervisor
+          </div>
+          <div class="card-body">
+            <div class="row g-2">
+              <div class="col-md-6">
+                <small class="text-muted d-block">Name</small>
+                <strong style="color: #333;">{{ studentFinalResult.internship.faculty.name || 'N/A' }}</strong>
+              </div>
+              <div class="col-md-6">
+                <small class="text-muted d-block">Email</small>
+                <a [href]="'mailto:' + studentFinalResult.internship.faculty.email" style="color: #0066cc;">
+                  {{ studentFinalResult.internship.faculty.email || 'N/A' }}
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Site Supervisor Card -->
+        <div *ngIf="studentFinalResult?.internship?.site" class="card border-success">
+          <div class="card-header bg-success text-white">
+            <i class="bi bi-building me-2"></i>Site Supervisor
+          </div>
+          <div class="card-body">
+            <div class="row g-2">
+              <div class="col-md-6">
+                <small class="text-muted d-block">Name</small>
+                <strong style="color: #333;">{{ studentFinalResult.internship.site.name || 'N/A' }}</strong>
+              </div>
+              <div class="col-md-6">
+                <small class="text-muted d-block">Email</small>
+                <a [href]="'mailto:' + studentFinalResult.internship.site.email" style="color: #0066cc;">
+                  {{ studentFinalResult.internship.site.email || 'N/A' }}
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- No final result message -->
+        <div *ngIf="studentInternshipId && !loadingEvaluations && !studentFinalResult" class="alert alert-info">
+          <i class="bi bi-info-circle me-2"></i>Final result not available yet. It will be displayed once the evaluation is complete.
         </div>
 
       </div>
@@ -1241,6 +1209,8 @@
   </div>
 
 </div>
+
+
 
 <!-- hidden usage to ensure standalone imports are recognized -->
 <ng-template #__ensureImports>
