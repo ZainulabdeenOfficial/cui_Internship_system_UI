@@ -20,6 +20,16 @@ export class Home implements OnInit, AfterViewInit, OnDestroy {
   ];
   heroHeight = 600;
   ready = false; // triggers staged animations once view initialized
+
+  // Announcements enhancements
+  announcementsPerPage = 5;
+  currentAnnouncementsPage = 1;
+  expandedAnnouncements = new Set<string>();
+  messageCharLimit = 150;
+  autoRefreshInterval: any;
+  autoRefreshSeconds = 30;
+  archivedAfterDays = 30;
+
   get studentsCount() { return this.store.students().length; }
   get supervisorsCount() { return this.store.facultySupervisors().length + this.store.siteSupervisors().length; }
   get companiesCount() { return this.store.companies().length; }
@@ -31,20 +41,129 @@ export class Home implements OnInit, AfterViewInit, OnDestroy {
     return set.size;
   }
 
+  get sortedAndFilteredAnnouncements() {
+    const now = new Date();
+    const allAnns = this.store.announcements() || [];
+    
+    // Filter out archived announcements (older than 30 days)
+    const filtered = allAnns.filter(a => {
+      const annDate = new Date(a.createdAt);
+      const daysOld = Math.floor((now.getTime() - annDate.getTime()) / (1000 * 60 * 60 * 24));
+      return daysOld <= this.archivedAfterDays;
+    });
+
+    // Sort: pinned first, then by date descending
+    return filtered.sort((a, b) => {
+      if (a.pinned && !b.pinned) return -1;
+      if (!a.pinned && b.pinned) return 1;
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
+  }
+
+  get paginatedAnnouncements() {
+    const start = (this.currentAnnouncementsPage - 1) * this.announcementsPerPage;
+    const end = start + this.announcementsPerPage;
+    return this.sortedAndFilteredAnnouncements.slice(start, end);
+  }
+
+  get totalAnnouncementsPages() {
+    return Math.ceil(this.sortedAndFilteredAnnouncements.length / this.announcementsPerPage);
+  }
+
+  get hasMoreAnnouncements() {
+    return this.currentAnnouncementsPage < this.totalAnnouncementsPages;
+  }
+
+  getMessagePreview(message: string): string {
+    if (this.expandedAnnouncements.has(message)) return message;
+    return message.length > this.messageCharLimit ? message.substring(0, this.messageCharLimit) + '...' : message;
+  }
+
+  isMessageTruncated(message: string): boolean {
+    return message.length > this.messageCharLimit;
+  }
+
+  toggleExpandMessage(message: string): void {
+    if (this.expandedAnnouncements.has(message)) {
+      this.expandedAnnouncements.delete(message);
+    } else {
+      this.expandedAnnouncements.add(message);
+    }
+  }
+
+  isMessageExpanded(message: string): boolean {
+    return this.expandedAnnouncements.has(message);
+  }
+
+  loadMoreAnnouncements(): void {
+    if (this.hasMoreAnnouncements) {
+      this.currentAnnouncementsPage++;
+    }
+  }
+
+  shareAnnouncement(announcement: any): void {
+    const text = `${announcement.title ? announcement.title + ': ' : ''}${announcement.message}`;
+    const shareUrl = announcement.link || window.location.href;
+    
+    if (navigator.share) {
+      // Use native share API if available
+      navigator.share({
+        title: 'CUI Internship System Announcement',
+        text: text,
+        url: shareUrl
+      }).catch(err => console.log('Share cancelled:', err));
+    } else {
+      // Fallback: copy to clipboard
+      const fullShare = `${text}\n\n${shareUrl}`;
+      navigator.clipboard.writeText(fullShare).then(() => {
+        alert('Announcement copied to clipboard!');
+      }).catch(() => {
+        alert('Unable to share. Please copy manually:\n\n' + fullShare);
+      });
+    }
+  }
+
+  getDaysOld(createdAt: string): number {
+    const now = new Date();
+    const annDate = new Date(createdAt);
+    return Math.floor((now.getTime() - annDate.getTime()) / (1000 * 60 * 60 * 24));
+  }
+
+  isArchived(createdAt: string): boolean {
+    return this.getDaysOld(createdAt) > this.archivedAfterDays;
+  }
+
   ngOnInit(): void {
     // Remove any auth background classes if present and set a plain body background
     document.body.classList.add('home-solid');
     
     // Load announcements from API
     this.loadAnnouncements();
+
+    // Set up auto-refresh of announcements
+    this.setupAutoRefresh();
   }
 
   private async loadAnnouncements(): Promise<void> {
     try {
       await this.store.loadAnnouncements();
+      // Reset pagination when reloading
+      this.currentAnnouncementsPage = 1;
     } catch (error) {
       console.error('Failed to load announcements:', error);
     }
+  }
+
+  private setupAutoRefresh(): void {
+    // Clear any existing interval
+    if (this.autoRefreshInterval) {
+      clearInterval(this.autoRefreshInterval);
+    }
+
+    // Set up auto-refresh every N seconds
+    this.autoRefreshInterval = setInterval(() => {
+      this.loadAnnouncements();
+    }, this.autoRefreshSeconds * 1000);
   }
 
   ngAfterViewInit(): void {
@@ -54,5 +173,10 @@ export class Home implements OnInit, AfterViewInit, OnDestroy {
 
   ngOnDestroy(): void {
     document.body.classList.remove('home-solid');
+    
+    // Clear auto-refresh interval
+    if (this.autoRefreshInterval) {
+      clearInterval(this.autoRefreshInterval);
+    }
   }
 }

@@ -2086,22 +2086,27 @@ export class Admin {
       return;
     }
     
-    // Automatically load data immediately - no click needed
-    this.loadInternshipDetails(internshipId);
-    this.loadOfficeEvaluation(internshipId);
+    // Load data in parallel for faster loading
+    Promise.all([
+      this.loadInternshipDetails(internshipId),
+      this.loadOfficeEvaluation(internshipId)
+    ]).catch(err => {
+      console.error('Error loading evaluation data:', err);
+    });
   }
 
   async loadInternshipDetails(internshipId: string) {
-    if (!internshipId) return;
-    // Don't reset if already loading - loadingInternshipDetails should already be true from selectStudentForEval
-    if (!this.loadingInternshipDetails) this.loadingInternshipDetails = true;
+    if (!internshipId) {
+      this.loadingInternshipDetails = false;
+      return;
+    }
     try {
       const res = await this.adminApi.getInternshipDetails(internshipId);
       this.internshipDetails = res;
       console.log('✅ Internship details loaded:', res);
     } catch (err: any) {
       const msg = err?.error?.message || err?.message || 'Failed to load internship details';
-      this.toast.danger(msg);
+      console.error(msg);
       this.internshipDetails = null;
     } finally {
       this.loadingInternshipDetails = false;
@@ -2109,19 +2114,18 @@ export class Admin {
   }
 
   async loadOfficeEvaluation(internshipId: string) {
-    if (!internshipId) return;
-    // Don't reset if already loading - loadingOfficeEval should already be true from selectStudentForEval
-    if (!this.loadingOfficeEval) this.loadingOfficeEval = true;
+    if (!internshipId) {
+      this.loadingOfficeEval = false;
+      return;
+    }
     try {
       const res = await this.adminApi.getOfficeEvaluation(internshipId);
       this.officeEvalResult = res?.evaluation ?? null;
     } catch (err: any) {
       if (err?.status !== 404) {
-        const msg = err?.error?.message || err?.message || 'Failed to load office evaluation';
-        this.toast.danger(msg);
-      } else {
-        this.officeEvalResult = null;
+        console.error('Failed to load office evaluation:', err?.message);
       }
+      this.officeEvalResult = null;
     } finally {
       this.loadingOfficeEval = false;
     }
@@ -2133,11 +2137,32 @@ export class Admin {
     try {
       const res = await this.adminApi.getAllInternships();
       const data = res?.data || [];
-      this.internships = Array.isArray(data) ? data : [];
+      
+      // Better data mapping and filtering
+      this.internships = Array.isArray(data) ? data.map((item: any) => ({
+        id: item.id || item._id || '',
+        student: {
+          id: item.student?.id || item.student?._id || '',
+          name: item.student?.name || item.studentName || '',
+          email: item.student?.email || '',
+          regNo: item.student?.regNo || item.student?.registrationNo || ''
+        },
+        company: {
+          id: item.company?.id || item.company?._id || '',
+          name: item.company?.name || item.companyName || ''
+        },
+        companyName: item.company?.name || item.companyName || '',
+        status: item.status || 'pending',
+        finalResult: item.finalResult || item.marks?.final || null,
+        internshipRole: item.internshipRole || '',
+        startDate: item.startDate,
+        endDate: item.endDate
+      })) : [];
+      
       console.log('✅ Internships list loaded:', this.internships.length, 'internships');
     } catch (err: any) {
       const msg = err?.error?.message || err?.message || 'Failed to load internships';
-      this.toast.danger(msg);
+      console.error(msg);
       this.internships = [];
     } finally {
       this.loadingInternships = false;

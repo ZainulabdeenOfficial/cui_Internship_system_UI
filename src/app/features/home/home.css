@@ -26,6 +26,153 @@ html { scroll-behavior: smooth; }
 .scroll-down-indicator:focus-visible{ outline: 2px solid #fff; outline-offset: 2px; }
 
 
+/* ========== ANNOUNCEMENTS ENHANCEMENTS ========== */
+
+/* Fade-in animation for announcements */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.announcement-item.fade-in {
+  animation: fadeIn 0.6s ease-out forwards;
+  animation-delay: var(--delay, 0ms);
+  opacity: 0;
+}
+
+/* Announcement container styling */
+.announcements-container .list-group-item {
+  border-left: 4px solid #e9ecef;
+  transition: all 0.3s ease;
+}
+
+.announcement-item {
+  transition: box-shadow 0.3s ease, transform 0.3s ease;
+}
+
+.announcement-item:hover {
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1);
+  transform: translateX(2px);
+}
+
+.announcement-item.fade-in[style*="--delay: 0"] {
+  animation-delay: 0ms;
+}
+
+/* Announcement title styling */
+.announcement-title {
+  color: #2c3e50;
+  font-size: 1.05rem;
+  margin-bottom: 0.5rem;
+}
+
+/* Announcement message styling */
+.announcement-message {
+  color: #555;
+  line-height: 1.6;
+  word-break: break-word;
+}
+
+.announcement-message .btn-link {
+  text-decoration: none;
+  font-weight: 500;
+  color: #0d6efd;
+}
+
+.announcement-message .btn-link:hover {
+  text-decoration: underline;
+}
+
+/* Pinned indicator styling */
+.badge.bg-primary {
+  background-color: #ffc107 !important;
+  color: #333 !important;
+  font-weight: 600;
+}
+
+.badge.bg-secondary {
+  background-color: #6c757d !important;
+}
+
+/* Archive badge styling */
+.badge.bg-secondary-subtle {
+  background-color: #f0f0f0 !important;
+  border: 1px solid #ddd;
+}
+
+/* Load More button styling */
+.btn-outline-primary {
+  border-color: #0d6efd;
+  color: #0d6efd;
+}
+
+.btn-outline-primary:hover {
+  background-color: #0d6efd;
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 0.25rem 0.5rem rgba(13, 110, 253, 0.25);
+}
+
+/* Action buttons styling */
+.announcement-item .btn-outline-primary {
+  border: 1px solid #dee2e6;
+  color: #666;
+  padding: 0.25rem 0.5rem;
+}
+
+.announcement-item .btn-outline-primary:hover {
+  border-color: #0d6efd;
+  color: #0d6efd;
+  background-color: transparent;
+}
+
+/* Auto-refresh indicator animation */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+.text-info {
+  animation: pulse 2s infinite;
+}
+
+/* Pagination styling */
+.announcements-container .btn {
+  border-radius: 20px;
+  padding: 0.5rem 1.5rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .announcement-item .d-flex {
+    flex-direction: column !important;
+  }
+
+  .announcement-item .gap-3 {
+    gap: 1rem !important;
+  }
+
+  .announcement-title {
+    font-size: 1rem;
+  }
+
+  .announcement-message {
+    font-size: 0.95rem;
+  }
+}
+
+
+
 /* Caption entrance */
 .carousel-item .glass{ opacity:0; transform: translateY(10px); transition: all .6s ease; }
 .carousel-item.active .glass{ opacity:1; transform: translateY(0); }

@@ -1405,41 +1405,42 @@
               <table class="table table-hover align-middle mb-0">
                 <thead class="table-light">
                   <tr>
-                    <th>Student</th>
-                    <th>Reg. No</th>
-                    <th>Company</th>
-                    <th>Status</th>
-                    <th>Final Result</th>
-                    <th>Action</th>
+                    <th style="color: #333; font-weight: 600;">Student</th>
+                    <th style="color: #333; font-weight: 600;">Reg. No</th>
+                    <th style="color: #333; font-weight: 600;">Company</th>
+                    <th style="color: #333; font-weight: 600;">Status</th>
+                    <th style="color: #333; font-weight: 600;">Final Result</th>
+                    <th style="color: #333; font-weight: 600;">Action</th>
                   </tr>
                 </thead>
                 <tbody>
                   @for (internship of internships; track internship.id) {
-                    <tr>
-                      <td>
-                        <div class="fw-semibold">{{ internship.student?.name || '-' }}</div>
-                        <small class="text-muted">{{ internship.student?.email || '-' }}</small>
+                    <tr style="background-color: #fff; color: #333;">
+                      <td style="color: #333;">
+                        <div class="fw-semibold" style="color: #1a1a1a;">{{ internship.student?.name || internship.studentName || '-' }}</div>
+                        <small style="color: #666;">{{ internship.student?.email || '-' }}</small>
                       </td>
-                      <td>{{ internship.student?.regNo || '-' }}</td>
-                      <td>{{ internship.company?.name || internship.companyName || '-' }}</td>
-                      <td>
+                      <td style="color: #333;">{{ internship.student?.regNo || internship.registrationNo || '-' }}</td>
+                      <td style="color: #333;">{{ internship.company?.name || internship.companyName || '-' }}</td>
+                      <td style="color: #333;">
                         <span class="badge"
-                          [class.text-bg-warning]="internship.status === 'ongoing'"
-                          [class.text-bg-success]="internship.status === 'completed'"
-                          [class.text-bg-info]="internship.status === 'pending'">
+                          [class.text-bg-warning]="(internship.status || '').toLowerCase() === 'ongoing'"
+                          [class.text-bg-success]="(internship.status || '').toLowerCase() === 'completed'"
+                          [class.text-bg-info]="(internship.status || '').toLowerCase() === 'pending'"
+                          [class.text-bg-secondary]="!(internship.status || '')">
                           {{ internship.status || 'pending' }}
                         </span>
                       </td>
-                      <td>
+                      <td style="color: #333;">
                         <span class="badge"
                           [class.text-bg-success]="internship.finalResult && internship.finalResult >= 70"
                           [class.text-bg-warning]="internship.finalResult && internship.finalResult >= 50 && internship.finalResult < 70"
                           [class.text-bg-danger]="internship.finalResult && internship.finalResult < 50"
                           [class.text-bg-secondary]="!internship.finalResult">
-                          {{ internship.finalResult || 'N/A' }}{{ internship.finalResult ? '%' : '' }}
+                          {{ internship.finalResult ? (internship.finalResult + '%') : 'N/A' }}
                         </span>
                       </td>
-                      <td>
+                      <td style="color: #333;">
                         <button class="btn btn-sm btn-outline-primary" (click)="selectStudentForEval(prepareStudentForEval(internship))">
                           <i class="bi bi-clipboard2-check me-1"></i>Evaluate
                         </button>
@@ -1520,27 +1521,39 @@
         </div>
         <div class="card-body">
 
-          <!-- Loading indicator for internship details -->
-          @if (loadingInternshipDetails) {
-            <div class="alert alert-info mb-3">
-              <div class="spinner-border spinner-border-sm me-2" role="status">
+          <!-- Combined Loading Indicator -->
+          @if (loadingInternshipDetails || loadingOfficeEval) {
+            <div class="alert alert-info d-flex align-items-center gap-3 mb-3" role="status">
+              <div class="spinner-border spinner-border-sm shrink-0" role="status">
                 <span class="visually-hidden">Loading...</span>
               </div>
-              <span>Loading internship details...</span>
+              <div>
+                <strong>Loading evaluation data...</strong>
+                @if (loadingInternshipDetails) {
+                  <div style="font-size: 0.9rem; color: #555;">Loading internship details...</div>
+                }
+                @if (loadingOfficeEval) {
+                  <div style="font-size: 0.9rem; color: #555;">Loading evaluation history...</div>
+                }
+              </div>
             </div>
           }
 
           <!-- Internship Details Summary -->
           @if (internshipDetails && !loadingInternshipDetails) {
-            <div class="alert alert-success mb-3">
+            <div class="alert alert-success mb-3" style="background-color: #d4edda; border-color: #c3e6cb; color: #155724;">
               <div class="d-flex justify-content-between align-items-start">
                 <div>
                   <i class="bi bi-check-circle-fill me-2"></i>
-                  <strong>Internship Information Loaded</strong>
-                  <small class="d-block text-muted mt-1">
-                    Company: {{ internshipDetails.companyName || internshipDetails.student?.companyName || 'N/A' }}
-                    | Role: {{ internshipDetails.internshipRole || internshipDetails.student?.internshipRole || 'N/A' }}
-                  </small>
+                  <strong>Internship Information</strong>
+                  <div style="font-size: 0.9rem; margin-top: 0.5rem; color: #333;">
+                    <strong>Company:</strong> {{ internshipDetails.companyName || internshipDetails.company?.name || 'N/A' }}<br>
+                    <strong>Role:</strong> {{ internshipDetails.internshipRole || 'N/A' }}<br>
+                    <strong>Status:</strong> {{ internshipDetails.status || 'N/A' }}<br>
+                    @if (internshipDetails.finalResult) {
+                      <strong>Current Result:</strong> {{ internshipDetails.finalResult }}%
+                    }
+                  </div>
                 </div>
               </div>
             </div>
@@ -1550,66 +1563,66 @@
           @if (!loadingInternshipDetails && internshipDetails) {
             <!-- Submit form -->
             <div class="card border mb-3">
-              <div class="card-header fw-semibold bg-light">Submit Office Evaluation</div>
+              <div class="card-header fw-semibold bg-light" style="color: #333;">Submit Office Evaluation</div>
               <div class="card-body">
                 <div class="row g-3">
 
                   <div class="col-md-6">
-                    <label class="form-label">Internship ID</label>
+                    <label class="form-label" style="color: #333; font-weight: 500;">Internship ID</label>
                     <div class="input-group">
-                      <span class="input-group-text bg-light" title="Automatically fetched from student selection">
+                      <span class="input-group-text bg-light" title="Automatically fetched from student selection" style="color: #333;">
                         <i class="bi bi-key me-2"></i>{{ officeEvalForm.internshipId || 'Not available' }}
                       </span>
                     </div>
-                    <small class="text-muted d-block mt-1">
+                    <small style="color: #666; display: block; margin-top: 0.5rem;">
                       <i class="bi bi-info-circle me-1"></i>Automatically retrieved from selected student
                     </small>
                   </div>
 
                   <div class="col-md-6">
-                    <label class="form-label">Total Score (auto-calculated)</label>
+                    <label class="form-label" style="color: #333; font-weight: 500;">Total Score (auto-calculated)</label>
                     <div class="input-group">
-                      <span class="input-group-text fw-bold">{{ officeEvalTotal }}</span>
-                      <span class="input-group-text text-muted">/40 &mdash; Scaled to {{ (officeEvalTotal / 2) | number:'1.0-1' }}/20</span>
+                      <span class="input-group-text fw-bold" style="color: #333;">{{ officeEvalTotal }}</span>
+                      <span class="input-group-text text-muted" style="color: #666;">/40 &mdash; Scaled to {{ (officeEvalTotal / 2) | number:'1.0-1' }}/20</span>
                     </div>
                   </div>
 
                   <!-- Criterion 1: Internship Report -->
                   <div class="col-md-6">
-                    <label class="form-label">Internship Report</label>
-                    <select class="form-select" [(ngModel)]="officeEvalForm.criteria.internshipReport" name="cr_report">
+                    <label class="form-label" style="color: #333; font-weight: 500;">Internship Report</label>
+                    <select class="form-select" [(ngModel)]="officeEvalForm.criteria.internshipReport" name="cr_report" style="color: #333;">
                       <option *ngFor="let o of criteriaOptions" [ngValue]="o.value">{{ o.label }} ({{ o.value }})</option>
                     </select>
                   </div>
 
                   <!-- Criterion 2: Portfolio Evidence -->
                   <div class="col-md-6">
-                    <label class="form-label">Portfolio Evidence</label>
-                    <select class="form-select" [(ngModel)]="officeEvalForm.criteria.portfolioEvidence" name="cr_portfolio">
+                    <label class="form-label" style="color: #333; font-weight: 500;">Portfolio Evidence</label>
+                    <select class="form-select" [(ngModel)]="officeEvalForm.criteria.portfolioEvidence" name="cr_portfolio" style="color: #333;">
                       <option *ngFor="let o of criteriaOptions" [ngValue]="o.value">{{ o.label }} ({{ o.value }})</option>
                     </select>
                   </div>
 
                   <!-- Criterion 3: Time Management -->
                   <div class="col-md-6">
-                    <label class="form-label">Time Management</label>
-                    <select class="form-select" [(ngModel)]="officeEvalForm.criteria.timeManagement" name="cr_time">
+                    <label class="form-label" style="color: #333; font-weight: 500;">Time Management</label>
+                    <select class="form-select" [(ngModel)]="officeEvalForm.criteria.timeManagement" name="cr_time" style="color: #333;">
                       <option *ngFor="let o of criteriaOptions" [ngValue]="o.value">{{ o.label }} ({{ o.value }})</option>
                     </select>
                   </div>
 
                   <!-- Criterion 4: Overall Internship Impact -->
                   <div class="col-md-6">
-                    <label class="form-label">Overall Internship Impact</label>
-                    <select class="form-select" [(ngModel)]="officeEvalForm.criteria.overallInternshipImpact" name="cr_impact">
+                    <label class="form-label" style="color: #333; font-weight: 500;">Overall Internship Impact</label>
+                    <select class="form-select" [(ngModel)]="officeEvalForm.criteria.overallInternshipImpact" name="cr_impact" style="color: #333;">
                       <option *ngFor="let o of criteriaOptions" [ngValue]="o.value">{{ o.label }} ({{ o.value }})</option>
                     </select>
                   </div>
 
                   <div class="col-12">
-                    <label class="form-label">Comments <small class="text-muted">(optional)</small></label>
+                    <label class="form-label" style="color: #333; font-weight: 500;">Comments <small style="color: #666;">(optional)</small></label>
                     <textarea class="form-control" rows="2" [(ngModel)]="officeEvalForm.comments" name="officeEvalComments"
-                              placeholder="Additional feedback for the student..."></textarea>
+                              placeholder="Additional feedback for the student..." style="color: #333;"></textarea>
                   </div>
 
                   <div class="col-12">
@@ -1630,7 +1643,7 @@
             @if (loadingOfficeEval) {
               <div class="text-center py-3">
                 <span class="spinner-border text-primary"></span>
-                <p class="mt-2 text-muted">Loading evaluation data…</p>
+                <p class="mt-2" style="color: #666;">Loading evaluation data…</p>
               </div>
             }
           }

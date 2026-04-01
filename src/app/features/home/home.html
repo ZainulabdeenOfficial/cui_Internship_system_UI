@@ -229,25 +229,104 @@
   </section>
 
   <section id="announcements" class="container py-5">
-    <h3 class="mb-3">Announcements</h3>
-  @if (store.announcements(); as anns) {
-      @if (anns.length === 0) {
-        <div class="text-muted">No announcements yet.</div>
-      } @else {
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h3 class="mb-0">Announcements</h3>
+      <small class="text-muted">
+        <i class="pi pi-sync text-info"></i> Auto-refreshing every {{ autoRefreshSeconds }}s
+      </small>
+    </div>
+
+    @if (sortedAndFilteredAnnouncements.length === 0) {
+      <div class="alert alert-info text-center py-4">
+        <i class="pi pi-inbox"></i> No active announcements at this time.
+      </div>
+    } @else {
+      <div class="announcements-container">
         <ul class="list-group shadow-sm">
-          @for (a of anns; track a.id) {
-            <li class="list-group-item d-flex justify-content-between align-items-center">
-              <div>
-                @if (a.title) { <div class="fw-semibold">{{ a.title }}</div> }
-                <div>{{ a.message }}</div>
-                <div class="small text-muted">{{ a.createdAt | date:'medium' }}</div>
-                @if (a.link) { <a class="small" [href]="a.link" target="_blank" rel="noopener">Open link</a> }
+          @for (a of paginatedAnnouncements; track a.id; let i = $index) {
+            <li class="list-group-item announcement-item fade-in" [style]="'--delay: ' + (i * 100) + 'ms'">
+              <div class="d-flex justify-content-between align-items-start gap-3">
+                <div class="grow">
+                  <!-- Header with pinned badge and archive indicator -->
+                  <div class="d-flex justify-content-between align-items-start mb-2">
+                    <div>
+                      @if (a.title) { 
+                        <div class="fw-semibold announcement-title">{{ a.title }}</div> 
+                      }
+                    </div>
+                    <div class="d-flex gap-2 align-items-center">
+                      @if (isArchived(a.createdAt)) {
+                        <span class="badge bg-secondary-subtle text-secondary small">Archived</span>
+                      }
+                      <span class="badge rounded-pill" [class.bg-primary]="a.pinned" [class.bg-secondary]="!a.pinned">
+                        @if (a.pinned) {
+                          <i class="pi pi-star-fill"></i> Pinned
+                        } @else {
+                          <i class="pi pi-star"></i> New
+                        }
+                      </span>
+                    </div>
+                  </div>
+
+                  <!-- Message with expand/collapse -->
+                  <div class="announcement-message mb-2">
+                    {{ getMessagePreview(a.message) }}
+                    @if (isMessageTruncated(a.message)) {
+                      <button class="btn btn-sm btn-link p-0 ms-2" (click)="toggleExpandMessage(a.message)">
+                        @if (isMessageExpanded(a.message)) {
+                          Show less
+                        } @else {
+                          Read more
+                        }
+                      </button>
+                    }
+                  </div>
+
+                  <!-- Metadata -->
+                  <div class="d-flex gap-2 align-items-center flex-wrap">
+                    <span class="small text-muted">
+                      <i class="pi pi-calendar"></i> {{ a.createdAt | date:'medium' }}
+                    </span>
+                    @if (getDaysOld(a.createdAt) > 0) {
+                      <span class="small text-muted">
+                        <i class="pi pi-clock"></i> {{ getDaysOld(a.createdAt) }} day{{ getDaysOld(a.createdAt) !== 1 ? 's' : '' }} ago
+                      </span>
+                    }
+                    @if (a.link) { 
+                      <a class="small btn btn-sm btn-link p-0" [href]="a.link" target="_blank" rel="noopener">
+                        <i class="pi pi-external-link"></i> Open link
+                      </a> 
+                    }
+                  </div>
+                </div>
+
+                <!-- Action buttons -->
+                <div class="d-flex gap-2">
+                  <button class="btn btn-sm btn-outline-primary" (click)="shareAnnouncement(a)" title="Share announcement">
+                    <i class="pi pi-share-alt"></i>
+                  </button>
+                </div>
               </div>
-              <span class="badge rounded-pill" [class.bg-primary]="a.pinned" [class.bg-secondary]="!a.pinned">{{ a.pinned ? 'Pinned' : 'New' }}</span>
             </li>
           }
         </ul>
-      }
+
+        <!-- Pagination controls -->
+        @if (totalAnnouncementsPages > 1) {
+          <div class="d-flex justify-content-center mt-3">
+            @if (hasMoreAnnouncements) {
+              <button class="btn btn-outline-primary" (click)="loadMoreAnnouncements()">
+                <i class="pi pi-angle-down"></i> Load More 
+                <span class="text-muted small">({{ currentAnnouncementsPage }}/{{ totalAnnouncementsPages }})</span>
+              </button>
+            } @else if (currentAnnouncementsPage > 1) {
+              <small class="text-muted text-center">
+                Showing {{ paginatedAnnouncements.length }} of {{ sortedAndFilteredAnnouncements.length }} announcements
+              </small>
+            }
+          </div>
+        }
+      </div>
     }
   </section>
 
