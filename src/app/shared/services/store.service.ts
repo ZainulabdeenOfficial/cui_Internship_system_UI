@@ -2,6 +2,7 @@ import { Injectable, signal } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import { Observable } from 'rxjs';
+import { AdminService } from './admin.service';
 
 export type WeeklyLog = { id: string; week: number; note: string; date: string };
 export type Report = { id: string; type: 'proposal'|'progress'|'final'|'mid'|'site-final'|'reflective'; title: string; content: string; date: string; score?: number; approved?: boolean };
@@ -175,7 +176,7 @@ export class StoreService {
     save('adminProfile', this.adminProfile());
   }
 
-  constructor(private http: HttpClient) {
+  constructor(private http: HttpClient, private adminService: AdminService) {
     // Seed requested sample faculty supervisor if none exists
     try {
       if (this.facultySupervisors().length === 0) {
@@ -191,20 +192,78 @@ export class StoreService {
     this.persist();
   }
 
-  // Announcements (Office)
-  addAnnouncement(message: string, title?: string, link?: string, pinned?: boolean) {
-    const a: Announcement = { id: crypto.randomUUID(), message, title, link, pinned, createdAt: new Date().toISOString() };
-    this.announcements.update(arr => [a, ...arr]);
-    this.persist();
-    return a;
+  // Announcements (Office) - with API integration
+  async addAnnouncement(message: string, title?: string, link?: string, pinned?: boolean) {
+    try {
+      // Call API to create announcement
+      const response = await this.adminService.createAnnouncement({ message, title, link, pinned });
+      const createdAnnouncement = response.announcement || {
+        id: response.id || crypto.randomUUID(),
+        message,
+        title,
+        link,
+        pinned,
+        createdAt: new Date().toISOString()
+      };
+      
+      // Update local state
+      this.announcements.update(arr => [createdAnnouncement, ...arr]);
+      this.persist();
+      return createdAnnouncement;
+    } catch (error) {
+      console.error('Failed to create announcement via API, using local storage:', error);
+      // Fallback to local storage
+      const a: Announcement = { id: crypto.randomUUID(), message, title, link, pinned, createdAt: new Date().toISOString() };
+      this.announcements.update(arr => [a, ...arr]);
+      this.persist();
+      return a;
+    }
   }
-  updateAnnouncement(id: string, changes: Partial<Announcement>) {
-    this.announcements.update(arr => arr.map(x => x.id === id ? { ...x, ...changes } : x));
-    this.persist();
+
+  async updateAnnouncement(id: string, changes: Partial<Announcement>) {
+    try {
+      // Call API to update announcement
+      await this.adminService.updateAnnouncement(id, changes);
+      
+      // Update local state
+      this.announcements.update(arr => arr.map(x => x.id === id ? { ...x, ...changes } : x));
+      this.persist();
+    } catch (error) {
+      console.error('Failed to update announcement via API, using local storage:', error);
+      // Fallback to local storage
+      this.announcements.update(arr => arr.map(x => x.id === id ? { ...x, ...changes } : x));
+      this.persist();
+    }
   }
-  removeAnnouncement(id: string) {
-    this.announcements.update(arr => arr.filter(x => x.id !== id));
-    this.persist();
+
+  async removeAnnouncement(id: string) {
+    try {
+      // Call API to delete announcement
+      await this.adminService.deleteAnnouncement(id);
+      
+      // Update local state
+      this.announcements.update(arr => arr.filter(x => x.id !== id));
+      this.persist();
+    } catch (error) {
+      console.error('Failed to remove announcement via API, using local storage:', error);
+      // Fallback to local storage
+      this.announcements.update(arr => arr.filter(x => x.id !== id));
+      this.persist();
+    }
+  }
+
+  async loadAnnouncements() {
+    try {
+      // Fetch announcements from API
+      const announcements = await this.adminService.getAnnouncements();
+      this.announcements.set(announcements);
+      this.persist();
+      return announcements;
+    } catch (error) {
+      console.error('Failed to load announcements from API:', error);
+      // Continue using local announcements
+      return this.announcements();
+    }
   }
 
   // Student actions

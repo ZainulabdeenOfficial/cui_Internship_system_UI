@@ -34,6 +34,17 @@ export class Home implements OnInit, AfterViewInit, OnDestroy {
   ngOnInit(): void {
     // Remove any auth background classes if present and set a plain body background
     document.body.classList.add('home-solid');
+    
+    // Load announcements from API
+    this.loadAnnouncements();
+  }
+
+  private async loadAnnouncements(): Promise<void> {
+    try {
+      await this.store.loadAnnouncements();
+    } catch (error) {
+      console.error('Failed to load announcements:', error);
+    }
   }
 
   ngAfterViewInit(): void {

@@ -734,4 +734,101 @@ export class AdminService {
       this.http.post<any>(url, {}, { headers: await this.authHeaders(true) })
     );
   }
+
+  // ========== ANNOUNCEMENTS API ==========
+
+  /**
+   * GET /api/admin/announcements
+   * Fetches all announcements
+   * Response: { message?: string, announcements?: Announcement[] }
+   */
+  async getAnnouncements(): Promise<Array<{ id: string; message: string; title?: string; link?: string; pinned?: boolean; createdAt: string }>> {
+    const base = environment.apiBaseUrl.replace(/\/$/, '');
+    const path = '/api/admin/announcements';
+    const url = environment.production ? path : `${base}${path}`;
+    try {
+      const res = await firstValueFrom(this.http.get<any>(url, { headers: await this.authHeaders() }));
+      const list: any[] = Array.isArray(res?.announcements) ? res.announcements : (Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []));
+      return list.map((x: any) => ({
+        id: (x.id ?? x._id ?? '').toString(),
+        message: x.message ?? '',
+        title: x.title,
+        link: x.link,
+        pinned: x.pinned ?? false,
+        createdAt: x.createdAt ?? new Date().toISOString()
+      })).filter(a => !!a.id);
+    } catch (error) {
+      // If endpoint doesn't exist, return empty array
+      return [];
+    }
+  }
+
+  /**
+   * POST /api/admin/announcements
+   * Creates a new announcement
+   * Request: { message: string, title?: string, link?: string, pinned?: boolean }
+   * Response: { message?: string, announcement?: Announcement, id?: string }
+   */
+  async createAnnouncement(payload: {
+    message: string;
+    title?: string;
+    link?: string;
+    pinned?: boolean;
+  }): Promise<{ message?: string; announcement?: any; id?: string }> {
+    const base = environment.apiBaseUrl.replace(/\/$/, '');
+    const path = '/api/admin/announcements';
+    const url = environment.production ? path : `${base}${path}`;
+    const headers = await this.authHeaders(true);
+    
+    const body = {
+      message: (payload.message || '').trim(),
+      title: payload.title ? (payload.title.trim() || undefined) : undefined,
+      link: payload.link ? (payload.link.trim() || undefined) : undefined,
+      pinned: !!payload.pinned
+    };
+    
+    if (!body.message) throw new Error('Announcement message is required');
+    
+    return await firstValueFrom(this.http.post<any>(url, body, { headers }));
+  }
+
+  /**
+   * PUT /api/admin/announcements/:id
+   * Updates an existing announcement
+   * Request: { id: string, message?: string, title?: string, link?: string, pinned?: boolean }
+   * Response: { message?: string, announcement?: Announcement }
+   */
+  async updateAnnouncement(id: string, payload: {
+    message?: string;
+    title?: string;
+    link?: string;
+    pinned?: boolean;
+  }): Promise<{ message?: string; announcement?: any }> {
+    const base = environment.apiBaseUrl.replace(/\/$/, '');
+    const path = `/api/admin/announcements/${encodeURIComponent(id)}`;
+    const url = environment.production ? path : `${base}${path}`;
+    const headers = await this.authHeaders(true);
+    
+    const body: any = {};
+    if (payload.message !== undefined) body.message = (payload.message || '').trim();
+    if (payload.title !== undefined) body.title = payload.title ? (payload.title.trim() || undefined) : undefined;
+    if (payload.link !== undefined) body.link = payload.link ? (payload.link.trim() || undefined) : undefined;
+    if (payload.pinned !== undefined) body.pinned = !!payload.pinned;
+    
+    return await firstValueFrom(this.http.put<any>(url, body, { headers }));
+  }
+
+  /**
+   * DELETE /api/admin/announcements/:id
+   * Deletes an announcement
+   * Response: { message?: string, success?: boolean }
+   */
+  async deleteAnnouncement(id: string): Promise<{ message?: string; success?: boolean }> {
+    const base = environment.apiBaseUrl.replace(/\/$/, '');
+    const path = `/api/admin/announcements/${encodeURIComponent(id)}`;
+    const url = environment.production ? path : `${base}${path}`;
+    const headers = await this.authHeaders(true);
+    
+    return await firstValueFrom(this.http.delete<any>(url, { headers }));
+  }
 }
