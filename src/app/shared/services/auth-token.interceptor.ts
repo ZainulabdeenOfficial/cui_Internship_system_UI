@@ -38,9 +38,10 @@ function getSessionToken(): string | null {
       || localStorage.getItem('accessToken');
     if (stored) { _cachedToken = stored; }
     return stored || _cachedToken;
-  } catch {
-    // Storage blocked (e.g. Edge Tracking Prevention) — use memory cache
-    return _cachedToken;
+  } catch (e) {
+    // Storage blocked (e.g. Safari Tracking Prevention, private mode) — use memory cache silently
+    // Don't log or throw - just use cached token if available
+    return _cachedToken || null;
   }
 }
 

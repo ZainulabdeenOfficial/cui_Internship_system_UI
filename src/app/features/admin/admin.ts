@@ -2267,6 +2267,13 @@ export class Admin {
       this.toast.warning('Internship ID not available. Please select a student with a valid internship.');
       return;
     }
+    
+    // Prevent duplicate submissions
+    if (this.submittingOfficeEval) {
+      this.toast.warning('Submission in progress. Please wait...');
+      return;
+    }
+    
     this.submittingOfficeEval = true;
     try {
       const res = await this.adminApi.submitOfficeEvaluation({
@@ -2277,11 +2284,20 @@ export class Admin {
       this.toast.success(res?.message || 'Office evaluation submitted successfully');
       this.officeEvalResult = res?.evaluation ?? null;
       await this.loadOfficeEvaluation(id);
+      this.cdr.markForCheck();
     } catch (err: any) {
-      const msg = err?.error?.message || err?.message || 'Failed to submit office evaluation';
-      this.toast.danger(msg);
+      // Handle 409 Conflict (evaluation already exists)
+      if (err?.status === 409) {
+        this.toast.warning('Evaluation already exists for this internship. Reload to view latest data.');
+        await this.loadOfficeEvaluation(id);
+      } else {
+        const msg = err?.error?.message || err?.message || 'Failed to submit office evaluation';
+        this.toast.danger(msg);
+      }
+      this.cdr.markForCheck();
     } finally {
       this.submittingOfficeEval = false;
+      this.cdr.detectChanges();
     }
   }
 }
