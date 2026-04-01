@@ -784,32 +784,32 @@ export class AdminService {
   }
 
   /**
-   * GET /api/student/final-result?internshipId=...
-   * Retrieve the final result for a student's internship.
-   * Response: { message, finalResult: { id, internshipId, facultyMarks, siteMarks, officeMarks, presentationMarks, totalMarks, status, hodSignatureUrl }, internship: {...} }
+   * GET /api/admin/internships/{internshipId}
+   * Retrieve the internship details with final result for marking.
+   * Uses existing internship details endpoint with caching.
+   * Returns wrapped response with finalResult and internship properties for compatibility.
    */
   async getStudentFinalResult(internshipId: string): Promise<any> {
-    if (!internshipId) return { message: 'Invalid internship ID' };
+    // Get internship details using /api/admin/internships/{internshipId}
+    const internshipData = await this.getInternshipDetails(internshipId);
     
-    // Check cache
-    const cached = this.finalResultCache.get(internshipId);
-    if (cached && (Date.now() - cached.timestamp) < this.cacheExpiryMs) {
-      return cached.data;
+    if (!internshipData) {
+      return { message: 'Failed to load internship', finalResult: null, internship: null };
     }
     
-    try {
-      const base = environment.apiBaseUrl.replace(/\/$/, '');
-      const path = `/api/student/final-result?internshipId=${encodeURIComponent(internshipId)}`;
-      const url = environment.production ? path : `${base}${path}`;
-      const result = await firstValueFrom(this.http.get<any>(url, { headers: await this.authHeaders() }));
-      
-      // Cache the result
-      this.finalResultCache.set(internshipId, { data: result, timestamp: Date.now() });
-      return result;
-    } catch (error) {
-      console.error('Failed to load student final result:', error);
-      return { message: 'Failed to load final result', finalResult: null };
-    }
+    // Wrap response to match expected structure: { finalResult: {...}, internship: {...} }
+    return {
+      finalResult: internshipData.finalResult || null,
+      internship: {
+        type: internshipData.type,
+        status: internshipData.status,
+        startDate: internshipData.startDate,
+        endDate: internshipData.endDate,
+        company: internshipData.company,
+        faculty: internshipData.faculty,
+        site: internshipData.site
+      }
+    };
   }
 
   // ========== CACHE MANAGEMENT ==========
