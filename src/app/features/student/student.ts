@@ -1557,7 +1557,7 @@ export class Student implements OnDestroy {
    * - GET /api/admin/office-evaluation (office/admin evaluation)
    * Also refreshes the evaluation summary.
    */
-  /** Load student's final result from /api/admin/internships/{internshipId} API */
+  /** Load student's final result from /api/faculty/evaluation-summary API (student-facing endpoint) */
   async loadFinalResult(forceRefresh = false) {
     // Resolve internship ID from all available sources (in priority order)
     let internshipIdSource = '';
@@ -1583,12 +1583,6 @@ export class Student implements OnDestroy {
       internshipIdSource = 'from loadStudentInternship()';
     }
 
-    // Clear cache if forceRefresh is true
-    if (forceRefresh) {
-      console.log(`🔄 [Student] Clearing final result cache for internshipId: ${internshipId}`);
-      this.adminApi.clearFinalResultCache(internshipId);
-    }
-
     if (this.loadingEvaluations) {
       await new Promise<void>(r => setTimeout(r, 0));
     }
@@ -1596,23 +1590,38 @@ export class Student implements OnDestroy {
     this.loadingEvaluations = true;
     this.cdr.markForCheck();
     try {
-      console.log(`🌐 [Student] Fetching final result using internshipId (${internshipIdSource}): ${internshipId}`);
+      console.log(`🌐 [Student] Fetching evaluation summary using internshipId (${internshipIdSource}): ${internshipId}`);
       
-      // Call the /api/admin/internships/{internshipId} endpoint
-      const res = await this.adminApi.getStudentFinalResult(internshipId);
+      // Call the /api/faculty/evaluation-summary endpoint (student-facing, no forceRefresh needed)
+      const res = await this.studentApi.getEvaluationSummary(internshipId, { forceRefresh });
       
-      // Store the entire response (contains finalResult and internship data)
-      this.studentFinalResult = res ?? null;
+      // Extract and store the response
+      if (res) {
+        this.studentFinalResult = {
+          message: res.message || 'Evaluation summary loaded',
+          finalResult: {
+            facultyMarks: res.facultyMarks ?? null,
+            siteMarks: res.siteMarks ?? null,
+            officeMarks: res.officeMarks ?? null,
+            presentationMarks: res.presentationMarks ?? null,
+            totalMarks: res.totalMarks ?? null,
+            status: res.status || 'PENDING',
+            hodSignatureUrl: res.hodSignatureUrl || null
+          },
+          internship: null
+        };
+        console.log('✅ [Student] Evaluation summary loaded:', this.studentFinalResult);
+      } else {
+        this.studentFinalResult = null;
+      }
       this.evaluationsLoadedOnce = true;
-      
-      console.log('✅ [Student] Final result loaded:', this.studentFinalResult);
     } catch (err: any) {
       const status = err?.status ?? 0;
       if (status === 404 || status === 400) {
-        console.log('ℹ️ [Student] Final result not available (404/400)');
+        console.log('ℹ️ [Student] Evaluation summary not available (404/400)');
       } else {
-        const msg = err?.error?.message || err?.message || 'Failed to load final result';
-        console.warn('[Student] Error loading final result:', msg);
+        const msg = err?.error?.message || err?.message || 'Failed to load evaluation summary';
+        console.warn('[Student] Error loading evaluation summary:', msg);
       }
       this.studentFinalResult = null;
     } finally {
