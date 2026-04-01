@@ -26,8 +26,6 @@ export class Home implements OnInit, AfterViewInit, OnDestroy {
   currentAnnouncementsPage = 1;
   expandedAnnouncements = new Set<string>();
   messageCharLimit = 150;
-  autoRefreshInterval: any;
-  autoRefreshSeconds = 30;
   archivedAfterDays = 30;
 
   get studentsCount() { return this.store.students().length; }
@@ -139,9 +137,6 @@ export class Home implements OnInit, AfterViewInit, OnDestroy {
     
     // Load announcements from API
     this.loadAnnouncements();
-
-    // Set up auto-refresh of announcements
-    this.setupAutoRefresh();
   }
 
   private async loadAnnouncements(): Promise<void> {
@@ -154,29 +149,12 @@ export class Home implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  private setupAutoRefresh(): void {
-    // Clear any existing interval
-    if (this.autoRefreshInterval) {
-      clearInterval(this.autoRefreshInterval);
-    }
-
-    // Set up auto-refresh every N seconds
-    this.autoRefreshInterval = setInterval(() => {
-      this.loadAnnouncements();
-    }, this.autoRefreshSeconds * 1000);
-  }
-
   ngAfterViewInit(): void {
     // Defer setting ready to next microtask to ensure DOM painted
-    queueMicrotask(() => { this.ready = true; });
+    queueMicrotask(() => { this.ready = true });
   }
 
   ngOnDestroy(): void {
     document.body.classList.remove('home-solid');
-    
-    // Clear auto-refresh interval
-    if (this.autoRefreshInterval) {
-      clearInterval(this.autoRefreshInterval);
-    }
   }
 }

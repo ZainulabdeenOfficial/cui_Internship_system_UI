@@ -2160,12 +2160,29 @@ export class Admin {
       })) : [];
       
       console.log('✅ Internships list loaded:', this.internships.length, 'internships');
+      
+      // Preload details for first 3 internships in background (don't show loading)
+      this.preloadInternshipDetails();
     } catch (err: any) {
       const msg = err?.error?.message || err?.message || 'Failed to load internships';
       console.error(msg);
       this.internships = [];
     } finally {
       this.loadingInternships = false;
+    }
+  }
+
+  private async preloadInternshipDetails(): Promise<void> {
+    // Preload first 3 internship details in background (silent loading, no UI updates)
+    const toPreload = this.internships.slice(0, 3);
+    try {
+      await Promise.all(toPreload.map(internship => 
+        this.adminApi.getInternshipDetails(internship.id).catch(() => null)
+      ));
+      console.log('✅ Preloaded', toPreload.length, 'internship details');
+    } catch (error) {
+      // Silent fail on preload
+      console.log('Preload complete (some may have failed)');
     }
   }
 

@@ -9,6 +9,12 @@ import { AuthService } from './auth.service';
 @Injectable({ providedIn: 'root' })
 export class AdminService {
   constructor(private http: HttpClient, private auth: AuthService) {}
+  
+  // Cache for internship details to avoid duplicate requests
+  private internshipDetailsCache = new Map<string, { data: any; timestamp: number }>();
+  private officeEvalCache = new Map<string, { data: any; timestamp: number }>();
+  private cacheExpiryMs = 5 * 60 * 1000; // 5 minutes cache TTL
+  
   private getTokenFromStorage(): string | null {
     try {
       return sessionStorage.getItem('authToken')
@@ -648,21 +654,56 @@ export class AdminService {
    * Response: { message, evaluation: { id, type, totalMarks, maxMarks, criteria, comments, submittedDate, evaluator } }
    */
   async getOfficeEvaluation(internshipId: string): Promise<{ message?: string; evaluation?: any }> {
-    const base = environment.apiBaseUrl.replace(/\/$/, '');
-    const path = `/api/admin/office-evaluation?internshipId=${encodeURIComponent(internshipId)}`;
-    const url = environment.production ? path : `${base}${path}`;
-    return await firstValueFrom(this.http.get<any>(url, { headers: await this.authHeaders() }));
+    if (!internshipId) return { message: 'Invalid internship ID' };
+    
+    // Check cache
+    const cached = this.officeEvalCache.get(internshipId);
+    if (cached && (Date.now() - cached.timestamp) < this.cacheExpiryMs) {
+      return cached.data;
+    }
+    
+    try {
+      const base = environment.apiBaseUrl.replace(/\/$/, '');
+      const path = `/api/admin/office-evaluation?internshipId=${encodeURIComponent(internshipId)}`;
+      const url = environment.production ? path : `${base}${path}`;
+      const result = await firstValueFrom(this.http.get<any>(url, { headers: await this.authHeaders() }));
+      
+      // Cache the result
+      this.officeEvalCache.set(internshipId, { data: result, timestamp: Date.now() });
+      return result;
+    } catch (error) {
+      // Return empty evaluation on error
+      return { message: 'Failed to load office evaluation', evaluation: null };
+    }
   }
 
   /**
    * GET /api/admin/internships/{internshipId}
    * Returns one internship with AppEx records (on the student), reports, weekly logs, evaluations (with evaluator), and final result.
+   * Results are cached for 5 minutes to improve performance.
    */
   async getInternshipDetails(internshipId: string): Promise<any> {
-    const base = environment.apiBaseUrl.replace(/\/$/, '');
-    const path = `/api/admin/internships/${encodeURIComponent(internshipId)}`;
-    const url = environment.production ? path : `${base}${path}`;
-    return await firstValueFrom(this.http.get<any>(url, { headers: await this.authHeaders() }));
+    if (!internshipId) return null;
+    
+    // Check cache
+    const cached = this.internshipDetailsCache.get(internshipId);
+    if (cached && (Date.now() - cached.timestamp) < this.cacheExpiryMs) {
+      return cached.data;
+    }
+    
+    try {
+      const base = environment.apiBaseUrl.replace(/\/$/, '');
+      const path = `/api/admin/internships/${encodeURIComponent(internshipId)}`;
+      const url = environment.production ? path : `${base}${path}`;
+      const result = await firstValueFrom(this.http.get<any>(url, { headers: await this.authHeaders() }));
+      
+      // Cache the result
+      this.internshipDetailsCache.set(internshipId, { data: result, timestamp: Date.now() });
+      return result;
+    } catch (error) {
+      console.error('Failed to fetch internship details:', error);
+      return null;
+    }
   }
 
   /**
@@ -671,10 +712,16 @@ export class AdminService {
    * Response: { message, data: [ { id, studentId, student, faculty, site, status, ... } ] }
    */
   async getAllInternships(): Promise<any> {
-    const base = environment.apiBaseUrl.replace(/\/$/, '');
-    const path = '/api/admin/internships';
-    const url = environment.production ? path : `${base}${path}`;
-    return await firstValueFrom(this.http.get<any>(url, { headers: await this.authHeaders() }));
+    try {
+      const base = environment.apiBaseUrl.replace(/\/$/, '');
+      const path = '/api/admin/internships';
+      const url = environment.production ? path : `${base}${path}`;
+      const result = await firstValueFrom(this.http.get<any>(url, { headers: await this.authHeaders() }));
+      return result;
+    } catch (error) {
+      console.error('Failed to fetch internships:', error);
+      return { data: [] };
+    }
   }
 
   /**
@@ -733,6 +780,38 @@ export class AdminService {
     return await firstValueFrom(
       this.http.post<any>(url, {}, { headers: await this.authHeaders(true) })
     );
+  }
+
+  // ========== CACHE MANAGEMENT ==========
+
+  /**
+   * Clear internship details cache for a specific internship or all
+   */
+  clearInternshipDetailsCache(internshipId?: string): void {
+    if (internshipId) {
+      this.internshipDetailsCache.delete(internshipId);
+    } else {
+      this.internshipDetailsCache.clear();
+    }
+  }
+
+  /**
+   * Clear office evaluation cache for a specific internship or all
+   */
+  clearOfficeEvalCache(internshipId?: string): void {
+    if (internshipId) {
+      this.officeEvalCache.delete(internshipId);
+    } else {
+      this.officeEvalCache.clear();
+    }
+  }
+
+  /**
+   * Clear all caches
+   */
+  clearAllCaches(): void {
+    this.internshipDetailsCache.clear();
+    this.officeEvalCache.clear();
   }
 
   // ========== ANNOUNCEMENTS API ==========
