@@ -2210,8 +2210,9 @@ export class Admin {
           internship.loadingFinalResult = true;
           try {
             const res = await this.adminApi.getStudentFinalResult(internship.id);
-            internship.studentFinalResult = res?.finalResult ?? null;
-            console.log('✅ Final result loaded for internship:', internship.id);
+            // Store entire response (contains both finalResult and internship data)
+            internship.studentFinalResult = res ?? null;
+            console.log('✅ Final result loaded for internship:', internship.id, res?.finalResult?.totalMarks);
           } catch (err) {
             console.log('Final result not available for internship:', internship.id);
             internship.studentFinalResult = null;
