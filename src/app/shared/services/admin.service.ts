@@ -13,6 +13,7 @@ export class AdminService {
   // Cache for internship details to avoid duplicate requests
   private internshipDetailsCache = new Map<string, { data: any; timestamp: number }>();
   private officeEvalCache = new Map<string, { data: any; timestamp: number }>();
+  private finalResultCache = new Map<string, { data: any; timestamp: number }>();
   private cacheExpiryMs = 5 * 60 * 1000; // 5 minutes cache TTL
   
   private getTokenFromStorage(): string | null {
@@ -782,6 +783,35 @@ export class AdminService {
     );
   }
 
+  /**
+   * GET /api/student/final-result?internshipId=...
+   * Retrieve the final result for a student's internship.
+   * Response: { message, finalResult: { id, internshipId, facultyMarks, siteMarks, officeMarks, presentationMarks, totalMarks, status, hodSignatureUrl }, internship: {...} }
+   */
+  async getStudentFinalResult(internshipId: string): Promise<any> {
+    if (!internshipId) return { message: 'Invalid internship ID' };
+    
+    // Check cache
+    const cached = this.finalResultCache.get(internshipId);
+    if (cached && (Date.now() - cached.timestamp) < this.cacheExpiryMs) {
+      return cached.data;
+    }
+    
+    try {
+      const base = environment.apiBaseUrl.replace(/\/$/, '');
+      const path = `/api/student/final-result?internshipId=${encodeURIComponent(internshipId)}`;
+      const url = environment.production ? path : `${base}${path}`;
+      const result = await firstValueFrom(this.http.get<any>(url, { headers: await this.authHeaders() }));
+      
+      // Cache the result
+      this.finalResultCache.set(internshipId, { data: result, timestamp: Date.now() });
+      return result;
+    } catch (error) {
+      console.error('Failed to load student final result:', error);
+      return { message: 'Failed to load final result', finalResult: null };
+    }
+  }
+
   // ========== CACHE MANAGEMENT ==========
 
   /**
@@ -807,11 +837,23 @@ export class AdminService {
   }
 
   /**
+   * Clear final result cache for a specific internship or all
+   */
+  clearFinalResultCache(internshipId?: string): void {
+    if (internshipId) {
+      this.finalResultCache.delete(internshipId);
+    } else {
+      this.finalResultCache.clear();
+    }
+  }
+
+  /**
    * Clear all caches
    */
   clearAllCaches(): void {
     this.internshipDetailsCache.clear();
     this.officeEvalCache.clear();
+    this.finalResultCache.clear();
   }
 
   // ========== ANNOUNCEMENTS API ==========

@@ -2040,6 +2040,9 @@ export class Admin {
     evaluator?: any;
   } | null = null;
 
+  studentFinalResult: any = null;
+  loadingFinalResult = false;
+
   submittingOfficeEval = false;
   loadingOfficeEval = false;
   selectedStudentForEval: any = null;
@@ -2075,21 +2078,25 @@ export class Admin {
     };
     this.officeEvalResult = null;
     this.internshipDetails = null;
+    this.studentFinalResult = null;
     // Set loading to true immediately so loading state appears
     this.loadingInternshipDetails = true;
     this.loadingOfficeEval = true;
+    this.loadingFinalResult = true;
     
     if (!internshipId) {
       this.toast.warning('This student does not have an internship ID assigned yet.');
       this.loadingInternshipDetails = false;
       this.loadingOfficeEval = false;
+      this.loadingFinalResult = false;
       return;
     }
     
     // Load data in parallel for faster loading
     Promise.all([
       this.loadInternshipDetails(internshipId),
-      this.loadOfficeEvaluation(internshipId)
+      this.loadOfficeEvaluation(internshipId),
+      this.loadStudentFinalResult(internshipId)
     ]).catch(err => {
       console.error('Error loading evaluation data:', err);
     });
@@ -2128,6 +2135,23 @@ export class Admin {
       this.officeEvalResult = null;
     } finally {
       this.loadingOfficeEval = false;
+    }
+  }
+
+  async loadStudentFinalResult(internshipId: string) {
+    if (!internshipId) {
+      this.loadingFinalResult = false;
+      return;
+    }
+    try {
+      const res = await this.adminApi.getStudentFinalResult(internshipId);
+      this.studentFinalResult = res?.finalResult ?? null;
+      console.log('✅ Student final result loaded:', this.studentFinalResult);
+    } catch (err: any) {
+      console.error('Failed to load student final result:', err?.message);
+      this.studentFinalResult = null;
+    } finally {
+      this.loadingFinalResult = false;
     }
   }
 

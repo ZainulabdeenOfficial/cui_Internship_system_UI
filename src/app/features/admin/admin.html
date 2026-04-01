@@ -1515,14 +1515,14 @@
       <div class="card border-primary mb-3">
         <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
           <span><i class="bi bi-person-badge me-2"></i>{{ selectedStudentForEval.name }} — Office Evaluation</span>
-          <button class="btn btn-sm btn-outline-light" (click)="selectedStudentForEval = null; officeEvalResult = null">
+          <button class="btn btn-sm btn-outline-light" (click)="selectedStudentForEval = null; officeEvalResult = null; studentFinalResult = null">
             <i class="bi bi-x-lg"></i> Deselect
           </button>
         </div>
         <div class="card-body">
 
           <!-- Combined Loading Indicator -->
-          @if (loadingInternshipDetails || loadingOfficeEval) {
+          @if (loadingInternshipDetails || loadingOfficeEval || loadingFinalResult) {
             <div class="alert alert-info d-flex align-items-center gap-3 mb-3" role="status">
               <div class="spinner-border spinner-border-sm shrink-0" role="status">
                 <span class="visually-hidden">Loading...</span>
@@ -1534,6 +1534,9 @@
                 }
                 @if (loadingOfficeEval) {
                   <div style="font-size: 0.9rem; color: #555;">Loading evaluation history...</div>
+                }
+                @if (loadingFinalResult) {
+                  <div style="font-size: 0.9rem; color: #555;">Loading student final result...</div>
                 }
               </div>
             </div>
@@ -1738,6 +1741,73 @@
               </div>
             </div>
           </div>
+          }
+
+          <!-- Student Final Result from API -->
+          @if (loadingFinalResult) {
+            <div class="alert alert-info d-flex align-items-center gap-3 mb-3" role="status">
+              <div class="spinner-border spinner-border-sm shrink-0" role="status">
+                <span class="visually-hidden">Loading...</span>
+              </div>
+              <div>Loading student final result...</div>
+            </div>
+          }
+
+          @if (!loadingFinalResult && studentFinalResult) {
+            <div class="card border-info mb-3">
+              <div class="card-header bg-info text-white">
+                <i class="bi bi-award-fill me-2"></i>Student Final Result
+              </div>
+              <div class="card-body">
+                <div class="row g-3">
+                  <div class="col-md-2">
+                    <small class="text-muted d-block">Faculty Marks</small>
+                    <strong class="fs-5" style="color: #333;">{{ studentFinalResult.facultyMarks ?? '—' }}</strong>
+                  </div>
+                  <div class="col-md-2">
+                    <small class="text-muted d-block">Site Marks</small>
+                    <strong class="fs-5" style="color: #333;">{{ studentFinalResult.siteMarks ?? '—' }}</strong>
+                  </div>
+                  <div class="col-md-2">
+                    <small class="text-muted d-block">Office Marks</small>
+                    <strong class="fs-5" style="color: #333;">{{ studentFinalResult.officeMarks ?? '—' }}</strong>
+                  </div>
+                  <div class="col-md-2">
+                    <small class="text-muted d-block">Presentation Marks</small>
+                    <strong class="fs-5" style="color: #333;">{{ studentFinalResult.presentationMarks ?? '—' }}</strong>
+                  </div>
+                  <div class="col-md-2">
+                    <small class="text-muted d-block">Total Marks</small>
+                    <strong class="fs-5" style="color: #333;">{{ studentFinalResult.totalMarks ?? '—' }}</strong>
+                  </div>
+                  <div class="col-md-2">
+                    <small class="text-muted d-block">Status</small>
+                    <span class="badge"
+                      [class.text-bg-success]="(studentFinalResult.status || '').toLowerCase() === 'pass'"
+                      [class.text-bg-danger]="(studentFinalResult.status || '').toLowerCase() === 'fail'"
+                      [class.text-bg-warning]="(studentFinalResult.status || '').toLowerCase() === 'pending'"
+                      [class.text-bg-secondary]="!(studentFinalResult.status || '')">
+                      {{ studentFinalResult.status || 'N/A' }}
+                    </span>
+                  </div>
+
+                  @if (studentFinalResult.hodSignatureUrl) {
+                    <div class="col-12">
+                      <small class="text-muted d-block">HOD Signature</small>
+                      <a [href]="studentFinalResult.hodSignatureUrl" target="_blank" class="btn btn-sm btn-outline-info">
+                        <i class="bi bi-file-pdf me-1"></i>View Signature
+                      </a>
+                    </div>
+                  }
+                </div>
+              </div>
+            </div>
+          }
+
+          @if (!loadingFinalResult && !studentFinalResult && officeEvalForm.internshipId) {
+            <div class="alert alert-warning mb-3">
+              <i class="bi bi-exclamation-triangle me-2"></i>No final result available yet for this student.
+            </div>
           }
 
           @if (!loadingOfficeEval && !officeEvalResult && officeEvalForm.internshipId && !loadingInternshipDetails) {
