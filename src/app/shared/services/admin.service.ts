@@ -790,31 +790,34 @@ export class AdminService {
    * Returns wrapped response with finalResult and internship properties for compatibility.
    */
   async getStudentFinalResult(internshipId: string): Promise<any> {
-    // Get internship details using /api/admin/internships/{internshipId}
-    let internshipData = await this.getInternshipDetails(internshipId);
-    
-    if (!internshipData) {
-      return { message: 'Failed to load internship', finalResult: null, internship: null };
+    // Check cache first
+    const cached = this.finalResultCache.get(internshipId);
+    if (cached && Date.now() - cached.timestamp < this.cacheExpiryMs) {
+      return cached.data;
     }
-    
-    // Handle wrapped response (might be { data: {...}, message: "..." })
-    if (internshipData.data && !internshipData.finalResult) {
-      internshipData = internshipData.data;
+
+    try {
+      const base = environment.apiBaseUrl.replace(/\/$/, '');
+      const url = `${base}/api/student/final-result?internshipId=${encodeURIComponent(internshipId)}`;
+      const result = await firstValueFrom(
+        this.http.get<any>(url, { headers: await this.authHeaders() })
+      );
+
+      // API returns: { message: string, finalResult: {...}, internship: {...} }
+      const response = {
+        message: result?.message || 'Student final result loaded',
+        finalResult: result?.finalResult || null,
+        internship: result?.internship || null
+      };
+
+      // Cache the response for 5 minutes
+      this.finalResultCache.set(internshipId, { data: response, timestamp: Date.now() });
+
+      return response;
+    } catch (error: any) {
+      console.error('Error fetching student final result:', error);
+      return { message: 'Failed to load student final result', finalResult: null, internship: null };
     }
-    
-    // Wrap response to match expected structure: { finalResult: {...}, internship: {...} }
-    return {
-      finalResult: internshipData.finalResult || null,
-      internship: {
-        type: internshipData.type,
-        status: internshipData.status,
-        startDate: internshipData.startDate,
-        endDate: internshipData.endDate,
-        company: internshipData.company,
-        faculty: internshipData.faculty,
-        site: internshipData.site
-      }
-    };
   }
 
   // ========== CACHE MANAGEMENT ==========
