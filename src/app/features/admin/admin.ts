@@ -2163,7 +2163,7 @@ export class Admin {
       const res = await this.adminApi.getAllInternships();
       const data = res?.data || [];
       
-      // Better data mapping and filtering
+      // Map internships from API response
       this.internships = Array.isArray(data) ? data.map((item: any) => ({
         id: item.id || item._id || '',
         student: {
@@ -2173,23 +2173,34 @@ export class Admin {
           regNo: item.student?.regNo || item.student?.registrationNo || ''
         },
         company: {
-          id: item.company?.id || item.company?._id || '',
-          name: item.company?.name || item.companyName || ''
+          id: item.site?.company?.id || item.company?.id || item.company?._id || '',
+          name: item.site?.company?.name || item.company?.name || item.companyName || ''
         },
-        companyName: item.company?.name || item.companyName || '',
+        companyName: item.site?.company?.name || item.company?.name || item.companyName || '',
+        faculty: {
+          id: item.faculty?.id || item.faculty?._id || '',
+          name: item.faculty?.name || '',
+          email: item.faculty?.email || ''
+        },
+        site: {
+          id: item.site?.id || item.site?._id || '',
+          name: item.site?.name || '',
+          email: item.site?.email || '',
+          company: item.site?.company || {}
+        },
         status: item.status || 'pending',
-        finalResult: item.finalResult || item.marks?.final || null,
-        internshipRole: item.internshipRole || '',
+        internshipType: item.type || 'ONSITE',
         startDate: item.startDate,
         endDate: item.endDate,
-        studentFinalResult: null,  // Will be populated by loadAllFinalResults
-        loadingFinalResult: false
+        studentFinalResult: null,  // Will be populated by loadStudentFinalResults
+        loadingFinalResult: false,
+        internshipRole: item.internshipRole || ''
       })) : [];
       
       console.log('✅ Internships list loaded:', this.internships.length, 'internships');
       
-      // Load final results for all internships immediately
-      this.loadAllStudentFinalResults();
+      // Load final results for all internships using /api/student/final-result API
+      this.loadStudentFinalResultsForAll();
       
       // Preload details for first 3 internships in background (don't show loading)
       this.preloadInternshipDetails();
@@ -2202,15 +2213,15 @@ export class Admin {
     }
   }
 
-  private async loadAllStudentFinalResults(): Promise<void> {
-    // Load final results for all internships in parallel
+  private async loadStudentFinalResultsForAll(): Promise<void> {
+    // Load final results for all internships using /api/student/final-result API
     try {
       await Promise.all(this.internships.map(async (internship) => {
         if (internship.id) {
           internship.loadingFinalResult = true;
           try {
             const res = await this.adminApi.getStudentFinalResult(internship.id);
-            // Store entire response (contains both finalResult and internship data)
+            // Store entire response (contains both finalResult and internship data from the endpoint)
             internship.studentFinalResult = res ?? null;
             console.log('✅ Final result loaded for internship:', internship.id, res?.finalResult?.totalMarks);
           } catch (err) {
@@ -2225,6 +2236,11 @@ export class Admin {
     } catch (error) {
       console.error('Error loading final results:', error);
     }
+  }
+
+  private async loadAllStudentFinalResults(): Promise<void> {
+    // Note: Renamed to loadStudentFinalResultsForAll()
+    console.log('✅ All student final results already loaded');
   }
 
   private async preloadInternshipDetails(): Promise<void> {
