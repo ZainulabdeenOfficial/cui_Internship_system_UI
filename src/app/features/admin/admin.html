@@ -1596,8 +1596,8 @@
             </div>
           }
 
-          <!-- Show form only after internship details are loaded -->
-          @if (!loadingInternshipDetails && internshipDetails) {
+          <!-- Show form only after internship details are loaded AND no evaluation exists yet -->
+          @if (!loadingInternshipDetails && internshipDetails && !officeEvalResult) {
             <!-- Submit form -->
             <div class="card border mb-3">
               <div class="card-header fw-semibold bg-light" style="color: #333;">Submit Office Evaluation</div>

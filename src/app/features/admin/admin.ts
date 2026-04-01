@@ -2268,6 +2268,12 @@ export class Admin {
       return;
     }
     
+    // Prevent submission if evaluation already exists
+    if (this.officeEvalResult) {
+      this.toast.warning('An evaluation has already been submitted for this internship. The form should not be visible.');
+      return;
+    }
+    
     // Prevent duplicate submissions
     if (this.submittingOfficeEval) {
       this.toast.warning('Submission in progress. Please wait...');
