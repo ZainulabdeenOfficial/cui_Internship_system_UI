@@ -2078,25 +2078,26 @@ export class Admin {
     };
     this.officeEvalResult = null;
     this.internshipDetails = null;
-    this.studentFinalResult = null;
+    // Use final result already loaded from table, or get it from the internship object
+    const foundInternship = this.internships.find(i => i.id === internshipId);
+    this.studentFinalResult = foundInternship?.studentFinalResult ?? null;
+    
     // Set loading to true immediately so loading state appears
     this.loadingInternshipDetails = true;
     this.loadingOfficeEval = true;
-    this.loadingFinalResult = true;
+    this.loadingFinalResult = false;  // Already loaded from table
     
     if (!internshipId) {
       this.toast.warning('This student does not have an internship ID assigned yet.');
       this.loadingInternshipDetails = false;
       this.loadingOfficeEval = false;
-      this.loadingFinalResult = false;
       return;
     }
     
-    // Load data in parallel for faster loading
+    // Load data in parallel for faster loading (internship and office eval only)
     Promise.all([
       this.loadInternshipDetails(internshipId),
-      this.loadOfficeEvaluation(internshipId),
-      this.loadStudentFinalResult(internshipId)
+      this.loadOfficeEvaluation(internshipId)
     ]).catch(err => {
       console.error('Error loading evaluation data:', err);
     });
@@ -2180,10 +2181,15 @@ export class Admin {
         finalResult: item.finalResult || item.marks?.final || null,
         internshipRole: item.internshipRole || '',
         startDate: item.startDate,
-        endDate: item.endDate
+        endDate: item.endDate,
+        studentFinalResult: null,  // Will be populated by loadAllFinalResults
+        loadingFinalResult: false
       })) : [];
       
       console.log('✅ Internships list loaded:', this.internships.length, 'internships');
+      
+      // Load final results for all internships immediately
+      this.loadAllStudentFinalResults();
       
       // Preload details for first 3 internships in background (don't show loading)
       this.preloadInternshipDetails();
@@ -2193,6 +2199,30 @@ export class Admin {
       this.internships = [];
     } finally {
       this.loadingInternships = false;
+    }
+  }
+
+  private async loadAllStudentFinalResults(): Promise<void> {
+    // Load final results for all internships in parallel
+    try {
+      await Promise.all(this.internships.map(async (internship) => {
+        if (internship.id) {
+          internship.loadingFinalResult = true;
+          try {
+            const res = await this.adminApi.getStudentFinalResult(internship.id);
+            internship.studentFinalResult = res?.finalResult ?? null;
+            console.log('✅ Final result loaded for internship:', internship.id);
+          } catch (err) {
+            console.log('Final result not available for internship:', internship.id);
+            internship.studentFinalResult = null;
+          } finally {
+            internship.loadingFinalResult = false;
+          }
+        }
+      }));
+      console.log('✅ All student final results loaded');
+    } catch (error) {
+      console.error('Error loading final results:', error);
     }
   }
 

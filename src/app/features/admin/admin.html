@@ -1433,12 +1433,41 @@
                       </td>
                       <td style="color: #333;">
                         <span class="badge"
-                          [class.text-bg-success]="internship.finalResult && internship.finalResult >= 70"
-                          [class.text-bg-warning]="internship.finalResult && internship.finalResult >= 50 && internship.finalResult < 70"
-                          [class.text-bg-danger]="internship.finalResult && internship.finalResult < 50"
-                          [class.text-bg-secondary]="!internship.finalResult">
-                          {{ internship.finalResult ? (internship.finalResult + '%') : 'N/A' }}
+                          [class.text-bg-warning]="(internship.status || '').toLowerCase() === 'ongoing'"
+                          [class.text-bg-success]="(internship.status || '').toLowerCase() === 'completed'"
+                          [class.text-bg-info]="(internship.status || '').toLowerCase() === 'pending'"
+                          [class.text-bg-secondary]="!(internship.status || '')">
+                          {{ internship.status || 'pending' }}
                         </span>
+                      </td>
+                      <td style="color: #333;">
+                        @if (internship.loadingFinalResult) {
+                          <div class="spinner-border spinner-border-sm" role="status" title="Loading final result...">
+                            <span class="visually-hidden">Loading...</span>
+                          </div>
+                        } @else if (internship.studentFinalResult?.finalResult) {
+                          <div>
+                            <span class="badge"
+                              [class.text-bg-success]="internship.studentFinalResult.finalResult.totalMarks && internship.studentFinalResult.finalResult.totalMarks >= 70"
+                              [class.text-bg-warning]="internship.studentFinalResult.finalResult.totalMarks && internship.studentFinalResult.finalResult.totalMarks >= 50 && internship.studentFinalResult.finalResult.totalMarks < 70"
+                              [class.text-bg-danger]="internship.studentFinalResult.finalResult.totalMarks && internship.studentFinalResult.finalResult.totalMarks < 50"
+                              [class.text-bg-secondary]="!internship.studentFinalResult.finalResult.totalMarks">
+                              {{ internship.studentFinalResult.finalResult.totalMarks ?? 'N/A' }}
+                            </span>
+                            <br>
+                            <small style="color: #666; display: block; margin-top: 4px;">
+                              <span class="badge"
+                                [class.text-bg-success]="(internship.studentFinalResult.finalResult.status || '').toLowerCase() === 'pass'"
+                                [class.text-bg-danger]="(internship.studentFinalResult.finalResult.status || '').toLowerCase() === 'fail'"
+                                [class.text-bg-warning]="(internship.studentFinalResult.finalResult.status || '').toLowerCase() === 'pending'"
+                                [class.text-bg-secondary]="!(internship.studentFinalResult.finalResult.status || '')">
+                                {{ internship.studentFinalResult.finalResult.status || 'N/A' }}
+                              </span>
+                            </small>
+                          </div>
+                        } @else {
+                          <span class="text-muted">N/A</span>
+                        }
                       </td>
                       <td style="color: #333;">
                         <button class="btn btn-sm btn-outline-primary" (click)="selectStudentForEval(prepareStudentForEval(internship))">
@@ -1522,7 +1551,7 @@
         <div class="card-body">
 
           <!-- Combined Loading Indicator -->
-          @if (loadingInternshipDetails || loadingOfficeEval || loadingFinalResult) {
+          @if (loadingInternshipDetails || loadingOfficeEval) {
             <div class="alert alert-info d-flex align-items-center gap-3 mb-3" role="status">
               <div class="spinner-border spinner-border-sm shrink-0" role="status">
                 <span class="visually-hidden">Loading...</span>
@@ -1535,15 +1564,76 @@
                 @if (loadingOfficeEval) {
                   <div style="font-size: 0.9rem; color: #555;">Loading evaluation history...</div>
                 }
-                @if (loadingFinalResult) {
-                  <div style="font-size: 0.9rem; color: #555;">Loading student final result...</div>
-                }
               </div>
             </div>
           }
 
-          <!-- Internship Details Summary -->
-          @if (internshipDetails && !loadingInternshipDetails) {
+          <!-- Internship Details Summary from Final Result API -->
+          @if (studentFinalResult?.internship && !loadingInternshipDetails) {
+            <div class="alert alert-success mb-3" style="background-color: #d4edda; border-color: #c3e6cb; color: #155724;">
+              <div class="d-flex justify-content-between align-items-start">
+                <div style="flex: 1;">
+                  <i class="bi bi-check-circle-fill me-2"></i>
+                  <strong>Internship Information</strong>
+                  <div style="font-size: 0.9rem; margin-top: 0.5rem; color: #333;">
+                    <strong>Type:</strong> {{ studentFinalResult.internship.type || 'N/A' }}<br>
+                    <strong>Status:</strong> {{ studentFinalResult.internship.status || 'N/A' }}<br>
+                    <strong>Start Date:</strong> {{ studentFinalResult.internship.startDate ? (studentFinalResult.internship.startDate | date:'mediumDate') : 'N/A' }}<br>
+                    <strong>End Date:</strong> {{ studentFinalResult.internship.endDate ? (studentFinalResult.internship.endDate | date:'mediumDate') : 'N/A' }}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Faculty Supervisor Information -->
+            @if (studentFinalResult.internship.faculty) {
+              <div class="card border-primary mb-3">
+                <div class="card-header bg-primary text-white">
+                  <i class="bi bi-person-badge me-2"></i>Faculty Supervisor
+                </div>
+                <div class="card-body">
+                  <div class="row g-2">
+                    <div class="col-md-6">
+                      <small class="text-muted d-block">Name</small>
+                      <strong style="color: #333;">{{ studentFinalResult.internship.faculty.name || 'N/A' }}</strong>
+                    </div>
+                    <div class="col-md-6">
+                      <small class="text-muted d-block">Email</small>
+                      <a href="mailto:{{ studentFinalResult.internship.faculty.email }}" style="color: #0066cc;">
+                        {{ studentFinalResult.internship.faculty.email || 'N/A' }}
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            }
+
+            <!-- Site Supervisor Information -->
+            @if (studentFinalResult.internship.site) {
+              <div class="card border-success mb-3">
+                <div class="card-header bg-success text-white">
+                  <i class="bi bi-building me-2"></i>Site Supervisor
+                </div>
+                <div class="card-body">
+                  <div class="row g-2">
+                    <div class="col-md-6">
+                      <small class="text-muted d-block">Name</small>
+                      <strong style="color: #333;">{{ studentFinalResult.internship.site.name || 'N/A' }}</strong>
+                    </div>
+                    <div class="col-md-6">
+                      <small class="text-muted d-block">Email</small>
+                      <a href="mailto:{{ studentFinalResult.internship.site.email }}" target="_blank" style="color: #0066cc;">
+                        {{ studentFinalResult.internship.site.email || 'N/A' }}
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            }
+          }
+
+          <!-- Alternative: Show internship details if available (fallback) -->
+          @if (internshipDetails && !loadingInternshipDetails && !studentFinalResult?.internship) {
             <div class="alert alert-success mb-3" style="background-color: #d4edda; border-color: #c3e6cb; color: #155724;">
               <div class="d-flex justify-content-between align-items-start">
                 <div>
@@ -1743,68 +1833,79 @@
           </div>
           }
 
-          <!-- Student Final Result from API -->
-          @if (loadingFinalResult) {
-            <div class="alert alert-info d-flex align-items-center gap-3 mb-3" role="status">
-              <div class="spinner-border spinner-border-sm shrink-0" role="status">
-                <span class="visually-hidden">Loading...</span>
-              </div>
-              <div>Loading student final result...</div>
-            </div>
-          }
-
-          @if (!loadingFinalResult && studentFinalResult) {
+          <!-- Student Final Result from Table Load (Pre-loaded) -->
+          @if (studentFinalResult?.finalResult) {
             <div class="card border-info mb-3">
               <div class="card-header bg-info text-white">
-                <i class="bi bi-award-fill me-2"></i>Student Final Result
+                <i class="bi bi-award-fill me-2"></i>Student Final Result Summary
               </div>
               <div class="card-body">
-                <div class="row g-3">
-                  <div class="col-md-2">
-                    <small class="text-muted d-block">Faculty Marks</small>
-                    <strong class="fs-5" style="color: #333;">{{ studentFinalResult.facultyMarks ?? '—' }}</strong>
+                <div class="row g-2">
+                  <div class="col-6 col-md-2">
+                    <div class="text-center">
+                      <small class="text-muted d-block">Faculty Marks</small>
+                      <strong class="fs-5" style="color: #333;">{{ studentFinalResult.finalResult.facultyMarks ?? '—' }}</strong>
+                    </div>
                   </div>
-                  <div class="col-md-2">
-                    <small class="text-muted d-block">Site Marks</small>
-                    <strong class="fs-5" style="color: #333;">{{ studentFinalResult.siteMarks ?? '—' }}</strong>
+                  <div class="col-6 col-md-2">
+                    <div class="text-center">
+                      <small class="text-muted d-block">Site Marks</small>
+                      <strong class="fs-5" style="color: #333;">{{ studentFinalResult.finalResult.siteMarks ?? '—' }}</strong>
+                    </div>
                   </div>
-                  <div class="col-md-2">
-                    <small class="text-muted d-block">Office Marks</small>
-                    <strong class="fs-5" style="color: #333;">{{ studentFinalResult.officeMarks ?? '—' }}</strong>
+                  <div class="col-6 col-md-2">
+                    <div class="text-center">
+                      <small class="text-muted d-block">Office Marks</small>
+                      <strong class="fs-5" style="color: #333;">{{ studentFinalResult.finalResult.officeMarks ?? '—' }}</strong>
+                    </div>
                   </div>
-                  <div class="col-md-2">
-                    <small class="text-muted d-block">Presentation Marks</small>
-                    <strong class="fs-5" style="color: #333;">{{ studentFinalResult.presentationMarks ?? '—' }}</strong>
+                  <div class="col-6 col-md-2">
+                    <div class="text-center">
+                      <small class="text-muted d-block">Presentation</small>
+                      <strong class="fs-5" style="color: #333;">{{ studentFinalResult.finalResult.presentationMarks ?? '—' }}</strong>
+                    </div>
                   </div>
-                  <div class="col-md-2">
-                    <small class="text-muted d-block">Total Marks</small>
-                    <strong class="fs-5" style="color: #333;">{{ studentFinalResult.totalMarks ?? '—' }}</strong>
+                  <div class="col-6 col-md-2">
+                    <div class="text-center">
+                      <small class="text-muted d-block fw-bold">Total Marks</small>
+                      <strong class="fs-4" style="color: #0066cc;">{{ studentFinalResult.finalResult.totalMarks ?? '—' }}</strong>
+                    </div>
                   </div>
-                  <div class="col-md-2">
-                    <small class="text-muted d-block">Status</small>
-                    <span class="badge"
-                      [class.text-bg-success]="(studentFinalResult.status || '').toLowerCase() === 'pass'"
-                      [class.text-bg-danger]="(studentFinalResult.status || '').toLowerCase() === 'fail'"
-                      [class.text-bg-warning]="(studentFinalResult.status || '').toLowerCase() === 'pending'"
-                      [class.text-bg-secondary]="!(studentFinalResult.status || '')">
-                      {{ studentFinalResult.status || 'N/A' }}
-                    </span>
+                  <div class="col-6 col-md-2">
+                    <div class="text-center">
+                      <small class="text-muted d-block">Status</small>
+                      <span class="badge"
+                        [class.text-bg-success]="(studentFinalResult.finalResult.status || '').toLowerCase() === 'pass'"
+                        [class.text-bg-danger]="(studentFinalResult.finalResult.status || '').toLowerCase() === 'fail'"
+                        [class.text-bg-warning]="(studentFinalResult.finalResult.status || '').toLowerCase() === 'pending'"
+                        [class.text-bg-secondary]="!(studentFinalResult.finalResult.status || '')">
+                        {{ studentFinalResult.finalResult.status || 'N/A' }}
+                      </span>
+                    </div>
                   </div>
+                </div>
 
-                  @if (studentFinalResult.hodSignatureUrl) {
+                <!-- HOD Signature -->
+                @if (studentFinalResult.finalResult.hodSignatureUrl) {
+                  <hr class="my-3" />
+                  <div class="row">
                     <div class="col-12">
                       <small class="text-muted d-block">HOD Signature</small>
-                      <a [href]="studentFinalResult.hodSignatureUrl" target="_blank" class="btn btn-sm btn-outline-info">
-                        <i class="bi bi-file-pdf me-1"></i>View Signature
+                      <a [href]="studentFinalResult.finalResult.hodSignatureUrl" target="_blank" class="btn btn-sm btn-outline-info">
+                        <i class="bi bi-file-pdf me-1"></i>View Signature Document
                       </a>
                     </div>
-                  }
-                </div>
+                  </div>
+                }
               </div>
+            </div>
+          } @else if (studentFinalResult) {
+            <div class="alert alert-warning mb-3">
+              <i class="bi bi-exclamation-triangle me-2"></i>Final result data not available for this student.
             </div>
           }
 
-          @if (!loadingFinalResult && !studentFinalResult && officeEvalForm.internshipId) {
+          @if (!studentFinalResult && officeEvalForm.internshipId && !loadingInternshipDetails) {
             <div class="alert alert-warning mb-3">
               <i class="bi bi-exclamation-triangle me-2"></i>No final result available yet for this student.
             </div>
