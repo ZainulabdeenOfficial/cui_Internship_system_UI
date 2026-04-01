@@ -1557,6 +1557,12 @@ export class Student implements OnDestroy {
 
     const idToUse = this.studentInternshipId || internshipId!;
 
+    // Clear cache if forceRefresh is true
+    if (forceRefresh) {
+      console.log(`🔄 [Student] Clearing final result cache for internshipId: ${idToUse}`);
+      this.adminApi.clearFinalResultCache(idToUse);
+    }
+
     if (this.loadingEvaluations) {
       await new Promise<void>(r => setTimeout(r, 0));
     }
