@@ -791,10 +791,15 @@ export class AdminService {
    */
   async getStudentFinalResult(internshipId: string): Promise<any> {
     // Get internship details using /api/admin/internships/{internshipId}
-    const internshipData = await this.getInternshipDetails(internshipId);
+    let internshipData = await this.getInternshipDetails(internshipId);
     
     if (!internshipData) {
       return { message: 'Failed to load internship', finalResult: null, internship: null };
+    }
+    
+    // Handle wrapped response (might be { data: {...}, message: "..." })
+    if (internshipData.data && !internshipData.finalResult) {
+      internshipData = internshipData.data;
     }
     
     // Wrap response to match expected structure: { finalResult: {...}, internship: {...} }

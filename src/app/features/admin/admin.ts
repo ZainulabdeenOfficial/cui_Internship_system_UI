@@ -2214,7 +2214,7 @@ export class Admin {
   }
 
   private async loadStudentFinalResultsForAll(): Promise<void> {
-    // Load final results for all internships using /api/student/final-result API
+    // Load final results for all internships using /api/admin/internships/{internshipId}
     try {
       await Promise.all(this.internships.map(async (internship) => {
         if (internship.id) {
@@ -2224,15 +2224,18 @@ export class Admin {
             // Store entire response (contains both finalResult and internship data from the endpoint)
             internship.studentFinalResult = res ?? null;
             console.log('✅ Final result loaded for internship:', internship.id, res?.finalResult?.totalMarks);
+            this.cdr.markForCheck();
           } catch (err) {
             console.log('Final result not available for internship:', internship.id);
             internship.studentFinalResult = null;
           } finally {
             internship.loadingFinalResult = false;
+            this.cdr.markForCheck();
           }
         }
       }));
       console.log('✅ All student final results loaded');
+      this.cdr.detectChanges();
     } catch (error) {
       console.error('Error loading final results:', error);
     }
