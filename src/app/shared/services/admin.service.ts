@@ -31,7 +31,7 @@ export class AdminService {
     const base = environment.apiBaseUrl.replace(/\/$/, '');
     const path = '/api/dropdown/companies';
     const qs = query && query.trim() ? `?q=${encodeURIComponent(query.trim())}` : '';
-    const url = environment.production ? `${path}${qs}` : `${base}${path}${qs}`;
+    const url = `${base}${path}${qs}`;
     const res = await firstValueFrom(this.http.get<any>(url, { headers: await this.authHeaders() }));
     const list: any[] = Array.isArray(res?.companies) ? res.companies : (Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []));
     return list
@@ -72,7 +72,7 @@ export class AdminService {
     const base = environment.apiBaseUrl.replace(/\/$/, '');
     const path = '/api/admin/search-faculty';
     const qs = query && query.trim() ? `?q=${encodeURIComponent(query.trim())}` : '';
-    const url = environment.production ? `${path}${qs}` : `${base}${path}${qs}`;
+    const url = `${base}${path}${qs}`;
     const res = await firstValueFrom(this.http.get<any>(url, { headers: await this.authHeaders() }));
     const list: any[] = Array.isArray(res?.faculty) ? res.faculty : (Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []));
     return list
@@ -103,7 +103,7 @@ export class AdminService {
     const base = environment.apiBaseUrl.replace(/\/$/, '');
     const path = '/api/admin/search-site-supervisors';
     const qs = query && query.trim() ? `?q=${encodeURIComponent(query.trim())}` : '';
-    const url = environment.production ? `${path}${qs}` : `${base}${path}${qs}`;
+    const url = `${base}${path}${qs}`;
     const res = await firstValueFrom(this.http.get<any>(url, { headers: await this.authHeaders() }));
     const list: any[] = Array.isArray(res?.siteSupervisors) ? res.siteSupervisors : (Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []));
     return list
@@ -131,7 +131,7 @@ export class AdminService {
   }): Promise<{ message?: string; siteSupervisor?: any; updatedBy?: string }> {
     const base = environment.apiBaseUrl.replace(/\/$/, '');
     const path = '/api/admin/edit-site-supervisor';
-    const url = environment.production ? path : `${base}${path}`;
+    const url = `${base}${path}`;
     const headers = await this.authHeaders(true);
     
     // Build request body with only provided fields
@@ -152,7 +152,7 @@ export class AdminService {
   async deleteSiteSupervisor(siteSupervisorId: string): Promise<{ message?: string; success?: boolean; reason?: string }> {
     const base = environment.apiBaseUrl.replace(/\/$/, '');
     const path = `/api/admin/delete-site-supervisor?id=${encodeURIComponent(siteSupervisorId)}`;
-    const url = environment.production ? path : `${base}${path}`;
+    const url = `${base}${path}`;
     const headers = await this.authHeaders(true);
     
     return await firstValueFrom(this.http.delete<any>(url, { headers }));
@@ -349,7 +349,7 @@ export class AdminService {
     if (params.companyId) q.push(`companyId=${encodeURIComponent(params.companyId)}`);
     if (typeof params.unassigned === 'boolean') q.push(`unassigned=${params.unassigned}`);
     const qs = q.length ? `?${q.join('&')}` : '';
-    const url = environment.production ? `${path}${qs}` : `${base}${path}${qs}`;
+    const url = `${base}${path}${qs}`;
   const res = await firstValueFrom(this.http.get<any>(url, { headers: await this.authHeaders() }));
     const list: any[] = Array.isArray(res)
       ? res
@@ -366,7 +366,7 @@ export class AdminService {
   if (params.status) q.push(`status=${encodeURIComponent(params.status)}`);
   if (params.search) q.push(`search=${encodeURIComponent(params.search)}`);
     const qs = q.length ? `?${q.join('&')}` : '';
-    const url = environment.production ? `${path}${qs}` : `${base}${path}${qs}`;
+    const url = `${base}${path}${qs}`;
     const res = await firstValueFrom(this.http.get<any>(url, { headers: await this.authHeaders() }));
     // Support multiple shapes; prefer the documented 'requests' list
     const items: any[] = Array.isArray(res?.requests) ? res.requests
@@ -413,7 +413,7 @@ export class AdminService {
   async assignSiteSupervisorToCompany(payload: { siteSupervisorId: string; companyId: string }): Promise<any> {
     const base = environment.apiBaseUrl.replace(/\/$/, '');
     const path = '/api/admin/assign-supervisor';
-    const url = environment.production ? path : `${base}${path}`;
+    const url = `${base}${path}`;
   const headers = await this.authHeaders(true);
     const body = { siteSupervisorId: String(payload.siteSupervisorId), companyId: String(payload.companyId) };
   return await firstValueFrom(this.http.post<any>(url, body, { headers }));
@@ -422,7 +422,7 @@ export class AdminService {
   async getCompanySupervisors(companyId: string): Promise<{ company: any; supervisors: any[]; totalSupervisors?: number }> {
     const base = environment.apiBaseUrl.replace(/\/$/, '');
     const path = `/api/admin/company-supervisors?companyId=${encodeURIComponent(companyId)}`;
-    const url = environment.production ? path : `${base}${path}`;
+    const url = `${base}${path}`;
   const res = await firstValueFrom(this.http.get<any>(url, { headers: await this.authHeaders() }));
     const company = res?.company ?? {};
     const supervisors = Array.isArray(res?.company?.supervisors) ? res.company.supervisors : (Array.isArray(res?.supervisors) ? res.supervisors : []);
@@ -432,7 +432,7 @@ export class AdminService {
   async getCompaniesWithSupervisorCounts(): Promise<any[]> {
     const base = environment.apiBaseUrl.replace(/\/$/, '');
     const path = '/api/admin/company-supervisors';
-    const url = environment.production ? path : `${base}${path}`;
+    const url = `${base}${path}`;
   const res = await firstValueFrom(this.http.post<any>(url, '', { headers: await this.authHeaders() }));
     const companies: any[] = Array.isArray(res?.companies) ? res.companies : (Array.isArray(res) ? res : []);
     return companies;
@@ -473,7 +473,7 @@ export class AdminService {
     }
     const base = environment.apiBaseUrl.replace(/\/$/, '');
     const path = '/api/admin/appex-a';
-    const url = environment.production ? path : `${base}${path}`;
+    const url = `${base}${path}`;
     const body = { 
       id: formId, 
       appexAId: formId,
@@ -572,7 +572,7 @@ export class AdminService {
     
     const base = environment.apiBaseUrl.replace(/\/$/, '');
     const path = '/api/admin/appex-b';
-    const url = environment.production ? path : `${base}${path}`;
+    const url = `${base}${path}`;
     
     // Helper to convert dates to ISO 8601 format
     const toISODate = (dateStr: string): string => {
@@ -631,7 +631,7 @@ export class AdminService {
   }): Promise<{ message?: string; evaluation?: any }> {
     const base = environment.apiBaseUrl.replace(/\/$/, '');
     const path = '/api/admin/office-evaluation';
-    const url = environment.production ? path : `${base}${path}`;
+    const url = `${base}${path}`;
     const headers = await this.authHeaders(true);
     const body = {
       internshipId: payload.internshipId,
@@ -664,7 +664,7 @@ export class AdminService {
     try {
       const base = environment.apiBaseUrl.replace(/\/$/, '');
       const path = `/api/admin/office-evaluation?internshipId=${encodeURIComponent(internshipId)}`;
-      const url = environment.production ? path : `${base}${path}`;
+      const url = `${base}${path}`;
       const result = await firstValueFrom(this.http.get<any>(url, { headers: await this.authHeaders() }));
       
       // Cache the result
@@ -693,7 +693,7 @@ export class AdminService {
     try {
       const base = environment.apiBaseUrl.replace(/\/$/, '');
       const path = `/api/admin/internships/${encodeURIComponent(internshipId)}`;
-      const url = environment.production ? path : `${base}${path}`;
+      const url = `${base}${path}`;
       const result = await firstValueFrom(this.http.get<any>(url, { headers: await this.authHeaders() }));
       
       // Cache the result
@@ -714,7 +714,7 @@ export class AdminService {
     try {
       const base = environment.apiBaseUrl.replace(/\/$/, '');
       const path = '/api/admin/internships';
-      const url = environment.production ? path : `${base}${path}`;
+      const url = `${base}${path}`;
       const result = await firstValueFrom(this.http.get<any>(url, { headers: await this.authHeaders() }));
       return result;
     } catch (error) {
@@ -745,7 +745,7 @@ export class AdminService {
   }): Promise<{ message?: string; faculty?: any; updatedBy?: string }> {
     const base = environment.apiBaseUrl.replace(/\/$/, '');
     const path = '/api/admin/edit-faculty';
-    const url = environment.production ? path : `${base}${path}`;
+    const url = `${base}${path}`;
     const headers = await this.authHeaders(true);
     
     // Build request body with only provided fields
@@ -775,7 +775,7 @@ export class AdminService {
   async deleteFaculty(facultyId: string): Promise<{ message?: string; success?: boolean; reason?: string }> {
     const base = environment.apiBaseUrl.replace(/\/$/, '');
     const path = `/api/admin/delete-faculty?id=${encodeURIComponent(facultyId)}`;
-    const url = environment.production ? path : `${base}${path}`;
+    const url = `${base}${path}`;
     const headers = await this.authHeaders(true);
     
     return await firstValueFrom(this.http.delete<any>(url, { headers }));
@@ -785,7 +785,7 @@ export class AdminService {
   async cleanupTokens(): Promise<{ success?: boolean; message?: string; deletedCount?: number; timestamp?: string }> {
     const base = environment.apiBaseUrl.replace(/\/$/, '');
     const path = '/api/maintenance/cleanup-tokens';
-    const url = environment.production ? path : `${base}${path}`;
+    const url = `${base}${path}`;
     return await firstValueFrom(
       this.http.post<any>(url, {}, { headers: await this.authHeaders(true) })
     );
@@ -807,7 +807,7 @@ export class AdminService {
     try {
       const base = environment.apiBaseUrl.replace(/\/$/, '');
       const path = `/api/admin/internships/${encodeURIComponent(internshipId)}`;
-      const url = environment.production ? path : `${base}${path}`;
+      const url = `${base}${path}`;
       const result = await firstValueFrom(
         this.http.get<any>(url, { headers: await this.authHeaders() })
       );
@@ -892,7 +892,7 @@ export class AdminService {
   async getAnnouncements(): Promise<Array<{ id: string; message: string; title?: string; link?: string; pinned?: boolean; createdAt: string }>> {
     const base = environment.apiBaseUrl.replace(/\/$/, '');
     const path = '/api/admin/announcements';
-    const url = environment.production ? path : `${base}${path}`;
+    const url = `${base}${path}`;
     try {
       const res = await firstValueFrom(this.http.get<any>(url, { headers: await this.authHeaders() }));
       const list: any[] = Array.isArray(res?.announcements) ? res.announcements : (Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []));
@@ -924,7 +924,7 @@ export class AdminService {
   }): Promise<{ message?: string; announcement?: any; id?: string }> {
     const base = environment.apiBaseUrl.replace(/\/$/, '');
     const path = '/api/admin/announcements';
-    const url = environment.production ? path : `${base}${path}`;
+    const url = `${base}${path}`;
     const headers = await this.authHeaders(true);
     
     const body = {
@@ -954,7 +954,7 @@ export class AdminService {
   }): Promise<{ message?: string; announcement?: any }> {
     const base = environment.apiBaseUrl.replace(/\/$/, '');
     const path = '/api/admin/announcements';
-    const url = environment.production ? path : `${base}${path}`;
+    const url = `${base}${path}`;
     const headers = await this.authHeaders(true);
     
     const body = {
@@ -980,7 +980,7 @@ export class AdminService {
   async deleteAnnouncement(id: string): Promise<{ message?: string; success?: boolean }> {
     const base = environment.apiBaseUrl.replace(/\/$/, '');
     const path = `/api/admin/announcements?id=${encodeURIComponent(id)}`;
-    const url = environment.production ? path : `${base}${path}`;
+    const url = `${base}${path}`;
     const headers = await this.authHeaders(true);
     
     if (!id) throw new Error('Announcement ID is required');
