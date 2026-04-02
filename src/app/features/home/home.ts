@@ -2,6 +2,7 @@ import { Component, OnInit, OnDestroy, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { StoreService } from '../../shared/services/store.service';
+import { AdminService } from '../../shared/services/admin.service';
 
 @Component({
   selector: 'app-home',
@@ -11,7 +12,7 @@ import { StoreService } from '../../shared/services/store.service';
   styleUrl: './home.css'
 })
 export class Home implements OnInit, AfterViewInit, OnDestroy {
-  constructor(public store: StoreService) {}
+  constructor(public store: StoreService, private adminService: AdminService) {}
   // Carousel slides (uses your assets/1.jpg, 2.jpg, 3.jpg)
   slides = [
     { img: '/assets/1.jpg', alt: 'CUI campus view 1', align: 'text-start', title: 'CUI Internship System', desc: 'Unified portal for Students, Faculty, Site Supervisors and the Internship Office.', showCtas: true },
@@ -135,8 +136,52 @@ export class Home implements OnInit, AfterViewInit, OnDestroy {
     // Remove any auth background classes if present and set a plain body background
     document.body.classList.add('home-solid');
     
-    // Load announcements from API
+    // Load Dashboard statistics and announcements
+    this.loadDashboardStats();
     this.loadAnnouncements();
+  }
+
+  private async loadDashboardStats(): Promise<void> {
+    try {
+      // Load companies from API
+      const companies = await this.adminService.getCompanies();
+      if (companies && companies.length > 0) {
+        this.store.companies.set(companies);
+      }
+    } catch (error) {
+      console.warn('Failed to load companies:', error);
+    }
+    
+    try {
+      // Load faculty supervisors (search with empty query returns all)
+      const faculty = await this.adminService.searchFaculty('');
+      if (faculty && faculty.length > 0) {
+        this.store.facultySupervisors.set(faculty.map(f => ({ 
+          id: f.id, 
+          name: f.name, 
+          email: f.email || '',
+          department: f.profile?.department || '',
+          designation: f.profile?.designation || ''
+        })) as any);
+      }
+    } catch (error) {
+      console.warn('Failed to load faculty supervisors:', error);
+    }
+    
+    try {
+      // Load site supervisors (search with empty query)
+      const sites = await this.adminService.searchSiteSupervisors('');
+      if (sites && sites.length > 0) {
+        this.store.siteSupervisors.set(sites.map(s => ({ 
+          id: s.id, 
+          name: s.name, 
+          email: s.email || '', 
+          companyName: s.companyName || ''
+        })) as any);
+      }
+    } catch (error) {
+      console.warn('Failed to load site supervisors:', error);
+    }
   }
 
   private async loadAnnouncements(): Promise<void> {
