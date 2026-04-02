@@ -2068,6 +2068,28 @@ export class Admin {
     };
   }
 
+  /** Helper method to extract final result from internship object (handles multiple API response structures) */
+  getInternshipFinalResult(internship: any): any {
+    // Try multiple possible data structures from API response
+    // Structure 1: Direct finalResult
+    if (internship?.finalResult?.totalMarks !== undefined || internship?.finalResult?.status) {
+      return internship.finalResult;
+    }
+    // Structure 2: Nested in studentFinalResult.finalResult
+    if (internship?.studentFinalResult?.finalResult?.totalMarks !== undefined || internship?.studentFinalResult?.finalResult?.status) {
+      return internship.studentFinalResult.finalResult;
+    }
+    // Structure 3: Nested in studentFinalResult as root properties
+    if (internship?.studentFinalResult?.totalMarks !== undefined || internship?.studentFinalResult?.officeMarks !== undefined || internship?.studentFinalResult?.status) {
+      return {
+        totalMarks: internship.studentFinalResult.totalMarks ?? internship.studentFinalResult.officeMarks,
+        status: internship.studentFinalResult.status
+      };
+    }
+    // No valid result found
+    return null;
+  }
+
   selectStudentForEval(student: any) {
     this.selectedStudentForEval = student;
     const internshipId = student?.internshipId || student?.apexBInternshipId || '';
@@ -2290,6 +2312,21 @@ export class Admin {
       this.toast.success(res?.message || 'Office evaluation submitted successfully');
       this.officeEvalResult = res?.evaluation ?? null;
       await this.loadOfficeEvaluation(id);
+      
+      // Update the internship in the list with the new final result
+      const foundInternship = this.internships.find(i => i.id === id);
+      if (foundInternship) {
+        foundInternship.loadingFinalResult = true;
+        try {
+          const updatedResult = await this.adminApi.getStudentFinalResult(id);
+          foundInternship.studentFinalResult = updatedResult ?? null;
+        } catch (err: any) {
+          console.warn('Failed to refresh internship final result:', err?.message || 'Unknown error');
+        } finally {
+          foundInternship.loadingFinalResult = false;
+        }
+      }
+      
       this.cdr.markForCheck();
     } catch (err: any) {
       // Handle 409 Conflict (evaluation already exists)

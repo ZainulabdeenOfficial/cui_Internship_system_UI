@@ -1436,28 +1436,36 @@
                           <div class="spinner-border spinner-border-sm" role="status" title="Loading final result...">
                             <span class="visually-hidden">Loading...</span>
                           </div>
-                        } @else if (internship.studentFinalResult?.finalResult) {
-                          <div>
-                            <span class="badge"
-                              [class.text-bg-success]="internship.studentFinalResult.finalResult.totalMarks && internship.studentFinalResult.finalResult.totalMarks >= 70"
-                              [class.text-bg-warning]="internship.studentFinalResult.finalResult.totalMarks && internship.studentFinalResult.finalResult.totalMarks >= 50 && internship.studentFinalResult.finalResult.totalMarks < 70"
-                              [class.text-bg-danger]="internship.studentFinalResult.finalResult.totalMarks && internship.studentFinalResult.finalResult.totalMarks < 50"
-                              [class.text-bg-secondary]="!internship.studentFinalResult.finalResult.totalMarks">
-                              {{ internship.studentFinalResult.finalResult.totalMarks ?? 'N/A' }}
-                            </span>
-                            <br>
-                            <small style="color: #666; display: block; margin-top: 4px;">
-                              <span class="badge"
-                                [class.text-bg-success]="(internship.studentFinalResult.finalResult.status || '').toLowerCase() === 'pass'"
-                                [class.text-bg-danger]="(internship.studentFinalResult.finalResult.status || '').toLowerCase() === 'fail'"
-                                [class.text-bg-warning]="(internship.studentFinalResult.finalResult.status || '').toLowerCase() === 'pending'"
-                                [class.text-bg-secondary]="!(internship.studentFinalResult.finalResult.status || '')">
-                                {{ internship.studentFinalResult.finalResult.status || 'N/A' }}
-                              </span>
-                            </small>
-                          </div>
                         } @else {
-                          <span class="text-muted">N/A</span>
+                          @let finalResult = getInternshipFinalResult(internship);
+                          @if (finalResult) {
+                            <div>
+                              <span class="badge"
+                                [class.text-bg-success]="finalResult.totalMarks && finalResult.totalMarks >= 70"
+                                [class.text-bg-warning]="finalResult.totalMarks && finalResult.totalMarks >= 50 && finalResult.totalMarks < 70"
+                                [class.text-bg-danger]="finalResult.totalMarks && finalResult.totalMarks < 50"
+                                [class.text-bg-secondary]="!finalResult.totalMarks">
+                                {{ finalResult.totalMarks ?? '—' }}
+                              </span>
+                              <br>
+                              <small style="color: #666; display: block; margin-top: 4px;">
+                                <span class="badge"
+                                  [class.text-bg-success]="(finalResult.status || '').toLowerCase() === 'pass'"
+                                  [class.text-bg-danger]="(finalResult.status || '').toLowerCase() === 'fail'"
+                                  [class.text-bg-warning]="(finalResult.status || '').toLowerCase() === 'pending'"
+                                  [class.text-bg-secondary]="!(finalResult.status || '')">
+                                  {{ finalResult.status || 'Pending' }}
+                                </span>
+                              </small>
+                              @if (internship.studentFinalResult?.finalResult?.officeMarks) {
+                                <small style="color: #555; display: block; margin-top: 3px; font-size: 0.8rem;">
+                                  Office: {{ internship.studentFinalResult.finalResult.officeMarks }}/20
+                                </small>
+                              }
+                            </div>
+                          } @else {
+                            <span class="text-muted">—</span>
+                          }
                         }
                       </td>
                       <td style="color: #333;">
