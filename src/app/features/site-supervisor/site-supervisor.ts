@@ -1,4 +1,4 @@
-import { Component, computed, OnInit, signal } from '@angular/core';
+import { Component, computed, effect, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { StoreService } from '../../shared/services/store.service';
@@ -32,6 +32,14 @@ export class SiteSupervisor implements OnInit {
 
   ngOnInit() {
     this.loadSiteInternships();
+    
+    // Auto-load evaluations when evaluations tab is selected with a student
+    effect(() => {
+      if (this.currentTab === 'evaluations' && this.selectedId) {
+        console.log('📋 [SiteSupervisor] Evaluations tab active with student selected - loading evaluations...');
+        this.loadBothEvaluations();
+      }
+    });
   }
   get students() { return this.store.students; }
   selectedId: string | null = null;
@@ -491,10 +499,26 @@ export class SiteSupervisor implements OnInit {
         errorMsg: typeof err?.error === 'string' ? err.error : err?.error?.message || err?.error?.error
       });
       
-      // Parse different error response formats
+      // Parse different error response formats and HTTP status codes
       let errorMsg = 'Failed to submit evaluation';
+      const status = err?.status ?? 0;
       
-      if (typeof err?.error === 'string') {
+      // Handle specific HTTP status codes
+      if (status === 409) {
+        errorMsg = 'This evaluation has already been submitted for this student. Only one evaluation per type is allowed.';
+        // Reload evaluations to show the existing one
+        setTimeout(() => this.loadBothEvaluations(), 500);
+      } else if (status === 401) {
+        errorMsg = 'Unauthorized. Please log in again.';
+      } else if (status === 403) {
+        errorMsg = 'You do not have permission to submit this evaluation.';
+      } else if (status === 404) {
+        errorMsg = 'Internship or student not found.';
+      } else if (status === 400) {
+        errorMsg = err?.error?.message || 'Invalid evaluation data. Please check your input.';
+      } else if (status === 500) {
+        errorMsg = 'Server error. Please try again later.';
+      } else if (typeof err?.error === 'string') {
         errorMsg = err.error;
       } else if (err?.error?.message) {
         errorMsg = err.error.message;
