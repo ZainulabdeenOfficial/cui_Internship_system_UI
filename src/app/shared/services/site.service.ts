@@ -51,7 +51,7 @@ export class SiteService {
   }
 
   async submitEvaluation(payload: SiteEvaluationPayload): Promise<SiteEvaluationResponse> {
-    const url = `/api/site/evaluation`;
+    const url = `/api/site/evaluations`;
     try {
       console.log('🔄 [SiteService.submitEvaluation] Posting to:', url);
       console.log('📦 [SiteService.submitEvaluation] Payload:', JSON.stringify(payload, null, 2));
