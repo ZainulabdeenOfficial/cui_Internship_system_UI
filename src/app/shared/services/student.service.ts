@@ -863,10 +863,10 @@ export class StudentService {
       ...(this.getAuthToken() ? { Authorization: `Bearer ${this.getAuthToken()}` } : {})
     }), opt);
 
-    // Use /api/student/appex-a which returns { internship: { id, appexA } }
+    // Use /api/student/internships to get student's internship ID
     try {
       const fallbackOpts = { skipGlobalLoading: true };
-      const res = await firstValueFrom(this.http.get<any>(this.abs('/api/student/appex-a'), { headers: headers(fallbackOpts), context: this.buildContext(fallbackOpts) }));
+      const res = await firstValueFrom(this.http.get<any>(this.abs('/api/student/internships'), { headers: headers(fallbackOpts), context: this.buildContext(fallbackOpts) }));
       this.writeCache(key, res, 60 * 1000);
       return res;
     } catch (err) {
@@ -875,12 +875,11 @@ export class StudentService {
   }
 
   /**
-   * GET /api/faculty/evaluation-summary?internshipId=...
-   * Retrieve evaluation summary (Faculty/Site/Office marks, total, pass/fail).
-   * Accessible to student, faculty supervisor, site supervisor, and admin.
+   * GET /api/student/final-result?internshipId=...
+   * Retrieve student's final result (Faculty/Site/Office marks, total, pass/fail).
    */
   async getEvaluationSummary(internshipId: string, options?: StudentRequestOptions): Promise<any> {
-    const endpoint = `/api/faculty/evaluation-summary?internshipId=${encodeURIComponent(internshipId)}`;
+    const endpoint = `/api/student/final-result?internshipId=${encodeURIComponent(internshipId)}`;
     const key = this.cacheKey(endpoint);
     const cached = this.readCache<any>(key, options);
     if (cached) return cached;

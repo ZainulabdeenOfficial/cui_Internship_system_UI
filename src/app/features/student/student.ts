@@ -1522,11 +1522,16 @@ export class Student implements OnDestroy {
     try {
       const res = await this.studentApi.getMyInternship({ skipGlobalLoading: true, forceRefresh });
       // Try every common field name the backend may use for the internship ID
+      // Handle array responses (e.g., from /api/student/internships)
       const id: string =
         res?.internship?.id ||
         res?.internship?._id ||
         res?.data?.id ||
         res?.data?._id ||
+        res?.[0]?.id ||
+        res?.[0]?._id ||
+        res?.data?.[0]?.id ||
+        res?.data?.[0]?._id ||
         res?.id ||
         res?._id ||
         res?.internshipId ||
