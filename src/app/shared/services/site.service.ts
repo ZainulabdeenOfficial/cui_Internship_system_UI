@@ -188,20 +188,22 @@ export class SiteService {
     const params: string[] = [`internshipId=${encodeURIComponent(internshipId)}`];
     if (type) params.push(`type=${encodeURIComponent(type)}`);
     const qs = `?${params.join('&')}`;
-    const url = `/api/site/evaluations${qs}`;
+    // Use absolute URL directly to avoid proxy issues
+    const url = `${this.base}/api/site/evaluations${qs}`;
     try {
+      console.log('🔄 [SiteService.getEvaluations] Fetching from:', url);
       const res = await firstValueFrom(
         this.http.get<SiteEvaluationResponse>(url, { headers: this.jsonHeaders() })
       );
+      console.log('✅ [SiteService.getEvaluations] Response received:', res);
       return { success: true, ...res };
     } catch (err: any) {
-      const status = err?.status ?? 0;
-      if (status && status !== 0) throw err;
-      const abs = `${this.base}${url}`;
-      const res = await firstValueFrom(
-        this.http.get<SiteEvaluationResponse>(abs, { headers: this.jsonHeaders() })
-      );
-      return { success: true, ...res };
+      console.error('❌ [SiteService.getEvaluations] Error fetching evaluations:', {
+        status: err?.status,
+        message: err?.message,
+        errorBody: err?.error
+      });
+      throw err;
     }
   }
 }

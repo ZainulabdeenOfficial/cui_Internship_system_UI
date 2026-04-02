@@ -565,23 +565,47 @@ export class SiteSupervisor implements OnInit {
         this.siteService.getEvaluations(internshipId, 'site_mid'),
         this.siteService.getEvaluations(internshipId, 'site_final')
       ]);
-      if (midRes.status === 'fulfilled' && midRes.value?.success && midRes.value.data) {
-        const list = Array.isArray(midRes.value.data) ? midRes.value.data : (midRes.value.data.items || []);
-        if (list.length) {
-          this.loadedEvalMid = list[list.length - 1];
+      
+      // Process mid-term evaluation - handle multiple response formats
+      if (midRes.status === 'fulfilled' && midRes.value) {
+        console.log('📊 [loadBothEvaluations] Mid response raw:', midRes.value);
+        let midEval = null;
+        if (midRes.value.data) {
+          const data = midRes.value.data;
+          if (Array.isArray(data)) midEval = data[data.length - 1] || null;
+          else if (data.items && Array.isArray(data.items)) midEval = data.items[data.items.length - 1] || null;
+          else if (typeof data === 'object') midEval = data;
+        } else if (Array.isArray(midRes.value)) midEval = midRes.value[midRes.value.length - 1] || null;
+        
+        if (midEval) {
+          this.loadedEvalMid = midEval;
           console.log('✅ [loadBothEvaluations] Mid-term evaluation loaded:', this.loadedEvalMid);
         } else {
-          console.log('📭 [loadBothEvaluations] No mid-term evaluation found');
+          console.log('📭 [loadBothEvaluations] No mid-term evaluation found in response');
         }
+      } else if (midRes.status === 'rejected') {
+        console.log('📭 [loadBothEvaluations] Mid evaluation request failed:', midRes.reason?.message);
       }
-      if (finalRes.status === 'fulfilled' && finalRes.value?.success && finalRes.value.data) {
-        const list = Array.isArray(finalRes.value.data) ? finalRes.value.data : (finalRes.value.data.items || []);
-        if (list.length) {
-          this.loadedEvalFinal = list[list.length - 1];
+      
+      // Process final evaluation - handle multiple response formats
+      if (finalRes.status === 'fulfilled' && finalRes.value) {
+        console.log('📊 [loadBothEvaluations] Final response raw:', finalRes.value);
+        let finalEval = null;
+        if (finalRes.value.data) {
+          const data = finalRes.value.data;
+          if (Array.isArray(data)) finalEval = data[data.length - 1] || null;
+          else if (data.items && Array.isArray(data.items)) finalEval = data.items[data.items.length - 1] || null;
+          else if (typeof data === 'object') finalEval = data;
+        } else if (Array.isArray(finalRes.value)) finalEval = finalRes.value[finalRes.value.length - 1] || null;
+        
+        if (finalEval) {
+          this.loadedEvalFinal = finalEval;
           console.log('✅ [loadBothEvaluations] Final evaluation loaded:', this.loadedEvalFinal);
         } else {
-          console.log('📭 [loadBothEvaluations] No final evaluation found');
+          console.log('📭 [loadBothEvaluations] No final evaluation found in response');
         }
+      } else if (finalRes.status === 'rejected') {
+        console.log('📭 [loadBothEvaluations] Final evaluation request failed:', finalRes.reason?.message);
       }
     } catch (err: any) {
       console.error('❌ [loadBothEvaluations] Error loading evaluations:', err?.message);
