@@ -932,41 +932,50 @@ export class AdminService {
   }
 
   /**
-   * PUT /api/admin/announcements/:id
+   * PUT /api/admin/announcements
    * Updates an existing announcement
-   * Request: { id: string, message?: string, title?: string, link?: string, pinned?: boolean }
+   * Request: { id: string, title: string, message: string, link: string, pinned: boolean }
    * Response: { message?: string, announcement?: Announcement }
    */
-  async updateAnnouncement(id: string, payload: {
-    message?: string;
-    title?: string;
-    link?: string;
-    pinned?: boolean;
+  async updateAnnouncement(payload: {
+    id: string;
+    title: string;
+    message: string;
+    link: string;
+    pinned: boolean;
   }): Promise<{ message?: string; announcement?: any }> {
     const base = environment.apiBaseUrl.replace(/\/$/, '');
-    const path = `/api/admin/announcements/${encodeURIComponent(id)}`;
+    const path = '/api/admin/announcements';
     const url = environment.production ? path : `${base}${path}`;
     const headers = await this.authHeaders(true);
     
-    const body: any = {};
-    if (payload.message !== undefined) body.message = (payload.message || '').trim();
-    if (payload.title !== undefined) body.title = payload.title ? (payload.title.trim() || undefined) : undefined;
-    if (payload.link !== undefined) body.link = payload.link ? (payload.link.trim() || undefined) : undefined;
-    if (payload.pinned !== undefined) body.pinned = !!payload.pinned;
+    const body = {
+      id: payload.id,
+      title: (payload.title || '').trim(),
+      message: (payload.message || '').trim(),
+      link: payload.link ? (payload.link.trim() || '') : '',
+      pinned: !!payload.pinned
+    };
+    
+    if (!body.id) throw new Error('Announcement ID is required');
+    if (!body.message) throw new Error('Announcement message is required');
     
     return await firstValueFrom(this.http.put<any>(url, body, { headers }));
   }
 
   /**
-   * DELETE /api/admin/announcements/:id
-   * Deletes an announcement
+   * DELETE /api/admin/announcements?id=xxx
+   * Deletes an announcement by id query parameter
+   * Query Params: id (string) - Announcement ID
    * Response: { message?: string, success?: boolean }
    */
   async deleteAnnouncement(id: string): Promise<{ message?: string; success?: boolean }> {
     const base = environment.apiBaseUrl.replace(/\/$/, '');
-    const path = `/api/admin/announcements/${encodeURIComponent(id)}`;
+    const path = `/api/admin/announcements?id=${encodeURIComponent(id)}`;
     const url = environment.production ? path : `${base}${path}`;
     const headers = await this.authHeaders(true);
+    
+    if (!id) throw new Error('Announcement ID is required');
     
     return await firstValueFrom(this.http.delete<any>(url, { headers }));
   }

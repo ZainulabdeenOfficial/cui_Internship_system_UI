@@ -222,8 +222,18 @@ export class StoreService {
 
   async updateAnnouncement(id: string, changes: Partial<Announcement>) {
     try {
-      // Call API to update announcement
-      await this.adminService.updateAnnouncement(id, changes);
+      // Get the current announcement to construct full payload
+      const current = this.announcements().find(a => a.id === id);
+      if (!current) throw new Error('Announcement not found');
+      
+      // Call API to update announcement with id in payload
+      await this.adminService.updateAnnouncement({
+        id,
+        title: changes.title ?? current.title ?? '',
+        message: changes.message ?? current.message ?? '',
+        link: changes.link ?? current.link ?? '',
+        pinned: changes.pinned ?? current.pinned ?? false
+      });
       
       // Update local state
       this.announcements.update(arr => arr.map(x => x.id === id ? { ...x, ...changes } : x));

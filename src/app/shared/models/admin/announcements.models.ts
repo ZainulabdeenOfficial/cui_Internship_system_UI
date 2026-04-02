@@ -22,10 +22,10 @@ export interface CreateAnnouncementRequest {
 
 export interface UpdateAnnouncementRequest {
   id: string;
-  message?: string;
-  title?: string;
-  link?: string;
-  pinned?: boolean;
+  title: string;
+  message: string;
+  link: string;
+  pinned: boolean;
 }
 
 export interface AnnouncementResponse {
