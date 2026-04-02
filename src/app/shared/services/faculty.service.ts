@@ -395,3 +395,4 @@ export class FacultyService {
   clearWeeklyLogsCache(): void {
     this.clearCacheByPrefix('weekly-logs');
   }
+}

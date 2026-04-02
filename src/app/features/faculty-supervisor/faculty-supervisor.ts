@@ -1074,7 +1074,7 @@ export class FacultySupervisor {
     } catch (err: any) {
       const msg = err?.error?.message || err?.message || 'Failed to load weekly logs';
       console.warn('⚠️ [Faculty] Error loading weekly logs:', msg);
-      this.toast.error('Failed to load weekly logs');
+      this.toast.danger('Failed to load weekly logs');
     } finally {
       this.loadingWeeklyLogs = false;
       try { this.cdr.detectChanges(); } catch {}
