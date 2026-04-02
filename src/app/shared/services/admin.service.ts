@@ -69,10 +69,10 @@ export class AdminService {
     companyName?: string; 
     companyEmail?: string 
   }>> {
-    const base = 'https://cui-internship-system-git-dev-zas-projects-7d9cf03b.vercel.app';
+    const base = environment.apiBaseUrl.replace(/\/$/, '');
     const path = '/api/admin/search-faculty';
     const qs = query && query.trim() ? `?q=${encodeURIComponent(query.trim())}` : '';
-    const url = `${base}${path}${qs}`;
+    const url = environment.production ? `${path}${qs}` : `${base}${path}${qs}`;
     const res = await firstValueFrom(this.http.get<any>(url, { headers: await this.authHeaders() }));
     const list: any[] = Array.isArray(res?.faculty) ? res.faculty : (Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []));
     return list
@@ -129,9 +129,9 @@ export class AdminService {
     password?: string;
     companyId?: string;
   }): Promise<{ message?: string; siteSupervisor?: any; updatedBy?: string }> {
-    const base = 'https://cui-internship-system-git-dev-zas-projects-7d9cf03b.vercel.app';
+    const base = environment.apiBaseUrl.replace(/\/$/, '');
     const path = '/api/admin/edit-site-supervisor';
-    const url = `${base}${path}`;
+    const url = environment.production ? path : `${base}${path}`;
     const headers = await this.authHeaders(true);
     
     // Build request body with only provided fields
@@ -150,9 +150,9 @@ export class AdminService {
    * Response: { message: string, success: boolean, reason?: string (if blocked) }
    */
   async deleteSiteSupervisor(siteSupervisorId: string): Promise<{ message?: string; success?: boolean; reason?: string }> {
-    const base = 'https://cui-internship-system-git-dev-zas-projects-7d9cf03b.vercel.app';
+    const base = environment.apiBaseUrl.replace(/\/$/, '');
     const path = `/api/admin/delete-site-supervisor?id=${encodeURIComponent(siteSupervisorId)}`;
-    const url = `${base}${path}`;
+    const url = environment.production ? path : `${base}${path}`;
     const headers = await this.authHeaders(true);
     
     return await firstValueFrom(this.http.delete<any>(url, { headers }));
@@ -358,16 +358,15 @@ export class AdminService {
   }
 
   async getCompanyReviewRequests(params: { page?: number; limit?: number; status?: 'PENDING'|'APPROVED'|'REJECTED'; search?: string }): Promise<{ items: Array<{ id: string; companyName?: string; email?: string; studentId?: string; registrationNo?: string; status?: string; createdAt?: string }>, total?: number }>{
-    // Use absolute Vercel URL as requested
-    const base = 'https://cui-internship-system-git-dev-zas-projects-7d9cf03b.vercel.app';
-    const path = `${base}/api/admin/review-company`;
+    const base = environment.apiBaseUrl.replace(/\/$/, '');
+    const path = '/api/admin/review-company';
     const q: string[] = [];
     if (params.page) q.push(`page=${encodeURIComponent(String(params.page))}`);
     if (params.limit) q.push(`limit=${encodeURIComponent(String(params.limit))}`);
   if (params.status) q.push(`status=${encodeURIComponent(params.status)}`);
   if (params.search) q.push(`search=${encodeURIComponent(params.search)}`);
     const qs = q.length ? `?${q.join('&')}` : '';
-    const url = `${path}${qs}`;
+    const url = environment.production ? `${path}${qs}` : `${base}${path}${qs}`;
     const res = await firstValueFrom(this.http.get<any>(url, { headers: await this.authHeaders() }));
     // Support multiple shapes; prefer the documented 'requests' list
     const items: any[] = Array.isArray(res?.requests) ? res.requests
@@ -387,14 +386,13 @@ export class AdminService {
   }
 
   async reviewCompanyRequest(input: { requestId: string; decision: 'APPROVED'|'REJECTED'; notes?: string }): Promise<{ message?: string }>{
-    // Use absolute Vercel URL for review action too
-    const base = 'https://cui-internship-system-git-dev-zas-projects-7d9cf03b.vercel.app';
+    const base = environment.apiBaseUrl.replace(/\/$/, '');
     const headers = await this.authHeaders(true);
     // Convert decision to action format expected by backend
     const action = input.decision === 'APPROVED' ? 'APPROVE' : 'REJECT';
     // Try primary endpoint: POST /api/admin/review-company
     const postJson = async (path: string, body: any) => {
-      const url = path.startsWith('http') ? path : `${base}${path.startsWith('/') ? '' : '/'}${path}`;
+      const url = environment.production ? path : (path.startsWith('http') ? path : `${base}${path.startsWith('/') ? '' : '/'}${path}`);
       return await firstValueFrom(this.http.post<any>(url, body, { headers }));
     };
     try {
@@ -775,9 +773,9 @@ export class AdminService {
    * Response: { message: string, success: boolean, reason?: string (if blocked) }
    */
   async deleteFaculty(facultyId: string): Promise<{ message?: string; success?: boolean; reason?: string }> {
-    const base = 'https://cui-internship-system-git-dev-zas-projects-7d9cf03b.vercel.app';
+    const base = environment.apiBaseUrl.replace(/\/$/, '');
     const path = `/api/admin/delete-faculty?id=${encodeURIComponent(facultyId)}`;
-    const url = `${base}${path}`;
+    const url = environment.production ? path : `${base}${path}`;
     const headers = await this.authHeaders(true);
     
     return await firstValueFrom(this.http.delete<any>(url, { headers }));
