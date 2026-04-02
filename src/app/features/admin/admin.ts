@@ -2074,66 +2074,55 @@ export class Admin {
     
     const fr = internship.studentFinalResult;
     
-    // Log full structure for debugging
+    // Log structure for debugging
     if (internship.id) {
-      console.log(`🔍 [getInternshipFinalResult] Analyzing ${internship.id}:`, {
+      console.log(`🔍 [getInternshipFinalResult] ${internship.id}:`, {
         frKeys: Object.keys(fr),
-        frValues: Object.entries(fr).map(([k, v]) => `${k}=${JSON.stringify(v).slice(0, 50)}`),
-        frNestedFinalResult: fr.finalResult ? Object.keys(fr.finalResult) : 'N/A'
+        hasFinalResult: !!fr.finalResult,
+        finalResultKeys: fr.finalResult ? Object.keys(fr.finalResult) : [],
+        finalResultData: fr.finalResult
       });
     }
     
-    // Try multiple possible data structures from API response
-    // Structure 1: Direct props at root level (totalMarks, officeMarks, etc.)
-    if (fr.totalMarks !== undefined || fr.officeMarks !== undefined || fr.facultyMarks !== undefined || fr.siteMarks !== undefined || fr.status) {
-      console.log('✅ Found marks at root level');
+    // Structure 1: fr.finalResult (the actual marks)
+    if (fr.finalResult && typeof fr.finalResult === 'object') {
+      const result = fr.finalResult;
+      // Check for any mark properties
+      if (result.totalMarks !== undefined || result.officeMarks !== undefined || 
+          result.facultyMarks !== undefined || result.siteMarks !== undefined ||
+          result.presentationMarks !== undefined || result.status) {
+        console.log('✅ Found marks in fr.finalResult:', result);
+        return {
+          totalMarks: result.totalMarks,
+          officeMarks: result.officeMarks,
+          facultyMarks: result.facultyMarks,
+          siteMarks: result.siteMarks,
+          presentationMarks: result.presentationMarks,
+          status: result.status
+        };
+      }
+    }
+    
+    // Structure 2: Root level (in case API returns flat structure)
+    if (fr.totalMarks !== undefined || fr.officeMarks !== undefined || 
+        fr.facultyMarks !== undefined || fr.siteMarks !== undefined ||
+        fr.presentationMarks !== undefined || fr.status) {
+      console.log('✅ Found marks at fr root level:', {
+        totalMarks: fr.totalMarks,
+        officeMarks: fr.officeMarks
+      });
       return {
         totalMarks: fr.totalMarks,
         officeMarks: fr.officeMarks,
         facultyMarks: fr.facultyMarks,
         siteMarks: fr.siteMarks,
-        status: fr.status,
-        presentationMarks: fr.presentationMarks
+        presentationMarks: fr.presentationMarks,
+        status: fr.status
       };
     }
     
-    // Structure 2: Nested in fr.finalResult
-    if (fr.finalResult && typeof fr.finalResult === 'object') {
-      const nested = fr.finalResult;
-      if (nested.totalMarks !== undefined || nested.officeMarks !== undefined || nested.facultyMarks !== undefined || nested.siteMarks !== undefined || nested.status) {
-        console.log('✅ Found marks in fr.finalResult');
-        return {
-          totalMarks: nested.totalMarks,
-          officeMarks: nested.officeMarks,
-          facultyMarks: nested.facultyMarks,
-          siteMarks: nested.siteMarks,
-          status: nested.status,
-          presentationMarks: nested.presentationMarks
-        };
-      }
-    }
-    
-    // Structure 3: Nested in fr.data
-    if (fr.data && typeof fr.data === 'object') {
-      const data = fr.data;
-      if (data.totalMarks !== undefined || data.officeMarks !== undefined || data.facultyMarks !== undefined || data.siteMarks !== undefined || data.status) {
-        console.log('✅ Found marks in fr.data');
-        return {
-          totalMarks: data.totalMarks,
-          officeMarks: data.officeMarks,
-          facultyMarks: data.facultyMarks,
-          siteMarks: data.siteMarks,
-          status: data.status,
-          presentationMarks: data.presentationMarks
-        };
-      }
-    }
-    
-    // No valid result found - show what we DO have
-    console.warn(`⚠️ Object exists but no marks for ${internship.id}`, {
-      hasResult: !!fr,
-      keys: Object.keys(fr)
-    });
+    // No marks found - data loaded but empty
+    console.warn(`⚠️ No marks in ${internship.id}. Data exists but all mark fields are undefined/null`);
     return null;
   }
 

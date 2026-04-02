@@ -389,6 +389,12 @@ export class SiteSupervisor implements OnInit {
     const internshipId = this.getEffectiveInternshipId();
     if (!internshipId) { this.toast.warning('Please select a student first'); return; }
     
+    // Check if evaluation already submitted for this type
+    if (this.loadedEvalForCurrentType) {
+      this.toast.warning(`${this.evaluationType === 'site_mid' ? 'Mid-term' : 'Final'} evaluation already submitted for this student`);
+      return;
+    }
+    
     // Validate all criteria are within 1-4 range (API requirement)
     if (!this.areCriteriaValid()) {
       this.toast.danger('All criteria must have values between 1-4');

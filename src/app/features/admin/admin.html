@@ -1439,11 +1439,13 @@
                         } @else {
                           @let finalResult = getInternshipFinalResult(internship);
                           @if (finalResult && finalResult.totalMarks) {
+                            <!-- Final Result with marks -->
                             <div>
                               <span class="badge"
                                 [class.text-bg-success]="finalResult.totalMarks >= 70"
                                 [class.text-bg-warning]="finalResult.totalMarks >= 50 && finalResult.totalMarks < 70"
-                                [class.text-bg-danger]="finalResult.totalMarks < 50">
+                                [class.text-bg-danger]="finalResult.totalMarks < 50"
+                                style="font-size: 1rem;">
                                 {{ finalResult.totalMarks }}
                               </span>
                               <br>
@@ -1456,21 +1458,33 @@
                                   {{ finalResult.status || 'Pending' }}
                                 </span>
                               </small>
-                              @if (finalResult.officeMarks) {
-                                <small style="color: #555; display: block; margin-top: 3px; font-size: 0.8rem;">
-                                  Office: {{ finalResult.officeMarks }}/20
-                                </small>
-                              }
+                              <!-- Marks breakdown -->
+                              <div style="font-size: 0.75rem; color: #555; margin-top: 4px; line-height: 1.5;">
+                                @if (finalResult.facultyMarks) {
+                                  <div>📚 Faculty: {{ finalResult.facultyMarks }}/20</div>
+                                }
+                                @if (finalResult.siteMarks) {
+                                  <div>🏢 Site: {{ finalResult.siteMarks }}/20</div>
+                                }
+                                @if (finalResult.officeMarks) {
+                                  <div>🏛️ Office: {{ finalResult.officeMarks }}/20</div>
+                                }
+                                @if (finalResult.presentationMarks) {
+                                  <div>🎤 Presentation: {{ finalResult.presentationMarks }}/20</div>
+                                }
+                              </div>
                             </div>
                           } @else if (internship.studentFinalResult) {
-                            <span class="badge text-bg-warning" title="Office admin evaluation pending">
+                            <!-- Data loaded but no marks yet -->
+                            <span class="badge text-bg-warning" title="Evaluations pending">
                               Pending
                             </span>
                             <br>
                             <small style="color: #d97706; font-size: 0.75rem; display: block; margin-top: 2px;">
-                              Awaiting office marks
+                              Awaiting evaluations
                             </small>
                           } @else {
+                            <!-- No data at all -->
                             <span class="text-muted">—</span>
                           }
                         }
