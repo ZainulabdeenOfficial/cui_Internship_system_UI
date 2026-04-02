@@ -2,7 +2,6 @@ import { Component, OnInit, OnDestroy, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { StoreService } from '../../shared/services/store.service';
-import { AdminService } from '../../shared/services/admin.service';
 
 @Component({
   selector: 'app-home',

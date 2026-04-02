@@ -27,7 +27,7 @@ export class FacultySupervisor {
     try {
       this.route.queryParamMap.subscribe(p => {
         const t = (p.get('tab') || '').toLowerCase();
-        const allowed = ['students','details','reports','assignments','agreements','profile','requests','weekly-logs'] as const;
+        const allowed = ['students','profile','requests','weekly-logs','marks'] as const;
         if ((allowed as readonly string[]).includes(t)) {
           this.currentTab = t as any;
           if (this.currentTab === 'profile') this.loadMyProfileFromApi();
@@ -42,7 +42,7 @@ export class FacultySupervisor {
   get siteList() { return this.store.siteSupervisors; }
   get companyList() { return this.store.companies; }
   selectedId: string | null = null;
-  currentTab: 'students'|'details'|'reports'|'assignments'|'agreements'|'profile'|'requests'|'marks'|'weekly-logs' = 'students';
+  currentTab: 'students'|'profile'|'requests'|'marks'|'weekly-logs' = 'students';
   page = { students: 1, appexA: 1, appexB: 1 };
   pageSize = 10;
   selectTab(tab: FacultySupervisor['currentTab']) {
