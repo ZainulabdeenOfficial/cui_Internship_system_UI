@@ -1513,17 +1513,17 @@
                   <i class="bi bi-check-circle-fill me-2"></i>
                   <strong>Internship Information</strong>
                   <div style="font-size: 0.9rem; margin-top: 0.5rem; color: #333;">
-                    <strong>Type:</strong> {{ studentFinalResult.internship.type || 'N/A' }}<br>
-                    <strong>Status:</strong> {{ studentFinalResult.internship.status || 'N/A' }}<br>
+                    <strong>Type:</strong> {{ (studentFinalResult.internship.type || studentFinalResult.internship.internshipType || internshipDetails?.internshipType || 'ONSITE') | uppercase }}<br>
+                    <strong>Status:</strong> {{ (studentFinalResult.internship.status || internshipDetails?.status || studentFinalResult.internship.internshipStatus || 'Active') | titlecase }}<br>
                     <strong>Approved Status:</strong>
                     <span class="badge"
                       [class.text-bg-success]="selectedStudentForEval?.approvalStatus?.toLowerCase() === 'approved' || selectedStudentForEval?.approvalStatus?.toLowerCase() === 'verified'"
                       [class.text-bg-warning]="selectedStudentForEval?.approvalStatus?.toLowerCase() === 'pending'"
                       [class.text-bg-secondary]="!selectedStudentForEval?.approvalStatus">
-                      {{ (selectedStudentForEval?.approvalStatus || 'pending') | titlecase }}
+                      {{ (selectedStudentForEval?.approvalStatus || 'Pending') | titlecase }}
                     </span><br>
-                    <strong>Start Date:</strong> {{ studentFinalResult.internship.startDate ? (studentFinalResult.internship.startDate | date:'mediumDate') : 'N/A' }}<br>
-                    <strong>End Date:</strong> {{ studentFinalResult.internship.endDate ? (studentFinalResult.internship.endDate | date:'mediumDate') : 'N/A' }}
+                    <strong>Start Date:</strong> {{ (studentFinalResult.internship.startDate || internshipDetails?.startDate) ? ((studentFinalResult.internship.startDate || internshipDetails?.startDate) | date:'mediumDate') : 'Not Set' }}<br>
+                    <strong>End Date:</strong> {{ (studentFinalResult.internship.endDate || internshipDetails?.endDate) ? ((studentFinalResult.internship.endDate || internshipDetails?.endDate) | date:'mediumDate') : 'Not Set' }}
                   </div>
                 </div>
               </div>
@@ -1584,9 +1584,17 @@
                   <i class="bi bi-check-circle-fill me-2"></i>
                   <strong>Internship Information</strong>
                   <div style="font-size: 0.9rem; margin-top: 0.5rem; color: #333;">
-                    <strong>Company:</strong> {{ internshipDetails.companyName || internshipDetails.company?.name || 'N/A' }}<br>
-                    <strong>Role:</strong> {{ internshipDetails.internshipRole || 'N/A' }}<br>
-                    <strong>Status:</strong> {{ internshipDetails.status || 'N/A' }}<br>
+                    <strong>Company:</strong> {{ internshipDetails.companyName || internshipDetails.company?.name || 'Not Assigned' }}<br>
+                    <strong>Role:</strong> {{ internshipDetails.internshipRole || 'Not Assigned' }}<br>
+                    <strong>Type:</strong> {{ (internshipDetails.type || internshipDetails.internshipType || 'ONSITE') | uppercase }}<br>
+                    <strong>Status:</strong> {{ (internshipDetails.status || internshipDetails.internshipStatus || 'Active') | titlecase }}<br>
+                    <strong>Approved Status:</strong>
+                    <span class="badge"
+                      [class.text-bg-success]="selectedStudentForEval?.approvalStatus?.toLowerCase() === 'approved' || selectedStudentForEval?.approvalStatus?.toLowerCase() === 'verified'"
+                      [class.text-bg-warning]="selectedStudentForEval?.approvalStatus?.toLowerCase() === 'pending'"
+                      [class.text-bg-secondary]="!selectedStudentForEval?.approvalStatus">
+                      {{ (selectedStudentForEval?.approvalStatus || 'Pending') | titlecase }}
+                    </span><br>
                     @if (internshipDetails.finalResult) {
                       <strong>Current Result:</strong> {{ internshipDetails.finalResult }}%
                     }
