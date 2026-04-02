@@ -51,7 +51,8 @@ export class SiteService {
   }
 
   async submitEvaluation(payload: SiteEvaluationPayload): Promise<SiteEvaluationResponse> {
-    const url = `/api/site/evaluations`;
+    // Use absolute URL directly to avoid any proxy/routing issues
+    const url = `${this.base}/api/site/evaluations`;
     try {
       console.log('🔄 [SiteService.submitEvaluation] Posting to:', url);
       console.log('📦 [SiteService.submitEvaluation] Payload:', JSON.stringify(payload, null, 2));
@@ -69,30 +70,12 @@ export class SiteService {
         statusText: err?.statusText,
         message: err?.message,
         errorBody: err?.error,
+        url: url,
         errorString: typeof err?.error === 'string' ? err.error : JSON.stringify(err?.error)
       });
       
-      // Fallback to absolute URL on network/CORS errors
-      const status = err?.status ?? 0;
-      if (status && status !== 0) throw err;
-      
-      try {
-        const abs = `${this.base}${url}`;
-        console.log('🔄 [SiteService.submitEvaluation] Retrying with absolute URL:', abs);
-        
-        const res = await firstValueFrom(
-          this.http.post<SiteEvaluationResponse>(abs, payload, { headers: this.jsonHeaders() })
-        );
-        
-        console.log('✅ [SiteService.submitEvaluation] Fallback success:', res);
-        return { success: true, ...res };
-      } catch (fallbackErr: any) {
-        console.error('❌ [SiteService.submitEvaluation] Fallback also failed:', {
-          status: fallbackErr?.status,
-          errorBody: fallbackErr?.error
-        });
-        throw fallbackErr;
-      }
+      // Always throw - don't retry since we already used absolute URL
+      throw err;
     }
   }
   
