@@ -1438,14 +1438,13 @@
                           </div>
                         } @else {
                           @let finalResult = getInternshipFinalResult(internship);
-                          @if (finalResult) {
+                          @if (finalResult && finalResult.totalMarks) {
                             <div>
                               <span class="badge"
-                                [class.text-bg-success]="finalResult.totalMarks && finalResult.totalMarks >= 70"
-                                [class.text-bg-warning]="finalResult.totalMarks && finalResult.totalMarks >= 50 && finalResult.totalMarks < 70"
-                                [class.text-bg-danger]="finalResult.totalMarks && finalResult.totalMarks < 50"
-                                [class.text-bg-secondary]="!finalResult.totalMarks">
-                                {{ finalResult.totalMarks ?? '—' }}
+                                [class.text-bg-success]="finalResult.totalMarks >= 70"
+                                [class.text-bg-warning]="finalResult.totalMarks >= 50 && finalResult.totalMarks < 70"
+                                [class.text-bg-danger]="finalResult.totalMarks < 50">
+                                {{ finalResult.totalMarks }}
                               </span>
                               <br>
                               <small style="color: #666; display: block; margin-top: 4px;">
@@ -1457,17 +1456,19 @@
                                   {{ finalResult.status || 'Pending' }}
                                 </span>
                               </small>
-                              @if (internship.studentFinalResult?.finalResult?.officeMarks) {
+                              @if (finalResult.officeMarks) {
                                 <small style="color: #555; display: block; margin-top: 3px; font-size: 0.8rem;">
-                                  Office: {{ internship.studentFinalResult.finalResult.officeMarks }}/20
+                                  Office: {{ finalResult.officeMarks }}/20
                                 </small>
                               }
                             </div>
                           } @else if (internship.studentFinalResult) {
-                            <small style="color: #d97706; font-size: 0.75rem;">
-                              No marks yet
-                              <br>
-                              <code style="display: block; margin-top: 2px;">ID: {{ internship.id }}</code>
+                            <span class="badge text-bg-warning" title="Office admin evaluation pending">
+                              Pending
+                            </span>
+                            <br>
+                            <small style="color: #d97706; font-size: 0.75rem; display: block; margin-top: 2px;">
+                              Awaiting office marks
                             </small>
                           } @else {
                             <span class="text-muted">—</span>
