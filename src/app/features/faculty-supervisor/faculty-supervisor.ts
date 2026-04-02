@@ -6,7 +6,7 @@ import { ToastService } from '../../shared/toast/toast.service';
 import { ActivatedRoute, Router } from '@angular/router';
 import { PaginatePipe } from '../../shared/pagination/paginate.pipe';
 import { PaginatorComponent } from '../../shared/pagination/paginator';
-import { FacultyService, FacultyProfile, FacultyInternship } from '../../shared/services/faculty.service';
+import { FacultyService, FacultyProfile, FacultyInternship, StudentWeeklyLogs, WeeklyLog } from '../../shared/services/faculty.service';
 
 @Component({
   selector: 'app-faculty-supervisor',
@@ -27,10 +27,11 @@ export class FacultySupervisor {
     try {
       this.route.queryParamMap.subscribe(p => {
         const t = (p.get('tab') || '').toLowerCase();
-        const allowed = ['students','details','reports','assignments','agreements','profile','requests'] as const;
+        const allowed = ['students','details','reports','assignments','agreements','profile','requests','weekly-logs'] as const;
         if ((allowed as readonly string[]).includes(t)) {
           this.currentTab = t as any;
           if (this.currentTab === 'profile') this.loadMyProfileFromApi();
+          if (this.currentTab === 'weekly-logs') this.loadWeeklyLogs();
           // No need to reload requests here since we pre-loaded them
         }
       });
@@ -41,7 +42,7 @@ export class FacultySupervisor {
   get siteList() { return this.store.siteSupervisors; }
   get companyList() { return this.store.companies; }
   selectedId: string | null = null;
-  currentTab: 'students'|'details'|'reports'|'assignments'|'agreements'|'profile'|'requests'|'marks' = 'students';
+  currentTab: 'students'|'details'|'reports'|'assignments'|'agreements'|'profile'|'requests'|'marks'|'weekly-logs' = 'students';
   page = { students: 1, appexA: 1, appexB: 1 };
   pageSize = 10;
   selectTab(tab: FacultySupervisor['currentTab']) {
@@ -55,9 +56,21 @@ export class FacultySupervisor {
       this.loadFacultyInternships();
       this.loadEvaluationSummaryForSelected();
     }
+    if (tab === 'weekly-logs') {
+      this.loadWeeklyLogs();
+    }
     // Requests are pre-loaded on init, no need to reload on tab click
   }
   get me() { return this.store.currentUser; }
+  
+  // Weekly Logs
+  weeklyLogsData: StudentWeeklyLogs[] = [];
+  loadingWeeklyLogs = false;
+  selectedWeeklyLogStudent: StudentWeeklyLogs | null = null;
+  selectedWeeklyLogForDetails: WeeklyLog | null = null;
+  weeklyLogsPageSize = 10;
+  weeklyLogsPage = 1;
+  
   myFacultyId = computed(() => this.me()?.facultyId);
   myStudents = computed(() => {
     const fid = this.myFacultyId();
@@ -1045,5 +1058,72 @@ export class FacultySupervisor {
     this.showViewModal = false;
     this.viewModalStudent = null;
     this.viewModalSummary = null;
+  }
+
+  /** Load weekly logs for faculty's supervised internships */
+  async loadWeeklyLogs(forceRefresh = false) {
+    this.loadingWeeklyLogs = true;
+    this.weeklyLogsData = [];
+    this.cdr.markForCheck();
+    try {
+      const res = await this.facultyApi.getWeeklyLogs(undefined, { forceRefresh, skipGlobalLoading: true });
+      if (res?.data) {
+        this.weeklyLogsData = res.data;
+        console.log('✅ [Faculty] Weekly logs loaded:', this.weeklyLogsData.length, 'internships');
+      }
+    } catch (err: any) {
+      const msg = err?.error?.message || err?.message || 'Failed to load weekly logs';
+      console.warn('⚠️ [Faculty] Error loading weekly logs:', msg);
+      this.toast.error('Failed to load weekly logs');
+    } finally {
+      this.loadingWeeklyLogs = false;
+      try { this.cdr.detectChanges(); } catch {}
+    }
+  }
+
+  /** View full details for a specific student's weekly logs */
+  viewStudentWeeklyLogs(studentWeeklyLogs: StudentWeeklyLogs) {
+    this.selectedWeeklyLogStudent = studentWeeklyLogs;
+  }
+
+  /** View full details for a specific weekly log entry */
+  viewWeeklyLogDetails(log: WeeklyLog) {
+    this.selectedWeeklyLogForDetails = { ...log };
+  }
+
+  /** Close the weekly log details view */
+  closeWeeklyLogDetails() {
+    this.selectedWeeklyLogForDetails = null;
+  }
+
+  /** Close the student weekly logs view */
+  closeStudentWeeklyLogs() {
+    this.selectedWeeklyLogStudent = null;
+    this.selectedWeeklyLogForDetails = null;
+  }
+
+  /** Get paginated weekly logs for the selected student */
+  paginatedWeeklyLogs() {
+    if (!this.selectedWeeklyLogStudent) return [];
+    const logs = this.selectedWeeklyLogStudent.weeklyLogs || [];
+    const start = (this.weeklyLogsPage - 1) * this.weeklyLogsPageSize;
+    const end = start + this.weeklyLogsPageSize;
+    return logs.slice(start, end);
+  }
+
+  /** Get total pages for weekly logs pagination */
+  getTotalWeeklyLogsPages(): number {
+    if (!this.selectedWeeklyLogStudent) return 1;
+    return Math.ceil((this.selectedWeeklyLogStudent.weeklyLogs?.length || 0) / this.weeklyLogsPageSize);
+  }
+
+  /** Navigate to previous page of weekly logs */
+  prevWeeklyLogsPage() {
+    if (this.weeklyLogsPage > 1) this.weeklyLogsPage--;
+  }
+
+  /** Navigate to next page of weekly logs */
+  nextWeeklyLogsPage() {
+    if (this.weeklyLogsPage < this.getTotalWeeklyLogsPages()) this.weeklyLogsPage++;
   }
 }

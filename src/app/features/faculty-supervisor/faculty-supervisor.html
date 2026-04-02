@@ -7,6 +7,7 @@
     <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='reports'" (click)="selectTab('reports')">Reports</button></li>
     <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='assignments'" (click)="selectTab('assignments')">Assignments</button></li>
     <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='agreements'" (click)="selectTab('agreements')">Agreements</button></li>
+    <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='weekly-logs'" (click)="selectTab('weekly-logs')"><i class="bi bi-journal-text me-1"></i>Weekly Logs</button></li>
     <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='profile'" (click)="selectTab('profile')">Profile</button></li>
     <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='marks'" (click)="selectTab('marks')"><i class="bi bi-bar-chart-line me-1"></i>Evaluation Marks</button></li>
   </ul>
@@ -1101,6 +1102,288 @@
   </div>
   }
 
+</div>
+
+  <!-- Weekly Logs Tab Content -->
+  @if (currentTab === 'weekly-logs') {
+  <div class="card mb-3">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <span><i class="bi bi-journal-text me-2"></i>Student Weekly Logs</span>
+      <button class="btn btn-sm btn-outline-secondary" (click)="loadWeeklyLogs(true)" [disabled]="loadingWeeklyLogs">
+        <span *ngIf="loadingWeeklyLogs" class="spinner-border spinner-border-sm me-1"></span>
+        {{ loadingWeeklyLogs ? 'Loading...' : 'Refresh' }}
+      </button>
+    </div>
+    <div class="card-body">
+      <!-- Loading State -->
+      <div *ngIf="loadingWeeklyLogs" class="text-center py-4">
+        <span class="spinner-border text-primary"></span>
+        <p class="mt-2 text-muted">Loading weekly logs...</p>
+      </div>
+
+      <!-- No Data State -->
+      <div *ngIf="!loadingWeeklyLogs && weeklyLogsData.length === 0" class="alert alert-info">
+        <i class="bi bi-info-circle me-2"></i>
+        No weekly logs found for your supervised internships.
+      </div>
+
+      <!-- Weekly Logs Table -->
+      <div *ngIf="!loadingWeeklyLogs && weeklyLogsData.length > 0" class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead>
+            <tr>
+              <th>Student Name</th>
+              <th>Reg No</th>
+              <th>Email</th>
+              <th>Internship Type</th>
+              <th>Status</th>
+              <th>Submitted Weeks</th>
+              <th>Pending Weeks</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of weeklyLogsData; track item.internship.id) {
+            <tr>
+              <td class="fw-semibold">{{ item.internship.student.name }}</td>
+              <td>{{ item.internship.student.regNo }}</td>
+              <td>
+                <a [href]="'mailto:' + item.internship.student.email">{{ item.internship.student.email }}</a>
+              </td>
+              <td>
+                <span class="badge" 
+                  [class.text-bg-primary]="item.internship.type === 'ONSITE'"
+                  [class.text-bg-success]="item.internship.type === 'VIRTUAL'"
+                  [class.text-bg-warning]="item.internship.type !== 'ONSITE' && item.internship.type !== 'VIRTUAL'">
+                  {{ item.internship.type || 'Unknown' }}
+                </span>
+              </td>
+              <td>
+                <span class="badge" 
+                  [class.text-bg-success]="item.internship.status === 'COMPLETED'"
+                  [class.text-bg-info]="item.internship.status === 'ACTIVE'"
+                  [class.text-bg-secondary]="item.internship.status !== 'COMPLETED' && item.internship.status !== 'ACTIVE'">
+                  {{ item.internship.status || 'PENDING' | titlecase }}
+                </span>
+              </td>
+              <td>
+                <span class="badge text-bg-success">{{ item.weeklyLogStatus.submittedWeeks.length }}</span>
+              </td>
+              <td>
+                <span class="badge text-bg-warning">{{ item.weeklyLogStatus.pendingWeeks.length }}</span>
+              </td>
+              <td>
+                <button class="btn btn-sm btn-outline-primary" (click)="viewStudentWeeklyLogs(item)">
+                  <i class="bi bi-eye me-1"></i>View
+                </button>
+              </td>
+            </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  }
+
+<!-- ── View Student Weekly Logs Modal ──────────────────────────── -->
+<div class="modal fade show d-block" style="background:rgba(0,0,0,.5)" *ngIf="selectedWeeklyLogStudent" role="dialog" aria-modal="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="bi bi-journal-text me-2"></i>
+          {{ selectedWeeklyLogStudent.internship.student.name }} — Weekly Logs
+        </h5>
+        <button type="button" class="btn-close" (click)="closeStudentWeeklyLogs()"></button>
+      </div>
+      <div class="modal-body">
+        <!-- Student & Internship Info -->
+        <div class="card mb-3 border-blue">
+          <div class="card-header bg-light">
+            <h6 class="mb-0"><i class="bi bi-info-circle me-2"></i>Student & Internship Info</h6>
+          </div>
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-md-4">
+                <small class="text-muted d-block">Student Name</small>
+                <strong>{{ selectedWeeklyLogStudent.internship.student.name }}</strong>
+              </div>
+              <div class="col-md-4">
+                <small class="text-muted d-block">Reg No</small>
+                <strong>{{ selectedWeeklyLogStudent.internship.student.regNo }}</strong>
+              </div>
+              <div class="col-md-4">
+                <small class="text-muted d-block">Email</small>
+                <a [href]="'mailto:' + selectedWeeklyLogStudent.internship.student.email">
+                  {{ selectedWeeklyLogStudent.internship.student.email }}
+                </a>
+              </div>
+              <div class="col-md-4">
+                <small class="text-muted d-block">Internship Type</small>
+                <strong>{{ selectedWeeklyLogStudent.internship.type }}</strong>
+              </div>
+              <div class="col-md-4">
+                <small class="text-muted d-block">Start Date</small>
+                <strong>{{ selectedWeeklyLogStudent.internship.startDate | date:'mediumDate' }}</strong>
+              </div>
+              <div class="col-md-4">
+                <small class="text-muted d-block">End Date</small>
+                <strong>{{ selectedWeeklyLogStudent.internship.endDate | date:'mediumDate' }}</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Weekly Log Status Summary -->
+        <div class="card mb-3 border-success">
+          <div class="card-header bg-light">
+            <h6 class="mb-0"><i class="bi bi-bar-chart-line me-2"></i>Weekly Log Status</h6>
+          </div>
+          <div class="card-body">
+            <div class="row g-3 text-center">
+              <div class="col-md-3">
+                <div class="border rounded p-2">
+                  <div class="fw-bold fs-5">{{ selectedWeeklyLogStudent.weeklyLogStatus.totalWeeks }}</div>
+                  <small class="text-muted">Total Weeks</small>
+                </div>
+              </div>
+              <div class="col-md-3">
+                <div class="border rounded p-2">
+                  <div class="fw-bold fs-5 text-success">{{ selectedWeeklyLogStudent.weeklyLogStatus.submittedWeeks.length }}</div>
+                  <small class="text-muted">Submitted</small>
+                </div>
+              </div>
+              <div class="col-md-3">
+                <div class="border rounded p-2">
+                  <div class="fw-bold fs-5 text-warning">{{ selectedWeeklyLogStudent.weeklyLogStatus.pendingWeeks.length }}</div>
+                  <small class="text-muted">Pending</small>
+                </div>
+              </div>
+              <div class="col-md-3">
+                <div class="border rounded p-2">
+                  <div class="fw-bold fs-5" [class.text-success]="selectedWeeklyLogStudent.weeklyLogStatus.hasEnded">
+                    {{ selectedWeeklyLogStudent.weeklyLogStatus.hasEnded ? 'Ended' : 'Active' }}
+                  </div>
+                  <small class="text-muted">Status</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Weekly Logs List/Table -->
+        <div class="card mb-3">
+          <div class="card-header bg-light d-flex justify-content-between align-items-center">
+            <h6 class="mb-0"><i class="bi bi-list-check me-2"></i>Weekly Log Entries</h6>
+            <small class="text-muted">{{ (paginatedWeeklyLogs() | length) }} of {{ selectedWeeklyLogStudent.weeklyLogs.length }}</small>
+          </div>
+          <div class="card-body">
+            @if (selectedWeeklyLogStudent.weeklyLogs.length === 0) {
+            <div class="alert alert-info">
+              <i class="bi bi-info-circle me-2"></i>
+              No weekly logs submitted yet.
+            </div>
+            } @else {
+            <div class="table-responsive">
+              <table class="table table-sm table-hover mb-0">
+                <thead>
+                  <tr>
+                    <th>Week</th>
+                    <th>Submitted Date</th>
+                    <th>Activities Done</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (log of paginatedWeeklyLogs(); track log.id) {
+                  <tr>
+                    <td class="fw-semibold">Week {{ log.weekNo }}</td>
+                    <td>{{ log.submittedDate | date:'mediumDate' }}</td>
+                    <td>
+                      <span class="text-truncate d-inline-block" style="max-width: 250px;" [title]="log.activitiesDone">
+                        {{ log.activitiesDone | slice:0:50 }}{{ log.activitiesDone.length > 50 ? '...' : '' }}
+                      </span>
+                    </td>
+                    <td>
+                      <button class="btn btn-sm btn-outline-info" (click)="viewWeeklyLogDetails(log)">
+                        <i class="bi bi-arrow-right me-1"></i>View Full
+                      </button>
+                    </td>
+                  </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Pagination Controls -->
+            <div *ngIf="getTotalWeeklyLogsPages() > 1" class="d-flex justify-content-between align-items-center mt-3">
+              <button class="btn btn-sm btn-outline-secondary" (click)="prevWeeklyLogsPage()" [disabled]="weeklyLogsPage <= 1">
+                <i class="bi bi-chevron-left me-1"></i>Previous
+              </button>
+              <span class="text-muted small">Page {{ weeklyLogsPage }} of {{ getTotalWeeklyLogsPages() }}</span>
+              <button class="btn btn-sm btn-outline-secondary" (click)="nextWeeklyLogsPage()" [disabled]="weeklyLogsPage >= getTotalWeeklyLogsPages()">
+                Next<i class="bi bi-chevron-right ms-1"></i>
+              </button>
+            </div>
+            }
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="closeStudentWeeklyLogs()">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── View Full Weekly Log Detail Modal ──────────────────────────── -->
+<div class="modal fade show d-block" style="background:rgba(0,0,0,.5)" *ngIf="selectedWeeklyLogForDetails" role="dialog" aria-modal="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="bi bi-file-earmark-text me-2"></i>
+          Week {{ selectedWeeklyLogForDetails.weekNo }} — Full Log Details
+        </h5>
+        <button type="button" class="btn-close" (click)="closeWeeklyLogDetails()"></button>
+      </div>
+      <div class="modal-body">
+        <!-- Submitted Date -->
+        <div class="mb-3">
+          <small class="text-muted d-block mb-1"><i class="bi bi-calendar-event me-1"></i>Submitted Date</small>
+          <strong>{{ selectedWeeklyLogForDetails.submittedDate | date:'medium' }}</strong>
+        </div>
+
+        <!-- Activities Done -->
+        <div class="mb-3">
+          <h6><i class="bi bi-lightning-charge me-2"></i>Activities Done</h6>
+          <div class="bg-light p-3 rounded">
+            <p class="mb-0 text-break">{{ selectedWeeklyLogForDetails.activitiesDone }}</p>
+          </div>
+        </div>
+
+        <!-- Skills Learned -->
+        <div class="mb-3">
+          <h6><i class="bi bi-star me-2"></i>Skills Learned</h6>
+          <div class="bg-light p-3 rounded">
+            <p class="mb-0 text-break">{{ selectedWeeklyLogForDetails.skillsLearned }}</p>
+          </div>
+        </div>
+
+        <!-- Challenges -->
+        <div class="mb-3">
+          <h6><i class="bi bi-exclamation-circle me-2"></i>Challenges</h6>
+          <div class="bg-light p-3 rounded">
+            <p class="mb-0 text-break">{{ selectedWeeklyLogForDetails.challenges }}</p>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="closeWeeklyLogDetails()">Close</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- ── View Evaluation Summary Modal ──────────────────────────── -->

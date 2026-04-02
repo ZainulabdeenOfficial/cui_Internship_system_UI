@@ -48,6 +48,31 @@ export type FacultyProfile = {
   user?: { id?: string; name?: string; email?: string; role?: string; verified?: boolean };
 };
 
+export interface WeeklyLog {
+  id: string;
+  internshipId: string;
+  weekNo: number;
+  activitiesDone: string;
+  skillsLearned: string;
+  challenges: string;
+  submittedDate: string;
+}
+
+export interface WeeklyLogStatus {
+  totalWeeks: number;
+  currentWeek: number;
+  submittedWeeks: number[];
+  pendingWeeks: number[];
+  hasStarted: boolean;
+  hasEnded: boolean;
+}
+
+export interface StudentWeeklyLogs {
+  internship: FacultyInternship;
+  weeklyLogs: WeeklyLog[];
+  weeklyLogStatus: WeeklyLogStatus;
+}
+
 export interface FacultyRequestOptions {
   skipGlobalLoading?: boolean;
   forceRefresh?: boolean;
@@ -343,7 +368,30 @@ export class FacultyService {
     return res;
   }
 
+  /**
+   * GET /api/faculty/weekly-logs
+   * Retrieve weekly logs for internships where the authenticated user is the faculty supervisor.
+   * Optional internshipId returns a single internship if accessible.
+   */
+  async getWeeklyLogs(internshipId?: string, options?: FacultyRequestOptions): Promise<{ message?: string; data?: StudentWeeklyLogs[] }> {
+    let endpoint = 'weekly-logs';
+    if (internshipId) {
+      endpoint += `?internshipId=${encodeURIComponent(internshipId)}`;
+    }
+    const key = this.cacheKey(endpoint);
+    const cached = this.readCache<{ message?: string; data?: StudentWeeklyLogs[] }>(key, options);
+    if (cached) return cached;
+
+    const url = `${this.base}/api/faculty/${endpoint}`;
+    const res = await firstValueFrom(this.http.get<any>(url, { headers: await this.authHeaders(false, options), context: this.buildContext(options) }));
+    this.writeCache(key, res, options?.cacheTtlMs ?? 2 * 60 * 1000);
+    return res;
+  }
+
   clearFacultyInternshipsCache(): void {
     this.clearCacheByPrefix('internships?');
   }
-}
+
+  clearWeeklyLogsCache(): void {
+    this.clearCacheByPrefix('weekly-logs');
+  }
