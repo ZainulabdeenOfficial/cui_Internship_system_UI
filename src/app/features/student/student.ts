@@ -1595,27 +1595,29 @@ export class Student implements OnDestroy {
     this.loadingEvaluations = true;
     this.cdr.markForCheck();
     try {
-      console.log(`🌐 [Student] Fetching evaluation summary using internshipId (${internshipIdSource}): ${internshipId}`);
+      console.log(`🌐 [Student] Fetching final result using internshipId (${internshipIdSource}): ${internshipId}`);
       
-      // Call the /api/faculty/evaluation-summary endpoint (student-facing, no forceRefresh needed)
+      // Call the /api/student/final-result endpoint
       const res = await this.studentApi.getEvaluationSummary(internshipId, { forceRefresh });
       
-      // Extract and store the response
-      if (res) {
+      // Extract and store the nested response structure from API
+      if (res && res.finalResult) {
         this.studentFinalResult = {
-          message: res.message || 'Evaluation summary loaded',
+          message: res.message || 'Final result loaded',
           finalResult: {
-            facultyMarks: res.facultyMarks ?? null,
-            siteMarks: res.siteMarks ?? null,
-            officeMarks: res.officeMarks ?? null,
-            presentationMarks: res.presentationMarks ?? null,
-            totalMarks: res.totalMarks ?? null,
-            status: res.status || 'PENDING',
-            hodSignatureUrl: res.hodSignatureUrl || null
+            id: res.finalResult.id || '',
+            internshipId: res.finalResult.internshipId || internshipId,
+            facultyMarks: res.finalResult.facultyMarks ?? null,
+            siteMarks: res.finalResult.siteMarks ?? null,
+            officeMarks: res.finalResult.officeMarks ?? null,
+            presentationMarks: res.finalResult.presentationMarks ?? null,
+            totalMarks: res.finalResult.totalMarks ?? null,
+            status: res.finalResult.status || 'PENDING',
+            hodSignatureUrl: res.finalResult.hodSignatureUrl || null
           },
-          internship: null
+          internship: res.internship || null
         };
-        console.log('✅ [Student] Evaluation summary loaded:', this.studentFinalResult);
+        console.log('✅ [Student] Final result loaded:', this.studentFinalResult);
       } else {
         this.studentFinalResult = null;
       }
@@ -1623,10 +1625,10 @@ export class Student implements OnDestroy {
     } catch (err: any) {
       const status = err?.status ?? 0;
       if (status === 404 || status === 400) {
-        console.log('ℹ️ [Student] Evaluation summary not available (404/400)');
+        console.log('ℹ️ [Student] Final result not available (404/400)');
       } else {
-        const msg = err?.error?.message || err?.message || 'Failed to load evaluation summary';
-        console.warn('[Student] Error loading evaluation summary:', msg);
+        const msg = err?.error?.message || err?.message || 'Failed to load final result';
+        console.warn('[Student] Error loading final result:', msg);
       }
       this.studentFinalResult = null;
     } finally {
