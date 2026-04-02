@@ -95,7 +95,21 @@ export type CompanyRequest = BaseRequest & { type: 'company'; name: string; addr
 export type SiteSupervisorRequest = BaseRequest & { type: 'site'; name: string; email: string; companyId?: string; companyName?: string; createdSiteId?: string; createdCompanyId?: string };
 export type RequestItem = CompanyRequest | SiteSupervisorRequest;
 
-export type FacultySupervisor = { id: string; name: string; email: string; department?: string; password?: string; avatarBase64?: string; bio?: string };
+export type FacultySupervisor = { 
+  id: string; 
+  name: string; 
+  email: string; 
+  department?: string; 
+  password?: string; 
+  avatarBase64?: string; 
+  bio?: string;
+  designation?: string;
+  phone?: string;
+  office?: string;
+  avatarUrl?: string;
+  qualifications?: string;
+  expertise?: string;
+};
 export type Company = { id: string; name: string; address?: string; email?: string; phone?: string; website?: string; industry?: string; description?: string; remoteId?: string };
 export type SiteSupervisor = { id: string; name: string; email: string; companyId?: string; password?: string; avatarBase64?: string; bio?: string };
 

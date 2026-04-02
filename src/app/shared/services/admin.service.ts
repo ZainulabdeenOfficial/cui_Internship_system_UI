@@ -727,34 +727,44 @@ export class AdminService {
 
   /**
    * PUT /api/admin/edit-faculty
-   * Updates faculty user information and profile details (department, designation, phone, office, bio, avatarUrl, qualifications, expertise)
-   * Response: { message, faculty: { id, email, name, role, verified, profile: {...}, updatedAt }, updatedBy }
+   * Updates faculty user information and profile details
+   * Request: { id: string, email?: string, name?: string, password?: string, department?: string, designation?: string, phone?: string, office?: string, bio?: string, avatarUrl?: string, qualifications?: string, expertise?: string }
+   * Response: { message?: string, faculty?: any, updatedBy?: string }
    */
   async editFaculty(payload: { 
-    facultyId: string;
-    name?: string;
+    id: string;
     email?: string;
-    profile?: {
-      department?: string;
-      designation?: string;
-      phone?: string;
-      office?: string;
-      bio?: string;
-      avatarUrl?: string;
-      qualifications?: string;
-      expertise?: string;
-    }
+    name?: string;
+    password?: string;
+    department?: string;
+    designation?: string;
+    phone?: string;
+    office?: string;
+    bio?: string;
+    avatarUrl?: string;
+    qualifications?: string;
+    expertise?: string;
   }): Promise<{ message?: string; faculty?: any; updatedBy?: string }> {
-    const base = 'https://cui-internship-system-git-dev-zas-projects-7d9cf03b.vercel.app';
+    const base = environment.apiBaseUrl.replace(/\/$/, '');
     const path = '/api/admin/edit-faculty';
-    const url = `${base}${path}`;
+    const url = environment.production ? path : `${base}${path}`;
     const headers = await this.authHeaders(true);
     
     // Build request body with only provided fields
-    const body: any = { facultyId: payload.facultyId };
-    if (payload.name !== undefined) body.name = payload.name;
+    const body: any = { id: payload.id };
     if (payload.email !== undefined) body.email = payload.email;
-    if (payload.profile) body.profile = payload.profile;
+    if (payload.name !== undefined) body.name = payload.name;
+    if (payload.password !== undefined) body.password = payload.password;
+    if (payload.department !== undefined) body.department = payload.department;
+    if (payload.designation !== undefined) body.designation = payload.designation;
+    if (payload.phone !== undefined) body.phone = payload.phone;
+    if (payload.office !== undefined) body.office = payload.office;
+    if (payload.bio !== undefined) body.bio = payload.bio;
+    if (payload.avatarUrl !== undefined) body.avatarUrl = payload.avatarUrl;
+    if (payload.qualifications !== undefined) body.qualifications = payload.qualifications;
+    if (payload.expertise !== undefined) body.expertise = payload.expertise;
+    
+    if (!body.id) throw new Error('Faculty ID is required');
     
     return await firstValueFrom(this.http.put<any>(url, body, { headers }));
   }

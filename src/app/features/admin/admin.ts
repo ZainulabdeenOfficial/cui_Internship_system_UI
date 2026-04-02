@@ -145,6 +145,8 @@ export class Admin {
   // forms for adding supervisors/company
   faculty = { name: '', email: '', department: '', password: '' };
   addingFaculty = false;
+  editingFacultyId: string | null = null;
+  editingFaculty = { id: '', email: '', name: '', password: '', department: '', designation: '', phone: '', office: '', bio: '', avatarUrl: '', qualifications: '', expertise: '' };
   company = { name: '', email: '', phone: '', address: '', website: '', industry: '', description: '' };
   addingCompany = false;
   site = { name: '', email: '', companyId: '', password: '' };
@@ -1150,6 +1152,70 @@ export class Admin {
   }
   removeFaculty(id: string) {
     if (confirm('Remove this faculty supervisor?')) { this.store.removeFacultySupervisor(id); this.toast.warning('Faculty Supervisor removed'); }
+  }
+  startEditFaculty(id: string) {
+    const current = this.facultyList().find(f => f.id === id);
+    if (current) {
+      this.editingFacultyId = id;
+      this.editingFaculty = {
+        id,
+        email: current.email || '',
+        name: current.name || '',
+        password: '',
+        department: current.department || '',
+        designation: current.designation || '',
+        phone: current.phone || '',
+        office: current.office || '',
+        bio: current.bio || '',
+        avatarUrl: current.avatarUrl || '',
+        qualifications: current.qualifications || '',
+        expertise: current.expertise || ''
+      };
+    }
+  }
+  async saveEditFaculty() {
+    if (!this.editingFacultyId) return;
+    try {
+      const result = await this.adminApi.editFaculty({
+        id: this.editingFacultyId,
+        email: this.editingFaculty.email?.trim() || undefined,
+        name: this.editingFaculty.name?.trim() || undefined,
+        password: this.editingFaculty.password?.trim() || undefined,
+        department: this.editingFaculty.department?.trim() || undefined,
+        designation: this.editingFaculty.designation?.trim() || undefined,
+        phone: this.editingFaculty.phone?.trim() || undefined,
+        office: this.editingFaculty.office?.trim() || undefined,
+        bio: this.editingFaculty.bio?.trim() || undefined,
+        avatarUrl: this.editingFaculty.avatarUrl?.trim() || undefined,
+        qualifications: this.editingFaculty.qualifications?.trim() || undefined,
+        expertise: this.editingFaculty.expertise?.trim() || undefined
+      });
+      // Update local store with new data
+      const updatedFaculty = result.faculty;
+      if (updatedFaculty) {
+        this.store.updateFacultySupervisor(this.editingFacultyId, {
+          email: updatedFaculty.email || '',
+          name: updatedFaculty.name || '',
+          password: this.editingFaculty.password ? this.editingFaculty.password : undefined,
+          department: updatedFaculty.department || '',
+          designation: updatedFaculty.designation || '',
+          phone: updatedFaculty.phone || '',
+          office: updatedFaculty.office || '',
+          bio: updatedFaculty.bio || '',
+          avatarUrl: updatedFaculty.avatarUrl || '',
+          qualifications: updatedFaculty.qualifications || '',
+          expertise: updatedFaculty.expertise || ''
+        });
+      }
+      this.toast.success('Faculty updated');
+      this.editingFacultyId = null;
+    } catch (err) {
+      this.toast.danger('Failed to update faculty');
+    }
+  }
+  cancelEditFaculty() {
+    this.editingFacultyId = null;
+    this.editingFaculty = { id: '', email: '', name: '', password: '', department: '', designation: '', phone: '', office: '', bio: '', avatarUrl: '', qualifications: '', expertise: '' };
   }
   setFacultyPassword(id: string) {
     const pw = (this.facultyNewPw[id] ?? '').trim();
