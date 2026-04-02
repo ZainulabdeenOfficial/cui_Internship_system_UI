@@ -179,6 +179,8 @@ export class Admin {
   siteAssignCompany: Record<string, string> = {};
   // announcements
   announcement = { title: '', message: '', link: '', pinned: false };
+  editingAnnouncementId: string | null = null;
+  editingAnnouncement = { title: '', message: '', link: '', pinned: false };
   get announcements() { return this.store.announcements; }
   // Evidence review state
   evidenceDecision: Record<string, 'approved'|'rejected'|''> = {};
@@ -1188,6 +1190,39 @@ export class Admin {
   }
   removeAnnouncement(id: string) {
     if (confirm('Remove this announcement?')) { this.store.removeAnnouncement(id); this.toast.warning('Announcement removed'); }
+  }
+  startEditAnnouncement(id: string) {
+    const current = this.store.announcements().find(a => a.id === id);
+    if (current) {
+      this.editingAnnouncementId = id;
+      this.editingAnnouncement = {
+        title: current.title || '',
+        message: current.message || '',
+        link: current.link || '',
+        pinned: current.pinned || false
+      };
+    }
+  }
+  async saveEditAnnouncement() {
+    if (!this.editingAnnouncementId) return;
+    const msg = (this.editingAnnouncement.message ?? '').trim();
+    if (!msg) { this.toast.warning('Announcement message is required'); return; }
+    try {
+      await this.store.updateAnnouncement(this.editingAnnouncementId, {
+        title: this.editingAnnouncement.title?.trim() || undefined,
+        message: msg,
+        link: this.editingAnnouncement.link?.trim() || undefined,
+        pinned: !!this.editingAnnouncement.pinned
+      });
+      this.toast.success('Announcement updated');
+      this.editingAnnouncementId = null;
+    } catch (err) {
+      this.toast.danger('Failed to update announcement');
+    }
+  }
+  cancelEditAnnouncement() {
+    this.editingAnnouncementId = null;
+    this.editingAnnouncement = { title: '', message: '', link: '', pinned: false };
   }
   facultyName(id?: string) {
     const f = this.facultyList().find(x => x.id === id);
