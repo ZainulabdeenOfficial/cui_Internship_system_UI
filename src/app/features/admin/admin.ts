@@ -2070,23 +2070,44 @@ export class Admin {
 
   /** Helper method to extract final result from internship object (handles multiple API response structures) */
   getInternshipFinalResult(internship: any): any {
+    if (!internship) return null;
+    
+    // Log the structure for debugging
+    if (internship.id) {
+      console.log(`🔍 [getInternshipFinalResult] Internship ${internship.id}:`, {
+        hasFinalResult: !!internship.finalResult,
+        hasStudentFinalResult: !!internship.studentFinalResult,
+        studentFinalResultValue: internship.studentFinalResult
+      });
+    }
+    
     // Try multiple possible data structures from API response
     // Structure 1: Direct finalResult
     if (internship?.finalResult?.totalMarks !== undefined || internship?.finalResult?.status) {
+      console.log('✅ Found at root.finalResult');
       return internship.finalResult;
     }
     // Structure 2: Nested in studentFinalResult.finalResult
     if (internship?.studentFinalResult?.finalResult?.totalMarks !== undefined || internship?.studentFinalResult?.finalResult?.status) {
+      console.log('✅ Found at studentFinalResult.finalResult');
       return internship.studentFinalResult.finalResult;
     }
-    // Structure 3: Nested in studentFinalResult as root properties
-    if (internship?.studentFinalResult?.totalMarks !== undefined || internship?.studentFinalResult?.officeMarks !== undefined || internship?.studentFinalResult?.status) {
-      return {
-        totalMarks: internship.studentFinalResult.totalMarks ?? internship.studentFinalResult.officeMarks,
-        status: internship.studentFinalResult.status
-      };
+    // Structure 3: Nested in studentFinalResult as root properties (with all mark types)
+    if (internship?.studentFinalResult && typeof internship.studentFinalResult === 'object') {
+      const fr = internship.studentFinalResult;
+      if (fr.totalMarks !== undefined || fr.officeMarks !== undefined || fr.facultyMarks !== undefined || fr.siteMarks !== undefined || fr.status) {
+        console.log('✅ Found at studentFinalResult root properties:', fr);
+        return {
+          totalMarks: fr.totalMarks ?? fr.officeMarks,
+          officeMarks: fr.officeMarks,
+          facultyMarks: fr.facultyMarks,
+          siteMarks: fr.siteMarks,
+          status: fr.status
+        };
+      }
     }
     // No valid result found
+    console.warn(`❌ No final result for internship ${internship.id}`);
     return null;
   }
 
@@ -2243,13 +2264,15 @@ export class Admin {
         if (internship.id) {
           internship.loadingFinalResult = true;
           try {
+            console.log(`📥 [loadStudentFinalResultsForAll] Fetching result for internship ${internship.id} (student: ${internship.student?.name})`);
             const res = await this.adminApi.getStudentFinalResult(internship.id);
+            console.log(`📦 [loadStudentFinalResultsForAll] Response for ${internship.id}:`, res);
             // Store entire response (contains both finalResult and internship data from the endpoint)
             internship.studentFinalResult = res ?? null;
-            console.log('✅ Final result loaded for internship:', internship.id, res?.finalResult?.totalMarks);
+            console.log('✅ Final result loaded for internship:', internship.id, 'Data:', internship.studentFinalResult);
             this.cdr.markForCheck();
           } catch (err) {
-            console.log('Final result not available for internship:', internship.id);
+            console.log('⚠️ Final result not available for internship:', internship.id, err);
             internship.studentFinalResult = null;
           } finally {
             internship.loadingFinalResult = false;

@@ -1463,6 +1463,12 @@
                                 </small>
                               }
                             </div>
+                          } @else if (internship.studentFinalResult) {
+                            <small style="color: #d97706; font-size: 0.75rem;">
+                              No marks yet
+                              <br>
+                              <code style="display: block; margin-top: 2px;">ID: {{ internship.id }}</code>
+                            </small>
                           } @else {
                             <span class="text-muted">—</span>
                           }
