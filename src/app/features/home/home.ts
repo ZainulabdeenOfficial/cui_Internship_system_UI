@@ -135,52 +135,8 @@ export class Home implements OnInit, AfterViewInit, OnDestroy {
     // Remove any auth background classes if present and set a plain body background
     document.body.classList.add('home-solid');
     
-    // Load Dashboard statistics and announcements
-    this.loadDashboardStats();
+    // Load announcements from API
     this.loadAnnouncements();
-  }
-
-  private async loadDashboardStats(): Promise<void> {
-    try {
-      // Load companies from API
-      const companies = await this.adminService.getCompanies();
-      if (companies && companies.length > 0) {
-        this.store.companies.set(companies);
-      }
-    } catch (error) {
-      console.warn('Failed to load companies:', error);
-    }
-    
-    try {
-      // Load faculty supervisors (search with empty query returns all)
-      const faculty = await this.adminService.searchFaculty('');
-      if (faculty && faculty.length > 0) {
-        this.store.facultySupervisors.set(faculty.map(f => ({ 
-          id: f.id, 
-          name: f.name, 
-          email: f.email || '',
-          department: f.profile?.department || '',
-          designation: f.profile?.designation || ''
-        })) as any);
-      }
-    } catch (error) {
-      console.warn('Failed to load faculty supervisors:', error);
-    }
-    
-    try {
-      // Load site supervisors (search with empty query)
-      const sites = await this.adminService.searchSiteSupervisors('');
-      if (sites && sites.length > 0) {
-        this.store.siteSupervisors.set(sites.map(s => ({ 
-          id: s.id, 
-          name: s.name, 
-          email: s.email || '', 
-          companyName: s.companyName || ''
-        })) as any);
-      }
-    } catch (error) {
-      console.warn('Failed to load site supervisors:', error);
-    }
   }
 
   private async loadAnnouncements(): Promise<void> {
