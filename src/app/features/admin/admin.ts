@@ -1237,7 +1237,7 @@ export class Admin {
     this.toast.success('Site supervisor password set');
   }
   startEditSite(id: string) {
-    const current = this.siteList().find(s => s.id === id);
+    const current = this.sitesCache.find(s => s.id === id);
     if (current) {
       this.editingSiteId = id;
       this.editingSite = {
