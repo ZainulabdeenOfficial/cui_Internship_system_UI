@@ -11,7 +11,7 @@ import { StoreService } from '../../shared/services/store.service';
   styleUrl: './home.css'
 })
 export class Home implements OnInit, AfterViewInit, OnDestroy {
-  constructor(public store: StoreService, private adminService: AdminService) {}
+  constructor(public store: StoreService) {}
   // Carousel slides (uses your assets/1.jpg, 2.jpg, 3.jpg)
   slides = [
     { img: '/assets/1.jpg', alt: 'CUI campus view 1', align: 'text-start', title: 'CUI Internship System', desc: 'Unified portal for Students, Faculty, Site Supervisors and the Internship Office.', showCtas: true },
