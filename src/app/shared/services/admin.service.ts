@@ -748,19 +748,21 @@ export class AdminService {
     const url = `${base}${path}`;
     const headers = await this.authHeaders(true);
     
-    // Build request body with only provided fields
-    const body: any = { id: payload.id };
-    if (payload.email !== undefined) body.email = payload.email;
-    if (payload.name !== undefined) body.name = payload.name;
-    if (payload.password !== undefined) body.password = payload.password;
-    if (payload.department !== undefined) body.department = payload.department;
-    if (payload.designation !== undefined) body.designation = payload.designation;
-    if (payload.phone !== undefined) body.phone = payload.phone;
-    if (payload.office !== undefined) body.office = payload.office;
-    if (payload.bio !== undefined) body.bio = payload.bio;
-    if (payload.avatarUrl !== undefined) body.avatarUrl = payload.avatarUrl;
-    if (payload.qualifications !== undefined) body.qualifications = payload.qualifications;
-    if (payload.expertise !== undefined) body.expertise = payload.expertise;
+    // Build request body with all fields
+    const body: any = { 
+      id: payload.id,
+      email: payload.email,
+      name: payload.name,
+      password: payload.password,
+      department: payload.department,
+      designation: payload.designation,
+      phone: payload.phone,
+      office: payload.office,
+      bio: payload.bio,
+      avatarUrl: payload.avatarUrl,
+      qualifications: payload.qualifications,
+      expertise: payload.expertise
+    };
     
     if (!body.id) throw new Error('Faculty ID is required');
     
