@@ -166,6 +166,7 @@ export class SiteSupervisor implements OnInit {
   evaluationTotalInput: number | null = null;
   submittingEvaluation = false;
   loadingEvaluation = false;
+  evaluationsLoadedOnce = false;
   // Loaded evaluation (null = not yet submitted, object = already submitted)
   loadedEvalMid: any | null = null;
   loadedEvalFinal: any | null = null;
@@ -397,8 +398,18 @@ export class SiteSupervisor implements OnInit {
     const internshipId = this.getEffectiveInternshipId();
     if (!internshipId) { this.toast.warning('Please select a student first'); return; }
     
-    // Check if evaluation already submitted for this type
+    // Ensure evaluations are loaded before submission
+    if (!this.evaluationsLoadedOnce || this.loadingEvaluation) {
+      console.warn('⚠️ [submitEvaluation] Evaluations not yet loaded, fetching first...');
+      this.toast.warning('Loading evaluation status, please wait...');
+      this.loadingEvaluation = true;
+      await this.loadBothEvaluations();
+      this.loadingEvaluation = false;
+    }
+    
+    // Check if evaluation already submitted for this type (after ensuring load is complete)
     if (this.loadedEvalForCurrentType) {
+      console.warn(`⚠️ [submitEvaluation] ${this.evaluationType} already submitted for student ${this.selectedId}`);
       this.toast.warning(`${this.evaluationType === 'site_mid' ? 'Mid-term' : 'Final'} evaluation already submitted for this student`);
       return;
     }
@@ -505,9 +516,14 @@ export class SiteSupervisor implements OnInit {
       
       // Handle specific HTTP status codes
       if (status === 409) {
-        errorMsg = 'This evaluation has already been submitted for this student. Only one evaluation per type is allowed.';
-        // Reload evaluations to show the existing one
-        setTimeout(() => this.loadBothEvaluations(), 500);
+        console.error('❌ [submitEvaluation] 409 Conflict - evaluation already exists. Response:', err?.error);
+        errorMsg = err?.error?.message || 'This evaluation has already been submitted for this student. Only one evaluation per type is allowed.';
+        // Reload evaluations to ensure UI is up to date
+        console.log('🔄 [submitEvaluation] Reloading evaluations after 409...');
+        setTimeout(() => {
+          this.evaluationsLoadedOnce = false;
+          this.loadBothEvaluations();
+        }, 800);
       } else if (status === 401) {
         errorMsg = 'Unauthorized. Please log in again.';
       } else if (status === 403) {
@@ -515,6 +531,7 @@ export class SiteSupervisor implements OnInit {
       } else if (status === 404) {
         errorMsg = 'Internship or student not found.';
       } else if (status === 400) {
+        console.error('❌ [submitEvaluation] 400 Bad Request - validation error. Response:', err?.error);
         errorMsg = err?.error?.message || 'Invalid evaluation data. Please check your input.';
       } else if (status === 500) {
         errorMsg = 'Server error. Please try again later.';
@@ -543,22 +560,36 @@ export class SiteSupervisor implements OnInit {
     this.loadedEvalFinal = null;
     this.loadingEvaluation = true;
     try {
+      console.log(`🔄 [loadBothEvaluations] Loading evaluations for internship: ${internshipId}`);
       const [midRes, finalRes] = await Promise.allSettled([
         this.siteService.getEvaluations(internshipId, 'site_mid'),
         this.siteService.getEvaluations(internshipId, 'site_final')
       ]);
       if (midRes.status === 'fulfilled' && midRes.value?.success && midRes.value.data) {
         const list = Array.isArray(midRes.value.data) ? midRes.value.data : (midRes.value.data.items || []);
-        if (list.length) this.loadedEvalMid = list[list.length - 1];
+        if (list.length) {
+          this.loadedEvalMid = list[list.length - 1];
+          console.log('✅ [loadBothEvaluations] Mid-term evaluation loaded:', this.loadedEvalMid);
+        } else {
+          console.log('📭 [loadBothEvaluations] No mid-term evaluation found');
+        }
       }
       if (finalRes.status === 'fulfilled' && finalRes.value?.success && finalRes.value.data) {
         const list = Array.isArray(finalRes.value.data) ? finalRes.value.data : (finalRes.value.data.items || []);
-        if (list.length) this.loadedEvalFinal = list[list.length - 1];
+        if (list.length) {
+          this.loadedEvalFinal = list[list.length - 1];
+          console.log('✅ [loadBothEvaluations] Final evaluation loaded:', this.loadedEvalFinal);
+        } else {
+          console.log('📭 [loadBothEvaluations] No final evaluation found');
+        }
       }
-    } catch {
+    } catch (err: any) {
+      console.error('❌ [loadBothEvaluations] Error loading evaluations:', err?.message);
       this.toast.danger('Unable to load existing evaluations');
     } finally {
       this.loadingEvaluation = false;
+      this.evaluationsLoadedOnce = true;
+      console.log('✅ [loadBothEvaluations] Load complete. Mid:', !!this.loadedEvalMid, 'Final:', !!this.loadedEvalFinal);
     }
   }
 

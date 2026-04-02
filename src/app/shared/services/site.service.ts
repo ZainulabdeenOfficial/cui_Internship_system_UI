@@ -68,11 +68,17 @@ export class SiteService {
       console.error('❌ [SiteService.submitEvaluation] API error full details:', {
         status: err?.status,
         statusText: err?.statusText,
+        statusCode: err?.status,
         message: err?.message,
         errorBody: err?.error,
         url: url,
         errorString: typeof err?.error === 'string' ? err.error : JSON.stringify(err?.error)
       });
+      
+      // Log error body for debugging
+      if (err?.error) {
+        console.error('❌ [SiteService.submitEvaluation] Error Response Body:', err.error);
+      }
       
       // Always throw - don't retry since we already used absolute URL
       throw err;
