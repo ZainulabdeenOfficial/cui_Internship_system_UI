@@ -575,6 +575,37 @@
                 <thead><tr><th>Company</th><th>Name</th><th>Email</th><th>Assign</th><th>Password</th><th>Actions</th></tr></thead>
                 <tbody>
                   @for (t of (sitesCache | paginate: page.sites : pageSize); track t.id) {
+                  @if (editingSiteId === t.id) {
+                  <tr class="table-info">
+                    <td colspan="6">
+                      <div class="row g-2 p-2">
+                        <div class="col-12 col-sm-6 col-md-2">
+                          <label class="form-label small">Name</label>
+                          <input class="form-control form-control-sm" [(ngModel)]="editingSite.name" name="sname" />
+                        </div>
+                        <div class="col-12 col-sm-6 col-md-2">
+                          <label class="form-label small">Email</label>
+                          <input class="form-control form-control-sm" type="email" [(ngModel)]="editingSite.email" name="semail" />
+                        </div>
+                        <div class="col-12 col-sm-6 col-md-2">
+                          <label class="form-label small">Company</label>
+                          <select class="form-select form-select-sm" [(ngModel)]="editingSite.companyId" name="scompany">
+                            <option [ngValue]="''" selected>None</option>
+                            @for (c of companyList(); track c.id) { <option [ngValue]="c.id">{{ c.name }}</option> }
+                          </select>
+                        </div>
+                        <div class="col-12 col-sm-6 col-md-2">
+                          <label class="form-label small">Password</label>
+                          <input class="form-control form-control-sm" type="password" [(ngModel)]="editingSite.password" name="spassword" />
+                        </div>
+                        <div class="col-12 d-flex gap-2 justify-content-end pt-2">
+                          <button class="btn btn-sm btn-success" (click)="saveEditSite()">Save</button>
+                          <button class="btn btn-sm btn-secondary" (click)="cancelEditSite()">Cancel</button>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                  } @else {
                   <tr [hidden]="(search.sites && !(t.name + ' ' + t.email + ' ' + companyName(t.companyId)).toLowerCase().includes(search.sites.toLowerCase())) || (filter.siteCompanyId && t.companyId !== filter.siteCompanyId)">
                     <td>{{ companyName(t.companyId) }}</td>
                     <td>{{ t.name }}</td>
@@ -616,14 +647,16 @@
                     <td class="small text-muted">—</td>
                     <td>
                       <div class="d-flex flex-wrap gap-2 align-items-center">
-                        <input class="form-control form-control-sm flex-grow-1 flex-sm-grow-0" style="min-width:140px" placeholder="New password" [(ngModel)]="siteNewPw[t.id]" name="spw{{t.id}}" />
+                        <input class="form-control form-control-sm" style="min-width:140px" placeholder="New password" [(ngModel)]="siteNewPw[t.id]" name="spw{{t.id}}" />
                         <div class="btn-group btn-group-sm">
+                          <button class="btn btn-outline-primary" (click)="startEditSite(t.id)">Edit</button>
                           <button class="btn btn-outline-secondary" (click)="setSitePassword(t.id)">Set</button>
                           <button class="btn btn-outline-danger" (click)="removeSite(t.id)">Remove</button>
                         </div>
                       </div>
                     </td>
                   </tr>
+                  }
                   }
                 </tbody>
               </table>

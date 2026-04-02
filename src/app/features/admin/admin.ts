@@ -150,6 +150,8 @@ export class Admin {
   company = { name: '', email: '', phone: '', address: '', website: '', industry: '', description: '' };
   addingCompany = false;
   site = { name: '', email: '', companyId: '', password: '' };
+  editingSiteId: string | null = null;
+  editingSite = { id: '', name: '', email: '', companyId: '', password: '' };
   // Dynamic company dropdown for Sites tab
   dropdownCompanies: Array<{ id: string; name: string }> = [];
   private companySearchDebounceId: any;
@@ -1233,6 +1235,55 @@ export class Admin {
     this.store.updateSiteSupervisor(id, { password: pw });
     delete this.siteNewPw[id];
     this.toast.success('Site supervisor password set');
+  }
+  startEditSite(id: string) {
+    const current = this.siteList().find(s => s.id === id);
+    if (current) {
+      this.editingSiteId = id;
+      this.editingSite = {
+        id,
+        name: current.name || '',
+        email: current.email || '',
+        companyId: current.companyId || '',
+        password: ''
+      };
+    }
+  }
+  async saveEditSite() {
+    if (!this.editingSiteId) return;
+    const name = this.editingSite.name?.trim();
+    const email = this.editingSite.email?.trim();
+    if (!name || !email) {
+      this.toast.warning('Name and email are required');
+      return;
+    }
+    try {
+      const result = await this.adminApi.editSiteSupervisor({
+        id: this.editingSiteId,
+        name,
+        email,
+        companyId: this.editingSite.companyId || undefined,
+        password: this.editingSite.password?.trim() || undefined
+      });
+      // Update local store
+      const updatedSite = result.siteSupervisor;
+      if (updatedSite) {
+        this.store.updateSiteSupervisor(this.editingSiteId, {
+          name: updatedSite.name || '',
+          email: updatedSite.email || '',
+          companyId: updatedSite.companyId || '',
+          password: this.editingSite.password ? this.editingSite.password : undefined
+        });
+      }
+      this.toast.success('Site supervisor updated');
+      this.editingSiteId = null;
+    } catch (err) {
+      this.toast.danger('Failed to update site supervisor');
+    }
+  }
+  cancelEditSite() {
+    this.editingSiteId = null;
+    this.editingSite = { id: '', name: '', email: '', companyId: '', password: '' };
   }
   removeCompany(id: string) {
     if (confirm('Remove this company?')) { this.store.removeCompany(id); this.toast.warning('Company removed'); }
