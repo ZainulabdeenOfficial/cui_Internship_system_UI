@@ -287,62 +287,6 @@
                 <thead><tr><th>Name</th><th>Email</th><th>Department</th><th>Password</th><th>Actions</th></tr></thead>
                 <tbody>
                   @for (f of (filteredFaculty() | paginate: page.faculty : pageSize); track f.id) {
-                  @if (editingFacultyId === f.id) {
-                  <tr class="table-info">
-                    <td colspan="5">
-                      <div class="row g-2 p-2">
-                        <div class="col-12 col-sm-6 col-md-2">
-                          <label class="form-label small">Name</label>
-                          <input class="form-control form-control-sm" [(ngModel)]="editingFaculty.name" name="fname" />
-                        </div>
-                        <div class="col-12 col-sm-6 col-md-2">
-                          <label class="form-label small">Email</label>
-                          <input class="form-control form-control-sm" type="email" [(ngModel)]="editingFaculty.email" name="femail" />
-                        </div>
-                        <div class="col-12 col-sm-6 col-md-2">
-                          <label class="form-label small">Department</label>
-                          <input class="form-control form-control-sm" [(ngModel)]="editingFaculty.department" name="fdept" />
-                        </div>
-                        <div class="col-12 col-sm-6 col-md-2">
-                          <label class="form-label small">Designation</label>
-                          <input class="form-control form-control-sm" [(ngModel)]="editingFaculty.designation" name="fdesig" />
-                        </div>
-                        <div class="col-12 col-sm-6 col-md-2">
-                          <label class="form-label small">Phone</label>
-                          <input class="form-control form-control-sm" [(ngModel)]="editingFaculty.phone" name="fphone" />
-                        </div>
-                        <div class="col-12 col-sm-6 col-md-2">
-                          <label class="form-label small">Office</label>
-                          <input class="form-control form-control-sm" [(ngModel)]="editingFaculty.office" name="foffice" />
-                        </div>
-                        <div class="col-12 col-sm-6 col-md-2">
-                          <label class="form-label small">Password</label>
-                          <input class="form-control form-control-sm" type="password" [(ngModel)]="editingFaculty.password" name="fpassword" />
-                        </div>
-                        <div class="col-12 col-sm-6 col-md-3">
-                          <label class="form-label small">Bio</label>
-                          <input class="form-control form-control-sm" [(ngModel)]="editingFaculty.bio" name="fbio" />
-                        </div>
-                        <div class="col-12 col-sm-6 col-md-3">
-                          <label class="form-label small">Qualifications</label>
-                          <input class="form-control form-control-sm" [(ngModel)]="editingFaculty.qualifications" name="fqualif" />
-                        </div>
-                        <div class="col-12 col-sm-6 col-md-3">
-                          <label class="form-label small">Expertise</label>
-                          <input class="form-control form-control-sm" [(ngModel)]="editingFaculty.expertise" name="fexpert" />
-                        </div>
-                        <div class="col-12 col-sm-6 col-md-3">
-                          <label class="form-label small">Avatar URL</label>
-                          <input class="form-control form-control-sm" [(ngModel)]="editingFaculty.avatarUrl" name="favatar" />
-                        </div>
-                        <div class="col-12 d-flex gap-2 justify-content-end pt-2">
-                          <button class="btn btn-sm btn-success" (click)="saveEditFaculty()">Save</button>
-                          <button class="btn btn-sm btn-secondary" (click)="cancelEditFaculty()">Cancel</button>
-                        </div>
-                      </div>
-                    </td>
-                  </tr>
-                  } @else {
                   <tr>
                     <td>{{ f.name }}</td>
                     <td>{{ f.email }}</td>
@@ -352,14 +296,12 @@
                       <div class="d-flex flex-wrap gap-2 align-items-center">
                         <input class="form-control form-control-sm" style="min-width:160px" placeholder="New password" [(ngModel)]="facultyNewPw[f.id]" name="fpw{{f.id}}" />
                         <div class="btn-group btn-group-sm">
-                          <button class="btn btn-outline-primary" (click)="startEditFaculty(f.id)">Edit</button>
                           <button class="btn btn-outline-secondary" (click)="setFacultyPassword(f.id)">Set</button>
                           <button class="btn btn-outline-danger" (click)="removeFaculty(f.id)">Remove</button>
                         </div>
                       </div>
                     </td>
                   </tr>
-                  }
                   }
                 </tbody>
               </table>
@@ -575,37 +517,6 @@
                 <thead><tr><th>Company</th><th>Name</th><th>Email</th><th>Assign</th><th>Password</th><th>Actions</th></tr></thead>
                 <tbody>
                   @for (t of (sitesCache | paginate: page.sites : pageSize); track t.id) {
-                  @if (editingSiteId === t.id) {
-                  <tr class="table-info">
-                    <td colspan="6">
-                      <div class="row g-2 p-2">
-                        <div class="col-12 col-sm-6 col-md-2">
-                          <label class="form-label small">Name</label>
-                          <input class="form-control form-control-sm" [(ngModel)]="editingSite.name" name="sname" />
-                        </div>
-                        <div class="col-12 col-sm-6 col-md-2">
-                          <label class="form-label small">Email</label>
-                          <input class="form-control form-control-sm" type="email" [(ngModel)]="editingSite.email" name="semail" />
-                        </div>
-                        <div class="col-12 col-sm-6 col-md-2">
-                          <label class="form-label small">Company</label>
-                          <select class="form-select form-select-sm" [(ngModel)]="editingSite.companyId" name="scompany">
-                            <option [ngValue]="''" selected>None</option>
-                            @for (c of companyList(); track c.id) { <option [ngValue]="c.id">{{ c.name }}</option> }
-                          </select>
-                        </div>
-                        <div class="col-12 col-sm-6 col-md-2">
-                          <label class="form-label small">Password</label>
-                          <input class="form-control form-control-sm" type="password" [(ngModel)]="editingSite.password" name="spassword" />
-                        </div>
-                        <div class="col-12 d-flex gap-2 justify-content-end pt-2">
-                          <button class="btn btn-sm btn-success" (click)="saveEditSite()">Save</button>
-                          <button class="btn btn-sm btn-secondary" (click)="cancelEditSite()">Cancel</button>
-                        </div>
-                      </div>
-                    </td>
-                  </tr>
-                  } @else {
                   <tr [hidden]="(search.sites && !(t.name + ' ' + t.email + ' ' + companyName(t.companyId)).toLowerCase().includes(search.sites.toLowerCase())) || (filter.siteCompanyId && t.companyId !== filter.siteCompanyId)">
                     <td>{{ companyName(t.companyId) }}</td>
                     <td>{{ t.name }}</td>
@@ -649,14 +560,12 @@
                       <div class="d-flex flex-wrap gap-2 align-items-center">
                         <input class="form-control form-control-sm" style="min-width:140px" placeholder="New password" [(ngModel)]="siteNewPw[t.id]" name="spw{{t.id}}" />
                         <div class="btn-group btn-group-sm">
-                          <button class="btn btn-outline-primary" (click)="startEditSite(t.id)">Edit</button>
                           <button class="btn btn-outline-secondary" (click)="setSitePassword(t.id)">Set</button>
                           <button class="btn btn-outline-danger" (click)="removeSite(t.id)">Remove</button>
                         </div>
                       </div>
                     </td>
                   </tr>
-                  }
                   }
                 </tbody>
               </table>
