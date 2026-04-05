@@ -23,40 +23,13 @@
 							</span>
 							<span>Student</span>
 						</a>
-												<ul class="dropdown-menu dropdown-menu-end p-3" style="min-width:300px">
-																					<li class="mb-2">
-																						<span class="small">Status:
-																							<span class="badge"
-																								[class.text-bg-success]="studentStatus==='approved'"
-																								[class.text-bg-secondary]="studentStatus==='pending'"
-																								[class.text-bg-danger]="studentStatus==='rejected'">
-																								{{ studentStatus || '-' }}
-																							</span>
-																						</span>
-																					</li>
-														<li class="mb-2">
-																<label class="form-label small mb-1">Bio</label>
-																<textarea class="form-control form-control-sm" rows="2" [(ngModel)]="studentDraft.bio"></textarea>
-																<div class="text-end mt-2">
-																										<button class="btn btn-sm btn-primary btn-save" (click)="saveStudentProfile()">Save</button>
-																</div>
-														</li>
-							<li class="mb-2">
-								<label class="form-label small mb-1">Profile photo</label>
-								<input type="file" accept="image/*" class="form-control form-control-sm" (change)="onStudentAvatarSelected($event)" />
-							</li>
-							<li class="mb-2">
-								<label class="form-label small mb-1">Change Password</label>
-								<div class="input-group input-group-sm mb-1"><span class="input-group-text">Old</span><input type="password" class="form-control" [(ngModel)]="changeStudentPw.old" /></div>
-								<div class="input-group input-group-sm mb-1"><span class="input-group-text">New</span><input type="password" class="form-control" [(ngModel)]="changeStudentPw.next" /></div>
-								<div class="input-group input-group-sm mb-2"><span class="input-group-text">Confirm</span><input type="password" class="form-control" [(ngModel)]="changeStudentPw.confirm" /></div>
-								<button class="btn btn-sm btn-primary btn-pw" (click)="submitStudentPassword()">Update Password</button>
-							</li>
-																					<!-- Student dropdown: only show Forms and Complaints in profile as requested -->
-																					<li><a class="dropdown-item" [routerLink]="['/student']" [queryParams]="{ tab: 'appex' }">Internship Approval (AppEx‑A)</a></li>
-																					<li><a class="dropdown-item" [routerLink]="['/student']" [queryParams]="{ tab: 'assignment' }">Assignment &amp; Agreement</a></li>
-																					<li><a class="dropdown-item" [routerLink]="['/student']" [queryParams]="{ tab: 'form3' }">Organization Overview &amp; Scope of Work</a></li>
-																					<li><a class="dropdown-item" routerLink="/complaints">Complaints</a></li>
+						<ul class="dropdown-menu dropdown-menu-end">
+							<li><a class="dropdown-item" [routerLink]="['/student']" [queryParams]="{ tab: 'appex' }">Internship Approval (AppEx‑A)</a></li>
+							<li><a class="dropdown-item" [routerLink]="['/student']" [queryParams]="{ tab: 'assignment' }">Assignment &amp; Agreement</a></li>
+							<li><a class="dropdown-item" [routerLink]="['/student']" [queryParams]="{ tab: 'form3' }">Organization Overview &amp; Scope of Work</a></li>
+							<li><a class="dropdown-item" routerLink="/complaints">Complaints</a></li>
+							<li><hr class="dropdown-divider"></li>
+							<li><button class="dropdown-item" (click)="logout()"><i class="pi pi-sign-out" aria-hidden="true"></i> Logout</button></li>
 						</ul>
 					</li>
 					}
@@ -72,29 +45,7 @@
 							</span>
 							<span>Internship Office</span>
 						</a>
-						<ul class="dropdown-menu dropdown-menu-end p-3" style="min-width:300px">
-							<li class="mb-2">
-								<label class="form-label small mb-1">Display Name</label>
-																<input class="form-control form-control-sm" [(ngModel)]="adminDraft.name" />
-							</li>
-							<li class="mb-2">
-								<label class="form-label small mb-1">Bio</label>
-								<textarea class="form-control form-control-sm" rows="2" [(ngModel)]="adminDraft.bio"></textarea>
-								<div class="text-end mt-2">
-																	<button class="btn btn-sm btn-primary btn-save" (click)="saveAdminProfile()">Save</button>
-								</div>
-							</li>
-							<li class="mb-2">
-								<label class="form-label small mb-1">Profile photo</label>
-								<input type="file" accept="image/*" class="form-control form-control-sm" (change)="onAdminAvatarSelected($event)" />
-							</li>
-							<li class="mb-2">
-								<label class="form-label small mb-1">Change Password</label>
-								<div class="input-group input-group-sm mb-1"><span class="input-group-text">Old</span><input type="password" class="form-control" [(ngModel)]="changeAdminPw.old" /></div>
-								<div class="input-group input-group-sm mb-1"><span class="input-group-text">New</span><input type="password" class="form-control" [(ngModel)]="changeAdminPw.next" /></div>
-								<div class="input-group input-group-sm mb-2"><span class="input-group-text">Confirm</span><input type="password" class="form-control" [(ngModel)]="changeAdminPw.confirm" /></div>
-								<button class="btn btn-sm btn-primary btn-pw" (click)="submitAdminPassword()">Update Password</button>
-							</li>
+						<ul class="dropdown-menu dropdown-menu-end">
 							<li><a class="dropdown-item" [routerLink]="['/admin']" [queryParams]="{ tab: 'students' }">Students</a></li>
 							<li><a class="dropdown-item" [routerLink]="['/admin']" [queryParams]="{ tab: 'applications' }">Applications</a></li>
 							<li><a class="dropdown-item" [routerLink]="['/admin']" [queryParams]="{ tab: 'requests' }">Requests</a></li>
@@ -104,6 +55,8 @@
 							<li><a class="dropdown-item" [routerLink]="['/admin']" [queryParams]="{ tab: 'companies' }">Companies & Site</a></li>
 							<li><a class="dropdown-item" [routerLink]="['/admin']" [queryParams]="{ tab: 'compliance' }">Log Compliance</a></li>
 							<li><a class="dropdown-item" [routerLink]="['/admin']" [queryParams]="{ tab: 'complaints' }">Complaints</a></li>
+							<li><hr class="dropdown-divider"></li>
+							<li><button class="dropdown-item" (click)="logout()"><i class="pi pi-sign-out" aria-hidden="true"></i> Logout</button></li>
 						</ul>
 					</li>
 					}
@@ -119,40 +72,15 @@
 							</span>
 							<span>Faculty</span>
 						</a>
-						<ul class="dropdown-menu dropdown-menu-end p-3" style="min-width:300px">
-							<li class="mb-2">
-								<label class="form-label small mb-1">Name</label>
-								<input class="form-control form-control-sm" [(ngModel)]="facultyDraft.name" />
-								<div class="text-muted small mt-1">{{ myFaculty()?.email }}</div>
-							</li>
-							<li class="mb-2">
-								<label class="form-label small mb-1">Department</label>
-								<input class="form-control form-control-sm" [(ngModel)]="facultyDraft.department" />
-							</li>
-							<li class="mb-2">
-								<label class="form-label small mb-1">Bio</label>
-								<textarea class="form-control form-control-sm" rows="2" [(ngModel)]="facultyDraft.bio"></textarea>
-								<div class="text-end mt-2">
-																	<button class="btn btn-sm btn-primary btn-save" (click)="saveFacultyProfile()">Save</button>
-								</div>
-							</li>
-							<li class="mb-2">
-								<label class="form-label small mb-1">Profile photo</label>
-								<input type="file" accept="image/*" class="form-control form-control-sm" (change)="onAvatarSelected($event)" />
-							</li>
-							<li class="mb-2">
-								<label class="form-label small mb-1">Change Password</label>
-								<div class="input-group input-group-sm mb-1"><span class="input-group-text">Old</span><input type="password" class="form-control" [(ngModel)]="changeFacultyPw.old" /></div>
-								<div class="input-group input-group-sm mb-1"><span class="input-group-text">New</span><input type="password" class="form-control" [(ngModel)]="changeFacultyPw.next" /></div>
-								<div class="input-group input-group-sm mb-2"><span class="input-group-text">Confirm</span><input type="password" class="form-control" [(ngModel)]="changeFacultyPw.confirm" /></div>
-								<button class="btn btn-sm btn-primary btn-pw" (click)="submitFacultyPassword()">Update Password</button>
-							</li>
+						<ul class="dropdown-menu dropdown-menu-end">
 							<li><a class="dropdown-item" [routerLink]="['/faculty']" [queryParams]="{ tab: 'students' }">Students</a></li>
 							<li><a class="dropdown-item" [routerLink]="['/faculty']" [queryParams]="{ tab: 'details' }">Details</a></li>
 							<li><a class="dropdown-item" [routerLink]="['/faculty']" [queryParams]="{ tab: 'reports' }">Reports</a></li>
 							<li><a class="dropdown-item" [routerLink]="['/faculty']" [queryParams]="{ tab: 'assignments' }">Assignments</a></li>
 							<li><a class="dropdown-item" [routerLink]="['/faculty']" [queryParams]="{ tab: 'agreements' }">Agreements</a></li>
 							<li><a class="dropdown-item" [routerLink]="['/faculty']" [queryParams]="{ tab: 'profile' }">Profile</a></li>
+							<li><hr class="dropdown-divider"></li>
+							<li><button class="dropdown-item" (click)="logout()"><i class="pi pi-sign-out" aria-hidden="true"></i> Logout</button></li>
 						</ul>
 					</li>
 					}
@@ -168,45 +96,17 @@
 							</span>
 							<span>Site</span>
 						</a>
-						<ul class="dropdown-menu dropdown-menu-end p-3" style="min-width:300px">
-							<li class="mb-2">
-								<label class="form-label small mb-1">Name</label>
-								<input class="form-control form-control-sm" [(ngModel)]="siteDraft.name" />
-							</li>
-							<li class="mb-2">
-								<label class="form-label small mb-1">Bio</label>
-								<textarea class="form-control form-control-sm" rows="2" [(ngModel)]="siteDraft.bio"></textarea>
-								<div class="text-end mt-2">
-																	<button class="btn btn-sm btn-primary btn-save" (click)="saveSiteProfile()">Save</button>
-								</div>
-							</li>
-							<li class="mb-2">
-								<label class="form-label small mb-1">Profile photo</label>
-								<input type="file" accept="image/*" class="form-control form-control-sm" (change)="onSiteAvatarSelected($event)" />
-							</li>
-							<li class="mb-2">
-								<div class="text-muted small">{{ mySite()?.email }}</div>
-							</li>
-							<li class="mb-2">
-								<label class="form-label small mb-1">Change Password</label>
-								<div class="input-group input-group-sm mb-1"><span class="input-group-text">Old</span><input type="password" class="form-control" [(ngModel)]="changeSitePw.old" /></div>
-								<div class="input-group input-group-sm mb-1"><span class="input-group-text">New</span><input type="password" class="form-control" [(ngModel)]="changeSitePw.next" /></div>
-								<div class="input-group input-group-sm mb-2"><span class="input-group-text">Confirm</span><input type="password" class="form-control" [(ngModel)]="changeSitePw.confirm" /></div>
-								<button class="btn btn-sm btn-primary btn-pw" (click)="submitSitePassword()">Update Password</button>
-							</li>
+						<ul class="dropdown-menu dropdown-menu-end">
 							<li><a class="dropdown-item" [routerLink]="['/site']" [queryParams]="{ tab: 'students' }">Students</a></li>
 							<li><a class="dropdown-item" [routerLink]="['/site']" [queryParams]="{ tab: 'details' }">Details</a></li>
 							<li><a class="dropdown-item" [routerLink]="['/site']" [queryParams]="{ tab: 'reports' }">Reports</a></li>
 							<li><a class="dropdown-item" [routerLink]="['/site']" [queryParams]="{ tab: 'profile' }">Profile</a></li>
 							<li><a class="dropdown-item" [routerLink]="['/site']" [queryParams]="{ tab: 'password' }">Password</a></li>
+							<li><hr class="dropdown-divider"></li>
+							<li><button class="dropdown-item" (click)="logout()"><i class="pi pi-sign-out" aria-hidden="true"></i> Logout</button></li>
 						</ul>
 					</li>
 					}
-					<li class="nav-item">
-						<button class="btn btn-sm btn-light ms-3 d-flex align-items-center gap-1 logout-btn" (click)="logout()">
-							<i class="pi pi-sign-out" aria-hidden="true"></i><span>Logout</span>
-						</button>
-					</li>
 				</ul>
 			} @else {
 				<ul class="navbar-nav ms-auto">
