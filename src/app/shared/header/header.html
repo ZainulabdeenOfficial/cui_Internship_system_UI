@@ -27,7 +27,10 @@
 							<li><a class="dropdown-item" [routerLink]="['/student']" [queryParams]="{ tab: 'appex' }">Internship Approval (AppEx‑A)</a></li>
 							<li><a class="dropdown-item" [routerLink]="['/student']" [queryParams]="{ tab: 'assignment' }">Assignment &amp; Agreement</a></li>
 							<li><a class="dropdown-item" [routerLink]="['/student']" [queryParams]="{ tab: 'form3' }">Organization Overview &amp; Scope of Work</a></li>
-							<li><a class="dropdown-item" routerLink="/complaints">Complaints</a></li>
+								<li><a class="dropdown-item" [routerLink]="['/student']" [queryParams]="{ tab: 'weeklylogs' }">Weekly Logs</a></li>
+								<li><a class="dropdown-item" [routerLink]="['/student']" [queryParams]="{ tab: 'evaluations' }">My Evaluations</a></li>
+								<li><a class="dropdown-item" [routerLink]="['/student']" [queryParams]="{ tab: 'company-request' }">Request Company</a></li>
+								<li><a class="dropdown-item" [routerLink]="['/student']" [queryParams]="{ tab: 'complaints' }">Complaints</a></li>
 							<li><hr class="dropdown-divider"></li>
 							<li><button class="dropdown-item" (click)="logout()"><i class="pi pi-sign-out" aria-hidden="true"></i> Logout</button></li>
 						</ul>
@@ -46,15 +49,17 @@
 							<span>Internship Office</span>
 						</a>
 						<ul class="dropdown-menu dropdown-menu-end">
-							<li><a class="dropdown-item" [routerLink]="['/admin']" [queryParams]="{ tab: 'students' }">Students</a></li>
-							<li><a class="dropdown-item" [routerLink]="['/admin']" [queryParams]="{ tab: 'applications' }">Applications</a></li>
 							<li><a class="dropdown-item" [routerLink]="['/admin']" [queryParams]="{ tab: 'requests' }">Requests</a></li>
 							<li><a class="dropdown-item" [routerLink]="['/admin']" [queryParams]="{ tab: 'announcements' }">Announcements</a></li>
 							<li><a class="dropdown-item" [routerLink]="['/admin']" [queryParams]="{ tab: 'officers' }">Officers</a></li>
 							<li><a class="dropdown-item" [routerLink]="['/admin']" [queryParams]="{ tab: 'faculty' }">Faculty</a></li>
-							<li><a class="dropdown-item" [routerLink]="['/admin']" [queryParams]="{ tab: 'companies' }">Companies & Site</a></li>
+							<li><a class="dropdown-item" [routerLink]="['/admin']" [queryParams]="{ tab: 'companies' }">Companies</a></li>
+							<li><a class="dropdown-item" [routerLink]="['/admin']" [queryParams]="{ tab: 'sites' }">Site Supervisors</a></li>
 							<li><a class="dropdown-item" [routerLink]="['/admin']" [queryParams]="{ tab: 'compliance' }">Log Compliance</a></li>
 							<li><a class="dropdown-item" [routerLink]="['/admin']" [queryParams]="{ tab: 'complaints' }">Complaints</a></li>
+							<li><a class="dropdown-item" [routerLink]="['/admin']" [queryParams]="{ tab: 'scheme' }">Scheme</a></li>
+							<li><a class="dropdown-item" [routerLink]="['/admin']" [queryParams]="{ tab: 'formsRequest' }">Student Forms Request</a></li>
+							<li><a class="dropdown-item" [routerLink]="['/admin']" [queryParams]="{ tab: 'evaluation' }">Office Evaluation</a></li>
 							<li><hr class="dropdown-divider"></li>
 							<li><button class="dropdown-item" (click)="logout()"><i class="pi pi-sign-out" aria-hidden="true"></i> Logout</button></li>
 						</ul>
@@ -74,11 +79,10 @@
 						</a>
 						<ul class="dropdown-menu dropdown-menu-end">
 							<li><a class="dropdown-item" [routerLink]="['/faculty']" [queryParams]="{ tab: 'students' }">Students</a></li>
-							<li><a class="dropdown-item" [routerLink]="['/faculty']" [queryParams]="{ tab: 'details' }">Details</a></li>
-							<li><a class="dropdown-item" [routerLink]="['/faculty']" [queryParams]="{ tab: 'reports' }">Reports</a></li>
-							<li><a class="dropdown-item" [routerLink]="['/faculty']" [queryParams]="{ tab: 'assignments' }">Assignments</a></li>
-							<li><a class="dropdown-item" [routerLink]="['/faculty']" [queryParams]="{ tab: 'agreements' }">Agreements</a></li>
+							<li><a class="dropdown-item" [routerLink]="['/faculty']" [queryParams]="{ tab: 'requests' }">Student Requests</a></li>
+							<li><a class="dropdown-item" [routerLink]="['/faculty']" [queryParams]="{ tab: 'weekly-logs' }">Weekly Logs</a></li>
 							<li><a class="dropdown-item" [routerLink]="['/faculty']" [queryParams]="{ tab: 'profile' }">Profile</a></li>
+							<li><a class="dropdown-item" [routerLink]="['/faculty']" [queryParams]="{ tab: 'marks' }">Evaluation Marks</a></li>
 							<li><hr class="dropdown-divider"></li>
 							<li><button class="dropdown-item" (click)="logout()"><i class="pi pi-sign-out" aria-hidden="true"></i> Logout</button></li>
 						</ul>
@@ -100,6 +104,7 @@
 							<li><a class="dropdown-item" [routerLink]="['/site']" [queryParams]="{ tab: 'students' }">Students</a></li>
 							<li><a class="dropdown-item" [routerLink]="['/site']" [queryParams]="{ tab: 'details' }">Details</a></li>
 							<li><a class="dropdown-item" [routerLink]="['/site']" [queryParams]="{ tab: 'reports' }">Reports</a></li>
+							<li><a class="dropdown-item" [routerLink]="['/site']" [queryParams]="{ tab: 'evaluations' }">Evaluations</a></li>
 							<li><a class="dropdown-item" [routerLink]="['/site']" [queryParams]="{ tab: 'profile' }">Profile</a></li>
 							<li><a class="dropdown-item" [routerLink]="['/site']" [queryParams]="{ tab: 'password' }">Password</a></li>
 							<li><hr class="dropdown-divider"></li>
