@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, computed } from '@angular/core';
+import { ChangeDetectorRef, Component, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { StoreService } from '../../shared/services/store.service';
@@ -15,7 +15,7 @@ import { FacultyService, FacultyProfile, FacultyInternship, StudentWeeklyLogs, W
   templateUrl: './faculty-supervisor.html',
   styleUrl: './faculty-supervisor.css'
 })
-export class FacultySupervisor {
+export class FacultySupervisor implements OnInit {
   private hasLoadedProfileOnce = false;
   private hasLoadedRequestsOnce = false;
 
@@ -37,12 +37,18 @@ export class FacultySupervisor {
       });
     } catch {}
   }
+
+  ngOnInit() {
+    // Ensure default tab (students) is properly initialized
+    setTimeout(() => this.selectTab(this.currentTab), 0);
+  }
+
   get students() { return this.store.students; }
   get facultyList() { return this.store.facultySupervisors; }
   get siteList() { return this.store.siteSupervisors; }
   get companyList() { return this.store.companies; }
   selectedId: string | null = null;
-  currentTab: 'students'|'profile'|'requests'|'marks'|'weekly-logs' = 'students';
+  currentTab: 'students'|'requests'|'weekly-logs'|'profile'|'marks' = 'students';
   page = { students: 1, appexA: 1, appexB: 1 };
   pageSize = 10;
   selectTab(tab: FacultySupervisor['currentTab']) {

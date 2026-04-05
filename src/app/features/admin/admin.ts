@@ -78,6 +78,15 @@ export class Admin {
   siteId = '';
   selectedId: string | null = null;
   currentTab: 'requests'|'announcements'|'officers'|'faculty'|'companies'|'sites'|'compliance'|'complaints'|'scheme'|'formsRequest'|'evaluation' = 'requests';
+  
+  ngOnInit() {
+    // Set default tab if no tab is provided in query params
+    this.route.queryParamMap.subscribe(params => {
+      if (!params.has('tab')) {
+        setTimeout(() => this.selectTab('requests'), 0);
+      }
+    });
+  }
   // Maintenance
   cleaningUpTokens = false;
   cleanupResult: { success?: boolean; message?: string; deletedCount?: number; timestamp?: string } | null = null;

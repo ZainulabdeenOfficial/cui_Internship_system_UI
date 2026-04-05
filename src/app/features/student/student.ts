@@ -1,4 +1,4 @@
-import { Component, computed, effect, ChangeDetectorRef, OnDestroy } from '@angular/core';
+import { Component, computed, effect, ChangeDetectorRef, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule, NgIf, NgFor } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { StoreService } from '../../shared/services/store.service';
@@ -18,7 +18,7 @@ import { Form3Form } from './form3-form';
   templateUrl: './student.html',
   styleUrl: './student.css'
 })
-export class Student implements OnDestroy {
+export class Student implements OnInit, OnDestroy {
   // Dynamic dropdown options from backend
   dropdownCompanies: Array<{ id: string; name: string; email?: string; phone?: string; address?: string; website?: string; industry?: string; description?: string; supervisorCount?: number }> = [];
   // UI state for professional autocomplete
@@ -96,7 +96,7 @@ export class Student implements OnDestroy {
   
   private lockSelection: any;
   // tabs: make each form an explicit tab so AppEx-A is first
-  currentTab: 'appex'|'assignment'|'form3'|'evidence'|'logs'|'reports'|'assignments'|'complaints'|'marks'|'weeklylogs'|'evaluations'|'company-request' = 'appex';
+  currentTab: 'appex'|'assignment'|'form3'|'weeklylogs'|'evaluations'|'company-request'|'complaints' = 'appex';
   // Raw query param value (for debugging why a tab may be set but UI not rendering)
   lastQueryTab: string | null = null;
   // pagination state per tab/list
@@ -243,7 +243,7 @@ export class Student implements OnDestroy {
     try {
       this.route.queryParamMap.subscribe(p => {
           const tabParam = p.get('tab');
-          const allowed = ['appex','assignment','form3','evidence','logs','reports','assignments','complaints','marks','weeklylogs','evaluations','company-request'] as const;
+          const allowed = ['appex','assignment','form3','weeklylogs','evaluations','company-request','complaints'] as const;
           if (tabParam) {
             // record raw value for diagnostics
             this.lastQueryTab = tabParam;
@@ -479,6 +479,12 @@ export class Student implements OnDestroy {
         try { localStorage.setItem(key, dump); } catch {}
       });
     } catch {}
+  }
+
+  ngOnInit() {
+    // Ensure default tab data is loaded
+    // This will trigger selectTab which loads the necessary data for the current tab
+    setTimeout(() => this.selectTab(this.currentTab), 0);
   }
 
   onCompanyNameInput(value: string) {

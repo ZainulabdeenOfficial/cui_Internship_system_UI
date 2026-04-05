@@ -21,10 +21,16 @@ export class SiteSupervisor implements OnInit {
     try {
       this.route.queryParamMap.subscribe(p => {
         const t = (p.get('tab') || '').toLowerCase();
-        const allowed = ['students','details','reports','evaluations','profile','password'] as const;
+        const allowed = ['students','details','evaluations'] as const;
         if ((allowed as readonly string[]).includes(t)) this.currentTab = t as any;
       });
     } catch {}
+    // Set default tab if no tab is provided
+    setTimeout(() => {
+      if (this.currentTab !== 'students' && this.currentTab !== 'details' && this.currentTab !== 'evaluations') {
+        this.currentTab = 'students';
+      }
+    }, 0);
   }
   
   // Expose Object methods to template
@@ -32,6 +38,9 @@ export class SiteSupervisor implements OnInit {
 
   ngOnInit() {
     this.loadSiteInternships();
+    
+    // Ensure default tab (students) data is properly initialized
+    setTimeout(() => this.selectTab(this.currentTab), 0);
     
     // Auto-load evaluations when evaluations tab is selected with a student
     effect(() => {
@@ -43,7 +52,7 @@ export class SiteSupervisor implements OnInit {
   }
   get students() { return this.store.students; }
   selectedId: string | null = null;
-  currentTab: 'students'|'details'|'reports'|'evaluations'|'profile'|'password' = 'students';
+  currentTab: 'students'|'details'|'evaluations' = 'students';
   page = { students: 1 };
   pageSize = 10;
   
