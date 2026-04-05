@@ -3,10 +3,7 @@
   <ul class="nav nav-tabs mb-3">
     <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='students'" (click)="selectTab('students')">Students</button></li>
     <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='details'" (click)="selectTab('details')">Details</button></li>
-    <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='reports'" (click)="selectTab('reports')">Reports</button></li>
     <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='evaluations'" (click)="selectTab('evaluations')">Evaluations</button></li>
-  <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='profile'" (click)="selectTab('profile')">Profile</button></li>
-    <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='password'" (click)="selectTab('password')">Password</button></li>
   </ul>
   @if (currentTab==='students') {
   <div class="card mb-3">
@@ -142,13 +139,6 @@
                             (click)="selectedId = s.id; selectTab('evaluations'); onEvalStudentChange()"
                             data-bs-toggle="tooltip">
                       <i class="bi bi-award"></i> Eval
-                    </button>
-                    <button type="button"
-                            class="btn btn-sm btn-outline-warning" 
-                            title="View Reports"
-                            (click)="selectedId = s.id; selectTab('reports')"
-                            data-bs-toggle="tooltip">
-                      <i class="bi bi-file-text"></i> Reports
                     </button>
                   </div>
                 </td>
@@ -287,55 +277,6 @@
     </div>
   </div>
   }
-  @if (selectedId && currentTab==='reports') {
-  <div class="row g-3 mt-3">
-    <div class="col-md-6">
-      <h5>Weekly Logs</h5>
-      <ul class="list-group">
-        <li class="list-group-item" *ngFor="let l of logs()">Week {{ l.week }} · {{ l.note }} <span class="text-muted">— {{ l.date | date:'short' }}</span></li>
-      </ul>
-    </div>
-    <div class="col-md-6">
-      <h5>Student Reports</h5>
-      <ul class="list-group">
-        <li class="list-group-item" *ngFor="let r of reports()">{{ r.type | titlecase }}: {{ r.title }} <span class="text-muted">— {{ r.date | date:'short' }}</span></li>
-      </ul>
-    </div>
-  </div>
-  }
-  @if (selectedId && currentTab==='reports') {
-  <div class="row g-3 mt-3">
-    <div class="col-md-6">
-      <div class="card">
-        <div class="card-header">Mid Report</div>
-        <div class="card-body">
-          <div class="mb-2">
-            <input class="form-control" placeholder="Title" [(ngModel)]="mid.title" name="midTitle" />
-          </div>
-          <div class="mb-2">
-            <textarea class="form-control" rows="3" placeholder="Content" [(ngModel)]="mid.content" name="midContent"></textarea>
-          </div>
-          <button class="btn btn-primary" (click)="submitMid()" [disabled]="!mid.title">Submit Mid</button>
-        </div>
-      </div>
-    </div>
-    <div class="col-md-6">
-      <div class="card">
-        <div class="card-header">Final Report</div>
-        <div class="card-body">
-          <div class="mb-2">
-            <input class="form-control" placeholder="Title" [(ngModel)]="fin.title" name="finTitle" />
-          </div>
-          <div class="mb-2">
-            <textarea class="form-control" rows="3" placeholder="Content" [(ngModel)]="fin.content" name="finContent"></textarea>
-          </div>
-          <button class="btn btn-success" (click)="submitFinal()" [disabled]="!fin.title">Submit Final</button>
-        </div>
-      </div>
-    </div>
-  </div>
-  }
-
   @if (currentTab==='evaluations') {
   <div class="card mb-3">
     <div class="card-header bg-light d-flex justify-content-between align-items-center">
@@ -419,12 +360,6 @@
                           (click)="selectedId = student.id; onEvalStudentChange()" 
                           title="View & Evaluate">
                     <i class="bi bi-pencil-square"></i> Evaluate
-                  </button>
-                  <button class="btn btn-sm btn-outline-warning" 
-                          (click)="selectedId = student.id; selectTab('reports')"
-                          title="View Reports"
-                          data-bs-toggle="tooltip">
-                    <i class="bi bi-file-text"></i> Reports
                   </button>
                 </div>
               </td>
@@ -610,50 +545,6 @@
           </button>
         </div>
       </div>
-    </div>
-  </div>
-  }
-
-  @if (currentTab==='password') { <hr class="my-4" /> }
-  @if (currentTab==='password') { <h5>Change Password</h5> }
-  @if (currentTab==='password') {
-  <div class="row g-3">
-    <div class="col-md-4">
-      <label class="form-label">Old Password</label>
-      <input type="password" class="form-control" [(ngModel)]="pw.old" />
-    </div>
-    <div class="col-md-4">
-      <label class="form-label">New Password</label>
-      <input type="password" class="form-control" [(ngModel)]="pw.next" />
-    </div>
-    <div class="col-md-4">
-      <label class="form-label">Confirm Password</label>
-      <input type="password" class="form-control" [(ngModel)]="pw.confirm" />
-    </div>
-    <div class="col-12">
-      <button class="btn btn-primary" (click)="changePassword()">Change Password</button>
-    </div>
-  </div>
-  }
-
-  @if (currentTab==='profile') { <hr class="my-4" /> }
-  @if (currentTab==='profile') { <h5>My Profile</h5> }
-  @if (currentTab==='profile') {
-  <div class="row g-3">
-    <div class="col-md-4">
-      <label class="form-label">Name</label>
-      <input class="form-control" [(ngModel)]="draft.name" (ngModelChange)="0" />
-    </div>
-    <div class="col-md-8">
-      <label class="form-label">Bio</label>
-      <textarea class="form-control" rows="2" [(ngModel)]="draft.bio"></textarea>
-    </div>
-    <div class="col-md-6">
-      <label class="form-label">Profile photo</label>
-      <input type="file" accept="image/*" class="form-control" (change)="onAvatarSelected($event)"/>
-    </div>
-    <div class="col-12 text-end">
-      <button class="btn btn-primary" (click)="saveProfile()">Save</button>
     </div>
   </div>
   }
