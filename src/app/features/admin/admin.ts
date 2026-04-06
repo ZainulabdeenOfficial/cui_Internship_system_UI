@@ -7,12 +7,14 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { PaginatePipe } from '../../shared/pagination/paginate.pipe';
 import { PaginatorComponent } from '../../shared/pagination/paginator';
 import { AdminService } from '../../shared/services/admin.service';
+import { SkeletonListComponent } from '../../shared/components/skeleton';
+import { SkeletonLoaderService } from '../../core/services/skeleton-loader.service';
 import { CreateAccountRequest } from '../../shared/models/admin/create-account.models';
 
 @Component({
   selector: 'app-admin',
   standalone: true,
-  imports: [CommonModule, FormsModule, PaginatePipe, PaginatorComponent],
+  imports: [CommonModule, FormsModule, PaginatePipe, PaginatorComponent, SkeletonListComponent],
   templateUrl: './admin.html',
   styleUrl: './admin.css'
 })

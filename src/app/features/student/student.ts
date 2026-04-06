@@ -10,11 +10,12 @@ import { PaginatePipe } from '../../shared/pagination/paginate.pipe';
 import { PaginatorComponent } from '../../shared/pagination/paginator';
 import { AssignmentForm } from './assignment-form';
 import { Form3Form } from './form3-form';
+import { SkeletonListComponent } from '../../shared/components/skeleton/skeleton-list.component';
 
 @Component({
   selector: 'app-student',
   standalone: true,
-  imports: [CommonModule, NgIf, NgFor, FormsModule, RouterModule, PaginatePipe, PaginatorComponent, AssignmentForm, Form3Form],
+  imports: [CommonModule, NgIf, NgFor, FormsModule, RouterModule, PaginatePipe, PaginatorComponent, AssignmentForm, Form3Form, SkeletonListComponent],
   templateUrl: './student.html',
   styleUrl: './student.css'
 })
@@ -184,6 +185,7 @@ export class Student implements OnInit, OnDestroy {
   get siteList() { return this.store.siteSupervisors; }
   // complaints
   complaint = { subject: '', body: '', category: 'GENERAL' as 'GENERAL'|'TECHNICAL'|'SUPERVISOR'|'ORGANIZATION'|'OTHER', internshipId: '' };
+  complaintLoading = false;
   myComplaints = () => {
     if (!this.selectedId) return [] as any[];
     return this.store.complaints().filter(c => c.submittedById === this.selectedId);

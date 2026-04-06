@@ -704,7 +704,14 @@
         Your Submitted Complaints
       </div>
       <div class="card-body">
-        <div *ngIf="myComplaints().length === 0" class="text-muted text-center py-4">
+        <!-- Skeleton Loading -->
+        <app-skeleton-list 
+          [isLoading]="complaintLoading" 
+          [count]="4" 
+          [type]="'card'">
+        </app-skeleton-list>
+
+        <div *ngIf="!complaintLoading && myComplaints().length === 0" class="text-muted text-center py-4">
           <i class="bi bi-info-circle me-2"></i>
           No complaints submitted yet.
         </div>
