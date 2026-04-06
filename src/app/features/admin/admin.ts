@@ -1144,13 +1144,17 @@ export class Admin {
     this.toast.success(`Application ${decision}`);
   }
   studentName(id: string) {
+    // Try to find by ID
     const s = this.students().find(x => x.id === id);
-    return s ? `${s.name} (${s.email})` : id;
+    if (s) return `${s.name} (${s.email})`;
+    return id;
   }
   resolve(id: string) {
     const resp = this.responses[id];
     if (!resp) return;
-    this.store.resolveComplaint(id, resp);
+    // Use current user's ID (studentId for non-admins, or default to 'admin' for admin)
+    const adminId = this.store.currentUser()?.studentId || 'admin';
+    this.store.resolveComplaint(id, resp, adminId);
     delete this.responses[id];
     this.toast.success('Complaint resolved');
   }

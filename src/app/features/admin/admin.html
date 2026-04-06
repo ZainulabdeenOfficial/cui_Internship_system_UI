@@ -586,21 +586,37 @@
           <div class="card-body">
             <div class="table-responsive">
               <table class="table table-sm align-middle">
-                <thead><tr><th>Date</th><th>Student</th><th>Category</th><th>Message</th><th>Status</th><th>Response</th><th>Action</th></tr></thead>
+                <thead><tr><th>Date</th><th>Student</th><th>Subject</th><th>Category</th><th>Body</th><th>Status</th><th>Resolution</th><th>Action</th></tr></thead>
                 <tbody>
                   @for (c of complaints(); track c.id) {
                   <tr>
                     <td>{{ c.createdAt | date:'short' }}</td>
-                    <td>{{ studentName(c.studentId) }}</td>
-                    <td>{{ c.category }}</td>
-                    <td style="max-width:260px">{{ c.message }}</td>
-                    <td><span class="badge" [class.text-bg-secondary]="c.status==='open'" [class.text-bg-success]="c.status==='resolved'">{{ c.status }}</span></td>
-                    <td style="max-width:240px">{{ c.response || '-' }}</td>
+                    <td>{{ studentName(c.submittedById) }}</td>
+                    <td><strong>{{ c.subject }}</strong></td>
                     <td>
-                      @if (c.status==='open') {
+                      <span class="badge"
+                        [class.bg-danger]="c.category === 'GENERAL'"
+                        [class.bg-warning]="c.category === 'TECHNICAL'"
+                        [class.bg-info]="c.category === 'SUPERVISOR'"
+                        [class.bg-secondary]="c.category === 'ORGANIZATION' || c.category === 'OTHER'">
+                        {{ c.category }}
+                      </span>
+                    </td>
+                    <td style="max-width:260px">{{ c.body }}</td>
+                    <td>
+                      <span class="badge"
+                        [class.text-bg-danger]="c.status==='OPEN'"
+                        [class.text-bg-warning]="c.status==='IN_PROGRESS'"
+                        [class.text-bg-success]="c.status==='RESOLVED' || c.status==='CLOSED'">
+                        {{ c.status }}
+                      </span>
+                    </td>
+                    <td style="max-width:240px">{{ c.resolutionNotes || '-' }}</td>
+                    <td>
+                      @if (c.status==='OPEN') {
                         <div class="input-group input-group-sm">
-                          <input class="form-control" placeholder="Type response..." [(ngModel)]="responses[c.id]" name="resp{{c.id}}" />
-                          <button class="btn btn-outline-success" (click)="resolve(c.id)">Resolve</button>
+                          <input class="form-control" placeholder="Type resolution..." [(ngModel)]="responses[c.id]" name="resp{{c.id}}" />
+                          <button class="btn btn-outline-success btn-sm" (click)="resolve(c.id)">Resolve</button>
                         </div>
                       }
                     </td>
