@@ -22,8 +22,8 @@ export class StudentService {
   private readonly cachePrefix = 'student.api.cache.';
   private readonly defaultCacheTtlMs = 5 * 60 * 1000;
   private abs(path: string) { 
-    // Always use relative paths - Vercel rewrites and local proxy handle routing to backend
-    return path;
+    // Use absolute URLs with full base - ensures correct API endpoint regardless of frontend deployment
+    return this.base + path;
   }
   private getAuthToken(): string {
     return sessionStorage.getItem('authToken') || localStorage.getItem('authToken') || '';
