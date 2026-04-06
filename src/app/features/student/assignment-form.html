@@ -2,7 +2,8 @@
   <div class="card-header">Assignment & Student Agreement Form (Appendix B)</div>
   <div class="card-body">
     <!-- Status Badges (shown after submission) -->
-    <div *ngIf="submitted()" class="mb-4">
+    @if (submitted()) {
+    <div class="mb-4">
       <h5 class="mb-3">Approval Status</h5>
       <div class="d-flex gap-3 flex-wrap">
         <span class="text-dark">
@@ -19,16 +20,21 @@
         </span>
       </div>
 
-    <!-- Student Verification Actions -->
-      <div *ngIf="facultyApproved() && adminApproved() && !studentApproved()" class="mt-4">
+      <!-- Student Verification Actions -->
+      @if (facultyApproved() && adminApproved() && !studentApproved()) {
+      <div class="mt-4">
         <div class="alert alert-info">
           <i class="bi bi-info-circle-fill me-2"></i>
           Faculty and Admin have approved your internship details. Please review and approve to proceed.
         </div>
         <div class="d-flex gap-2">
           <button class="btn btn-success" (click)="approveAppexB()" [disabled]="verificationLoading()">
-            <span *ngIf="verificationLoading()" class="spinner-border spinner-border-sm me-2"></span>
-            <i *ngIf="!verificationLoading()" class="bi bi-check-circle me-2"></i>
+            @if (verificationLoading()) {
+            <span class="spinner-border spinner-border-sm me-2"></span>
+            }
+            @if (!verificationLoading()) {
+            <i class="bi bi-check-circle me-2"></i>
+            }
             Approve
           </button>
           <button class="btn btn-outline-danger" (click)="rejectAppexB()" [disabled]="verificationLoading()">
@@ -37,12 +43,16 @@
           </button>
         </div>
       </div>
+      }
 
-      <div *ngIf="studentApproved()" class="alert alert-success mt-4">
+      @if (studentApproved()) {
+      <div class="alert alert-success mt-4">
         <i class="bi bi-check-circle-fill me-2"></i>
         You have approved this AppEx B. All approvals complete!
       </div>
+      }
     </div>
+    }
 
     <form (ngSubmit)="submit()" #f="ngForm" class="row g-3" [class.d-none]="submitted()">
       <!-- Student Information -->
@@ -81,16 +91,21 @@
       <!-- Organization/Company Information (Optional) -->
       <div class="col-12 mt-4"><h5 class="mb-3">Organization Information (Optional - Select from Directory or Enter Manually)</h5></div>
       
-      <div class="col-12" *ngIf="!selectedCompany">
+      @if (!selectedCompany) {
+      <div>
         <label class="form-label"><i class="bi bi-building me-2"></i>Search & Select Company from Directory</label>
         <div class="position-relative">
           <div class="input-group">
-            <span class="input-group-text bg-white" *ngIf="loadingCompanies">
+            @if (loadingCompanies) {
+            <span class="input-group-text bg-white">
               <span class="spinner-border spinner-border-sm text-primary" role="status"></span>
             </span>
-            <span class="input-group-text bg-white" *ngIf="!loadingCompanies">
+            }
+            @if (!loadingCompanies) {
+            <span class="input-group-text bg-white">
               <i class="bi bi-search text-muted"></i>
             </span>
+            }
             <input 
               type="text" 
               class="form-control" 
@@ -104,7 +119,8 @@
           </div>
           
           <!-- Company List Dropdown (Improved UI) -->
-          <div class="col-12 mt-2" *ngIf="companyDropdownOpen && filteredCompanies.length > 0" 
+          @if (companyDropdownOpen && filteredCompanies.length > 0) {
+          <div class="col-12 mt-2" 
                style="max-height: 400px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); background: white; position: relative; z-index: 1000;">
             
             <!-- Results info -->
@@ -117,10 +133,10 @@
             
             <!-- Company items -->
             <div class="list-group list-group-flush">
+              @for (company of filteredCompanies; track company.id) {
               <button 
                 type="button" 
                 class="list-group-item list-group-item-action text-start py-3 px-3" 
-                *ngFor="let company of filteredCompanies" 
                 (click)="selectCompany(company)"
                 [class.active]="selectedCompany?.id === company.id">
                 <div class="d-flex justify-content-between align-items-start">
@@ -129,39 +145,51 @@
                       <i class="bi bi-building me-2" style="color: #007bff;"></i>{{ company.name }}
                     </h6>
                     <div class="row g-2 mt-2 small">
-                      <div class="col-12" *ngIf="company.industry">
+                      @if (company.industry) {
+                      <div class="col-12">
                         <span class="badge bg-info text-dark">{{ company.industry }}</span>
                       </div>
-                      <div class="col-12" *ngIf="company.address">
+                      }
+                      @if (company.address) {
+                      <div class="col-12">
                         <small class="text-muted d-block">
                           <i class="bi bi-geo-alt me-1"></i>{{ company.address }}
                         </small>
                       </div>
+                      }
                     </div>
                   </div>
                   <div class="ms-2">
-                    <i class="bi bi-check-circle-fill text-success" *ngIf="selectedCompany?.id === company.id"></i>
+                    @if (selectedCompany?.id === company.id) {
+                    <i class="bi bi-check-circle-fill text-success"></i>
+                    }
                   </div>
                 </div>
               </button>
+              }
             </div>
           </div>
+          }
 
           <!-- Empty state -->
-          <div class="col-12 mt-2" *ngIf="companyDropdownOpen && filteredCompanies.length === 0 && !loadingCompanies" 
+          @if (companyDropdownOpen && filteredCompanies.length === 0 && !loadingCompanies) {
+          <div class="col-12 mt-2" 
                style="border: 1px solid #dee2e6; border-radius: 6px; padding: 20px; text-align: center; background: white;">
             <i class="bi bi-inbox" style="font-size: 2rem; color: #ccc;"></i>
             <p class="text-muted mt-2 mb-0">No companies found. Try a different search term.</p>
           </div>
+          }
 
           <small class="text-muted d-block mt-2">
             <i class="bi bi-info-circle me-1"></i>Companies are sorted alphabetically. Start typing to filter or click the field to browse all.
           </small>
         </div>
       </div>
+      }
 
       <!-- Selected Company Display -->
-      <div class="col-12" *ngIf="selectedCompany">
+      @if (selectedCompany) {
+      <div class="col-12">
         <div class="alert alert-success d-flex justify-content-between align-items-start mb-3" style="border-left: 4px solid #28a745;">
           <div style="flex: 1;">
             <h6 class="mb-2">
@@ -182,9 +210,11 @@
           </button>
         </div>
       </div>
+      }
 
       <!-- Manual Company Entry (if not selected) -->
-      <div class="row g-3" *ngIf="!selectedCompany">
+      @if (!selectedCompany) {
+      <div class="row g-3">
         <div class="col-md-6">
           <label class="form-label">Organization Name</label>
           <input class="form-control" [(ngModel)]="model.organization" name="organization" placeholder="Enter company/organization name" />
@@ -195,6 +225,7 @@
           <input class="form-control" [(ngModel)]="model.industrySector" name="industrySector" placeholder="e.g., IT, Finance, Healthcare" />
         </div>
       </div>
+      }
 
       <!-- Agreement Section -->
       <div class="col-12 mt-4"><h5 class="mb-3">Student Internship Agreement Statement</h5></div>
@@ -226,9 +257,15 @@
       
       <div class="col-12 d-flex gap-2 mt-3">
         <button class="btn btn-success" [disabled]="!f.form.valid || !model.agreementAccepted || submitted() || loading()" type="submit">
-          <span *ngIf="loading()" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-          <span *ngIf="loading()">Submitting...</span>
-          <span *ngIf="!loading()">Submit Assignment & Agreement</span>
+          @if (loading()) {
+          <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+          }
+          @if (loading()) {
+          <span>Submitting...</span>
+          }
+          @if (!loading()) {
+          <span>Submit Assignment & Agreement</span>
+          }
         </button>
       </div>
     </form>

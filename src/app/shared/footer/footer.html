@@ -1,4 +1,4 @@
-<ng-container *ngIf="isVisible">
+@if (isVisible) {
 <footer class="bg-dark text-light mt-auto pt-4 border-top">
 	<div class="container">
 		<div class="row g-4 align-items-start">
@@ -16,7 +16,7 @@
 			<div class="col-12 col-md-4">
 				<h6 class="mb-2">Quick links</h6>
 				<ul class="list-unstyled small mb-0">
-					<ng-container *ngIf="store.currentUser()?.role === 'student'">
+					@if (store.currentUser()?.role === 'student') {
 						<li><a class="link-light text-decoration-none" [routerLink]="['/student']" [queryParams]="{ tab: 'appex' }">Internship Approval (AppEx-A)</a></li>
 						<li><a class="link-light text-decoration-none" [routerLink]="['/student']" [queryParams]="{ tab: 'assignment' }">Assignment &amp; Agreement</a></li>
 						<li><a class="link-light text-decoration-none" [routerLink]="['/student']" [queryParams]="{ tab: 'form3' }">Organization Overview</a></li>
@@ -24,9 +24,9 @@
 						<li><a class="link-light text-decoration-none" [routerLink]="['/student']" [queryParams]="{ tab: 'evaluations' }">Evaluations</a></li>
 						<li><a class="link-light text-decoration-none" [routerLink]="['/student']" [queryParams]="{ tab: 'company-request' }">Company Requests</a></li>
 						<li><a class="link-light text-decoration-none" [routerLink]="['/student']" [queryParams]="{ tab: 'complaints' }">Complaints</a></li>
-					</ng-container>
+					}
 
-					<ng-container *ngIf="store.currentUser()?.role === 'admin'">
+					@if (store.currentUser()?.role === 'admin') {
 						<li><a class="link-light text-decoration-none" [routerLink]="['/admin']" [queryParams]="{ tab: 'requests' }">Requests</a></li>
 						<li><a class="link-light text-decoration-none" [routerLink]="['/admin']" [queryParams]="{ tab: 'announcements' }">Announcements</a></li>
 						<li><a class="link-light text-decoration-none" [routerLink]="['/admin']" [queryParams]="{ tab: 'officers' }">Officers</a></li>
@@ -34,26 +34,26 @@
 						<li><a class="link-light text-decoration-none" [routerLink]="['/admin']" [queryParams]="{ tab: 'companies' }">Companies &amp; Sites</a></li>
 						<li><a class="link-light text-decoration-none" [routerLink]="['/admin']" [queryParams]="{ tab: 'compliance' }">Compliance</a></li>
 						<li><a class="link-light text-decoration-none" [routerLink]="['/admin']" [queryParams]="{ tab: 'complaints' }">Complaints</a></li>
-					</ng-container>
+					}
 
-					<ng-container *ngIf="store.currentUser()?.role === 'faculty'">
+					@if (store.currentUser()?.role === 'faculty') {
 						<li><a class="link-light text-decoration-none" [routerLink]="['/faculty-supervisor']" [queryParams]="{ tab: 'students' }">Students</a></li>
 						<li><a class="link-light text-decoration-none" [routerLink]="['/faculty-supervisor']" [queryParams]="{ tab: 'requests' }">Requests</a></li>
 						<li><a class="link-light text-decoration-none" [routerLink]="['/faculty-supervisor']" [queryParams]="{ tab: 'weekly-logs' }">Weekly Logs</a></li>
 						<li><a class="link-light text-decoration-none" [routerLink]="['/faculty-supervisor']" [queryParams]="{ tab: 'marks' }">Marks</a></li>
 						<li><a class="link-light text-decoration-none" [routerLink]="['/faculty-supervisor']" [queryParams]="{ tab: 'profile' }">Profile</a></li>
-					</ng-container>
+					}
 
-					<ng-container *ngIf="store.currentUser()?.role === 'site' || store.currentUser()?.role === 'site_supervisor'">
+					@if (store.currentUser()?.role === 'site' || store.currentUser()?.role === 'site_supervisor') {
 						<li><a class="link-light text-decoration-none" [routerLink]="['/site-supervisor']" [queryParams]="{ tab: 'students' }">Students</a></li>
 						<li><a class="link-light text-decoration-none" [routerLink]="['/site-supervisor']" [queryParams]="{ tab: 'details' }">Details</a></li>
 						<li><a class="link-light text-decoration-none" [routerLink]="['/site-supervisor']" [queryParams]="{ tab: 'evaluations' }">Evaluations</a></li>
-					</ng-container>
+					}
 
-					<ng-container *ngIf="!store.currentUser()">
+					@if (!store.currentUser()) {
 						<li><a class="link-light text-decoration-none" routerLink="/login">Login</a></li>
 						<li><a class="link-light text-decoration-none" routerLink="/signup">Student Signup</a></li>
-					</ng-container>
+					}
 				</ul>
 			</div>
 			<div class="col-12 col-md-3">
@@ -73,4 +73,4 @@
 	</div>
     
 </footer>
-</ng-container>
+}
