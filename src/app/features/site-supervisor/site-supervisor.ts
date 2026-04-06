@@ -8,11 +8,12 @@ import { PaginatePipe } from '../../shared/pagination/paginate.pipe';
 import { PaginatorComponent } from '../../shared/pagination/paginator';
 import { SiteService, SiteEvaluationCriteria, SiteEvaluationPayload } from '../../shared/services/site.service';
 import { SiteInternship } from '../../shared/models/site/internship.models';
+import { SkeletonListComponent } from '../../shared/components/skeleton';
 
 @Component({
   selector: 'app-site-supervisor',
   standalone: true,
-  imports: [CommonModule, FormsModule, PaginatePipe, PaginatorComponent],
+  imports: [CommonModule, FormsModule, PaginatePipe, PaginatorComponent, SkeletonListComponent],
   templateUrl: './site-supervisor.html',
   styleUrl: './site-supervisor.css'
 })
@@ -55,6 +56,13 @@ export class SiteSupervisor implements OnInit {
   currentTab: 'students'|'details'|'evaluations' = 'students';
   page = { students: 1 };
   pageSize = 10;
+  
+  // Loading states for skeleton loaders
+  loadingData = {
+    students: false,
+    details: false,
+    evaluations: false
+  };
   
   // Status filter for students list
   statusFilter = signal<'PENDING' | 'APPROVED' | 'IN_PROGRESS' | 'COMPLETED' | 'REJECTED' | 'all'>('all');

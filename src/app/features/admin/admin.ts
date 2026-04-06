@@ -59,6 +59,16 @@ export class Admin {
   complaintsPagination = { page: 1, limit: 10, total: 0, pages: 0 };
   complaintsStats = { OPEN: 0, IN_REVIEW: 0, RESOLVED: 0, DISMISSED: 0 };
   
+  // Loading states for all major content areas (for skeleton loaders)
+  loadingData = {
+    officers: false,
+    faculty: false,
+    sites: false,
+    companies: false,
+    approvals: false,
+    apexForms: false
+  };
+  
   reviewCompany = { items: [] as Array<{ id: string; companyName?: string; email?: string; studentId?: string; registrationNo?: string; status?: string; createdAt?: string }>, total: 0 };
   reviewCompanyFilter = { status: 'PENDING' as 'PENDING'|'APPROVED'|'REJECTED', page: 1, limit: 10, search: '' };
   reviewCompanyLoading = false;
@@ -146,7 +156,8 @@ export class Admin {
       this.complaintsPagination.page = 1;
       this.complaintsFilter.status = '';
       this.complaintsFilter.search = '';
-      this.loadComplaints();
+      // Fire-and-forget async load (runs in background)
+      setTimeout(() => this.loadComplaints(), 0);
     }
     if (tab === 'formsRequest') {
       // Set default sub-tab and auto-load APEX A forms
@@ -1189,6 +1200,7 @@ export class Admin {
 
   async loadComplaints(page?: number) {
     try {
+      console.log('[Admin] Loading complaints, page:', page);
       this.complaintsLoading = true;
       this.complaintsError = null;
       
@@ -1199,10 +1211,15 @@ export class Admin {
         search: this.complaintsFilter.search || undefined
       });
       
+      console.log('[Admin] Complaints loaded:', result);
+      
       this.complaintsList = result.complaints || [];
       this.complaintsPagination = result.pagination || { page: 1, limit: 10, total: 0, pages: 0 };
       this.complaintsStats = result.statistics || { OPEN: 0, IN_REVIEW: 0, RESOLVED: 0, DISMISSED: 0 };
+      
+      console.log('[Admin] Complaints list after load:', this.complaintsList.length, 'items');
     } catch (error: any) {
+      console.error('[Admin] Error loading complaints:', error);
       const msg = error?.error?.message || error?.message || 'Failed to load complaints';
       this.complaintsError = msg;
       this.toast.danger(msg);

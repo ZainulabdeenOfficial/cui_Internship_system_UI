@@ -7,11 +7,12 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { PaginatePipe } from '../../shared/pagination/paginate.pipe';
 import { PaginatorComponent } from '../../shared/pagination/paginator';
 import { FacultyService, FacultyProfile, FacultyInternship, StudentWeeklyLogs, WeeklyLog } from '../../shared/services/faculty.service';
+import { SkeletonListComponent } from '../../shared/components/skeleton';
 
 @Component({
   selector: 'app-faculty-supervisor',
   standalone: true,
-  imports: [CommonModule, FormsModule, PaginatePipe, PaginatorComponent],
+  imports: [CommonModule, FormsModule, PaginatePipe, PaginatorComponent, SkeletonListComponent],
   templateUrl: './faculty-supervisor.html',
   styleUrl: './faculty-supervisor.css'
 })
@@ -68,6 +69,15 @@ export class FacultySupervisor implements OnInit {
     // Requests are pre-loaded on init, no need to reload on tab click
   }
   get me() { return this.store.currentUser; }
+  
+  // Loading states for skeleton loaders
+  loadingData = {
+    students: false,
+    requests: false,
+    weeklyLogs: false,
+    profile: false,
+    marks: false
+  };
   
   // Weekly Logs
   weeklyLogsData: StudentWeeklyLogs[] = [];

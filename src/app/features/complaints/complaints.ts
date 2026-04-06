@@ -5,11 +5,12 @@ import { RouterLink } from '@angular/router';
 import { StoreService, ComplaintCategory, Complaint } from '../../shared/services/store.service';
 import { StudentService } from '../../shared/services/student.service';
 import { RequestTrackerService } from '../../core/services/request-tracker.service';
+import { SkeletonListComponent } from '../../shared/components/skeleton';
 
 @Component({
   selector: 'app-complaints',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, RouterLink, SkeletonListComponent],
   templateUrl: './complaints.html',
   styleUrls: ['./complaints.css']
 })

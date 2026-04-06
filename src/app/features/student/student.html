@@ -590,7 +590,14 @@
         </div>
 
         <!-- Display submitted weekly logs -->
-        <div *ngIf="weeklyLogs && weeklyLogs.length > 0">
+        <!-- Skeleton Loading -->
+        <app-skeleton-list 
+          [isLoading]="loadingWeeklyLogs" 
+          [count]="4" 
+          [type]="'table-row'">
+        </app-skeleton-list>
+
+        <div *ngIf="weeklyLogs && weeklyLogs.length > 0 && !loadingWeeklyLogs">
           <h6 class="mt-3">Submitted Logs</h6>
           <div class="table-responsive">
             <table class="table table-hover">
@@ -916,10 +923,13 @@
           </div>
 
           <!-- Detailed Status Table -->
-          <div *ngIf="loadingMyCompanyRequests" class="text-center text-muted my-3">
-            <span class="spinner-border spinner-border-sm me-2"></span>
-            Loading company request status...
-          </div>
+          <!-- Skeleton Loading -->
+          <app-skeleton-list 
+            *ngIf="loadingMyCompanyRequests" 
+            [isLoading]="loadingMyCompanyRequests" 
+            [count]="4" 
+            [type]="'table-row'">
+          </app-skeleton-list>
           
           <div *ngIf="!loadingMyCompanyRequests && companyRequestStatus && companyRequestStatus.length > 0" class="table-responsive">
             <table class="table table-sm table-hover">
@@ -1201,11 +1211,13 @@
           <i class="bi bi-info-circle me-2"></i>Your final result will be available once your internship is fully approved.
         </div>
 
-        <!-- Loading -->
-        <div *ngIf="studentInternshipId && loadingEvaluations" class="text-center py-4">
-          <span class="spinner-border text-primary"></span>
-          <p class="mt-2 text-muted">Loading final result...</p>
-        </div>
+        <!-- Loading with Skeleton -->
+        <app-skeleton-list 
+          *ngIf="studentInternshipId && loadingEvaluations" 
+          [isLoading]="loadingEvaluations" 
+          [count]="1" 
+          [type]="'card'">
+        </app-skeleton-list>
 
         <!-- Final Result Summary Card -->
         <div *ngIf="studentInternshipId && !loadingEvaluations && studentFinalResult?.finalResult" class="card border-success mb-3">

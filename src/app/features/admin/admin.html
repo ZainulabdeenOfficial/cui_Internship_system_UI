@@ -196,7 +196,15 @@
                 <input class="form-control" placeholder="Search officers..." [(ngModel)]="search.officers" name="osearch" />
               </div>
             </div>
-            <div class="table-responsive mt-2">
+            
+            <!-- Skeleton Loading -->
+            <app-skeleton-list 
+              [isLoading]="loadingData.officers" 
+              [count]="3" 
+              [type]="'table-row'">
+            </app-skeleton-list>
+
+            <div class="table-responsive mt-2" *ngIf="!loadingData.officers">
               <table class="table table-sm align-middle">
                 <thead><tr><th>Name</th><th>Email</th><th>Actions</th></tr></thead>
                 <tbody>
@@ -634,7 +642,8 @@
             @if (complaintsError && !complaintsLoading) {
               <div class="alert alert-danger" role="alert">
                 <i class="bi bi-exclamation-triangle me-2"></i>
-                {{ complaintsError }}
+                <strong>Error loading complaints:</strong> {{ complaintsError }}
+                <br><small class="text-muted">Check browser console for more details (F12)</small>
               </div>
             }
 

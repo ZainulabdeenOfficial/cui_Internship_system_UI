@@ -90,7 +90,14 @@
       }
 
       <!-- Students Table -->
-      @if (filteredStudents().length > 0) {
+      <!-- Skeleton Loading -->
+      <app-skeleton-list 
+        [isLoading]="loadingData.students" 
+        [count]="5" 
+        [type]="'table-row'">
+      </app-skeleton-list>
+
+      @if (filteredStudents().length > 0 && !loadingData.students) {
         <div class="table-responsive">
           <table class="table table-hover align-middle">
             <thead class="table-light">

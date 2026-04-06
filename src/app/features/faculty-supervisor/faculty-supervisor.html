@@ -97,7 +97,15 @@
       <span class="badge text-bg-primary">{{ filteredStudents().length }} of {{ myStudents().length }} student(s)</span>
     </div>
   </div>
-  <div class="table-responsive mb-3">
+  
+  <!-- Skeleton Loading -->
+  <app-skeleton-list 
+    [isLoading]="loadingData.students" 
+    [count]="5" 
+    [type]="'table-row'">
+  </app-skeleton-list>
+
+  <div class="table-responsive mb-3" *ngIf="!loadingData.students">
     <table class="table table-hover align-middle shadow-sm table-card">
       <thead>
         <tr>

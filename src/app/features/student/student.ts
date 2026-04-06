@@ -81,6 +81,13 @@ export class Student implements OnInit, OnDestroy {
   studentInternshipId: string | null = null;
   loadingApexBStatus = false;
   
+  // Loading states for skeleton loaders (other tabs)
+  loadingData = {
+    companyRequests: false,
+    weeklyLogs: false,
+    evaluations: false
+  };
+  
   // Check if all verifications are complete
   isFullyApproved = computed(() => {
     const apexB = this.apexBStatus;
