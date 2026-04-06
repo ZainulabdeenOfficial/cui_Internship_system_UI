@@ -891,9 +891,9 @@ export class AdminService {
    * Fetches all announcements
    * Response: { message?: string, announcements?: Announcement[] }
    */
-  async getAnnouncements(): Promise<Array<{ id: string; message: string; title?: string; link?: string; pinned?: boolean; createdAt: string }>> {
+  async getAnnouncements(): Promise<Array<{ id: string; message: string; title?: string; link?: string; pinned?: boolean; createdAt: string; createdBy?: any }>> {
     const base = environment.apiBaseUrl.replace(/\/$/, '');
-    const path = '/api/admin/announcements';
+    const path = '/api/announcements';
     const url = `${base}${path}`;
     try {
       const res = await firstValueFrom(this.http.get<any>(url, { headers: await this.authHeaders() }));
@@ -904,7 +904,8 @@ export class AdminService {
         title: x.title,
         link: x.link,
         pinned: x.pinned ?? false,
-        createdAt: x.createdAt ?? new Date().toISOString()
+        createdAt: x.createdAt ?? new Date().toISOString(),
+        createdBy: x.createdBy
       })).filter(a => !!a.id);
     } catch (error) {
       // If endpoint doesn't exist, return empty array
