@@ -989,4 +989,127 @@ export class AdminService {
     
     return await firstValueFrom(this.http.delete<any>(url, { headers }));
   }
+
+  /**
+   * GET /api/admin/complaints?page=1&limit=10&status=...&search=...
+   * Paginated list with optional status filter and search on subject/body.
+   * Includes per-status counts.
+   * Query Params:
+   *   page: integer (default: 1)
+   *   limit: integer (default: 10)
+   *   status: string (optional - OPEN, IN_REVIEW, RESOLVED, DISMISSED)
+   *   search: string (optional - case-insensitive match on subject or body)
+   */
+  async getAdminComplaints(params?: {
+    page?: number;
+    limit?: number;
+    status?: 'OPEN' | 'IN_REVIEW' | 'RESOLVED' | 'DISMISSED';
+    search?: string;
+  }): Promise<{
+    complaints: any[];
+    pagination?: { page: number; limit: number; total: number; pages: number };
+    statistics?: { OPEN: number; IN_REVIEW: number; RESOLVED: number; DISMISSED: number };
+  }> {
+    try {
+      const q: string[] = [];
+      
+      if (params?.page) q.push(`page=${params.page}`);
+      if (params?.limit) q.push(`limit=${params.limit}`);
+      if (params?.status) q.push(`status=${encodeURIComponent(params.status)}`);
+      if (params?.search) q.push(`search=${encodeURIComponent(params.search)}`);
+      
+      const qs = q.length ? `?${q.join('&')}` : '';
+      const base = environment.apiBaseUrl.replace(/\/$/, '');
+      const url = `${base}/api/admin/complaints${qs}`;
+      
+      console.log('[AdminService] Fetching complaints from:', url);
+      
+      const res = await firstValueFrom(this.http.get<any>(url, { headers: await this.authHeaders(false) }));
+      
+      console.log('[AdminService] Admin complaints response:', res);
+      
+      const complaints: any[] = Array.isArray(res?.complaints) ? res.complaints : [];
+      const pagination = res?.pagination ?? { page: params?.page ?? 1, limit: params?.limit ?? 10, total: 0, pages: 0 };
+      const statistics = res?.statistics ?? { OPEN: 0, IN_REVIEW: 0, RESOLVED: 0, DISMISSED: 0 };
+      
+      return { complaints, pagination, statistics };
+    } catch (error: any) {
+      console.error('[AdminService] Error fetching admin complaints:', error);
+      console.error('[AdminService] Error details:', {
+        message: error?.message,
+        status: error?.status,
+        statusText: error?.statusText,
+        url: error?.url,
+        error: error?.error
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * GET /api/admin/complaints/:id
+   * Retrieve a specific complaint detail.
+   * Response: { complaint: { ... full complaint object with nested submittedBy, handledBy, internship } }
+   */
+  async getAdminComplaint(complaintId: string): Promise<{ complaint?: any }> {
+    try {
+      const base = environment.apiBaseUrl.replace(/\/$/, '');
+      const url = `${base}/api/admin/complaints/${encodeURIComponent(complaintId)}`;
+      
+      console.log('[AdminService] Fetching complaint detail from:', url);
+      
+      const res = await firstValueFrom(this.http.get<any>(url, { headers: await this.authHeaders(false) }));
+      
+      console.log('[AdminService] Complaint detail response:', res);
+      
+      return res;
+    } catch (error: any) {
+      console.error('[AdminService] Error fetching complaint:', error);
+      console.error('[AdminService] Error details:', {
+        message: error?.message,
+        status: error?.status,
+        statusText: error?.statusText,
+        url: error?.url,
+        error: error?.error
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * PATCH /api/admin/complaints/:id
+   * Update a complaint (status and/or resolutionNotes).
+   * Requires at least one of status or resolutionNotes.
+   * Automatically sets handledById and handledAt.
+   * Response: { message?: string, complaint?: { ... updated complaint object } }
+   */
+  async updateAdminComplaint(complaintId: string, payload: {
+    status?: 'OPEN' | 'IN_REVIEW' | 'RESOLVED' | 'DISMISSED';
+    resolutionNotes?: string;
+  }): Promise<{ message?: string; complaint?: any }> {
+    try {
+      if (!payload.status && !payload.resolutionNotes) {
+        throw new Error('At least one of status or resolutionNotes must be provided');
+      }
+
+      const base = environment.apiBaseUrl.replace(/\/$/, '');
+      const url = `${base}/api/admin/complaints/${encodeURIComponent(complaintId)}`;
+      
+      console.log('[AdminService] Updating complaint:', url, payload);
+      
+      const result = await firstValueFrom(this.http.patch<any>(url, payload, { headers: await this.authHeaders(true) }));
+      
+      console.log('[AdminService] Update complaint response:', result);
+      
+      return result;
+    } catch (error: any) {
+      console.error('[AdminService] Error updating complaint:', error);
+      console.error('[AdminService] Error details:', {
+        message: error?.message,
+        status: error?.status,
+        error: error?.error
+      });
+      throw error;
+    }
+  }
 }

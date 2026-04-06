@@ -77,7 +77,7 @@ export type FreelanceRecord = {
   resolvedAt?: string;
 };
 
-export type ComplaintStatus = 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED';
+export type ComplaintStatus = 'OPEN' | 'IN_REVIEW' | 'RESOLVED' | 'DISMISSED';
 export type ComplaintCategory = 'GENERAL' | 'TECHNICAL' | 'SUPERVISOR' | 'ORGANIZATION' | 'OTHER';
 
 export type Complaint = {

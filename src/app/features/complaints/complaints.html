@@ -93,18 +93,86 @@
         <strong>Your Submitted Complaints</strong>
       </div>
       <div class="card-body">
-        @if (myComplaints().length === 0) {
+        <!-- Status Filter -->
+        <div class="mb-3 pb-3 border-bottom">
+          <label class="form-label mb-2"><strong>Filter by Status</strong></label>
+          <div class="btn-group btn-group-sm d-flex flex-wrap gap-2" role="group">
+            <button type="button" 
+              class="btn"
+              [class.btn-primary]="selectedStatus() === 'ALL'"
+              [class.btn-outline-secondary]="selectedStatus() !== 'ALL'"
+              (click)="onStatusChange('ALL')">
+              <i class="bi bi-funnel me-1"></i>All
+            </button>
+            <button type="button" 
+              class="btn text-bg-danger"
+              [class.btn-danger]="selectedStatus() === 'OPEN'"
+              [class.btn-outline-danger]="selectedStatus() !== 'OPEN'"
+              (click)="onStatusChange('OPEN')">
+              <i class="bi bi-exclamation-circle me-1"></i>Open
+            </button>
+            <button type="button" 
+              class="btn text-bg-warning"
+              [class.btn-warning]="selectedStatus() === 'IN_REVIEW'"
+              [class.btn-outline-warning]="selectedStatus() !== 'IN_REVIEW'"
+              (click)="onStatusChange('IN_REVIEW')">
+              <i class="bi bi-clock me-1"></i>In Review
+            </button>
+            <button type="button" 
+              class="btn text-bg-info"
+              [class.btn-info]="selectedStatus() === 'RESOLVED'"
+              [class.btn-outline-info]="selectedStatus() !== 'RESOLVED'"
+              (click)="onStatusChange('RESOLVED')">
+              <i class="bi bi-check-circle me-1"></i>Resolved
+            </button>
+            <button type="button" 
+              class="btn text-bg-secondary"
+              [class.btn-secondary]="selectedStatus() === 'DISMISSED'"
+              [class.btn-outline-secondary]="selectedStatus() !== 'DISMISSED'"
+              (click)="onStatusChange('DISMISSED')">
+              <i class="bi bi-x-circle me-1"></i>Dismissed
+            </button>
+          </div>
+        </div>
+
+        <!-- Loading State -->
+        @if (loadingComplaints()) {
+          <div class="text-center py-4">
+            <div class="spinner-border text-primary" role="status">
+              <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="text-muted mt-2">Loading complaints...</p>
+          </div>
+        }
+
+        <!-- Error State -->
+        @if (complaintsError()) {
+          <div class="alert alert-danger" role="alert">
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            <strong>Error:</strong> {{ complaintsError() }}
+            <button type="button" class="btn btn-sm btn-outline-danger ms-3" (click)="loadMyComplaints()">
+              <i class="bi bi-arrow-clockwise me-1"></i>Retry
+            </button>
+          </div>
+        }
+
+        <!-- Empty State -->
+        @if (!loadingComplaints() && !complaintsError() && myComplaints().length === 0) {
           <div class="text-muted text-center py-4">
             <i class="bi bi-info-circle me-2"></i>
-            No complaints submitted yet.
+            No complaints @if (selectedStatus() !== 'ALL') { with status <strong>{{ selectedStatus() }}</strong> }{{ '' }}.
           </div>
-        } @else {
+        }
+
+        <!-- Complaints List -->
+        @if (!loadingComplaints() && myComplaints().length > 0) {
           <div class="list-group list-group-flush">
             @for (c of myComplaints(); track c.id) {
               <div class="list-group-item border-start border-3" 
                 [class.border-danger]="c.status === 'OPEN'"
-                [class.border-warning]="c.status === 'IN_PROGRESS'"
-                [class.border-success]="c.status === 'RESOLVED' || c.status === 'CLOSED'">
+                [class.border-warning]="c.status === 'IN_REVIEW'"
+                [class.border-info]="c.status === 'RESOLVED'"
+                [class.border-secondary]="c.status === 'DISMISSED'">
                 
                 <!-- Complaint Header -->
                 <div class="d-flex justify-content-between align-items-start mb-2">
@@ -127,8 +195,9 @@
                   </div>
                   <span class="badge fw-normal"
                     [class.text-bg-danger]="c.status === 'OPEN'"
-                    [class.text-bg-warning]="c.status === 'IN_PROGRESS'"
-                    [class.text-bg-success]="c.status === 'RESOLVED' || c.status === 'CLOSED'">
+                    [class.text-bg-warning]="c.status === 'IN_REVIEW'"
+                    [class.text-bg-success]="c.status === 'RESOLVED'"
+                    [class.text-bg-secondary]="c.status === 'DISMISSED'">
                     {{ c.status }}
                   </span>
                 </div>
@@ -212,8 +281,9 @@
                 </span>
                 <span class="badge ms-2"
                   [class.text-bg-danger]="selectedComplaintDetails.status === 'OPEN'"
-                  [class.text-bg-warning]="selectedComplaintDetails.status === 'IN_PROGRESS'"
-                  [class.text-bg-success]="selectedComplaintDetails.status === 'RESOLVED' || selectedComplaintDetails.status === 'CLOSED'">
+                  [class.text-bg-warning]="selectedComplaintDetails.status === 'IN_REVIEW'"
+                  [class.text-bg-success]="selectedComplaintDetails.status === 'RESOLVED'"
+                  [class.text-bg-secondary]="selectedComplaintDetails.status === 'DISMISSED'">
                   {{ selectedComplaintDetails.status }}
                 </span>
               </div>

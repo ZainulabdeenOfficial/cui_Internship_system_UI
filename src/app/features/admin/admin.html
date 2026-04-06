@@ -606,8 +606,8 @@
                     <td>
                       <span class="badge"
                         [class.text-bg-danger]="c.status==='OPEN'"
-                        [class.text-bg-warning]="c.status==='IN_PROGRESS'"
-                        [class.text-bg-success]="c.status==='RESOLVED' || c.status==='CLOSED'">
+                        [class.text-bg-warning]="c.status==='IN_REVIEW'"
+                        [class.text-bg-success]="c.status==='RESOLVED'">
                         {{ c.status }}
                       </span>
                     </td>

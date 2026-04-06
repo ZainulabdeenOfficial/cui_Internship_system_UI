@@ -388,11 +388,151 @@ export class FacultyService {
     return res;
   }
 
+  /**
+   * GET /api/faculty/complaints?page=1&limit=10&status=IN_REVIEW
+   * Returns complaints whose linked internship has facultyId equal to the authenticated faculty user.
+   * Same pagination and filters as the admin list.
+   */
+  async getFacultyComplaints(params?: {
+    page?: number;
+    limit?: number;
+    status?: 'OPEN' | 'IN_REVIEW' | 'RESOLVED' | 'DISMISSED';
+    search?: string;
+  }, options?: FacultyRequestOptions): Promise<{
+    complaints: any[];
+    pagination?: { page: number; limit: number; total: number; pages: number };
+    statistics?: { OPEN: number; IN_REVIEW: number; RESOLVED: number; DISMISSED: number };
+  }> {
+    try {
+      const q: string[] = [];
+      
+      if (params?.page) q.push(`page=${params.page}`);
+      if (params?.limit) q.push(`limit=${params.limit}`);
+      if (params?.status) q.push(`status=${encodeURIComponent(params.status)}`);
+      if (params?.search) q.push(`search=${encodeURIComponent(params.search)}`);
+      
+      const qs = q.length ? `?${q.join('&')}` : '';
+      const endpoint = `/complaints${qs}`;
+      const key = this.cacheKey(`faculty${endpoint}`);
+      const cached = this.readCache<any>(key, options);
+      if (cached) return cached;
+
+      const url = `${this.base}/api/faculty/complaints${qs}`;
+      console.log('[FacultyService] Fetching complaints from:', url);
+      
+      const res = await firstValueFrom(this.http.get<any>(url, {
+        headers: await this.authHeaders(false, options),
+        context: this.buildContext(options)
+      }));
+      
+      console.log('[FacultyService] Faculty complaints response:', res);
+      
+      const complaints: any[] = Array.isArray(res?.complaints) ? res.complaints : [];
+      const pagination = res?.pagination ?? { page: params?.page ?? 1, limit: params?.limit ?? 10, total: 0, pages: 0 };
+      const statistics = res?.statistics ?? { OPEN: 0, IN_REVIEW: 0, RESOLVED: 0, DISMISSED: 0 };
+      
+      const result = { complaints, pagination, statistics };
+      this.writeCache(key, result, options?.cacheTtlMs ?? 2 * 60 * 1000);
+      return result;
+    } catch (error: any) {
+      console.error('[FacultyService] Error fetching faculty complaints:', error);
+      console.error('[FacultyService] Error details:', {
+        message: error?.message,
+        status: error?.status,
+        statusText: error?.statusText,
+        url: error?.url,
+        error: error?.error
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * GET /api/faculty/complaints/:id
+   * Retrieve a specific complaint detail.
+   * Faculty can only access complaints linked to internships they supervise.
+   */
+  async getFacultyComplaint(complaintId: string, options?: FacultyRequestOptions): Promise<any> {
+    try {
+      const endpoint = `/complaints/${encodeURIComponent(complaintId)}`;
+      const key = this.cacheKey(`faculty${endpoint}`);
+      const cached = this.readCache<any>(key, options);
+      if (cached) return cached;
+
+      const url = `${this.base}/api/faculty/complaints/${encodeURIComponent(complaintId)}`;
+      console.log('[FacultyService] Fetching complaint detail from:', url);
+      
+      const res = await firstValueFrom(this.http.get<any>(url, {
+        headers: await this.authHeaders(false, options),
+        context: this.buildContext(options)
+      }));
+      
+      console.log('[FacultyService] Complaint detail response:', res);
+      this.writeCache(key, res, options?.cacheTtlMs ?? 60 * 1000);
+      return res;
+    } catch (error: any) {
+      console.error('[FacultyService] Error fetching complaint:', error);
+      console.error('[FacultyService] Error details:', {
+        message: error?.message,
+        status: error?.status,
+        statusText: error?.statusText,
+        url: error?.url,
+        error: error?.error
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * PATCH /api/faculty/complaints/:id
+   * Update a complaint (same as admin - only for complaints tied to faculty member's supervised internship).
+   * Can update status and resolutionNotes.
+   * Requires at least one of status or resolutionNotes.
+   * Automatically sets handledById and handledAt.
+   */
+  async updateFacultyComplaint(complaintId: string, payload: {
+    status?: 'OPEN' | 'IN_REVIEW' | 'RESOLVED' | 'DISMISSED';
+    resolutionNotes?: string;
+  }): Promise<{ message?: string; complaint?: any }> {
+    try {
+      if (!payload.status && !payload.resolutionNotes) {
+        throw new Error('At least one of status or resolutionNotes must be provided');
+      }
+
+      const url = `${this.base}/api/faculty/complaints/${encodeURIComponent(complaintId)}`;
+      console.log('[FacultyService] Updating complaint:', url, payload);
+      
+      const result = await firstValueFrom(this.http.patch<any>(url, payload, {
+        headers: await this.authHeaders(true)
+      }));
+      
+      console.log('[FacultyService] Update complaint response:', result);
+      
+      // Clear cache for this complaint and complaints list
+      this.clearCacheByPrefix(`faculty/complaints/${encodeURIComponent(complaintId)}`);
+      this.clearCacheByPrefix('faculty/complaints?');
+      
+      return result;
+    } catch (error: any) {
+      console.error('[FacultyService] Error updating complaint:', error);
+      console.error('[FacultyService] Error details:', {
+        message: error?.message,
+        status: error?.status,
+        error: error?.error
+      });
+      throw error;
+    }
+  }
+
   clearFacultyInternshipsCache(): void {
     this.clearCacheByPrefix('internships?');
   }
 
   clearWeeklyLogsCache(): void {
     this.clearCacheByPrefix('weekly-logs');
+  }
+
+  clearFacultyComplaintsCache(): void {
+    this.clearCacheByPrefix('faculty/complaints?');
   }
 }

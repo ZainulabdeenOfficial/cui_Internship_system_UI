@@ -935,4 +935,145 @@ export class StudentService {
     this.writeCache(key, res, options?.cacheTtlMs ?? 60 * 1000);
     return res;
   }
+
+  // POST /api/student/complaints
+  async submitComplaint(payload: {
+    subject: string;
+    body: string;
+    category: string;
+    internshipId: string;
+  }): Promise<any> {
+    try {
+      const url = this.abs('/api/student/complaints');
+      console.log('[StudentService] Submitting complaint:', url, payload);
+      
+      const result = await firstValueFrom(this.http.post<any>(url, payload, {
+        headers: this.jsonHeaders(),
+        context: this.buildContext({ skipGlobalLoading: false })
+      }));
+      
+      console.log('[StudentService] Submit complaint response:', result);
+      return result;
+    } catch (error: any) {
+      console.error('[StudentService] Error submitting complaint:', error);
+      console.error('[StudentService] Error details:', {
+        message: error?.message,
+        status: error?.status,
+        error: error?.error
+      });
+      throw error;
+    }
+  }
+
+  // GET /api/student/complaints/:id
+  async getComplaint(complaintId: string, options?: StudentRequestOptions): Promise<any> {
+    try {
+      const endpoint = `/api/student/complaints/${encodeURIComponent(complaintId)}`;
+      const key = this.cacheKey(endpoint);
+      const cached = this.readCache<any>(key, options);
+      if (cached) return cached;
+
+      const url = this.abs(endpoint);
+      console.log('[StudentService] Fetching complaint detail from:', url);
+      
+      const res = await firstValueFrom(this.http.get<any>(url, {
+        headers: this.jsonHeaders(),
+        context: this.buildContext(options)
+      }));
+      
+      console.log('[StudentService] Complaint detail response:', res);
+      this.writeCache(key, res, options?.cacheTtlMs);
+      return res;
+    } catch (error: any) {
+      console.error('[StudentService] Error fetching complaint:', error);
+      console.error('[StudentService] Error details:', {
+        message: error?.message,
+        status: error?.status,
+        statusText: error?.statusText,
+        url: error?.url,
+        error: error?.error
+      });
+      throw error;
+    }
+  }
+
+  // GET /api/student/complaints?status=OPEN|IN_REVIEW|RESOLVED|DISMISSED
+  async getMyComplaints(params?: {
+    status?: 'OPEN' | 'IN_REVIEW' | 'RESOLVED' | 'DISMISSED';
+    page?: number;
+    limit?: number;
+  }, options?: StudentRequestOptions): Promise<{ complaints: any[]; total?: number }> {
+    try {
+      const q: string[] = [];
+      
+      if (params?.status) q.push(`status=${encodeURIComponent(params.status)}`);
+      if (params?.page) q.push(`page=${params.page}`);
+      if (params?.limit) q.push(`limit=${params.limit}`);
+      
+      const qs = q.length ? `?${q.join('&')}` : '';
+      const endpoint = `/api/student/complaints${qs}`;
+      const key = this.cacheKey(endpoint);
+      const cached = this.readCache<any>(key, options);
+      if (cached) return cached;
+
+      const url = this.abs(endpoint);
+      console.log('[StudentService] Fetching my complaints from:', url);
+      
+      const res = await firstValueFrom(this.http.get<any>(url, {
+        headers: this.jsonHeaders(),
+        context: this.buildContext(options)
+      }));
+      
+      console.log('[StudentService] My complaints response:', res);
+      
+      const complaints: any[] = Array.isArray(res?.complaints) ? res.complaints : [];
+      const total: number | undefined = (typeof res?.total === 'number') ? res.total : undefined;
+      
+      const result = { complaints, total };
+      this.writeCache(key, result, options?.cacheTtlMs);
+      return result;
+    } catch (error: any) {
+      console.error('[StudentService] Error fetching my complaints:', error);
+      console.error('[StudentService] Error details:', {
+        message: error?.message,
+        status: error?.status,
+        statusText: error?.statusText,
+        url: error?.url,
+        error: error?.error
+      });
+      throw error;
+    }
+  }
+
+  // PUT /api/student/complaints/:id/resolve
+  async resolveComplaint(complaintId: string, payload: {
+    resolutionNotes: string;
+    status?: 'RESOLVED' | 'DISMISSED';
+  }): Promise<any> {
+    try {
+      const url = this.abs(`/api/student/complaints/${encodeURIComponent(complaintId)}/resolve`);
+      console.log('[StudentService] Resolving complaint:', url, payload);
+      
+      const result = await firstValueFrom(this.http.put<any>(url, payload, {
+        headers: this.jsonHeaders(),
+        context: this.buildContext({ skipGlobalLoading: false })
+      }));
+      
+      console.log('[StudentService] Resolve complaint response:', result);
+      
+      // Clear cache for this complaint and complaints list
+      this.clearCache(`/api/student/complaints/${encodeURIComponent(complaintId)}`);
+      this.clearCache('/api/student/complaints');
+      
+      return result;
+    } catch (error: any) {
+      console.error('[StudentService] Error resolving complaint:', error);
+      console.error('[StudentService] Error details:', {
+        message: error?.message,
+        status: error?.status,
+        error: error?.error
+      });
+      throw error;
+    }
+  }
 }
