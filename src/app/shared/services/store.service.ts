@@ -77,15 +77,32 @@ export type FreelanceRecord = {
   resolvedAt?: string;
 };
 
+export type ComplaintStatus = 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED';
+export type ComplaintCategory = 'GENERAL' | 'TECHNICAL' | 'SUPERVISOR' | 'ORGANIZATION' | 'OTHER';
+
 export type Complaint = {
   id: string;
-  studentId: string;
-  category: 'Technical'|'Supervisor'|'Organization'|'Other';
-  message: string;
-  status: 'open'|'resolved';
-  response?: string;
+  subject: string;
+  body: string;
+  category: ComplaintCategory;
+  status: ComplaintStatus;
+  internshipId?: string;
+  submittedById: string;
+  resolutionNotes?: string;
+  handledById?: string;
+  handledAt?: string;
   createdAt: string;
-  resolvedAt?: string;
+  updatedAt: string;
+  internship?: {
+    id: string;
+    status?: string;
+    type?: string;
+  };
+  handledBy?: {
+    id: string;
+    name: string;
+    email: string;
+  };
 };
 
 // Requests from Faculty to Internship Office
@@ -765,16 +782,56 @@ export class StoreService {
   }
 
   // Complaints & Grievances
-  submitComplaint(studentId: string, category: Complaint['category'], message: string) {
-    const c: Complaint = { id: crypto.randomUUID(), studentId, category, message, status: 'open', createdAt: new Date().toISOString() };
+  submitComplaint(subject: string, body: string, category: ComplaintCategory, internshipId?: string, submittedById?: string) {
+    const studentId = submittedById || this.currentUser()?.studentId || '';
+    const now = new Date().toISOString();
+    const c: Complaint = {
+      id: crypto.randomUUID(),
+      subject,
+      body,
+      category,
+      status: 'OPEN',
+      internshipId: internshipId || undefined,
+      submittedById: studentId,
+      createdAt: now,
+      updatedAt: now
+    };
     this.complaints.update(a => [c, ...a]);
     this.persist();
     return c;
   }
-  resolveComplaint(id: string, response: string) {
+  resolveComplaint(id: string, resolutionNotes: string, handledById?: string) {
     const now = new Date().toISOString();
-    this.complaints.update(a => a.map(c => c.id === id ? { ...c, status: 'resolved', response, resolvedAt: now } : c));
+    this.complaints.update(a => a.map(c => c.id === id ? { 
+      ...c, 
+      status: 'RESOLVED', 
+      resolutionNotes, 
+      handledById: handledById || undefined,
+      handledAt: now,
+      updatedAt: now 
+    } : c));
     this.persist();
+  }
+
+  getComplaint(id: string): Complaint | undefined {
+    return this.complaints().find(c => c.id === id);
+  }
+
+  getComplaintFromAPI(id: string): Observable<{ complaint: Complaint }> {
+    try {
+      const apiBaseUrl = environment.apiBaseUrl.replace(/\/$/, '');
+      const apiUrl = `${apiBaseUrl}/api/student/complaints/${id}`;
+      
+      const headers = new HttpHeaders({
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      });
+
+      return this.http.get<{ complaint: Complaint }>(apiUrl, { headers });
+    } catch (error) {
+      console.error('Error constructing complaint API request:', error);
+      throw error;
+    }
   }
 
   // Removal operations

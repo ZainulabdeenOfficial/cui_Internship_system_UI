@@ -1,6 +1,6 @@
 import { HttpInterceptorFn, HttpErrorResponse, HttpContextToken } from '@angular/common/http';
 import { inject } from '@angular/core';
-import { catchError, finalize, throwError } from 'rxjs';
+import { catchError, finalize, throwError, timeout } from 'rxjs';
 import { LoadingService } from '../../core/services/loading.service';
 import { ErrorHandlerService } from '../../core/services/error-handler.service';
 
@@ -13,8 +13,9 @@ export const SILENT_ERROR = new HttpContextToken<boolean>(() => false);
 /**
  * Enhanced HTTP Interceptor
  * - Adds Content-Type headers
- * - Manages global loading state
+ * - Manages global loading state with proper cleanup
  * - Handles errors centrally
+ * - Ensures loading state is always reset, even on timeout/network errors
  */
 export const httpInterceptor: HttpInterceptorFn = (req, next) => {
   const loadingService = inject(LoadingService);
@@ -36,16 +37,34 @@ export const httpInterceptor: HttpInterceptorFn = (req, next) => {
   }
 
   return next(req).pipe(
-    catchError((error: HttpErrorResponse) => {
+    // Add timeout to prevent indefinite loading states
+    timeout(120000), // 2 minute timeout
+    
+    catchError((error: any) => {
       const silent = req.context.get(SILENT_ERROR);
       
-      if (!silent) {
+      // Handle timeout errors
+      if (error.name === 'TimeoutError') {
+        if (!silent) {
+          errorHandler.handleError({
+            status: 504,
+            statusText: 'Gateway Timeout',
+            message: 'Request timeout. Please try again.'
+          } as any);
+        }
+        return throwError(() => error);
+      }
+      
+      // Handle other errors
+      if (error instanceof HttpErrorResponse && !silent) {
         errorHandler.handleError(error);
       }
       
       return throwError(() => error);
     }),
+    
     finalize(() => {
+      // ALWAYS reset loading state, regardless of success/failure
       if (!skipGlobalLoading) {
         loadingService.hide();
       }

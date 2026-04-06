@@ -183,11 +183,15 @@ export class Student implements OnInit, OnDestroy {
   get facultyList() { return this.store.facultySupervisors; }
   get siteList() { return this.store.siteSupervisors; }
   // complaints
-  complaint = { category: 'Other' as 'Technical'|'Supervisor'|'Organization'|'Other', message: '' };
+  complaint = { subject: '', body: '', category: 'GENERAL' as 'GENERAL'|'TECHNICAL'|'SUPERVISOR'|'ORGANIZATION'|'OTHER', internshipId: '' };
   myComplaints = () => {
     if (!this.selectedId) return [] as any[];
-    return this.store.complaints().filter(c => c.studentId === this.selectedId);
+    return this.store.complaints().filter(c => c.submittedById === this.selectedId);
   };
+  
+  getComplaintDetails(complaintId: string) {
+    return this.store.getComplaint(complaintId);
+  }
   
   // Company request
   companyRequest = {
@@ -1190,11 +1194,17 @@ export class Student implements OnInit, OnDestroy {
     this.proposal = { title: '', content: '' };
   }
   submitComplaint() {
-    if (!this.selectedId || !this.complaint.message) return;
+    if (!this.selectedId || !this.complaint.subject || !this.complaint.body) return;
     if (!this.ensureMine()) return;
-    this.store.submitComplaint(this.selectedId, this.complaint.category, this.complaint.message);
-    this.toast.success('Complaint submitted');
-    this.complaint = { category: 'Other', message: '' };
+    this.store.submitComplaint(
+      this.complaint.subject,
+      this.complaint.body,
+      this.complaint.category,
+      this.complaint.internshipId || undefined,
+      this.selectedId
+    );
+    this.toast.success('Complaint submitted successfully');
+    this.complaint = { subject: '', body: '', category: 'GENERAL', internshipId: '' };
   }
   
   async submitCompanyRequest() {
