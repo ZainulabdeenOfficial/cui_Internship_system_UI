@@ -1242,17 +1242,20 @@ export class Student implements OnInit, OnDestroy {
       const result = await this.studentApi.requestToAddCompany(payload);
       this.toast.success('Company request submitted successfully');
       
-      // Clear form and reload company requests
+      // Clear form immediately after successful submission
       this.companyRequest = {
         name: '', email: '', phone: '', address: '', website: '', industry: '', description: '', justification: ''
       };
       
-      // Reload the list
+      // Reset form state to valid
+      this.submittingCompanyRequest = false;
+      this.cdr.markForCheck();
+      
+      // Reload the list in background
       await this.loadMyCompanyRequests();
     } catch (err: any) {
       const msg = err?.error?.message || err?.message || 'Failed to submit company request';
       this.toast.danger(msg);
-    } finally {
       this.submittingCompanyRequest = false;
       this.cdr.markForCheck();
     }
