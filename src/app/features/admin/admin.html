@@ -582,53 +582,145 @@
     <div class="row g-3 mt-0">
       <div class="col-12">
         <div class="card">
-          <div class="card-header bg-light">Complaints & Grievances</div>
-          <div class="card-body">
-            <div class="table-responsive">
-              <table class="table table-sm align-middle">
-                <thead><tr><th>Date</th><th>Student</th><th>Subject</th><th>Category</th><th>Body</th><th>Status</th><th>Resolution</th><th>Action</th></tr></thead>
-                <tbody>
-                  @for (c of complaints(); track c.id) {
-                  <tr>
-                    <td>{{ c.createdAt | date:'short' }}</td>
-                    <td>{{ studentName(c.submittedById) }}</td>
-                    <td><strong>{{ c.subject }}</strong></td>
-                    <td>
-                      <span class="badge"
-                        [class.bg-danger]="c.category === 'GENERAL'"
-                        [class.bg-warning]="c.category === 'TECHNICAL'"
-                        [class.bg-info]="c.category === 'SUPERVISOR'"
-                        [class.bg-secondary]="c.category === 'ORGANIZATION' || c.category === 'OTHER'">
-                        {{ c.category }}
-                      </span>
-                    </td>
-                    <td style="max-width:260px">{{ c.body }}</td>
-                    <td>
-                      <span class="badge"
-                        [class.text-bg-danger]="c.status==='OPEN'"
-                        [class.text-bg-warning]="c.status==='IN_REVIEW'"
-                        [class.text-bg-success]="c.status==='RESOLVED'">
-                        {{ c.status }}
-                      </span>
-                    </td>
-                    <td style="max-width:240px">{{ c.resolutionNotes || '-' }}</td>
-                    <td>
-                      @if (c.status==='OPEN') {
-                        <div class="input-group input-group-sm">
-                          <input class="form-control" placeholder="Type resolution..." [(ngModel)]="responses[c.id]" name="resp{{c.id}}" />
-                          <button class="btn btn-outline-success btn-sm" (click)="resolve(c.id)">Resolve</button>
-                        </div>
-                      }
-                    </td>
-                  </tr>
-                  }
-                </tbody>
-              </table>
+          <div class="card-header bg-light">
+            <div class="d-flex justify-content-between align-items-center">
+              <strong>Complaints & Grievances</strong>
+              <small class="text-muted">
+                Total: {{ complaintsPagination.total }} | 
+                Open: {{ complaintsStats.OPEN }} | 
+                In Review: {{ complaintsStats.IN_REVIEW }} | 
+                Resolved: {{ complaintsStats.RESOLVED }} | 
+                Dismissed: {{ complaintsStats.DISMISSED }}
+              </small>
             </div>
+          </div>
+          <div class="card-body">
+            <!-- Filters -->
+            <div class="row g-2 mb-3 pb-3 border-bottom">
+              <div class="col-md-3">
+                <input type="text" 
+                  class="form-control form-control-sm" 
+                  placeholder="Search by subject/body..." 
+                  [(ngModel)]="complaintsFilter.search"
+                  (change)="onComplaintSearchChange()"
+                  (keyup.enter)="loadComplaints()" />
+              </div>
+              <div class="col-md-3">
+                <select class="form-select form-select-sm" 
+                  [(ngModel)]="complaintsFilter.status"
+                  (ngModelChange)="changeComplaintStatus(complaintsFilter.status)">
+                  <option value="">All Statuses</option>
+                  <option value="OPEN">Open</option>
+                  <option value="IN_REVIEW">In Review</option>
+                  <option value="RESOLVED">Resolved</option>
+                  <option value="DISMISSED">Dismissed</option>
+                </select>
+              </div>
+              <div class="col-md-2">
+                <button class="btn btn-sm btn-outline-primary w-100" (click)="loadComplaints()">
+                  <i class="bi bi-arrow-clockwise me-1"></i>Refresh
+                </button>
+              </div>
+            </div>
+
+            <!-- Loading State -->
+            @if (complaintsLoading) {
+              <div class="text-center py-4">
+                <div class="spinner-border spinner-border-sm text-primary" role="status">
+                  <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="text-muted mt-2">Loading complaints...</p>
+              </div>
+            }
+
+            <!-- Error State -->
+            @if (complaintsError && !complaintsLoading) {
+              <div class="alert alert-danger" role="alert">
+                <i class="bi bi-exclamation-triangle me-2"></i>
+                {{ complaintsError }}
+              </div>
+            }
+
+            <!-- Table -->
+            @if (!complaintsLoading && complaintsList.length > 0) {
+              <div class="table-responsive">
+                <table class="table table-sm align-middle">
+                  <thead><tr><th>Date</th><th>Student</th><th>Subject</th><th>Category</th><th>Body</th><th>Status</th><th>Resolution</th><th>Action</th></tr></thead>
+                  <tbody>
+                    @for (c of complaintsList; track c.id) {
+                    <tr>
+                      <td>{{ c.createdAt | date:'short' }}</td>
+                      <td>{{ c.submittedBy?.name || 'Unknown' }}<br><small class="text-muted">{{ c.submittedBy?.email }}</small></td>
+                      <td><strong>{{ c.subject }}</strong></td>
+                      <td>
+                        <span class="badge"
+                          [class.bg-danger]="c.category === 'GENERAL'"
+                          [class.bg-warning]="c.category === 'TECHNICAL'"
+                          [class.bg-info]="c.category === 'SUPERVISOR'"
+                          [class.bg-secondary]="c.category === 'ORGANIZATION' || c.category === 'OTHER'">
+                          {{ c.category }}
+                        </span>
+                      </td>
+                      <td style="max-width:260px">{{ c.body }}</td>
+                      <td>
+                        <span class="badge"
+                          [class.text-bg-danger]="c.status==='OPEN'"
+                          [class.text-bg-warning]="c.status==='IN_REVIEW'"
+                          [class.text-bg-success]="c.status==='RESOLVED'"
+                          [class.text-bg-secondary]="c.status==='DISMISSED'">
+                          {{ c.status }}
+                        </span>
+                      </td>
+                      <td style="max-width:240px">{{ c.resolutionNotes || '-' }}</td>
+                      <td>
+                        @if (c.status==='OPEN' || c.status==='IN_REVIEW') {
+                          <div class="input-group input-group-sm">
+                            <input class="form-control" placeholder="Type resolution..." [(ngModel)]="responses[c.id]" name="resp{{c.id}}" />
+                            <button class="btn btn-outline-success btn-sm" (click)="resolve(c.id)">Resolve</button>
+                          </div>
+                        } @else {
+                          <small class="text-muted">-</small>
+                        }
+                      </td>
+                    </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Pagination -->
+              <nav class="mt-3">
+                <ul class="pagination pagination-sm justify-content-center">
+                  <li class="page-item" [class.disabled]="complaintsPagination.page === 1">
+                    <button class="page-link" (click)="changeComplaintPage(1)" [disabled]="complaintsPagination.page === 1">First</button>
+                  </li>
+                  <li class="page-item" [class.disabled]="complaintsPagination.page === 1">
+                    <button class="page-link" (click)="changeComplaintPage(complaintsPagination.page - 1)" [disabled]="complaintsPagination.page === 1">Previous</button>
+                  </li>
+                  
+                  <li class="page-item active"><span class="page-link">Page {{ complaintsPagination.page }} of {{ complaintsPagination.pages }}</span></li>
+                  
+                  <li class="page-item" [class.disabled]="complaintsPagination.page === complaintsPagination.pages">
+                    <button class="page-link" (click)="changeComplaintPage(complaintsPagination.page + 1)" [disabled]="complaintsPagination.page === complaintsPagination.pages">Next</button>
+                  </li>
+                  <li class="page-item" [class.disabled]="complaintsPagination.page === complaintsPagination.pages">
+                    <button class="page-link" (click)="changeComplaintPage(complaintsPagination.pages)" [disabled]="complaintsPagination.page === complaintsPagination.pages">Last</button>
+                  </li>
+                </ul>
+              </nav>
+            }
+
+            <!-- Empty State -->
+            @if (!complaintsLoading && complaintsList.length === 0 && !complaintsError) {
+              <div class="text-center py-4 text-muted">
+                <i class="bi bi-inbox"></i>
+                <p>No complaints found</p>
+              </div>
+            }
           </div>
         </div>
       </div>
-  </div>
+    </div>
   }
   @case ('compliance') {
     <div class="row g-3 mt-0">

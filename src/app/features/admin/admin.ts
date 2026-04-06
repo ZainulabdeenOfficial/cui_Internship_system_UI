@@ -48,6 +48,15 @@ export class Admin {
   get students() { return this.store.students; }
   get complaints() { return this.store.complaints; }
   get requests() { return this.store.requests; }
+  
+  // Complaints API data
+  complaintsList: any[] = [];
+  complaintsLoading = false;
+  complaintsError: string | null = null;
+  complaintsFilter = { status: '' as ''|'OPEN'|'IN_REVIEW'|'RESOLVED'|'DISMISSED', search: '' };
+  complaintsPagination = { page: 1, limit: 10, total: 0, pages: 0 };
+  complaintsStats = { OPEN: 0, IN_REVIEW: 0, RESOLVED: 0, DISMISSED: 0 };
+  
   reviewCompany = { items: [] as Array<{ id: string; companyName?: string; email?: string; studentId?: string; registrationNo?: string; status?: string; createdAt?: string }>, total: 0 };
   reviewCompanyFilter = { status: 'PENDING' as 'PENDING'|'APPROVED'|'REJECTED', page: 1, limit: 10, search: '' };
   reviewCompanyLoading = false;
@@ -129,6 +138,13 @@ export class Admin {
       this.reviewCompanyFilter.page = 1;
       this.reviewCompanyFilter.search = '';
       this.loadReviewCompany();
+    }
+    if (tab === 'complaints') {
+      // Load complaints with default filters
+      this.complaintsPagination.page = 1;
+      this.complaintsFilter.status = '';
+      this.complaintsFilter.search = '';
+      this.loadComplaints();
     }
     if (tab === 'formsRequest') {
       // Set default sub-tab and auto-load APEX A forms
@@ -1152,11 +1168,60 @@ export class Admin {
   resolve(id: string) {
     const resp = this.responses[id];
     if (!resp) return;
-    // Use current user's ID (studentId for non-admins, or default to 'admin' for admin)
-    const adminId = this.store.currentUser()?.studentId || 'admin';
-    this.store.resolveComplaint(id, resp, adminId);
-    delete this.responses[id];
-    this.toast.success('Complaint resolved');
+    this.resolveComplaintAPI(id, resp);
+  }
+
+  async resolveComplaintAPI(id: string, resolutionNotes: string) {
+    try {
+      const result = await this.adminApi.updateAdminComplaint(id, { status: 'RESOLVED', resolutionNotes });
+      this.toast.success('Complaint resolved successfully');
+      delete this.responses[id];
+      
+      // Refresh complaints list
+      await this.loadComplaints();
+    } catch (error: any) {
+      const msg = error?.error?.message || error?.message || 'Failed to resolve complaint';
+      this.toast.danger(msg);
+    }
+  }
+
+  async loadComplaints(page?: number) {
+    try {
+      this.complaintsLoading = true;
+      this.complaintsError = null;
+      
+      const result = await this.adminApi.getAdminComplaints({
+        page: page || this.complaintsPagination.page,
+        limit: this.complaintsPagination.limit,
+        status: this.complaintsFilter.status || undefined,
+        search: this.complaintsFilter.search || undefined
+      });
+      
+      this.complaintsList = result.complaints || [];
+      this.complaintsPagination = result.pagination || { page: 1, limit: 10, total: 0, pages: 0 };
+      this.complaintsStats = result.statistics || { OPEN: 0, IN_REVIEW: 0, RESOLVED: 0, DISMISSED: 0 };
+    } catch (error: any) {
+      const msg = error?.error?.message || error?.message || 'Failed to load complaints';
+      this.complaintsError = msg;
+      this.toast.danger(msg);
+    } finally {
+      this.complaintsLoading = false;
+    }
+  }
+
+  async changeComplaintPage(page: number) {
+    this.complaintsPagination.page = page;
+    await this.loadComplaints(page);
+  }
+
+  async changeComplaintStatus(status: string | ''|'OPEN'|'IN_REVIEW'|'RESOLVED'|'DISMISSED') {
+    this.complaintsFilter.status = status as any;
+    this.complaintsPagination.page = 1;
+    await this.loadComplaints();
+  }
+
+  onComplaintSearchChange() {
+    this.complaintsPagination.page = 1;
   }
   assignCompanyToStudent(studentId: string) {
     const cid = this.companyForStudent[studentId];
