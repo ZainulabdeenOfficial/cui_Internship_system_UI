@@ -779,7 +779,7 @@ export class Student implements OnInit, OnDestroy {
   // AppEx C (Assignment Details) API methods
   async apiLoadAppExC() {
     try {
-      const res = await this.studentApi.getAppExC({ skipGlobalLoading: true });
+      const res = await this.studentApi.getAppExC();
       console.log('✅ [Student] Loaded AppEx C:', res);
       return res;
     } catch (err: any) {
