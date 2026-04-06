@@ -7,12 +7,11 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { PaginatePipe } from '../../shared/pagination/paginate.pipe';
 import { PaginatorComponent } from '../../shared/pagination/paginator';
 import { FacultyService, FacultyProfile, FacultyInternship, StudentWeeklyLogs, WeeklyLog } from '../../shared/services/faculty.service';
-import { SkeletonListComponent } from '../../shared/components/skeleton';
 
 @Component({
   selector: 'app-faculty-supervisor',
   standalone: true,
-  imports: [CommonModule, FormsModule, PaginatePipe, PaginatorComponent, SkeletonListComponent],
+  imports: [CommonModule, FormsModule, PaginatePipe, PaginatorComponent],
   templateUrl: './faculty-supervisor.html',
   styleUrl: './faculty-supervisor.css'
 })

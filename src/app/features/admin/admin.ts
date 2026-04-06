@@ -59,9 +59,8 @@ export class Admin {
   complaintsPagination = { page: 1, limit: 10, total: 0, pages: 0 };
   complaintsStats = { OPEN: 0, IN_REVIEW: 0, RESOLVED: 0, DISMISSED: 0 };
   
-  // Loading states for all major content areas (for skeleton loaders)
+  // Loading states for major content areas (for skeleton loaders)
   loadingData = {
-    officers: false,
     faculty: false,
     sites: false,
     companies: false,

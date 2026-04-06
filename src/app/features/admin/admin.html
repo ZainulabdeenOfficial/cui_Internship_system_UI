@@ -196,15 +196,8 @@
                 <input class="form-control" placeholder="Search officers..." [(ngModel)]="search.officers" name="osearch" />
               </div>
             </div>
-            
-            <!-- Skeleton Loading -->
-            <app-skeleton-list 
-              [isLoading]="loadingData.officers" 
-              [count]="3" 
-              [type]="'table-row'">
-            </app-skeleton-list>
 
-            <div class="table-responsive mt-2" *ngIf="!loadingData.officers">
+            <div class="table-responsive mt-2">
               <table class="table table-sm align-middle">
                 <thead><tr><th>Name</th><th>Email</th><th>Actions</th></tr></thead>
                 <tbody>
