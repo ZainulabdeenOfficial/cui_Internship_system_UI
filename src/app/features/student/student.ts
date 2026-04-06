@@ -104,7 +104,7 @@ export class Student implements OnInit, OnDestroy {
   
   private lockSelection: any;
   // tabs: make each form an explicit tab so AppEx-A is first
-  currentTab: 'appex'|'assignment'|'form3'|'weeklylogs'|'evaluations'|'company-request'|'complaints' = 'appex';
+  currentTab: 'appex'|'assignment'|'form3'|'appex-c'|'weeklylogs'|'evaluations'|'company-request'|'complaints' = 'appex';
   // Raw query param value (for debugging why a tab may be set but UI not rendering)
   lastQueryTab: string | null = null;
   // pagination state per tab/list
@@ -256,7 +256,7 @@ export class Student implements OnInit, OnDestroy {
     try {
       this.route.queryParamMap.subscribe(p => {
           const tabParam = p.get('tab');
-          const allowed = ['appex','assignment','form3','weeklylogs','evaluations','company-request','complaints'] as const;
+          const allowed = ['appex','assignment','form3','appex-c','weeklylogs','evaluations','company-request','complaints'] as const;
           if (tabParam) {
             // record raw value for diagnostics
             this.lastQueryTab = tabParam;
@@ -296,13 +296,13 @@ export class Student implements OnInit, OnDestroy {
           }
         // guard: if not approved, restrict to core forms/evidence/complaints
         const isOk = this.isApproved();
-        const visibleWhenPending = new Set(['appex','assignment','form3','evidence','complaints','weeklylogs','evaluations']);
+        const visibleWhenPending = new Set(['appex','assignment','form3','appex-c','evidence','complaints','weeklylogs','evaluations']);
         if (!isOk && !visibleWhenPending.has(this.currentTab)) {
           this.currentTab = 'appex';
           try { this.router.navigate([], { relativeTo: this.route, queryParams: { tab: 'appex' }, queryParamsHandling: 'merge' }); } catch {}
         }
         // If all APEX forms approved, redirect from APEX tabs to weekly logs
-        if (this.allApexFormsApproved() && ['appex', 'assignment', 'form3'].includes(this.currentTab)) {
+        if (this.allApexFormsApproved() && ['appex', 'assignment', 'form3', 'appex-c'].includes(this.currentTab)) {
           this.currentTab = 'weeklylogs';
           try { this.router.navigate([], { relativeTo: this.route, queryParams: { tab: 'weeklylogs' }, queryParamsHandling: 'merge' }); } catch {}
         }
@@ -776,6 +776,37 @@ export class Student implements OnInit, OnDestroy {
     }
   }
 
+  // AppEx C (Assignment Details) API methods
+  async apiLoadAppExC() {
+    try {
+      const res = await this.studentApi.getAppExC({ skipGlobalLoading: true });
+      console.log('✅ [Student] Loaded AppEx C:', res);
+      return res;
+    } catch (err: any) {
+      console.warn('Failed to load AppEx C:', err);
+      // Don't show error toast for load failures - form just starts empty
+      return null;
+    }
+  }
+
+  async apiSubmitAppExC(payload: any) {
+    try {
+      console.log('📝 [apiSubmitAppExC] Submitting payload:', JSON.stringify(payload, null, 2));
+      const res = await this.studentApi.submitAppExC(payload);
+      this.toast.success(res?.message || 'AppEx C (Assignment Details) submitted');
+      return res;
+    } catch (err: any) {
+      const isNet = err && (err.status === 0 || (err.message || '').toString().toLowerCase().includes('unknown error'));
+      if (isNet) {
+        try { if (this.selectedId) localStorage.setItem(`appexC_draft_${this.selectedId}`, JSON.stringify(payload)); } catch {}
+        this.toast.info('Network error submitting AppEx C; changes saved locally and will be retried when online.');
+        return { offline: true } as any;
+      }
+      this.toast.danger(err?.error?.message || err?.message || 'Failed to submit AppEx C');
+      throw err;
+    }
+  }
+
   // Load APEX B verification status for current student
   async loadApexBStatus(isBackground = false) {
     if (this.loadingApexBStatus || !this.selectedId) return;
@@ -828,7 +859,7 @@ export class Student implements OnInit, OnDestroy {
           if (!this.evaluationsLoadedOnce) this.loadEvaluations();
           
           // Auto-switch to weekly logs tab if currently on approval forms
-          if (['appex', 'assignment', 'form3'].includes(this.currentTab)) {
+          if (['appex', 'assignment', 'form3', 'appex-c'].includes(this.currentTab)) {
             this.selectTab('weeklylogs');
           }
           
@@ -903,6 +934,17 @@ export class Student implements OnInit, OnDestroy {
     natureOfInternship: { softwareDevelopment: false, dataScience: false, networking: false, cyberSecurity: false, webMobile: false, otherChecked: false, otherText: '' },
     mode: 'On-Site' as 'On-Site'|'Virtual'|'Freelancing'
   };
+
+  // AppEx C Form (Assignment Details)
+  appexCForm = {
+    organizationOverview: '',
+    roleDescription: '',
+    keyActivities: '',
+    toolsTechnologies: '',
+    expectedDeliverables: ''
+  };
+  appexCSubmitted = false;
+  submittingAppExC = false;
 
   // APEX B Verification Form
   // AppEx B verification removed - approve/reject buttons now directly in assignment form
@@ -1448,6 +1490,46 @@ export class Student implements OnInit, OnDestroy {
       this.toast.danger('Failed to save Form 3');
     }
   }
+
+  // Submit AppEx C (Assignment Details)
+  async submitAppExC() {
+    if (!this.selectedId) return;
+    if (!this.ensureMine()) return;
+    
+    const f = this.appexCForm;
+    if (!f.organizationOverview?.trim()) {
+      this.toast.warning('Please provide organization overview before submitting AppEx C.');
+      return;
+    }
+
+    this.submittingAppExC = true;
+    try {
+      const payload = {
+        organizationOverview: f.organizationOverview || '',
+        roleDescription: f.roleDescription || '',
+        keyActivities: f.keyActivities || '',
+        toolsTechnologies: f.toolsTechnologies || '',
+        expectedDeliverables: f.expectedDeliverables || ''
+      };
+
+      await this.apiSubmitAppExC(payload);
+      this.appexCSubmitted = true;
+
+      // Clear form after successful submission
+      this.appexCForm = {
+        organizationOverview: '',
+        roleDescription: '',
+        keyActivities: '',
+        toolsTechnologies: '',
+        expectedDeliverables: ''
+      };
+    } catch (err: any) {
+      console.error('Error submitting AppEx C:', err);
+    } finally {
+      this.submittingAppExC = false;
+    }
+  }
+
   submitReflective() {
     if (!this.selectedId || !this.reflective.content) return;
     if (!this.ensureMine()) return;

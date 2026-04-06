@@ -11,6 +11,7 @@
     <li class="nav-item"><button type="button" class="nav-link" [class.active]="isCurrentTab('appex')" (click)="selectTab('appex')">Internship Approval (AppEx‑A)</button></li>
     <li class="nav-item"><button type="button" class="nav-link" [class.active]="isCurrentTab('assignment')" (click)="selectTab('assignment')">Assignment & Agreement</button></li>
     <li class="nav-item"><button type="button" class="nav-link" [class.active]="isCurrentTab('form3')" (click)="selectTab('form3')">Organization Overview &amp; Scope of Work</button></li>
+    <li class="nav-item"><button type="button" class="nav-link" [class.active]="isCurrentTab('appex-c')" (click)="selectTab('appex-c')">Assignment Details (AppEx‑C)</button></li>
     <li class="nav-item"><button type="button" class="nav-link" [class.active]="isCurrentTab('weeklylogs')" (click)="selectTab('weeklylogs')">Weekly Logs</button></li>
     <li class="nav-item"><button type="button" class="nav-link" [class.active]="isCurrentTab('evaluations')" (click)="selectTab('evaluations')">My Evaluations</button></li>
     <li class="nav-item"><button type="button" class="nav-link" [class.active]="isCurrentTab('company-request')" (click)="selectTab('company-request')">Request Company</button></li>
@@ -412,6 +413,54 @@
   <!-- Form 3: Organization Overview & Scope of Work -->
   <div *ngIf="isCurrentTab('form3')">
     <app-form3-form [selectedId]="selectedId"></app-form3-form>
+  </div>
+
+  <!-- AppEx C: Assignment Details Form -->
+  <div *ngIf="isCurrentTab('appex-c')" class="card mb-3">
+    <div class="card-header">
+      <h5>Assignment Details (AppEx‑C)</h5>
+    </div>
+    <div class="card-body">
+      <form (ngSubmit)="submitAppExC()">
+        <div class="mb-3">
+          <label for="orgOverview" class="form-label">Organization Overview <span class="text-danger">*</span></label>
+          <textarea class="form-control" id="orgOverview" [(ngModel)]="appexCForm.organizationOverview" name="organizationOverview" rows="3" placeholder="Provide an overview of the organization and its operations" required></textarea>
+          <small class="form-text text-muted">Describe the organization, its mission, and key operations.</small>
+        </div>
+
+        <div class="mb-3">
+          <label for="roleDesc" class="form-label">Role Description</label>
+          <textarea class="form-control" id="roleDesc" [(ngModel)]="appexCForm.roleDescription" name="roleDescription" rows="3" placeholder="Describe your role and responsibilities in the organization"></textarea>
+          <small class="form-text text-muted">Specify your job title, responsibilities, and reporting structure.</small>
+        </div>
+
+        <div class="mb-3">
+          <label for="keyActivities" class="form-label">Key Activities</label>
+          <textarea class="form-control" id="keyActivities" [(ngModel)]="appexCForm.keyActivities" name="keyActivities" rows="3" placeholder="List the key activities and tasks you performed (comma-separated or line-separated)"></textarea>
+          <small class="form-text text-muted">Describe the main tasks and activities you performed during the internship.</small>
+        </div>
+
+        <div class="mb-3">
+          <label for="tools" class="form-label">Tools & Technologies</label>
+          <textarea class="form-control" id="tools" [(ngModel)]="appexCForm.toolsTechnologies" name="toolsTechnologies" rows="3" placeholder="List the tools, technologies, and programming languages used (comma-separated)"></textarea>
+          <small class="form-text text-muted">Specify all tools, frameworks, and technologies used in your work.</small>
+        </div>
+
+        <div class="mb-3">
+          <label for="deliverables" class="form-label">Expected Deliverables</label>
+          <textarea class="form-control" id="deliverables" [(ngModel)]="appexCForm.expectedDeliverables" name="expectedDeliverables" rows="3" placeholder="Describe the deliverables or outcomes of your assignment"></textarea>
+          <small class="form-text text-muted">List the expected or actual deliverables, projects, or outcomes from your internship.</small>
+        </div>
+
+        <div class="d-flex gap-2">
+          <button type="submit" class="btn btn-primary" [disabled]="submittingAppExC">
+            <span *ngIf="submittingAppExC" class="spinner-border spinner-border-sm me-2"></span>
+            {{ submittingAppExC ? 'Submitting...' : 'Submit AppEx C' }}
+          </button>
+          <span *ngIf="appexCSubmitted" class="badge text-bg-success align-self-center">✓ Submitted</span>
+        </div>
+      </form>
+    </div>
   </div>
 
   <!-- Duplicated Assignment and Form3 blocks removed (already included under 'Forms' grouping) -->
