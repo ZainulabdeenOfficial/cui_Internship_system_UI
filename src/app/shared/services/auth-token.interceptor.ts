@@ -1,12 +1,10 @@
 import { HttpInterceptorFn, HttpRequest } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { AuthService } from './auth.service';
+import { ApiConfigService } from '../../core/services/api-config.service';
 import { catchError, from, switchMap, throwError } from 'rxjs';
-import { environment } from '../../../environments/environment';
 
 type RouteRule = RegExp;
-
-const API_BASE = environment.apiBaseUrl.replace(/\/$/, '');
 const NEEDS_BEARER: RouteRule[] = [
   /^\/api\/admin\//,
   /^\/api\/admin\/create-account$/,
@@ -45,7 +43,8 @@ function getSessionToken(): string | null {
   }
 }
 
-function normalizePath(req: HttpRequest<any>): string {
+function normalizePath(req: HttpRequest<any>, apiConfig: ApiConfigService): string {
+  const API_BASE = apiConfig.getBaseUrl();
   // Strip protocol and host for any absolute URL to get just the path
   const withoutOrigin = req.url.replace(/^https?:\/\/[^/]+/i, '');
   // Also strip configured API_BASE if it's an absolute backend URL
@@ -72,12 +71,14 @@ function triggerLogout(auth: AuthService) {
 
 export const authTokenInterceptor: HttpInterceptorFn = (req, next) => {
   const auth = inject(AuthService);
+  const apiConfig = inject(ApiConfigService);
+  
   // If a logout redirect is already in progress, abort all further API calls immediately
   if (isLoggingOut) {
     return throwError(() => new Error('Session expired. Please log in again.'));
   }
   try {
-    const path = normalizePath(req);
+    const path = normalizePath(req, apiConfig);
     const isApi = path.startsWith('/api');
     const needsAuth = isApi && NEEDS_BEARER.some(r => r.test(path)) && !PUBLIC_AUTH.some(r => r.test(path));
 
@@ -155,7 +156,7 @@ export const authTokenInterceptor: HttpInterceptorFn = (req, next) => {
   return next(req).pipe(
     catchError(err => {
       try {
-        const path = normalizePath(req);
+        const path = normalizePath(req, apiConfig);
         const isApi = path.startsWith('/api');
         const isRefresh = /\/api\/auth\/refresh-token$/.test(path);
         const isLogin = /\/api\/auth\/login$/.test(path);
