@@ -10,12 +10,10 @@ import { PaginatePipe } from '../../shared/pagination/paginate.pipe';
 import { PaginatorComponent } from '../../shared/pagination/paginator';
 import { AssignmentForm } from './assignment-form';
 import { Form3Form } from './form3-form';
-import { SkeletonListComponent } from '../../shared/components/skeleton/skeleton-list.component';
-
 @Component({
   selector: 'app-student',
   standalone: true,
-  imports: [CommonModule, NgIf, NgFor, FormsModule, RouterModule, PaginatePipe, PaginatorComponent, AssignmentForm, Form3Form, SkeletonListComponent],
+  imports: [CommonModule, NgIf, NgFor, FormsModule, RouterModule, PaginatePipe, PaginatorComponent, AssignmentForm, Form3Form],
   templateUrl: './student.html',
   styleUrl: './student.css'
 })
@@ -104,7 +102,7 @@ export class Student implements OnInit, OnDestroy {
   
   private lockSelection: any;
   // tabs: make each form an explicit tab so AppEx-A is first
-  currentTab: 'appex'|'assignment'|'form3'|'appex-c'|'weeklylogs'|'evaluations'|'company-request'|'complaints' = 'appex';
+  currentTab: 'appex'|'assignment'|'form3'|'weeklylogs'|'evaluations'|'company-request'|'complaints' = 'appex';
   // Raw query param value (for debugging why a tab may be set but UI not rendering)
   lastQueryTab: string | null = null;
   // pagination state per tab/list
@@ -256,7 +254,7 @@ export class Student implements OnInit, OnDestroy {
     try {
       this.route.queryParamMap.subscribe(p => {
           const tabParam = p.get('tab');
-          const allowed = ['appex','assignment','form3','appex-c','weeklylogs','evaluations','company-request','complaints'] as const;
+          const allowed = ['appex','assignment','form3','weeklylogs','evaluations','company-request','complaints'] as const;
           if (tabParam) {
             // record raw value for diagnostics
             this.lastQueryTab = tabParam;
@@ -296,16 +294,18 @@ export class Student implements OnInit, OnDestroy {
           }
         // guard: if not approved, restrict to core forms/evidence/complaints
         const isOk = this.isApproved();
-        const visibleWhenPending = new Set(['appex','assignment','form3','appex-c','evidence','complaints','weeklylogs','evaluations']);
+        const visibleWhenPending = new Set(['appex','assignment','form3','evidence','complaints','weeklylogs','evaluations']);
         if (!isOk && !visibleWhenPending.has(this.currentTab)) {
           this.currentTab = 'appex';
           try { this.router.navigate([], { relativeTo: this.route, queryParams: { tab: 'appex' }, queryParamsHandling: 'merge' }); } catch {}
         }
         // If all APEX forms approved, redirect from APEX tabs to weekly logs
-        if (this.allApexFormsApproved() && ['appex', 'assignment', 'form3', 'appex-c'].includes(this.currentTab)) {
+        if (this.allApexFormsApproved() && ['appex', 'assignment', 'form3'].includes(this.currentTab)) {
           this.currentTab = 'weeklylogs';
           try { this.router.navigate([], { relativeTo: this.route, queryParams: { tab: 'weeklylogs' }, queryParamsHandling: 'merge' }); } catch {}
         }
+        // Trigger selectTab to load data for the newly selected tab
+        this.selectTab(this.currentTab);
       });
     } catch {}
 
@@ -495,9 +495,8 @@ export class Student implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
-    // Ensure default tab data is loaded
-    // This will trigger selectTab which loads the necessary data for the current tab
-    setTimeout(() => this.selectTab(this.currentTab), 0);
+    // Tab selection is handled by the queryParamMap subscription in the constructor
+    // This ensures initial tab is set correctly from URL params
   }
 
   onCompanyNameInput(value: string) {
@@ -776,37 +775,6 @@ export class Student implements OnInit, OnDestroy {
     }
   }
 
-  // AppEx C (Assignment Details) API methods
-  async apiLoadAppExC() {
-    try {
-      const res = await this.studentApi.getAppExC();
-      console.log('✅ [Student] Loaded AppEx C:', res);
-      return res;
-    } catch (err: any) {
-      console.warn('Failed to load AppEx C:', err);
-      // Don't show error toast for load failures - form just starts empty
-      return null;
-    }
-  }
-
-  async apiSubmitAppExC(payload: any) {
-    try {
-      console.log('📝 [apiSubmitAppExC] Submitting payload:', JSON.stringify(payload, null, 2));
-      const res = await this.studentApi.submitAppExC(payload);
-      this.toast.success(res?.message || 'AppEx C (Assignment Details) submitted');
-      return res;
-    } catch (err: any) {
-      const isNet = err && (err.status === 0 || (err.message || '').toString().toLowerCase().includes('unknown error'));
-      if (isNet) {
-        try { if (this.selectedId) localStorage.setItem(`appexC_draft_${this.selectedId}`, JSON.stringify(payload)); } catch {}
-        this.toast.info('Network error submitting AppEx C; changes saved locally and will be retried when online.');
-        return { offline: true } as any;
-      }
-      this.toast.danger(err?.error?.message || err?.message || 'Failed to submit AppEx C');
-      throw err;
-    }
-  }
-
   // Load APEX B verification status for current student
   async loadApexBStatus(isBackground = false) {
     if (this.loadingApexBStatus || !this.selectedId) return;
@@ -935,17 +903,6 @@ export class Student implements OnInit, OnDestroy {
     mode: 'On-Site' as 'On-Site'|'Virtual'|'Freelancing'
   };
 
-  // AppEx C Form (Assignment Details)
-  appexCForm = {
-    organizationOverview: '',
-    roleDescription: '',
-    keyActivities: '',
-    toolsTechnologies: '',
-    expectedDeliverables: ''
-  };
-  appexCSubmitted = false;
-  submittingAppExC = false;
-
   // APEX B Verification Form
   // AppEx B verification removed - approve/reject buttons now directly in assignment form
 
@@ -1030,27 +987,22 @@ export class Student implements OnInit, OnDestroy {
     return !!this.appexASubmitted;
   }
   selectTab(tab: Student['currentTab']) {
+    const tabChanged = this.currentTab !== tab;
     this.currentTab = tab;
-    // Reflect in URL for deep links
-    try { this.router.navigate([], { relativeTo: this.route, queryParams: { tab }, queryParamsHandling: 'merge' }); } catch {}
     
-    // Auto-load internship approval status when appex tab is selected
+    // Reflect in URL for deep links only if tab actually changed
+    if (tabChanged) {
+      try { this.router.navigate([], { relativeTo: this.route, queryParams: { tab }, queryParamsHandling: 'merge' }); } catch {}
+    }
+    
+    // Auto-load data for the selected tab
     if (tab === 'appex') {
       this.loadApexBStatus(true);
-    }
-    // Company requests are pre-loaded when student is selected, so no need to load here again
-    
-    // Auto-load weekly logs when weekly logs tab is selected
-    if (tab === 'weeklylogs' && !this.hasLoadedWeeklyLogsOnce) {
+    } else if (tab === 'weeklylogs' && !this.hasLoadedWeeklyLogsOnce) {
       this.loadWeeklyLogs();
-    }
-    // Auto-load company request status when company request tab is selected
-    if (tab === 'company-request' && !this.hasLoadedCompanyRequestStatusOnce) {
+    } else if (tab === 'company-request' && !this.hasLoadedCompanyRequestStatusOnce) {
       this.loadCompanyRequestStatus();
-    }
-    // Auto-load evaluations when evaluations tab is selected
-    // Retry if: never loaded before
-    if (tab === 'evaluations' && !this.loadingEvaluations) {
+    } else if (tab === 'evaluations' && !this.loadingEvaluations) {
       const hasId = !!(this.studentInternshipId || this.apexBStatus?.internshipId);
       const shouldLoad = !this.evaluationsLoadedOnce || hasId;
       if (shouldLoad) this.loadEvaluations();
@@ -1492,44 +1444,6 @@ export class Student implements OnInit, OnDestroy {
   }
 
   // Submit AppEx C (Assignment Details)
-  async submitAppExC() {
-    if (!this.selectedId) return;
-    if (!this.ensureMine()) return;
-    
-    const f = this.appexCForm;
-    if (!f.organizationOverview?.trim()) {
-      this.toast.warning('Please provide organization overview before submitting AppEx C.');
-      return;
-    }
-
-    this.submittingAppExC = true;
-    try {
-      const payload = {
-        organizationOverview: f.organizationOverview || '',
-        roleDescription: f.roleDescription || '',
-        keyActivities: f.keyActivities || '',
-        toolsTechnologies: f.toolsTechnologies || '',
-        expectedDeliverables: f.expectedDeliverables || ''
-      };
-
-      await this.apiSubmitAppExC(payload);
-      this.appexCSubmitted = true;
-
-      // Clear form after successful submission
-      this.appexCForm = {
-        organizationOverview: '',
-        roleDescription: '',
-        keyActivities: '',
-        toolsTechnologies: '',
-        expectedDeliverables: ''
-      };
-    } catch (err: any) {
-      console.error('Error submitting AppEx C:', err);
-    } finally {
-      this.submittingAppExC = false;
-    }
-  }
-
   submitReflective() {
     if (!this.selectedId || !this.reflective.content) return;
     if (!this.ensureMine()) return;
