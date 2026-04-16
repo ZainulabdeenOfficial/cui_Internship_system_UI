@@ -130,19 +130,9 @@ export class Student implements OnInit, OnDestroy {
   // Form 3: Organization Overview & Scope of Work
   form3 = {
     organizationOverview: '',
-    scopeOfWork: '',
-    keyActivities: {
-      coding: false,
-      testing: false,
-      documentation: false,
-      dataAnalysis: false,
-      research: false,
-      technicalSupport: false,
-      dashboard: false,
-      other: false,
-      otherText: ''
-    },
-    tools: '',
+    roleDescription: '',
+    keyActivities: '',
+    toolsTechnologies: '',
     expectedDeliverables: ''
   };
 
@@ -330,6 +320,15 @@ export class Student implements OnInit, OnDestroy {
             const resolvedId: string = internshipObj?.id || internshipObj?._id || (res as any)?.internshipId || '';
             if (resolvedId) this.studentInternshipId = resolvedId;
             const ax = internshipObj?.appexA || (res as any)?.appexA || {};
+            // Track approval status from API
+            const status = ax.status || internshipObj?.status || 'pending';
+            if (status === 'approved' || status === 'APPROVED') {
+              this.appexAStatus = 'approved';
+            } else if (status === 'rejected' || status === 'REJECTED') {
+              this.appexAStatus = 'rejected';
+            } else {
+              this.appexAStatus = 'pending';
+            }
             // treat as present when at least one meaningful field exists
             serverHas = Object.keys(ax).some(k => {
               const v = (ax as any)[k];
@@ -407,74 +406,6 @@ export class Student implements OnInit, OnDestroy {
               if (latest && latest.studentAgreementData) {
                 // populate assignment/agreement form fields
                 this.studentAgreementForm = { ...this.studentAgreementForm, ...(latest.studentAgreementData || {}) };
-              }
-            }
-          } catch {}
-          try {
-            const dsList = this.store.designStatements()[sid] ?? [];
-            if (dsList.length) {
-              const latestDs = dsList[dsList.length - 1] as any;
-              if (latestDs) {
-                // Restore overview
-                this.form3.organizationOverview = latestDs.placement?.overview || this.form3.organizationOverview || '';
-
-                // Many fields were serialized into `scopeAndDeliverables` when saved.
-                // Attempt to parse common labeled sections so UI fields (scope, keyActivities, tools, expectedDeliverables)
-                // are restored for editing.
-                const raw = (latestDs.scopeAndDeliverables || '').toString();
-                if (raw) {
-                  // Split into labeled blocks separated by blank lines (as saved in submitForm3)
-                  const parts = raw.split(/\n\s*\n/).map((p: string) => p.trim()).filter((p: string) => p.length > 0);
-                  // Helper to strip leading label like 'Scope: '
-                  const stripLabel = (text: string, label: string) => {
-                    if (!text) return '';
-                    const idx = text.toLowerCase().indexOf(label.toLowerCase());
-                    return idx === -1 ? text : text.slice(idx + label.length).trim();
-                  };
-
-                  // Part 0: Scope
-                  if (parts[0]) this.form3.scopeOfWork = stripLabel(parts[0], 'Scope:') || this.form3.scopeOfWork || '';
-
-                  // Part 1: Key Activities
-                  if (parts[1]) {
-                    const kaRaw = stripLabel(parts[1], 'Key Activities:') || '';
-                    // activities were saved as comma-separated names
-                    const items = kaRaw.split(',').map(s => s.trim()).filter(s => s.length);
-                    // reset activities
-                    const k = { ...this.form3.keyActivities };
-                    // normalize and map
-                    const norm = (s: string) => s.toLowerCase().replace(/[^a-z]/g, '');
-                    const itemNorms = items.map(norm);
-                    k.coding = itemNorms.includes('coding');
-                    k.testing = itemNorms.includes('testing');
-                    k.documentation = itemNorms.includes('documentation');
-                    k.dataAnalysis = itemNorms.includes('dataanalysis') || itemNorms.includes('dataanalysis');
-                    k.research = itemNorms.includes('research');
-                    k.technicalSupport = itemNorms.includes('technicalsupport') || itemNorms.includes('technical');
-                    k.dashboard = itemNorms.includes('dashboardreportcreation') || itemNorms.includes('dashboard') || itemNorms.includes('reportcreation');
-                    // detect 'other' and capture trailing text if present in same part
-                    const otherEntry = items.find(it => /other/i.test(it));
-                    if (otherEntry) {
-                      k.other = true;
-                      // if other contains a parenthetical or colon, try to extract text after ':' or '-' or '('
-                      const m = otherEntry.split(/[:\-\(\)]/).slice(1).join(':').trim();
-                      k.otherText = m || this.form3.keyActivities.otherText || '';
-                    } else {
-                      k.other = this.form3.keyActivities.other || false;
-                      k.otherText = this.form3.keyActivities.otherText || '';
-                    }
-                    this.form3.keyActivities = k;
-                  }
-
-                  // Part 2: Tools/Technologies
-                  if (parts[2]) this.form3.tools = stripLabel(parts[2], 'Tools/Technologies:') || this.form3.tools || '';
-
-                  // Part 3: Expected Deliverables
-                  if (parts[3]) this.form3.expectedDeliverables = stripLabel(parts[3], 'Expected Deliverables:') || this.form3.expectedDeliverables || '';
-                } else {
-                  // Fallback: if no structured string, preserve existing scopeOfWork (already set above)
-                  this.form3.scopeOfWork = this.form3.scopeOfWork || '';
-                }
               }
             }
           } catch {}
@@ -961,8 +892,15 @@ export class Student implements OnInit, OnDestroy {
   }
   async submitAppExAFromForm() {
     try {
+      // Check if already approved - prevent resubmission
+      if (this.appexAStatus === 'approved') {
+        this.toast.warning('Your APEX A form has been approved and cannot be resubmitted');
+        return;
+      }
+      
       await this.apiSubmitAppExA({ ...this.appexAForm });
       this.appexASubmitted = true;
+      this.appexAStatus = 'pending';
       // clear draft
       try { if (this.selectedId) localStorage.removeItem(`appexA_draft_${this.selectedId}`); } catch {}
     } catch {}
@@ -977,6 +915,7 @@ export class Student implements OnInit, OnDestroy {
 
   // Track whether the student has submitted an AppEx-A (formerly approval)
   appexASubmitted = false;
+  appexAStatus: 'pending' | 'approved' | 'rejected' = 'pending'; // Track approval status
 
   // Compatibility helpers for remaining code that expects approval/agreement checks
   hasSubmittedApproval(): boolean {
@@ -1415,35 +1354,6 @@ export class Student implements OnInit, OnDestroy {
   }
 
   // Submit Form 3 (Organization Overview & Scope of Work)
-  submitForm3() {
-    if (!this.selectedId) return;
-    if (!this.ensureMine()) return;
-    const f = this.form3 as any;
-    if (!f.organizationOverview?.trim() && !f.scopeOfWork?.trim()) {
-      this.toast.warning('Please provide organization overview or scope of work before submitting.');
-      return;
-    }
-    try {
-      // Map fields to DesignStatement structure: keep scope/tools/deliverables in scopeAndDeliverables
-      const ds = {
-        careerGoal: '',
-        learningObjectives: '',
-        placement: { organization: '', mode: 'On-site', functionalArea: '', overview: f.organizationOverview || '' },
-        supervisor: { name: '', designation: '', email: '', contact: '' },
-        scopeAndDeliverables: `Scope: ${f.scopeOfWork || ''}\n\nKey Activities: ${Object.entries(f.keyActivities).filter(([k,v]) => k !== 'other' && v).map(([k]) => k).join(', ')}${f.keyActivities.other ? (', ' + (f.keyActivities.otherText || 'Other')) : ''}\n\nTools/Technologies: ${f.tools || ''}\n\nExpected Deliverables: ${f.expectedDeliverables || ''}`,
-        academicPreparation: '',
-        comments: ''
-      };
-      this.store.submitDesignStatement(this.selectedId, ds as any);
-      this.toast.success('Form 3 (Organization Overview & Scope) saved');
-      // clear form3
-      this.form3 = { organizationOverview: '', scopeOfWork: '', keyActivities: { coding: false, testing: false, documentation: false, dataAnalysis: false, research: false, technicalSupport: false, dashboard: false, other: false, otherText: '' }, tools: '', expectedDeliverables: '' };
-    } catch (err: any) {
-      this.toast.danger('Failed to save Form 3');
-    }
-  }
-
-  // Submit AppEx C (Assignment Details)
   submitReflective() {
     if (!this.selectedId || !this.reflective.content) return;
     if (!this.ensureMine()) return;

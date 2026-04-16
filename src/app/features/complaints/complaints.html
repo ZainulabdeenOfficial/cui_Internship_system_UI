@@ -135,12 +135,10 @@
           </div>
         </div>
 
-        <!-- Loading State with Skeleton -->
-        <app-skeleton-list 
-          [isLoading]="loadingComplaints()" 
-          [count]="4" 
-          [type]="'card'">
-        </app-skeleton-list>
+        <!-- Loading State -->
+        @if (loadingComplaints()) {
+          <div class="spinner-border text-primary" role="status"></div>
+        }
 
         <!-- Error State -->
         @if (complaintsError()) {

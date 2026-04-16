@@ -195,7 +195,7 @@
         <div class="col-6 col-md-3">
           <div class="stat card shadow-sm h-100">
             <div class="card-body">
-              <div class="display-6 fw-bold text-primary">{{ studentsCount }}</div>
+              <div class="display-6 fw-bold text-primary">{{ studentsCount() }}</div>
               <div class="text-muted small">Students</div>
             </div>
           </div>
@@ -203,7 +203,7 @@
         <div class="col-6 col-md-3">
           <div class="stat card shadow-sm h-100">
             <div class="card-body">
-              <div class="display-6 fw-bold text-success">{{ supervisorsCount }}</div>
+              <div class="display-6 fw-bold text-success">{{ supervisorsCount() }}</div>
               <div class="text-muted small">Supervisors</div>
             </div>
           </div>
@@ -211,7 +211,7 @@
         <div class="col-6 col-md-3">
           <div class="stat card shadow-sm h-100">
             <div class="card-body">
-              <div class="display-6 fw-bold text-warning">{{ companiesCount }}</div>
+              <div class="display-6 fw-bold text-warning">{{ companiesCount() }}</div>
               <div class="text-muted small">Companies</div>
             </div>
           </div>
@@ -219,7 +219,7 @@
         <div class="col-6 col-md-3">
           <div class="stat card shadow-sm h-100">
             <div class="card-body">
-              <div class="display-6 fw-bold text-danger">{{ departmentsCount }}</div>
+              <div class="display-6 fw-bold text-danger">{{ departmentsCount() }}</div>
               <div class="text-muted small">Departments</div>
             </div>
           </div>
@@ -233,14 +233,14 @@
       <h3 class="mb-0">Announcements</h3>
     </div>
 
-    @if (sortedAndFilteredAnnouncements.length === 0) {
+    @if (sortedAndFilteredAnnouncements().length === 0) {
       <div class="alert alert-info text-center py-4">
         <i class="pi pi-inbox"></i> No active announcements at this time.
       </div>
     } @else {
       <div class="announcements-container">
         <ul class="list-group shadow-sm">
-          @for (a of paginatedAnnouncements; track a.id; let i = $index) {
+          @for (a of paginatedAnnouncements(); track a.id; let i = $index) {
             <li class="list-group-item announcement-item fade-in" [style]="'--delay: ' + (i * 100) + 'ms'">
               <div class="d-flex justify-content-between align-items-start gap-3">
                 <div class="grow">
@@ -309,16 +309,16 @@
         </ul>
 
         <!-- Pagination controls -->
-        @if (totalAnnouncementsPages > 1) {
+        @if (totalAnnouncementsPages() > 1) {
           <div class="d-flex justify-content-center mt-3">
-            @if (hasMoreAnnouncements) {
+            @if (hasMoreAnnouncements()) {
               <button class="btn btn-outline-primary" (click)="loadMoreAnnouncements()">
                 <i class="pi pi-angle-down"></i> Load More 
-                <span class="text-muted small">({{ currentAnnouncementsPage }}/{{ totalAnnouncementsPages }})</span>
+                <span class="text-muted small">({{ currentAnnouncementsPage() }}/{{ totalAnnouncementsPages() }})</span>
               </button>
-            } @else if (currentAnnouncementsPage > 1) {
+            } @else if (currentAnnouncementsPage() > 1) {
               <small class="text-muted text-center">
-                Showing {{ paginatedAnnouncements.length }} of {{ sortedAndFilteredAnnouncements.length }} announcements
+                Showing {{ paginatedAnnouncements().length }} of {{ sortedAndFilteredAnnouncements().length }} announcements
               </small>
             }
           </div>

@@ -256,14 +256,17 @@
       </div>
       
       <div class="col-12 d-flex gap-2 mt-3">
-        <button class="btn btn-success" [disabled]="!f.form.valid || !model.agreementAccepted || submitted() || loading()" type="submit">
+        <button class="btn btn-success" [disabled]="!f.form.valid || !model.agreementAccepted || submitted() || loading() || assignmentStatus() === 'approved'" type="submit">
           @if (loading()) {
           <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
           }
           @if (loading()) {
           <span>Submitting...</span>
           }
-          @if (!loading()) {
+          @if (!loading() && assignmentStatus() === 'approved') {
+          <span>Already Approved - Cannot Resubmit</span>
+          }
+          @if (!loading() && assignmentStatus() !== 'approved') {
           <span>Submit Assignment & Agreement</span>
           }
         </button>

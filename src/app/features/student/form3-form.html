@@ -1,58 +1,147 @@
 <div class="card mb-3">
-  <div class="card-header">Organization Overview & Scope of Work (Appendix C)</div>
+  <div class="card-header">
+    <h5 class="mb-0">Organization Overview & Scope of Work (Form 3)</h5>
+  </div>
   <div class="card-body">
+    <!-- Success Card (shown after submission) -->
+    @if (submitted() && submittedData()) {
+      <div class="alert alert-success mb-3">
+        <i class="bi bi-check-circle-fill me-2"></i>
+        <strong>Submitted Successfully!</strong> Your form has been saved.
+        <small class="d-block mt-2">
+          Submission Date: {{ submittedData().submittedDate | date:'medium' }}
+        </small>
+      </div>
+    }
+
     <form (ngSubmit)="submit()" #f="ngForm" class="row g-3">
+      <!-- 1. Organization Overview -->
       <div class="col-12">
-        <label class="form-label"><strong>1. Organization Overview *</strong></label>
-        <textarea class="form-control" rows="4" [(ngModel)]="model.organizationOverview" name="orgOverview" placeholder="Provide an overview of the organization" required></textarea>
+        <label class="form-label">
+          <strong>1. Organization Overview</strong>
+          <span class="text-danger">*</span>
+        </label>
+        <textarea 
+          class="form-control" 
+          rows="4" 
+          [(ngModel)]="model.organizationOverview" 
+          name="organizationOverview" 
+          placeholder="Provide a comprehensive overview of the organization, including its mission, structure, and operations"
+          required>
+        </textarea>
+        <small class="form-text text-muted">Describe the organization, its size, industry, key services/products, and work environment.</small>
       </div>
       
+      <!-- 2. Role Description -->
       <div class="col-12">
-        <label class="form-label"><strong>2. Role Description</strong></label>
-        <textarea class="form-control" rows="4" [(ngModel)]="model.roleDescription" name="roleDescription" placeholder="Describe your role and responsibilities in detail"></textarea>
+        <label class="form-label">
+          <strong>2. Role Description</strong>
+        </label>
+        <textarea 
+          class="form-control" 
+          rows="4" 
+          [(ngModel)]="model.roleDescription" 
+          name="roleDescription" 
+          placeholder="Describe your role, job title, responsibilities, and reporting structure">
+        </textarea>
+        <small class="form-text text-muted">Specify your position, key responsibilities, who you report to, and your team structure.</small>
       </div>
       
+      <!-- 3. Key Activities -->
       <div class="col-12">
-        <label class="form-label"><strong>3. Key Activities</strong> (check all that apply)</label>
-        <div class="d-flex flex-wrap gap-3">
-          <div class="form-check"><input class="form-check-input" type="checkbox" [(ngModel)]="model.keyActivities.coding" name="act_coding" /><label class="form-check-label">Coding</label></div>
-          <div class="form-check"><input class="form-check-input" type="checkbox" [(ngModel)]="model.keyActivities.testing" name="act_testing" /><label class="form-check-label">Testing</label></div>
-          <div class="form-check"><input class="form-check-input" type="checkbox" [(ngModel)]="model.keyActivities.documentation" name="act_documentation" /><label class="form-check-label">Documentation</label></div>
-          <div class="form-check"><input class="form-check-input" type="checkbox" [(ngModel)]="model.keyActivities.dataAnalysis" name="act_data" /><label class="form-check-label">Data Analysis</label></div>
-          <div class="form-check"><input class="form-check-input" type="checkbox" [(ngModel)]="model.keyActivities.research" name="act_research" /><label class="form-check-label">Research</label></div>
-          <div class="form-check"><input class="form-check-input" type="checkbox" [(ngModel)]="model.keyActivities.technicalSupport" name="act_support" /><label class="form-check-label">Technical Support</label></div>
-          <div class="form-check"><input class="form-check-input" type="checkbox" [(ngModel)]="model.keyActivities.dashboard" name="act_dashboard" /><label class="form-check-label">Dashboard/Report Creation</label></div>
-          <div class="form-check d-flex align-items-center">
-            <input class="form-check-input" type="checkbox" [(ngModel)]="model.keyActivities.other" name="act_other" />
-            <label class="form-check-label me-2">Other (please specify)</label>
-            <input class="form-control form-control-sm" style="max-width:320px" [(ngModel)]="model.keyActivities.otherText" name="act_other_text" placeholder="Specify other activity" />
+        <label class="form-label">
+          <strong>3. Key Activities</strong>
+        </label>
+        <textarea 
+          class="form-control" 
+          rows="4" 
+          [(ngModel)]="model.keyActivities" 
+          name="keyActivities" 
+          placeholder="List the key activities and tasks you performed (e.g., coding, testing, documentation, etc.)">
+        </textarea>
+        <small class="form-text text-muted">Describe the main tasks, projects, and activities you will work on during your internship.</small>
+      </div>
+
+      <!-- 4. Tools & Technologies -->
+      <div class="col-12">
+        <label class="form-label">
+          <strong>4. Tools & Technologies</strong>
+        </label>
+        <textarea 
+          class="form-control" 
+          rows="3" 
+          [(ngModel)]="model.toolsTechnologies" 
+          name="toolsTechnologies" 
+          placeholder="List all tools, technologies, frameworks, and platforms you will use (e.g., Python, React, Docker, AWS, etc.)">
+        </textarea>
+        <small class="form-text text-muted">Specify programming languages, frameworks, databases, and other tools relevant to your work.</small>
+      </div>
+
+      <!-- 5. Expected Deliverables -->
+      <div class="col-12">
+        <label class="form-label">
+          <strong>5. Expected Deliverables</strong>
+        </label>
+        <textarea 
+          class="form-control" 
+          rows="3" 
+          [(ngModel)]="model.expectedDeliverables" 
+          name="expectedDeliverables" 
+          placeholder="Describe the expected outcomes, deliverables, and projects from your internship">
+        </textarea>
+        <small class="form-text text-muted">List the concrete deliverables, projects, or outputs you expect to complete.</small>
+      </div>
+
+      <!-- Submit Button -->
+      <div class="col-12 d-flex gap-2 mt-3">
+        <button class="btn btn-success" [disabled]="!f.form.valid || loading() || form3Status() === 'approved'" type="submit">
+          @if (loading()) {
+            <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+            <span>Submitting...</span>
+          } @else if (form3Status() === 'approved') {
+            <i class="bi bi-lock me-2"></i>
+            <span>Already Approved - Cannot Resubmit</span>
+          } @else {
+            <i class="bi bi-check-lg me-2"></i>
+            <span>Submit Form</span>
+          }
+        </button>
+        @if (submitted()) {
+          <span class="badge text-bg-success align-self-center">
+            <i class="bi bi-check-circle-fill me-1"></i>
+            Submitted
+          </span>
+        }
+      </div>
+    </form>
+
+    <!-- Submitted Data Display -->
+    @if (submittedData()) {
+      <div class="mt-4 p-3 bg-light border rounded">
+        <h6 class="mb-3"><i class="bi bi-archive me-2"></i>Submitted Data</h6>
+        <div class="row g-3">
+          <div class="col-12">
+            <strong>Organization Overview:</strong>
+            <p class="text-muted">{{ submittedData().organizationOverview }}</p>
+          </div>
+          <div class="col-12" *ngIf="submittedData().roleDescription">
+            <strong>Role Description:</strong>
+            <p class="text-muted">{{ submittedData().roleDescription }}</p>
+          </div>
+          <div class="col-12" *ngIf="submittedData().keyActivities">
+            <strong>Key Activities:</strong>
+            <p class="text-muted">{{ submittedData().keyActivities }}</p>
+          </div>
+          <div class="col-12" *ngIf="submittedData().toolsTechnologies">
+            <strong>Tools & Technologies:</strong>
+            <p class="text-muted">{{ submittedData().toolsTechnologies }}</p>
+          </div>
+          <div class="col-12" *ngIf="submittedData().expectedDeliverables">
+            <strong>Expected Deliverables:</strong>
+            <p class="text-muted">{{ submittedData().expectedDeliverables }}</p>
           </div>
         </div>
       </div>
-
-      <div class="col-12">
-        <label class="form-label"><strong>4. Tools/Technologies</strong></label>
-        <textarea class="form-control" rows="3" [(ngModel)]="model.toolsTechnologies" name="toolsTechnologies" placeholder="List all tools, technologies, frameworks, and platforms you will use (e.g., Python, React, Docker, AWS, etc.)"></textarea>
-      </div>
-
-      <div class="col-12">
-        <label class="form-label"><strong>5. Expected Deliverables</strong></label>
-        <textarea class="form-control" rows="3" [(ngModel)]="model.expectedDeliverables" name="expected" placeholder="Describe the expected outcomes and deliverables of your internship"></textarea>
-      </div>
-
-      <div class="col-12 d-flex gap-2 mt-3">
-        <button class="btn btn-success" [disabled]="!f.form.valid || loading()" type="submit">
-          @if (loading()) {
-            <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-          }
-          @if (loading()) {
-            <span>Submitting...</span>
-          }
-          @if (!loading()) {
-            <span>Submit</span>
-          }
-        </button>
-      </div>
-    </form>
+    }
   </div>
 </div>

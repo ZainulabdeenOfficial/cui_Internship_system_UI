@@ -8,12 +8,11 @@ import { PaginatePipe } from '../../shared/pagination/paginate.pipe';
 import { PaginatorComponent } from '../../shared/pagination/paginator';
 import { SiteService, SiteEvaluationCriteria, SiteEvaluationPayload } from '../../shared/services/site.service';
 import { SiteInternship } from '../../shared/models/site/internship.models';
-import { SkeletonListComponent } from '../../shared/components/skeleton';
 
 @Component({
   selector: 'app-site-supervisor',
   standalone: true,
-  imports: [CommonModule, FormsModule, PaginatePipe, PaginatorComponent, SkeletonListComponent],
+  imports: [CommonModule, FormsModule, PaginatePipe, PaginatorComponent],
   templateUrl: './site-supervisor.html',
   styleUrl: './site-supervisor.css'
 })

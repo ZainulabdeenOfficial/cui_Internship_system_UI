@@ -14,9 +14,10 @@ import { StudentService } from '../../shared/services/student.service';
 })
 export class AssignmentForm {
   selectedId = input<string | null>(null);
-  submitted =signal<boolean>(false);
+  submitted = signal<boolean>(false);
   loading = signal<boolean>(false);
   verificationLoading = signal<boolean>(false);
+  assignmentStatus = signal<'pending' | 'approved' | 'rejected'>('pending'); // Track approval status
   
   // AppEx B verification status from backend
   appexBData: any = null;
@@ -102,6 +103,12 @@ export class AssignmentForm {
 
   submit() {
     try {
+      // Check if already approved - prevent resubmission
+      if (this.assignmentStatus() === 'approved') {
+        this.toast.warning('Your Assignment & Agreement form has been approved and cannot be resubmitted');
+        return;
+      }
+      
       // Prevent resubmission
       if (this.submitted()) {
         this.toast.warning('Assignment & Agreement already submitted');
@@ -310,6 +317,16 @@ export class AssignmentForm {
       if (data && data.id) {
         this.appexBData = data;
         this.submitted.set(true);
+        
+        // Track approval status from API
+        const status = data.status || data.assignment?.status || 'pending';
+        if (status === 'approved' || status === 'APPROVED') {
+          this.assignmentStatus.set('approved');
+        } else if (status === 'rejected' || status === 'REJECTED') {
+          this.assignmentStatus.set('rejected');
+        } else {
+          this.assignmentStatus.set('pending');
+        }
         
         // Update model with admin-filled data
         if (data.companyName) this.model.organization = data.companyName;

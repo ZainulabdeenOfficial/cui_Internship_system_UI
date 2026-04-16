@@ -395,8 +395,14 @@
         </div>
 
         <div class="col-12 d-flex gap-2 mt-2">
-          <button class="btn btn-success" [disabled]="!iapf.form.valid || appexASubmitted" type="submit">Submit Internship Approval</button>
-          <div *ngIf="appexASubmitted" class="alert alert-success mb-0 ms-2">
+          <button class="btn btn-success" [disabled]="!iapf.form.valid || (appexASubmitted && appexAStatus === 'approved')" type="submit">
+            {{ appexAStatus === 'approved' ? 'Already Approved - Cannot Resubmit' : 'Submit Internship Approval' }}
+          </button>
+          <div *ngIf="appexASubmitted && appexAStatus !== 'approved'" class="alert alert-info mb-0 ms-2">
+            <i class="bi bi-info-circle me-2"></i>
+            <span>Form submitted. Waiting for review.</span>
+          </div>
+          <div *ngIf="appexASubmitted && appexAStatus === 'approved'" class="alert alert-success mb-0 ms-2">
             <i class="bi bi-check-circle-fill me-2"></i>
             Internship Approval  submitted successfully. Waiting for review.
           </div>

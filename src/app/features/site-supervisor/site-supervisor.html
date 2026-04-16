@@ -90,12 +90,10 @@
       }
 
       <!-- Students Table -->
-      <!-- Skeleton Loading -->
-      <app-skeleton-list 
-        [isLoading]="loadingData.students" 
-        [count]="5" 
-        [type]="'table-row'">
-      </app-skeleton-list>
+      <!-- Loading State -->
+      @if (loadingData.students) {
+        <div class="spinner-border text-primary" role="status"></div>
+      }
 
       @if (filteredStudents().length > 0 && !loadingData.students) {
         <div class="table-responsive">

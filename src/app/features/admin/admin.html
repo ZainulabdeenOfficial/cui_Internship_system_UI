@@ -624,12 +624,14 @@
               </div>
             </div>
 
-            <!-- Loading State with Skeleton -->
-            <app-skeleton-list 
-              [isLoading]="complaintsLoading" 
-              [count]="5" 
-              [type]="'table-row'">
-            </app-skeleton-list>
+            <!-- Loading State -->
+            @if (complaintsLoading) {
+              <div class="text-center py-4">
+                <div class="spinner-border text-primary" role="status">
+                  <span class="visually-hidden">Loading...</span>
+                </div>
+              </div>
+            }
 
             <!-- Error State -->
             @if (complaintsError && !complaintsLoading) {

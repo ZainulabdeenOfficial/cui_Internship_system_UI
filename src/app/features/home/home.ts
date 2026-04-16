@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, AfterViewInit } from '@angular/core';
+import { Component, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { StoreService } from '../../shared/services/store.service';
@@ -10,36 +10,41 @@ import { StoreService } from '../../shared/services/store.service';
   templateUrl: './home.html',
   styleUrl: './home.css'
 })
-export class Home implements OnInit, AfterViewInit, OnDestroy {
-  constructor(public store: StoreService) {}
+export class Home {
+  // ✅ Inject service instead of constructor parameter
+  store = inject(StoreService);
+
   // Carousel slides (uses your assets/1.jpg, 2.jpg, 3.jpg)
-  slides = [
+  readonly slides = [
     { img: '/assets/1.jpg', alt: 'CUI campus view 1', align: 'text-start', title: 'CUI Internship System', desc: 'Unified portal for Students, Faculty, Site Supervisors and the Internship Office.', showCtas: true },
     { img: '/assets/2.jpg', alt: 'CUI campus view 2', align: 'text-center', title: 'Streamlined Workflow', desc: 'Approvals, agreements, weekly logs, and final reports in one place.', showCtas: true },
     { img: '/assets/3.jpg', alt: 'CUI campus view 3', align: 'text-end', title: 'Faculty & Site Evaluation', desc: 'Per-report scoring, approvals, and batch marking for supervisors.', showCtas: true }
   ];
-  heroHeight = 600;
-  ready = false; // triggers staged animations once view initialized
+  readonly heroHeight = 600;
+
+  // ✅ Replace plain properties with signals
+  ready = signal(false); // triggers staged animations once view initialized
 
   // Announcements enhancements
-  announcementsPerPage = 5;
-  currentAnnouncementsPage = 1;
-  expandedAnnouncements = new Set<string>();
-  messageCharLimit = 150;
-  archivedAfterDays = 30;
+  readonly announcementsPerPage = 5;
+  currentAnnouncementsPage = signal(1);
+  expandedAnnouncements = signal(new Set<string>());
+  readonly messageCharLimit = 150;
+  readonly archivedAfterDays = 30;
 
-  get studentsCount() { return this.store.students().length; }
-  get supervisorsCount() { return this.store.facultySupervisors().length + this.store.siteSupervisors().length; }
-  get companiesCount() { return this.store.companies().length; }
-  get departmentsCount() {
+  // ✅ Replace getters with computed()
+  studentsCount = computed(() => this.store.students().length);
+  supervisorsCount = computed(() => this.store.facultySupervisors().length + this.store.siteSupervisors().length);
+  companiesCount = computed(() => this.store.companies().length);
+  departmentsCount = computed(() => {
     const set = new Set<string>();
     for (const f of this.store.facultySupervisors()) {
       if (f.department) set.add(f.department);
     }
     return set.size;
-  }
+  });
 
-  get sortedAndFilteredAnnouncements() {
+  sortedAndFilteredAnnouncements = computed(() => {
     const now = new Date();
     const allAnns = this.store.announcements() || [];
     
@@ -56,24 +61,24 @@ export class Home implements OnInit, AfterViewInit, OnDestroy {
       if (!a.pinned && b.pinned) return 1;
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
-  }
+  });
 
-  get paginatedAnnouncements() {
-    const start = (this.currentAnnouncementsPage - 1) * this.announcementsPerPage;
+  paginatedAnnouncements = computed(() => {
+    const start = (this.currentAnnouncementsPage() - 1) * this.announcementsPerPage;
     const end = start + this.announcementsPerPage;
-    return this.sortedAndFilteredAnnouncements.slice(start, end);
-  }
+    return this.sortedAndFilteredAnnouncements().slice(start, end);
+  });
 
-  get totalAnnouncementsPages() {
-    return Math.ceil(this.sortedAndFilteredAnnouncements.length / this.announcementsPerPage);
-  }
+  totalAnnouncementsPages = computed(() => {
+    return Math.ceil(this.sortedAndFilteredAnnouncements().length / this.announcementsPerPage);
+  });
 
-  get hasMoreAnnouncements() {
-    return this.currentAnnouncementsPage < this.totalAnnouncementsPages;
-  }
+  hasMoreAnnouncements = computed(() => {
+    return this.currentAnnouncementsPage() < this.totalAnnouncementsPages();
+  });
 
   getMessagePreview(message: string): string {
-    if (this.expandedAnnouncements.has(message)) return message;
+    if (this.expandedAnnouncements().has(message)) return message;
     return message.length > this.messageCharLimit ? message.substring(0, this.messageCharLimit) + '...' : message;
   }
 
@@ -82,20 +87,20 @@ export class Home implements OnInit, AfterViewInit, OnDestroy {
   }
 
   toggleExpandMessage(message: string): void {
-    if (this.expandedAnnouncements.has(message)) {
-      this.expandedAnnouncements.delete(message);
-    } else {
-      this.expandedAnnouncements.add(message);
-    }
+    // ✅ Use signal.update() instead of direct mutation
+    this.expandedAnnouncements.update(set => {
+      set.has(message) ? set.delete(message) : set.add(message);
+      return set;
+    });
   }
 
   isMessageExpanded(message: string): boolean {
-    return this.expandedAnnouncements.has(message);
+    return this.expandedAnnouncements().has(message);
   }
 
   loadMoreAnnouncements(): void {
-    if (this.hasMoreAnnouncements) {
-      this.currentAnnouncementsPage++;
+    if (this.hasMoreAnnouncements()) {
+      this.currentAnnouncementsPage.update(page => page + 1);
     }
   }
 
@@ -131,30 +136,36 @@ export class Home implements OnInit, AfterViewInit, OnDestroy {
     return this.getDaysOld(createdAt) > this.archivedAfterDays;
   }
 
-  ngOnInit(): void {
-    // Remove any auth background classes if present and set a plain body background
-    document.body.classList.add('home-solid');
-    
-    // Load announcements from API
-    this.loadAnnouncements();
+  // ✅ Use constructor with effect() instead of lifecycle hooks
+  constructor() {
+    // Load announcements from API on component init
+    effect(() => {
+      this.loadAnnouncements();
+    });
+
+    // Set ready state with animation deferred to next microtask
+    effect(() => {
+      queueMicrotask(() => {
+        this.ready.set(true);
+        document.body.classList.add('home-solid');
+      });
+    });
+
+    // Cleanup on destroy
+    effect(() => {
+      return () => {
+        document.body.classList.remove('home-solid');
+      };
+    });
   }
 
   private async loadAnnouncements(): Promise<void> {
     try {
       await this.store.loadAnnouncements();
       // Reset pagination when reloading
-      this.currentAnnouncementsPage = 1;
+      this.currentAnnouncementsPage.set(1);
     } catch (error) {
       console.error('Failed to load announcements:', error);
     }
-  }
-
-  ngAfterViewInit(): void {
-    // Defer setting ready to next microtask to ensure DOM painted
-    queueMicrotask(() => { this.ready = true });
-  }
-
-  ngOnDestroy(): void {
-    document.body.classList.remove('home-solid');
   }
 }

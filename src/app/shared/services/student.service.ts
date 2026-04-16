@@ -598,45 +598,15 @@ export class StudentService {
 
   // POST /api/student/appex-c
   async submitAppExC(payload: any) {
-    // Helper to convert keyActivities to comma-separated string
-    const buildKeyActivities = (payload: any): string => {
-      const activities = payload.keyActivities;
-      if (!activities || typeof activities !== 'object') {
-        return payload.keyActivities || '';
-      }
-      
-      const selected: string[] = [];
-      if (activities.coding) selected.push('Coding');
-      if (activities.testing) selected.push('Testing');
-      if (activities.documentation) selected.push('Documentation');
-      if (activities.dataAnalysis) selected.push('Data Analysis');
-      if (activities.research) selected.push('Research');
-      if (activities.technicalSupport) selected.push('Technical Support');
-      if (activities.dashboard) selected.push('Dashboard/Report Creation');
-      if (activities.other && activities.otherText) selected.push(`Other: ${activities.otherText}`);
-      
-      return selected.length > 0 ? selected.join(', ') : '';
-    };
-
-    // Build clean payload - only include fields that have values
+    // Build clean payload matching API schema exactly
+    // All fields are already strings from the form
     const cleanPayload: any = {
-      organizationOverview: payload.organizationOverview || '',
-      keyActivities: buildKeyActivities(payload) || ''
+      organizationOverview: payload.organizationOverview?.trim() || '',
+      roleDescription: payload.roleDescription?.trim() || '',
+      keyActivities: payload.keyActivities?.trim() || '',
+      toolsTechnologies: payload.toolsTechnologies?.trim() || '',
+      expectedDeliverables: payload.expectedDeliverables?.trim() || ''
     };
-    
-    // Add optional fields only if they have values
-    if (payload.roleDescription) {
-      cleanPayload.roleDescription = payload.roleDescription;
-    }
-    
-    const toolsTech = payload.toolsTechnologies || payload.tools;
-    if (toolsTech) {
-      cleanPayload.toolsTechnologies = toolsTech;
-    }
-    
-    if (payload.expectedDeliverables) {
-      cleanPayload.expectedDeliverables = payload.expectedDeliverables;
-    }
     
     const url = this.abs('/api/student/appex-c');
     const token = this.getAuthToken();
@@ -648,51 +618,27 @@ export class StudentService {
 
   // PUT /api/student/appex-c
   async updateAppExC(payload: any) {
-    // Helper to convert keyActivities to comma-separated string
-    const buildKeyActivities = (payload: any): string => {
-      const activities = payload.keyActivities;
-      if (!activities || typeof activities !== 'object') {
-        return payload.keyActivities || '';
-      }
-      
-      const selected: string[] = [];
-      if (activities.coding) selected.push('Coding');
-      if (activities.testing) selected.push('Testing');
-      if (activities.documentation) selected.push('Documentation');
-      if (activities.dataAnalysis) selected.push('Data Analysis');
-      if (activities.research) selected.push('Research');
-      if (activities.technicalSupport) selected.push('Technical Support');
-      if (activities.dashboard) selected.push('Dashboard/Report Creation');
-      if (activities.other && activities.otherText) selected.push(`Other: ${activities.otherText}`);
-      
-      return selected.length > 0 ? selected.join(', ') : '';
-    };
-
-    // Build payload with only non-empty fields
+    // Build payload with the string fields as-is
     const cleanPayload: any = {};
     
     if (payload.organizationOverview) {
-      cleanPayload.organizationOverview = payload.organizationOverview;
+      cleanPayload.organizationOverview = payload.organizationOverview.trim();
     }
     
     if (payload.roleDescription) {
-      cleanPayload.roleDescription = payload.roleDescription;
+      cleanPayload.roleDescription = payload.roleDescription.trim();
     }
     
     if (payload.keyActivities) {
-      const keyActivitiesStr = buildKeyActivities(payload);
-      if (keyActivitiesStr) {
-        cleanPayload.keyActivities = keyActivitiesStr;
-      }
+      cleanPayload.keyActivities = payload.keyActivities.trim();
     }
     
-    const toolsTech = payload.toolsTechnologies || payload.tools;
-    if (toolsTech) {
-      cleanPayload.toolsTechnologies = toolsTech;
+    if (payload.toolsTechnologies) {
+      cleanPayload.toolsTechnologies = payload.toolsTechnologies.trim();
     }
     
     if (payload.expectedDeliverables) {
-      cleanPayload.expectedDeliverables = payload.expectedDeliverables;
+      cleanPayload.expectedDeliverables = payload.expectedDeliverables.trim();
     }
     
     // Ensure at least one field is being updated

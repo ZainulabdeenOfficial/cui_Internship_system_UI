@@ -14,7 +14,7 @@ import { CreateAccountRequest } from '../../shared/models/admin/create-account.m
 @Component({
   selector: 'app-admin',
   standalone: true,
-  imports: [CommonModule, FormsModule, PaginatePipe, PaginatorComponent, SkeletonListComponent],
+  imports: [CommonModule, FormsModule, PaginatePipe, PaginatorComponent],
   templateUrl: './admin.html',
   styleUrl: './admin.css'
 })

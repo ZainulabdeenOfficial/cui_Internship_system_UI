@@ -473,6 +473,7 @@ export class FacultySupervisor implements OnInit {
       this.toast.danger(msg);
     } finally {
       this.processingItems.delete(itemId);
+      this.cdr.markForCheck(); // Trigger change detection to update button disabled state
     }
   }
 
@@ -578,6 +579,7 @@ export class FacultySupervisor implements OnInit {
     } finally {
       // Always remove from processing set to restore button state
       this.processingItems.delete(itemId);
+      this.cdr.markForCheck(); // Trigger change detection to update button disabled state
       console.log('🏁 [Faculty - Approve APEX B] Processing completed, button state restored');
     }
   }
