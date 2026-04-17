@@ -1576,7 +1576,7 @@
                                 [class.text-bg-warning]="finalResult.totalMarks >= 50 && finalResult.totalMarks < 70"
                                 [class.text-bg-danger]="finalResult.totalMarks < 50"
                                 style="font-size: 1rem;">
-                                {{ finalResult.totalMarks }}
+                                {{ finalResult.totalMarks }}/100
                               </span>
                               <br>
                               <small style="color: #666; display: block; margin-top: 4px;">
@@ -1588,18 +1588,18 @@
                                   {{ finalResult.status || 'Pending' }}
                                 </span>
                               </small>
-                              <!-- Marks breakdown -->
+                              <!-- Marks breakdown with correct maximum marks -->
                               <div style="font-size: 0.75rem; color: #555; margin-top: 4px; line-height: 1.5;">
-                                @if (finalResult.facultyMarks) {
-                                  <div>📚 Faculty: {{ finalResult.facultyMarks }}/20</div>
+                                @if (finalResult.facultyMarks !== undefined && finalResult.facultyMarks !== null) {
+                                  <div>📚 Faculty: {{ finalResult.facultyMarks }}/40</div>
                                 }
-                                @if (finalResult.siteMarks) {
-                                  <div>🏢 Site: {{ finalResult.siteMarks }}/20</div>
+                                @if (finalResult.siteMarks !== undefined && finalResult.siteMarks !== null) {
+                                  <div>🏢 Site: {{ finalResult.siteMarks }}/40</div>
                                 }
-                                @if (finalResult.officeMarks) {
+                                @if (finalResult.officeMarks !== undefined && finalResult.officeMarks !== null) {
                                   <div>🏛️ Office: {{ finalResult.officeMarks }}/20</div>
                                 }
-                                @if (finalResult.presentationMarks) {
+                                @if (finalResult.presentationMarks !== undefined && finalResult.presentationMarks !== null) {
                                   <div>🎤 Presentation: {{ finalResult.presentationMarks }}/20</div>
                                 }
                               </div>
