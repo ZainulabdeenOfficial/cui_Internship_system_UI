@@ -1241,62 +1241,6 @@
           }
 
           <!-- Internship Details Summary -->
-          @if (!loadingInternshipDetails && internshipDetails) {
-            <div class="card border-info mb-3">
-              <div class="card-header bg-info text-white">
-                <i class="bi bi-info-circle-fill me-2"></i>
-                <strong>Internship Information</strong>
-              </div>
-              <div class="card-body">
-                <div class="row g-3">
-                  <div class="col-md-6">
-                    <small class="text-muted d-block">Internship ID</small>
-                    <strong style="color: #333;">{{ internshipDetails.id || 'N/A' }}</strong>
-                  </div>
-                  <div class="col-md-6">
-                    <small class="text-muted d-block">Type</small>
-                    <strong style="color: #333;">{{ (internshipDetails.type || internshipDetails.internshipType || 'ONSITE') | uppercase }}</strong>
-                  </div>
-                  <div class="col-md-6">
-                    <small class="text-muted d-block">Status</small>
-                    <span class="badge"
-                      [class.text-bg-success]="(internshipDetails.status || 'Active').toLowerCase() === 'active' || (internshipDetails.status || 'Active').toLowerCase() === 'completed'"
-                      [class.text-bg-warning]="(internshipDetails.status || 'Active').toLowerCase() === 'ongoing' || (internshipDetails.status || 'Active').toLowerCase() === 'pending'"
-                      [class.text-bg-secondary]="!internshipDetails.status">
-                      {{ (internshipDetails.status || 'Active') | titlecase }}
-                    </span>
-                  </div>
-                  <div class="col-md-6">
-                    <small class="text-muted d-block">Approved Status</small>
-                    <span class="badge"
-                      [class.text-bg-success]="selectedStudentForEval?.approvalStatus?.toLowerCase() === 'approved' || selectedStudentForEval?.approvalStatus?.toLowerCase() === 'verified'"
-                      [class.text-bg-warning]="selectedStudentForEval?.approvalStatus?.toLowerCase() === 'pending'"
-                      [class.text-bg-secondary]="!selectedStudentForEval?.approvalStatus">
-                      {{ (selectedStudentForEval?.approvalStatus || 'Pending') | titlecase }}
-                    </span>
-                  </div>
-                  <div class="col-md-6">
-                    <small class="text-muted d-block">Start Date</small>
-                    <strong style="color: #333;">{{ internshipDetails.startDate ? (internshipDetails.startDate | date:'mediumDate') : 'Not Set' }}</strong>
-                  </div>
-                  <div class="col-md-6">
-                    <small class="text-muted d-block">End Date</small>
-                    <strong style="color: #333;">{{ internshipDetails.endDate ? (internshipDetails.endDate | date:'mediumDate') : 'Not Set' }}</strong>
-                  </div>
-                </div>
-              </div>
-            </div>
-          } @else if (loadingInternshipDetails) {
-            <div class="card border-info mb-3">
-              <div class="card-header bg-info text-white">
-                <div class="spinner-border spinner-border-sm me-2" role="status">
-                  <span class="visually-hidden">Loading...</span>
-                </div>
-                <strong>Loading Internship Information...</strong>
-              </div>
-            </div>
-          }
-
           <!-- Show form only after internship details are loaded AND no evaluation exists yet -->
           @if (!loadingInternshipDetails && internshipDetails && !officeEvalResult) {
             <!-- Submit form -->
