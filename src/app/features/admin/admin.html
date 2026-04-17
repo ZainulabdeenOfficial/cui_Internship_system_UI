@@ -1539,7 +1539,6 @@
                     <th style="color: #333; font-weight: 600;">Reg. No</th>
                     <th style="color: #333; font-weight: 600;">Company</th>
                     <th style="color: #333; font-weight: 600;">Status</th>
-                    <th style="color: #333; font-weight: 600;">Final Result</th>
                     <th style="color: #333; font-weight: 600;">Action</th>
                   </tr>
                 </thead>
@@ -1560,64 +1559,6 @@
                           [class.text-bg-secondary]="!(internship.status || '')">
                           {{ internship.status || 'pending' }}
                         </span>
-                      </td>
-                      <td style="color: #333;">
-                        @if (internship.loadingFinalResult) {
-                          <div class="spinner-border spinner-border-sm" role="status" title="Loading final result...">
-                            <span class="visually-hidden">Loading...</span>
-                          </div>
-                        } @else {
-                          @let finalResult = getInternshipFinalResult(internship);
-                          @if (finalResult && finalResult.totalMarks) {
-                            <!-- Final Result with marks -->
-                            <div>
-                              <span class="badge"
-                                [class.text-bg-success]="finalResult.totalMarks >= 70"
-                                [class.text-bg-warning]="finalResult.totalMarks >= 50 && finalResult.totalMarks < 70"
-                                [class.text-bg-danger]="finalResult.totalMarks < 50"
-                                style="font-size: 1rem;">
-                                {{ finalResult.totalMarks }}/100
-                              </span>
-                              <br>
-                              <small style="color: #666; display: block; margin-top: 4px;">
-                                <span class="badge"
-                                  [class.text-bg-success]="(finalResult.status || '').toLowerCase() === 'pass'"
-                                  [class.text-bg-danger]="(finalResult.status || '').toLowerCase() === 'fail'"
-                                  [class.text-bg-warning]="(finalResult.status || '').toLowerCase() === 'pending'"
-                                  [class.text-bg-secondary]="!(finalResult.status || '')">
-                                  {{ finalResult.status || 'Pending' }}
-                                </span>
-                              </small>
-                              <!-- Marks breakdown with correct maximum marks -->
-                              <div style="font-size: 0.75rem; color: #555; margin-top: 4px; line-height: 1.5;">
-                                @if (finalResult.facultyMarks !== undefined && finalResult.facultyMarks !== null) {
-                                  <div>📚 Faculty: {{ finalResult.facultyMarks }}/40</div>
-                                }
-                                @if (finalResult.siteMarks !== undefined && finalResult.siteMarks !== null) {
-                                  <div>🏢 Site: {{ finalResult.siteMarks }}/40</div>
-                                }
-                                @if (finalResult.officeMarks !== undefined && finalResult.officeMarks !== null) {
-                                  <div>🏛️ Office: {{ finalResult.officeMarks }}/20</div>
-                                }
-                                @if (finalResult.presentationMarks !== undefined && finalResult.presentationMarks !== null) {
-                                  <div>🎤 Presentation: {{ finalResult.presentationMarks }}/20</div>
-                                }
-                              </div>
-                            </div>
-                          } @else if (internship.studentFinalResult) {
-                            <!-- Data loaded but no marks yet -->
-                            <span class="badge text-bg-warning" title="Evaluations pending">
-                              Pending
-                            </span>
-                            <br>
-                            <small style="color: #d97706; font-size: 0.75rem; display: block; margin-top: 2px;">
-                              Awaiting evaluations
-                            </small>
-                          } @else {
-                            <!-- No data at all -->
-                            <span class="text-muted">—</span>
-                          }
-                        }
                       </td>
                       <td style="color: #333;">
                         <button class="btn btn-sm btn-outline-primary" (click)="selectStudentForEval(prepareStudentForEval(internship))">
@@ -1664,8 +1605,8 @@
             </div>
           }
 
-          <!-- Internship Details Summary from Final Result API -->
-          @if (studentFinalResult?.internship || internshipDetails || selectedStudentForEval) {
+          <!-- Internship Details Summary -->
+          @if (!loadingInternshipDetails && internshipDetails) {
             <div class="card border-info mb-3">
               <div class="card-header bg-info text-white">
                 <i class="bi bi-info-circle-fill me-2"></i>
@@ -1675,19 +1616,19 @@
                 <div class="row g-3">
                   <div class="col-md-6">
                     <small class="text-muted d-block">Internship ID</small>
-                    <strong style="color: #333;">{{ selectedStudentForEval?.internshipId || internshipDetails?.id || studentFinalResult?.internship?.id || 'N/A' }}</strong>
+                    <strong style="color: #333;">{{ internshipDetails.id || 'N/A' }}</strong>
                   </div>
                   <div class="col-md-6">
                     <small class="text-muted d-block">Type</small>
-                    <strong style="color: #333;">{{ (studentFinalResult?.internship?.type || studentFinalResult?.internship?.internshipType || internshipDetails?.type || internshipDetails?.internshipType || 'ONSITE') | uppercase }}</strong>
+                    <strong style="color: #333;">{{ (internshipDetails.type || internshipDetails.internshipType || 'ONSITE') | uppercase }}</strong>
                   </div>
                   <div class="col-md-6">
                     <small class="text-muted d-block">Status</small>
                     <span class="badge"
-                      [class.text-bg-success]="(studentFinalResult?.internship?.status || internshipDetails?.status || 'Active').toLowerCase() === 'active' || (studentFinalResult?.internship?.status || internshipDetails?.status || 'Active').toLowerCase() === 'completed'"
-                      [class.text-bg-warning]="(studentFinalResult?.internship?.status || internshipDetails?.status || 'Active').toLowerCase() === 'ongoing' || (studentFinalResult?.internship?.status || internshipDetails?.status || 'Active').toLowerCase() === 'pending'"
-                      [class.text-bg-secondary]="!studentFinalResult?.internship?.status && !internshipDetails?.status">
-                      {{ (studentFinalResult?.internship?.status || internshipDetails?.status || 'Active') | titlecase }}
+                      [class.text-bg-success]="(internshipDetails.status || 'Active').toLowerCase() === 'active' || (internshipDetails.status || 'Active').toLowerCase() === 'completed'"
+                      [class.text-bg-warning]="(internshipDetails.status || 'Active').toLowerCase() === 'ongoing' || (internshipDetails.status || 'Active').toLowerCase() === 'pending'"
+                      [class.text-bg-secondary]="!internshipDetails.status">
+                      {{ (internshipDetails.status || 'Active') | titlecase }}
                     </span>
                   </div>
                   <div class="col-md-6">
@@ -1701,87 +1642,22 @@
                   </div>
                   <div class="col-md-6">
                     <small class="text-muted d-block">Start Date</small>
-                    <strong style="color: #333;">{{ (studentFinalResult?.internship?.startDate || internshipDetails?.startDate) ? ((studentFinalResult?.internship?.startDate || internshipDetails?.startDate) | date:'mediumDate') : 'Not Set' }}</strong>
+                    <strong style="color: #333;">{{ internshipDetails.startDate ? (internshipDetails.startDate | date:'mediumDate') : 'Not Set' }}</strong>
                   </div>
                   <div class="col-md-6">
                     <small class="text-muted d-block">End Date</small>
-                    <strong style="color: #333;">{{ (studentFinalResult?.internship?.endDate || internshipDetails?.endDate) ? ((studentFinalResult?.internship?.endDate || internshipDetails?.endDate) | date:'mediumDate') : 'Not Set' }}</strong>
+                    <strong style="color: #333;">{{ internshipDetails.endDate ? (internshipDetails.endDate | date:'mediumDate') : 'Not Set' }}</strong>
                   </div>
                 </div>
               </div>
             </div>
-
-            <!-- Faculty Supervisor Information -->
-            @if (studentFinalResult.internship.faculty) {
-              <div class="card border-primary mb-3">
-                <div class="card-header bg-primary text-white">
-                  <i class="bi bi-person-badge me-2"></i>Faculty Supervisor
+          } @else if (loadingInternshipDetails) {
+            <div class="card border-info mb-3">
+              <div class="card-header bg-info text-white">
+                <div class="spinner-border spinner-border-sm me-2" role="status">
+                  <span class="visually-hidden">Loading...</span>
                 </div>
-                <div class="card-body">
-                  <div class="row g-2">
-                    <div class="col-md-6">
-                      <small class="text-muted d-block">Name</small>
-                      <strong style="color: #333;">{{ studentFinalResult.internship.faculty.name || 'N/A' }}</strong>
-                    </div>
-                    <div class="col-md-6">
-                      <small class="text-muted d-block">Email</small>
-                      <a href="mailto:{{ studentFinalResult.internship.faculty.email }}" style="color: #0066cc;">
-                        {{ studentFinalResult.internship.faculty.email || 'N/A' }}
-                      </a>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            }
-
-            <!-- Site Supervisor Information -->
-            @if (studentFinalResult.internship.site) {
-              <div class="card border-success mb-3">
-                <div class="card-header bg-success text-white">
-                  <i class="bi bi-building me-2"></i>Site Supervisor
-                </div>
-                <div class="card-body">
-                  <div class="row g-2">
-                    <div class="col-md-6">
-                      <small class="text-muted d-block">Name</small>
-                      <strong style="color: #333;">{{ studentFinalResult.internship.site.name || 'N/A' }}</strong>
-                    </div>
-                    <div class="col-md-6">
-                      <small class="text-muted d-block">Email</small>
-                      <a href="mailto:{{ studentFinalResult.internship.site.email }}" target="_blank" style="color: #0066cc;">
-                        {{ studentFinalResult.internship.site.email || 'N/A' }}
-                      </a>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            }
-          }
-
-          <!-- Alternative: Show internship details if available (fallback) -->
-          @if (internshipDetails && !loadingInternshipDetails && !studentFinalResult?.internship) {
-            <div class="alert alert-success mb-3" style="background-color: #d4edda; border-color: #c3e6cb; color: #155724;">
-              <div class="d-flex justify-content-between align-items-start">
-                <div>
-                  <i class="bi bi-check-circle-fill me-2"></i>
-                  <strong>Internship Information</strong>
-                  <div style="font-size: 0.9rem; margin-top: 0.5rem; color: #333;">
-                    <strong>Company:</strong> {{ internshipDetails.companyName || internshipDetails.company?.name || 'Not Assigned' }}<br>
-                    <strong>Role:</strong> {{ internshipDetails.internshipRole || 'Not Assigned' }}<br>
-                    <strong>Type:</strong> {{ (internshipDetails.type || internshipDetails.internshipType || 'ONSITE') | uppercase }}<br>
-                    <strong>Status:</strong> {{ (internshipDetails.status || internshipDetails.internshipStatus || 'Active') | titlecase }}<br>
-                    <strong>Approved Status:</strong>
-                    <span class="badge"
-                      [class.text-bg-success]="selectedStudentForEval?.approvalStatus?.toLowerCase() === 'approved' || selectedStudentForEval?.approvalStatus?.toLowerCase() === 'verified'"
-                      [class.text-bg-warning]="selectedStudentForEval?.approvalStatus?.toLowerCase() === 'pending'"
-                      [class.text-bg-secondary]="!selectedStudentForEval?.approvalStatus">
-                      {{ (selectedStudentForEval?.approvalStatus || 'Pending') | titlecase }}
-                    </span><br>
-                    @if (internshipDetails.finalResult) {
-                      <strong>Current Result:</strong> {{ internshipDetails.finalResult }}%
-                    }
-                  </div>
-                </div>
+                <strong>Loading Internship Information...</strong>
               </div>
             </div>
           }
@@ -2054,9 +1930,3 @@
         </div>
       </div>
       }
-
-    </div>
-  </div>
-  }
-
-}
