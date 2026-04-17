@@ -892,11 +892,10 @@ export class AdminService {
    * Response: { message?: string, announcements?: Announcement[] }
    */
   async getAnnouncements(): Promise<Array<{ id: string; message: string; title?: string; link?: string; pinned?: boolean; createdAt: string; createdBy?: any }>> {
-    const base = environment.apiBaseUrl.replace(/\/$/, '');
-    const path = '/api/announcements';
-    const url = `${base}${path}`;
+    // Use public API endpoint for announcements (no authentication required)
+    const publicApiUrl = 'https://cui-internship-git-dev-talhas-projects-59c8907e.vercel.app/api/announcements';
     try {
-      const res = await firstValueFrom(this.http.get<any>(url, { headers: await this.authHeaders() }));
+      const res = await firstValueFrom(this.http.get<any>(publicApiUrl));
       const list: any[] = Array.isArray(res?.announcements) ? res.announcements : (Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []));
       return list.map((x: any) => ({
         id: (x.id ?? x._id ?? '').toString(),
@@ -908,6 +907,7 @@ export class AdminService {
         createdBy: x.createdBy
       })).filter(a => !!a.id);
     } catch (error) {
+      console.warn('Failed to load announcements from public API:', error);
       // If endpoint doesn't exist, return empty array
       return [];
     }

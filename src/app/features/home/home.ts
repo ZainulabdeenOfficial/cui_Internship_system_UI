@@ -138,24 +138,10 @@ export class Home {
 
   // ✅ Use constructor with effect() instead of lifecycle hooks
   constructor() {
-    // Load announcements from API on component init (only if user is authenticated)
+    // Load announcements from public API on component init
     effect(() => {
-      // Check if user has a valid token before attempting to load announcements
-      try {
-        const hasToken = !!(
-          sessionStorage.getItem('authToken') || 
-          sessionStorage.getItem('accessToken') || 
-          sessionStorage.getItem('token') ||
-          localStorage.getItem('authToken') || 
-          localStorage.getItem('accessToken')
-        );
-        // Only load announcements if user is authenticated (has a token)
-        if (hasToken) {
-          this.loadAnnouncements();
-        }
-      } catch {
-        // If storage is blocked, skip announcements loading
-      }
+      // No token check needed - announcements are loaded from public API
+      this.loadAnnouncements();
     });
 
     // Set ready state with animation deferred to next microtask
