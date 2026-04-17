@@ -16,7 +16,7 @@
 
   <!-- Clean unified tab switcher using Angular 17+ control flow -->
   @switch (currentTab) {
-    @case ('requests') {
+  @case ('requests') {
     <div class="row g-3 mt-0">
       <div class="col-12">
         <div class="card">
@@ -758,7 +758,7 @@
           </div>
         </div>
       </div>
-  </div>
+    </div>
   }
   @case ('scheme') {
     <div class="row g-3 mt-0">
@@ -772,8 +772,8 @@
         </div>
       </div>
     </div>
-    }
-    @case ('formsRequest') {
+  }
+  @case ('formsRequest') {
     <div class="row g-3 mt-0">
       <div class="col-12">
         <div class="card">
@@ -1128,374 +1128,9 @@
         </div>
       </div>
     </div>
-    
-    <!-- Modal for APEX B Details -->
-    @if (showApexBModal && selectedApexBForm) {
-      <div class="modal show d-block" tabindex="-1" style="background: rgba(0,0,0,0.5);">
-        <div class="modal-dialog modal-lg modal-dialog-scrollable">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h5 class="modal-title">APEX B Form Details</h5>
-              <button type="button" class="btn-close" (click)="closeApexBModal()"></button>
-            </div>
-            <div class="modal-body">
-              <!-- Student Information Card -->
-              <div class="card mb-3">
-                <div class="card-header bg-light"><strong>Student Information</strong></div>
-                <div class="card-body">
-                  <div class="row">
-                    <div class="col-md-6 mb-2">
-                      <strong>Name:</strong> {{ selectedApexBForm.student?.name || selectedApexBForm.name || 'N/A' }}
-                    </div>
-                    <div class="col-md-6 mb-2">
-                      <strong>Email:</strong> {{ selectedApexBForm.student?.email || selectedApexBForm.email || 'N/A' }}
-                    </div>
-                    <div class="col-md-6 mb-2">
-                      <strong>Registration No:</strong> {{ selectedApexBForm.student?.regNo || 'N/A' }}
-                    </div>
-                    <div class="col-md-6 mb-2">
-                      <strong>Student ID:</strong> {{ selectedApexBForm.student?.id || 'N/A' }}
-                    </div>
-                  </div>
-                </div>
-              </div>
+  }
 
-              <!-- Application Details Card -->
-              <div class="card mb-3">
-                <div class="card-header bg-light"><strong>Application Details</strong></div>
-                <div class="card-body">
-                  <div class="row">
-                    <div class="col-md-6 mb-2">
-                      <strong>Form ID:</strong> {{ selectedApexBForm.id }}
-                    </div>
-                    <div class="col-md-6 mb-2">
-                      <strong>Status:</strong> 
-                      <span class="text-dark fw-bold ms-2">
-                        {{ selectedApexBForm.status || 'pending' }}
-                      </span>
-                    </div>
-                    <div class="col-md-6 mb-2">
-                      <strong>Degree Program:</strong> {{ selectedApexBForm.degreeProgram || 'N/A' }}
-                    </div>
-                    <div class="col-md-6 mb-2">
-                      <strong>Semester:</strong> {{ selectedApexBForm.semester || 'N/A' }}
-                    </div>
-                    <div class="col-md-6 mb-2">
-                      <strong>Contact No:</strong> {{ selectedApexBForm.contactNo || 'N/A' }}
-                    </div>
-                    <div class="col-md-6 mb-2">
-                      <strong>Preferred Field:</strong> {{ selectedApexBForm.preferredField || 'N/A' }}
-                    </div>
-                    <div class="col-md-6 mb-2">
-                      <strong>Agreement Accepted:</strong> 
-                      <span class="badge ms-2" [class.text-bg-success]="selectedApexBForm.agreementAccepted" [class.text-bg-secondary]="!selectedApexBForm.agreementAccepted">
-                        {{ selectedApexBForm.agreementAccepted ? 'Yes' : 'No' }}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Add Internship Details Form (only shown when needed) -->
-              @if (apexBDetails.studentId) {
-                <div class="card mb-3">
-                  <div class="card-header bg-light"><strong>Add Internship Details</strong></div>
-                  <div class="card-body">
-                    <form #apexBForm="ngForm">
-                      <div class="mb-3">
-                        <label class="form-label">Company Name <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" [(ngModel)]="apexBDetails.companyName" name="companyName" required />
-                      </div>
-                      <div class="mb-3">
-                        <label class="form-label">Internship Role <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" [(ngModel)]="apexBDetails.internshipRole" name="internshipRole" required />
-                      </div>
-                      
-                      <!-- Faculty Supervisor Search -->
-                      <div class="mb-3 position-relative">
-                        <label class="form-label">Faculty Supervisor <span class="text-danger">*</span></label>
-                        <input 
-                          type="text" 
-                          class="form-control" 
-                          [(ngModel)]="facultySearchQuery" 
-                          (ngModelChange)="onFacultySearchInput($event)"
-                          name="facultySearch" 
-                          placeholder="Type to search faculty..."
-                          autocomplete="off"
-                          required />
-                        <small class="form-text text-muted">Search by name, email, company name, or company email</small>
-                        
-                        @if (facultySearchLoading) {
-                          <div class="position-absolute top-50 end-0 translate-middle-y me-2">
-                            <div class="spinner-border spinner-border-sm text-primary" role="status">
-                              <span class="visually-hidden">Loading...</span>
-                            </div>
-                          </div>
-                        }
-                        
-                        @if (showFacultyDropdown && facultySearchResults.length > 0) {
-                          <div class="dropdown-menu show w-100 mt-1" style="max-height: 250px; overflow-y: auto;">
-                            @for (faculty of facultySearchResults; track faculty.id) {
-                              <button type="button" class="dropdown-item" (click)="selectFaculty(faculty)">
-                                <div><strong>{{ faculty.name }}</strong></div>
-                                @if (faculty.email) {
-                                  <div class="small text-muted">{{ faculty.email }}</div>
-                                }
-                                @if (faculty.companyName) {
-                                  <div class="small text-muted">Company: {{ faculty.companyName }}</div>
-                                }
-                              </button>
-                            }
-                          </div>
-                        }
-                        @if (showFacultyDropdown && !facultySearchLoading && facultySearchResults.length === 0 && facultySearchQuery.length >= 2) {
-                          <div class="dropdown-menu show w-100 mt-1">
-                            <div class="dropdown-item text-muted">No faculty found</div>
-                          </div>
-                        }
-                        
-                        @if (apexBDetails.facultyId) {
-                          <input type="hidden" [(ngModel)]="apexBDetails.facultyId" name="facultyId" />
-                          <div class="form-text text-success">
-                            <i class="bi bi-check-circle"></i> Selected: {{ apexBDetails.facultySupervisorNameDesig }}
-                          </div>
-                        }
-                      </div>
-                      
-                      <!-- Site Supervisor Search -->
-                      <div class="mb-3 position-relative">
-                        <label class="form-label">Site Supervisor <span class="text-danger">*</span></label>
-                        <input 
-                          type="text" 
-                          class="form-control" 
-                          [(ngModel)]="siteSearchQuery" 
-                          (ngModelChange)="onSiteSearchInput($event)"
-                          name="siteSearch" 
-                          placeholder="Type to search site supervisors..."
-                          autocomplete="off"
-                          required />
-                        <small class="form-text text-muted">Search by name, email, company name, or company email</small>
-                        
-                        @if (siteSearchLoading) {
-                          <div class="position-absolute top-50 end-0 translate-middle-y me-2">
-                            <div class="spinner-border spinner-border-sm text-primary" role="status">
-                              <span class="visually-hidden">Loading...</span>
-                            </div>
-                          </div>
-                        }
-                        
-                        @if (showSiteDropdown && siteSearchResults.length > 0) {
-                          <div class="dropdown-menu show w-100 mt-1" style="max-height: 250px; overflow-y: auto;">
-                            @for (site of siteSearchResults; track site.id) {
-                              <button type="button" class="dropdown-item" (click)="selectSiteSupervisor(site)">
-                                <div><strong>{{ site.name }}</strong></div>
-                                @if (site.email) {
-                                  <div class="small text-muted">{{ site.email }}</div>
-                                }
-                                @if (site.companyName) {
-                                  <div class="small text-muted">Company: {{ site.companyName }}</div>
-                                }
-                              </button>
-                            }
-                          </div>
-                        }
-                        @if (showSiteDropdown && !siteSearchLoading && siteSearchResults.length === 0 && siteSearchQuery.length >= 2) {
-                          <div class="dropdown-menu show w-100 mt-1">
-                            <div class="dropdown-item text-muted">No site supervisors found</div>
-                          </div>
-                        }
-                        
-                        @if (apexBDetails.siteId) {
-                          <input type="hidden" [(ngModel)]="apexBDetails.siteId" name="siteId" />
-                          <div class="form-text text-success">
-                            <i class="bi bi-check-circle"></i> Selected: {{ apexBDetails.siteSupervisorNameDesig }}
-                          </div>
-                        }
-                      </div>
-                      
-                      <div class="row">
-                        <div class="col-md-6 mb-3">
-                          <label class="form-label">Duration (Weeks) <span class="text-danger">*</span></label>
-                          <input type="number" class="form-control" [(ngModel)]="apexBDetails.durationWeeks" name="durationWeeks" required min="1" />
-                        </div>
-                        <div class="col-md-6 mb-3">
-                          <label class="form-label">Start Date <span class="text-danger">*</span></label>
-                          <input type="date" class="form-control" [(ngModel)]="apexBDetails.startDate" name="startDate" required />
-                        </div>
-                      </div>
-                      <div class="mb-3">
-                        <label class="form-label">End Date <span class="text-danger">*</span></label>
-                        <input type="date" class="form-control" [(ngModel)]="apexBDetails.endDate" name="endDate" required />
-                      </div>
-                    </form>
-                  </div>
-                </div>
-              }
-            </div>
-            <div class="modal-footer">
-              <button type="button" class="btn btn-secondary" (click)="closeApexBModal()">Close</button>
-              @if (apexBDetails.studentId && !isApexBFormAlreadyApproved()) {
-                <button type="button" class="btn btn-success" (click)="submitApexBDetails()" [disabled]="updatingApexB">
-                  <span *ngIf="!updatingApexB"><i class="bi bi-check-circle"></i> Submit & Approve</span>
-                  <span *ngIf="updatingApexB">
-                    <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                    Submitting...
-                  </span>
-                </button>
-              }
-              @if (isApexBFormAlreadyApproved()) {
-                <span class="text-muted fst-italic">
-                  <i class="bi bi-check-circle-fill text-success"></i> Already Approved
-                </span>
-              }
-            </div>
-          </div>
-        </div>
-      </div>
-    }
-
-    <!-- Modal for APEX A Form Details -->
-    @if (showApexADetailsModal && selectedApexAForm) {
-      <div class="modal show d-block" tabindex="-1" style="background: rgba(0,0,0,0.5);">
-        <div class="modal-dialog modal-lg modal-dialog-scrollable">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h5 class="modal-title">APEX A Form Details</h5>
-              <button type="button" class="btn-close" (click)="closeApexADetailsModal()"></button>
-            </div>
-            <div class="modal-body">
-              <div class="card mb-3">
-                <div class="card-header bg-light"><strong>Student Information</strong></div>
-                <div class="card-body">
-                  <div class="row">
-                    <div class="col-md-6 mb-2">
-                      <strong>Name:</strong> {{ selectedApexAForm.student?.name || 'N/A' }}
-                    </div>
-                    <div class="col-md-6 mb-2">
-                      <strong>Email:</strong> {{ selectedApexAForm.student?.email || 'N/A' }}
-                    </div>
-                    <div class="col-md-6 mb-2">
-                      <strong>Registration No:</strong> {{ selectedApexAForm.student?.regNo || 'N/A' }}
-                    </div>
-                    <div class="col-md-6 mb-2">
-                      <strong>Student ID:</strong> {{ selectedApexAForm.student?.id || 'N/A' }}
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div class="card mb-3">
-                <div class="card-header bg-light"><strong>Form Details</strong></div>
-                <div class="card-body">
-                  <div class="row">
-                    <div class="col-md-6 mb-2">
-                      <strong>Form ID:</strong> {{ selectedApexAForm.id }}
-                    </div>
-                    <div class="col-md-6 mb-2">
-                      <strong>Status:</strong> 
-                      <span class="badge ms-2" 
-                        [class.text-bg-warning]="selectedApexAForm.status === 'pending'"
-                        [class.text-bg-success]="selectedApexAForm.status === 'approved'"
-                        [class.text-bg-danger]="selectedApexAForm.status === 'rejected'">
-                        {{ selectedApexAForm.status || 'pending' }}
-                      </span>
-                    </div>
-                    <div class="col-md-6 mb-2">
-                      <strong>Start Date:</strong> {{ selectedApexAForm.startDate ? (selectedApexAForm.startDate | date:'full') : 'N/A' }}
-                    </div>
-                    <div class="col-md-6 mb-2">
-                      <strong>End Date:</strong> {{ selectedApexAForm.endDate ? (selectedApexAForm.endDate | date:'full') : 'N/A' }}
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <!-- Raw Data Card - Only show when viewing existing form -->
-              <div class="card" *ngIf="selectedApexAForm && selectedApexAForm.id && (selectedApexAForm | json) as formJson">
-                <div class="card-header bg-light"><strong>Raw Data</strong></div>
-                <div class="card-body">
-                  <pre class="mb-0" style="font-size: 0.85rem; max-height: 300px; overflow-y: auto;">{{ formJson }}</pre>
-                </div>
-              </div>
-            </div>
-            <div class="modal-footer">
-              <button type="button" class="btn btn-secondary" (click)="closeApexADetailsModal()">Close</button>
-              <button type="button" class="btn btn-success" (click)="updateApexAStatus(selectedApexAForm.id, 'approved'); closeApexADetailsModal()" [disabled]="updatingApexA || selectedApexAForm.status === 'approved'">
-                Approve
-              </button>
-              <button type="button" class="btn btn-danger" (click)="updateApexAStatus(selectedApexAForm.id, 'rejected'); closeApexADetailsModal()" [disabled]="updatingApexA || selectedApexAForm.status === 'rejected'">
-                Reject
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    }
-
-    <!-- Modal for APEX C Form Details -->
-    @if (showApexCDetailsModal && selectedApexCForm) {
-      <div class="modal show d-block" tabindex="-1" style="background: rgba(0,0,0,0.5);">
-        <div class="modal-dialog modal-lg modal-dialog-scrollable">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h5 class="modal-title">APEX C Form Details</h5>
-              <button type="button" class="btn-close" (click)="closeApexCDetailsModal()"></button>
-            </div>
-            <div class="modal-body">
-              <div class="card mb-3">
-                <div class="card-header bg-light"><strong>Student Information</strong></div>
-                <div class="card-body">
-                  <div class="row">
-                    <div class="col-md-6 mb-2">
-                      <strong>Name:</strong> {{ selectedApexCForm.student?.name || 'N/A' }}
-                    </div>
-                    <div class="col-md-6 mb-2">
-                      <strong>Email:</strong> {{ selectedApexCForm.student?.email || 'N/A' }}
-                    </div>
-                    <div class="col-md-6 mb-2">
-                      <strong>Registration No:</strong> {{ selectedApexCForm.student?.regNo || 'N/A' }}
-                    </div>
-                    <div class="col-md-6 mb-2">
-                      <strong>Student ID:</strong> {{ selectedApexCForm.student?.id || 'N/A' }}
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div class="card mb-3">
-                <div class="card-header bg-light"><strong>Form Details</strong></div>
-                <div class="card-body">
-                  <div class="row">
-                    <div class="col-md-6 mb-2">
-                      <strong>Form ID:</strong> {{ selectedApexCForm.id }}
-                    </div>
-                    <div class="col-md-6 mb-2">
-                      <strong>Status:</strong> 
-                      <span class="badge ms-2" 
-                        [class.text-bg-warning]="selectedApexCForm.status === 'pending'"
-                        [class.text-bg-success]="selectedApexCForm.status === 'approved'"
-                        [class.text-bg-danger]="selectedApexCForm.status === 'rejected'">
-                        {{ selectedApexCForm.status || 'pending' }}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <!-- Raw Data Card - Only show when viewing existing form -->
-              <div class="card" *ngIf="selectedApexCForm && selectedApexCForm.id && (selectedApexCForm | json) as formJson">
-                <div class="card-header bg-light"><strong>Raw Data</strong></div>
-                <div class="card-body">
-                  <pre class="mb-0" style="font-size: 0.85rem; max-height: 300px; overflow-y: auto;">{{ formJson }}</pre>
-                </div>
-              </div>
-            </div>
-            <div class="modal-footer">
-              <button type="button" class="btn btn-secondary" (click)="closeApexCDetailsModal()">Close</button>
-            </div>
-          </div>
-        </div>
-      </div>
-    }
-    }
-
-    @case ('evaluation') {
+  @case ('evaluation') {
     <div class="row g-3 mt-0">
     <div class="col-12">
 
@@ -1930,3 +1565,376 @@
         </div>
       </div>
       }
+
+      </div>
+    </div>
+  }
+  @default {
+    <div class="alert alert-info">No tab selected</div>
+  }
+  }
+
+  <!-- Modal for APEX B Details -->
+  @if (showApexBModal && selectedApexBForm) {
+    <div class="modal show d-block" tabindex="-1" style="background: rgba(0,0,0,0.5);">
+      <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">APEX B Form Details</h5>
+            <button type="button" class="btn-close" (click)="closeApexBModal()"></button>
+          </div>
+          <div class="modal-body">
+            <!-- Student Information Card -->
+            <div class="card mb-3">
+              <div class="card-header bg-light"><strong>Student Information</strong></div>
+              <div class="card-body">
+                <div class="row">
+                  <div class="col-md-6 mb-2">
+                    <strong>Name:</strong> {{ selectedApexBForm.student?.name || selectedApexBForm.name || 'N/A' }}
+                  </div>
+                  <div class="col-md-6 mb-2">
+                    <strong>Email:</strong> {{ selectedApexBForm.student?.email || selectedApexBForm.email || 'N/A' }}
+                  </div>
+                  <div class="col-md-6 mb-2">
+                    <strong>Registration No:</strong> {{ selectedApexBForm.student?.regNo || 'N/A' }}
+                  </div>
+                  <div class="col-md-6 mb-2">
+                    <strong>Student ID:</strong> {{ selectedApexBForm.student?.id || 'N/A' }}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Application Details Card -->
+            <div class="card mb-3">
+              <div class="card-header bg-light"><strong>Application Details</strong></div>
+              <div class="card-body">
+                <div class="row">
+                  <div class="col-md-6 mb-2">
+                    <strong>Form ID:</strong> {{ selectedApexBForm.id }}
+                  </div>
+                  <div class="col-md-6 mb-2">
+                    <strong>Status:</strong> 
+                    <span class="text-dark fw-bold ms-2">
+                      {{ selectedApexBForm.status || 'pending' }}
+                    </span>
+                  </div>
+                  <div class="col-md-6 mb-2">
+                    <strong>Degree Program:</strong> {{ selectedApexBForm.degreeProgram || 'N/A' }}
+                  </div>
+                  <div class="col-md-6 mb-2">
+                    <strong>Semester:</strong> {{ selectedApexBForm.semester || 'N/A' }}
+                  </div>
+                  <div class="col-md-6 mb-2">
+                    <strong>Contact No:</strong> {{ selectedApexBForm.contactNo || 'N/A' }}
+                  </div>
+                  <div class="col-md-6 mb-2">
+                    <strong>Preferred Field:</strong> {{ selectedApexBForm.preferredField || 'N/A' }}
+                  </div>
+                  <div class="col-md-6 mb-2">
+                    <strong>Agreement Accepted:</strong> 
+                    <span class="badge ms-2" [class.text-bg-success]="selectedApexBForm.agreementAccepted" [class.text-bg-secondary]="!selectedApexBForm.agreementAccepted">
+                      {{ selectedApexBForm.agreementAccepted ? 'Yes' : 'No' }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Add Internship Details Form (only shown when needed) -->
+            @if (apexBDetails.studentId) {
+              <div class="card mb-3">
+                <div class="card-header bg-light"><strong>Add Internship Details</strong></div>
+                <div class="card-body">
+                  <form #apexBForm="ngForm">
+                    <div class="mb-3">
+                      <label class="form-label">Company Name <span class="text-danger">*</span></label>
+                      <input type="text" class="form-control" [(ngModel)]="apexBDetails.companyName" name="companyName" required />
+                    </div>
+                    <div class="mb-3">
+                      <label class="form-label">Internship Role <span class="text-danger">*</span></label>
+                      <input type="text" class="form-control" [(ngModel)]="apexBDetails.internshipRole" name="internshipRole" required />
+                    </div>
+                    
+                    <!-- Faculty Supervisor Search -->
+                    <div class="mb-3 position-relative">
+                      <label class="form-label">Faculty Supervisor <span class="text-danger">*</span></label>
+                      <input 
+                        type="text" 
+                        class="form-control" 
+                        [(ngModel)]="facultySearchQuery" 
+                        (ngModelChange)="onFacultySearchInput($event)"
+                        name="facultySearch" 
+                        placeholder="Type to search faculty..."
+                        autocomplete="off"
+                        required />
+                      <small class="form-text text-muted">Search by name, email, company name, or company email</small>
+                      
+                      @if (facultySearchLoading) {
+                        <div class="position-absolute top-50 end-0 translate-middle-y me-2">
+                          <div class="spinner-border spinner-border-sm text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                          </div>
+                        </div>
+                      }
+                      
+                      @if (showFacultyDropdown && facultySearchResults.length > 0) {
+                        <div class="dropdown-menu show w-100 mt-1" style="max-height: 250px; overflow-y: auto;">
+                          @for (faculty of facultySearchResults; track faculty.id) {
+                            <button type="button" class="dropdown-item" (click)="selectFaculty(faculty)">
+                              <div><strong>{{ faculty.name }}</strong></div>
+                              @if (faculty.email) {
+                                <div class="small text-muted">{{ faculty.email }}</div>
+                              }
+                              @if (faculty.companyName) {
+                                <div class="small text-muted">Company: {{ faculty.companyName }}</div>
+                              }
+                            </button>
+                          }
+                        </div>
+                      }
+                      @if (showFacultyDropdown && !facultySearchLoading && facultySearchResults.length === 0 && facultySearchQuery.length >= 2) {
+                        <div class="dropdown-menu show w-100 mt-1">
+                          <div class="dropdown-item text-muted">No faculty found</div>
+                        </div>
+                      }
+                      
+                      @if (apexBDetails.facultyId) {
+                        <input type="hidden" [(ngModel)]="apexBDetails.facultyId" name="facultyId" />
+                        <div class="form-text text-success">
+                          <i class="bi bi-check-circle"></i> Selected: {{ apexBDetails.facultySupervisorNameDesig }}
+                        </div>
+                      }
+                    </div>
+                    
+                    <!-- Site Supervisor Search -->
+                    <div class="mb-3 position-relative">
+                      <label class="form-label">Site Supervisor <span class="text-danger">*</span></label>
+                      <input 
+                        type="text" 
+                        class="form-control" 
+                        [(ngModel)]="siteSearchQuery" 
+                        (ngModelChange)="onSiteSearchInput($event)"
+                        name="siteSearch" 
+                        placeholder="Type to search site supervisors..."
+                        autocomplete="off"
+                        required />
+                      <small class="form-text text-muted">Search by name, email, company name, or company email</small>
+                      
+                      @if (siteSearchLoading) {
+                        <div class="position-absolute top-50 end-0 translate-middle-y me-2">
+                          <div class="spinner-border spinner-border-sm text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                          </div>
+                        </div>
+                      }
+                      
+                      @if (showSiteDropdown && siteSearchResults.length > 0) {
+                        <div class="dropdown-menu show w-100 mt-1" style="max-height: 250px; overflow-y: auto;">
+                          @for (site of siteSearchResults; track site.id) {
+                            <button type="button" class="dropdown-item" (click)="selectSiteSupervisor(site)">
+                              <div><strong>{{ site.name }}</strong></div>
+                              @if (site.email) {
+                                <div class="small text-muted">{{ site.email }}</div>
+                              }
+                              @if (site.companyName) {
+                                <div class="small text-muted">Company: {{ site.companyName }}</div>
+                              }
+                            </button>
+                          }
+                        </div>
+                      }
+                      @if (showSiteDropdown && !siteSearchLoading && siteSearchResults.length === 0 && siteSearchQuery.length >= 2) {
+                        <div class="dropdown-menu show w-100 mt-1">
+                          <div class="dropdown-item text-muted">No site supervisors found</div>
+                        </div>
+                      }
+                      
+                      @if (apexBDetails.siteId) {
+                        <input type="hidden" [(ngModel)]="apexBDetails.siteId" name="siteId" />
+                        <div class="form-text text-success">
+                          <i class="bi bi-check-circle"></i> Selected: {{ apexBDetails.siteSupervisorNameDesig }}
+                        </div>
+                      }
+                    </div>
+                    
+                    <div class="row">
+                      <div class="col-md-6 mb-3">
+                        <label class="form-label">Duration (Weeks) <span class="text-danger">*</span></label>
+                        <input type="number" class="form-control" [(ngModel)]="apexBDetails.durationWeeks" name="durationWeeks" required min="1" />
+                      </div>
+                      <div class="col-md-6 mb-3">
+                        <label class="form-label">Start Date <span class="text-danger">*</span></label>
+                        <input type="date" class="form-control" [(ngModel)]="apexBDetails.startDate" name="startDate" required />
+                      </div>
+                    </div>
+                    <div class="mb-3">
+                      <label class="form-label">End Date <span class="text-danger">*</span></label>
+                      <input type="date" class="form-control" [(ngModel)]="apexBDetails.endDate" name="endDate" required />
+                    </div>
+                  </form>
+                </div>
+              </div>
+            }
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" (click)="closeApexBModal()">Close</button>
+            @if (apexBDetails.studentId && !isApexBFormAlreadyApproved()) {
+              <button type="button" class="btn btn-success" (click)="submitApexBDetails()" [disabled]="updatingApexB">
+                <span *ngIf="!updatingApexB"><i class="bi bi-check-circle"></i> Submit & Approve</span>
+                <span *ngIf="updatingApexB">
+                  <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                  Submitting...
+                </span>
+              </button>
+            }
+            @if (isApexBFormAlreadyApproved()) {
+              <span class="text-muted fst-italic">
+                <i class="bi bi-check-circle-fill text-success"></i> Already Approved
+              </span>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Modal for APEX A Form Details -->
+  @if (showApexADetailsModal && selectedApexAForm) {
+    <div class="modal show d-block" tabindex="-1" style="background: rgba(0,0,0,0.5);">
+      <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">APEX A Form Details</h5>
+            <button type="button" class="btn-close" (click)="closeApexADetailsModal()"></button>
+          </div>
+          <div class="modal-body">
+            <div class="card mb-3">
+              <div class="card-header bg-light"><strong>Student Information</strong></div>
+              <div class="card-body">
+                <div class="row">
+                  <div class="col-md-6 mb-2">
+                    <strong>Name:</strong> {{ selectedApexAForm.student?.name || 'N/A' }}
+                  </div>
+                  <div class="col-md-6 mb-2">
+                    <strong>Email:</strong> {{ selectedApexAForm.student?.email || 'N/A' }}
+                  </div>
+                  <div class="col-md-6 mb-2">
+                    <strong>Registration No:</strong> {{ selectedApexAForm.student?.regNo || 'N/A' }}
+                  </div>
+                  <div class="col-md-6 mb-2">
+                    <strong>Student ID:</strong> {{ selectedApexAForm.student?.id || 'N/A' }}
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="card mb-3">
+              <div class="card-header bg-light"><strong>Form Details</strong></div>
+              <div class="card-body">
+                <div class="row">
+                  <div class="col-md-6 mb-2">
+                    <strong>Form ID:</strong> {{ selectedApexAForm.id }}
+                  </div>
+                  <div class="col-md-6 mb-2">
+                    <strong>Status:</strong> 
+                    <span class="badge ms-2" 
+                      [class.text-bg-warning]="selectedApexAForm.status === 'pending'"
+                      [class.text-bg-success]="selectedApexAForm.status === 'approved'"
+                      [class.text-bg-danger]="selectedApexAForm.status === 'rejected'">
+                      {{ selectedApexAForm.status || 'pending' }}
+                    </span>
+                  </div>
+                  <div class="col-md-6 mb-2">
+                    <strong>Start Date:</strong> {{ selectedApexAForm.startDate ? (selectedApexAForm.startDate | date:'full') : 'N/A' }}
+                  </div>
+                  <div class="col-md-6 mb-2">
+                    <strong>End Date:</strong> {{ selectedApexAForm.endDate ? (selectedApexAForm.endDate | date:'full') : 'N/A' }}
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- Raw Data Card - Only show when viewing existing form -->
+            <div class="card" *ngIf="selectedApexAForm && selectedApexAForm.id && (selectedApexAForm | json) as formJson">
+              <div class="card-header bg-light"><strong>Raw Data</strong></div>
+              <div class="card-body">
+                <pre class="mb-0" style="font-size: 0.85rem; max-height: 300px; overflow-y: auto;">{{ formJson }}</pre>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" (click)="closeApexADetailsModal()">Close</button>
+            <button type="button" class="btn btn-success" (click)="updateApexAStatus(selectedApexAForm.id, 'approved'); closeApexADetailsModal()" [disabled]="updatingApexA || selectedApexAForm.status === 'approved'">
+              Approve
+            </button>
+            <button type="button" class="btn btn-danger" (click)="updateApexAStatus(selectedApexAForm.id, 'rejected'); closeApexADetailsModal()" [disabled]="updatingApexA || selectedApexAForm.status === 'rejected'">
+              Reject
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Modal for APEX C Form Details -->
+  @if (showApexCDetailsModal && selectedApexCForm) {
+    <div class="modal show d-block" tabindex="-1" style="background: rgba(0,0,0,0.5);">
+      <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">APEX C Form Details</h5>
+            <button type="button" class="btn-close" (click)="closeApexCDetailsModal()"></button>
+          </div>
+          <div class="modal-body">
+            <div class="card mb-3">
+              <div class="card-header bg-light"><strong>Student Information</strong></div>
+              <div class="card-body">
+                <div class="row">
+                  <div class="col-md-6 mb-2">
+                    <strong>Name:</strong> {{ selectedApexCForm.student?.name || 'N/A' }}
+                  </div>
+                  <div class="col-md-6 mb-2">
+                    <strong>Email:</strong> {{ selectedApexCForm.student?.email || 'N/A' }}
+                  </div>
+                  <div class="col-md-6 mb-2">
+                    <strong>Registration No:</strong> {{ selectedApexCForm.student?.regNo || 'N/A' }}
+                  </div>
+                  <div class="col-md-6 mb-2">
+                    <strong>Student ID:</strong> {{ selectedApexCForm.student?.id || 'N/A' }}
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="card mb-3">
+              <div class="card-header bg-light"><strong>Form Details</strong></div>
+              <div class="card-body">
+                <div class="row">
+                  <div class="col-md-6 mb-2">
+                    <strong>Form ID:</strong> {{ selectedApexCForm.id }}
+                  </div>
+                  <div class="col-md-6 mb-2">
+                    <strong>Status:</strong> 
+                    <span class="badge ms-2" 
+                      [class.text-bg-warning]="selectedApexCForm.status === 'pending'"
+                      [class.text-bg-success]="selectedApexCForm.status === 'approved'"
+                      [class.text-bg-danger]="selectedApexCForm.status === 'rejected'">
+                      {{ selectedApexCForm.status || 'pending' }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- Raw Data Card - Only show when viewing existing form -->
+            <div class="card" *ngIf="selectedApexCForm && selectedApexCForm.id && (selectedApexCForm | json) as formJson">
+              <div class="card-header bg-light"><strong>Raw Data</strong></div>
+              <div class="card-body">
+                <pre class="mb-0" style="font-size: 0.85rem; max-height: 300px; overflow-y: auto;">{{ formJson }}</pre>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" (click)="closeApexCDetailsModal()">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
