@@ -27,7 +27,7 @@ export class FacultySupervisor implements OnInit {
     try {
       this.route.queryParamMap.subscribe(p => {
         const t = (p.get('tab') || '').toLowerCase();
-        const allowed = ['students','profile','requests','weekly-logs','marks'] as const;
+        const allowed = ['students','profile','requests','weekly-logs','marks','finalization'] as const;
         if ((allowed as readonly string[]).includes(t)) {
           this.currentTab = t as any;
           if (this.currentTab === 'profile') this.loadMyProfileFromApi();
@@ -48,7 +48,7 @@ export class FacultySupervisor implements OnInit {
   get siteList() { return this.store.siteSupervisors; }
   get companyList() { return this.store.companies; }
   selectedId: string | null = null;
-  currentTab: 'students'|'requests'|'weekly-logs'|'profile'|'marks' = 'students';
+  currentTab: 'students'|'requests'|'weekly-logs'|'profile'|'marks'|'finalization' = 'students';
   page = { students: 1, appexA: 1, appexB: 1 };
   pageSize = 10;
   selectTab(tab: FacultySupervisor['currentTab']) {
@@ -61,6 +61,12 @@ export class FacultySupervisor implements OnInit {
       // Ensure internships are loaded (guard inside prevents double-loading)
       this.loadFacultyInternships();
       this.loadEvaluationSummaryForSelected();
+    }
+    if (tab === 'finalization') {
+      // Ensure internships are loaded for finalization tab
+      this.loadFacultyInternships().then(() => {
+        this.loadFinalizationData();
+      });
     }
     if (tab === 'weekly-logs') {
       this.loadWeeklyLogs();
@@ -1142,5 +1148,164 @@ export class FacultySupervisor implements OnInit {
   /** Navigate to next page of weekly logs */
   nextWeeklyLogsPage() {
     if (this.weeklyLogsPage < this.getTotalWeeklyLogsPages()) this.weeklyLogsPage++;
+  }
+
+  // ── Faculty Finalization (POST /api/faculty/finalization) ──────────────────
+  finalizationStudents: any[] = [];
+  selectedFinalizationStudent: any = null;
+  loadingFinalizationData = false;
+  finalizationForm = {
+    internshipId: '',
+    facultyMarks: 0,
+    siteMarks: 0,
+    officeMarks: 0
+  };
+  submittingFinalization = false;
+  finalizationSummary: any = null;
+  finalizationFinalized = false;
+
+  /** Get students for finalization tab from faculty internships */
+  getFinalizationStudents(): any[] {
+    if (this.facultyInternships.length === 0) return [];
+    
+    return this.facultyInternships
+      .filter(i => i.status === 'APPROVED' || i.status === 'ACTIVE') // Only approved/active internships can be finalized
+      .map(i => ({
+        id: i.student.id,
+        name: i.student.name,
+        email: i.student.email,
+        registrationNo: i.student.regNo,
+        internshipId: i.id,
+        internshipMode: i.type,
+        companyName: i.site?.company?.name || 'Unknown Company',
+        finalResult: i.finalResult,
+        status: i.status,
+        startDate: i.startDate,
+        endDate: i.endDate
+      }));
+  }
+
+  /** Load finalization data for display */
+  async loadFinalizationData() {
+    this.finalizationStudents = this.getFinalizationStudents();
+    console.log('📋 [Faculty Finalization] Students loaded:', this.finalizationStudents.length);
+  }
+
+  /** Select a student for finalization and load their summary */
+  async selectStudentForFinalization(student: any) {
+    this.selectedFinalizationStudent = student;
+    this.finalizationForm = {
+      internshipId: student.internshipId,
+      facultyMarks: student.finalResult?.facultyMarks || 0,
+      siteMarks: student.finalResult?.siteMarks || 0,
+      officeMarks: student.finalResult?.officeMarks || 0
+    };
+    this.finalizationSummary = null;
+    this.finalizationFinalized = false;
+
+    console.group(`👤 [Faculty Finalization] Student selected: ${student.name}`);
+    console.log('Internship ID:', student.internshipId);
+    console.log('Internship Mode:', student.internshipMode);
+    console.groupEnd();
+
+    // Load finalization summary
+    await this.loadFinalizationSummary(student.internshipId);
+  }
+
+  /** Load finalization summary for selected internship */
+  async loadFinalizationSummary(internshipId: string) {
+    if (!internshipId || this.loadingFinalizationData) return;
+    
+    this.loadingFinalizationData = true;
+    try {
+      const res = await this.facultyApi.getFinalizationSummary(internshipId, {
+        skipGlobalLoading: true,
+        silentError: true
+      });
+
+      this.finalizationSummary = res?.data ?? null;
+      this.finalizationFinalized = res?.data?.finalization?.isFinalizedByFaculty ?? false;
+
+      console.group(`📊 [Faculty Finalization] Summary loaded for internshipId: ${internshipId}`);
+      console.log('Finalization Summary:', res?.data);
+      console.log('Faculty Marks:', this.finalizationSummary?.marks?.facultyMarks, '/ 40');
+      console.log('Site Marks:', this.finalizationSummary?.marks?.siteMarks, '/ 40');
+      console.log('Office Marks:', this.finalizationSummary?.marks?.officeMarks, '/ 20');
+      console.log('Total Preview:', this.finalizationSummary?.marks?.totalPreview, '/ 100');
+      console.log('Status Preview:', this.finalizationSummary?.marks?.statusPreview);
+      console.log('Finalized By Faculty:', this.finalizationFinalized);
+      if (this.finalizationFinalized) {
+        console.log('Finalized At:', this.finalizationSummary?.finalization?.finalizedAt);
+        console.log('Finalized By ID:', this.finalizationSummary?.finalization?.finalizedById);
+      }
+      console.groupEnd();
+    } catch (err: any) {
+      console.warn(`⚠️ [Faculty Finalization] Failed to load summary:`, err?.error?.message || err?.message);
+      this.finalizationSummary = null;
+    } finally {
+      this.loadingFinalizationData = false;
+    }
+  }
+
+  /** Submit finalization marks */
+  async submitFinalization() {
+    const { internshipId, facultyMarks, siteMarks, officeMarks } = this.finalizationForm;
+
+    if (!internshipId) {
+      this.toast.warning('No internship ID — select a student first');
+      return;
+    }
+
+    // Validate marks ranges
+    if (facultyMarks < 0 || facultyMarks > 40) {
+      this.toast.warning('Faculty marks must be between 0 and 40');
+      return;
+    }
+    if (siteMarks < 0 || siteMarks > 40) {
+      this.toast.warning('Site marks must be between 0 and 40');
+      return;
+    }
+    if (officeMarks < 0 || officeMarks > 20) {
+      this.toast.warning('Office marks must be between 0 and 20');
+      return;
+    }
+
+    if (this.finalizationFinalized) {
+      this.toast.warning('This internship has already been finalized');
+      return;
+    }
+
+    this.submittingFinalization = true;
+    try {
+      console.group('📤 [Faculty Finalization] Submitting marks');
+      console.log('Internship ID:', internshipId);
+      console.log('Faculty Marks:', facultyMarks, '/ 40');
+      console.log('Site Marks:', siteMarks, '/ 40');
+      console.log('Office Marks:', officeMarks, '/ 20');
+      console.log('Total:', facultyMarks + siteMarks + officeMarks, '/ 100');
+      console.groupEnd();
+
+      const res = await this.facultyApi.submitFinalization({
+        internshipId,
+        facultyMarks,
+        siteMarks,
+        officeMarks
+      });
+
+      this.toast.success(res?.message || 'Finalization submitted successfully');
+      
+      // Update local state
+      this.finalizationFinalized = true;
+      
+      // Reload internships and finalization data
+      await this.loadFacultyInternships(true);
+      await this.loadFinalizationSummary(internshipId);
+    } catch (err: any) {
+      const msg = err?.error?.message || err?.message || 'Failed to submit finalization';
+      this.toast.danger(msg);
+      console.error('❌ [Faculty Finalization] Error:', err);
+    } finally {
+      this.submittingFinalization = false;
+    }
   }
 }

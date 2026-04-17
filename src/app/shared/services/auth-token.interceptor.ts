@@ -88,11 +88,13 @@ export const authTokenInterceptor: HttpInterceptorFn = (req, next) => {
       // Only attempt a proactive refresh if a refresh token exists (cookie or localStorage).
       // Without one, redirect to login immediately to avoid unnecessary 405 errors.
       const hasRefreshToken = (() => { try { return !!localStorage.getItem('refreshToken'); } catch { return false; } })();
+      // Skip refresh attempt if no refresh token AND no cached token
+      // This prevents unnecessary 401/CORS errors on unauthenticated public pages (home, login, etc.)
       if (!hasRefreshToken && !_cachedToken) {
-        // No refresh token in storage and no in-memory cache — redirect to login
-        console.warn('⚠️ [authTokenInterceptor] No token in storage or cache, redirecting to login');
-        triggerLogout(auth);
-        return throwError(() => new Error('Session expired. Please log in again.'));
+        // No refresh token in storage and no in-memory cache — do NOT redirect
+        // Let the request proceed without auth and let the API return 401 if needed
+        console.warn('⚠️ [authTokenInterceptor] No token found, skipping refresh (user likely unauthenticated on public page)');
+        return next(req);
       }
       if (!hasRefreshToken) {
         // Memory cache has a token but storage is blocked — use it directly
@@ -108,7 +110,12 @@ export const authTokenInterceptor: HttpInterceptorFn = (req, next) => {
           })
         );
       }
-      console.log('🔄 [authTokenInterceptor] Proactive refresh (no access token) for:', path);
+      // Only attempt refresh if we have a refresh token; otherwise skip (user is likely on public page)
+      if (!hasRefreshToken) {
+        console.log('⚠️ [authTokenInterceptor] No refresh token, skipping proactive refresh for:', path);
+        return next(req);
+      }
+      console.log('🔄 [authTokenInterceptor] Proactive refresh (no access token, but has refresh token) for:', path);
       isRefreshingGlobally = true;
       return from(auth.refreshAccessToken()).pipe(
         switchMap(() => {

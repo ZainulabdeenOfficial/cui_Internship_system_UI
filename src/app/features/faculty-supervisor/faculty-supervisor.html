@@ -6,6 +6,7 @@
     <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='weekly-logs'" (click)="selectTab('weekly-logs')"><i class="bi bi-journal-text me-1"></i>Weekly Logs</button></li>
     <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='profile'" (click)="selectTab('profile')">Profile</button></li>
     <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='marks'" (click)="selectTab('marks')"><i class="bi bi-bar-chart-line me-1"></i>Evaluation Marks</button></li>
+    <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='finalization'" (click)="selectTab('finalization')"><i class="bi bi-check-square me-1"></i>Finalize Results</button></li>
   </ul>
   <div class="row g-3 mb-3">
     <div class="col-md-3">
@@ -1368,3 +1369,218 @@
     </div>
   </div>
 </div>
+
+<!-- ── Finalization Tab Content ──────────────────────────────────── -->
+@if (currentTab === 'finalization') {
+<div class="card mb-3">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <span><i class="bi bi-check-square me-2"></i>Finalize Internship Results</span>
+    <button class="btn btn-sm btn-outline-secondary" (click)="loadFinalizationData()" [disabled]="loadingFinalizationData">
+      <span *ngIf="loadingFinalizationData" class="spinner-border spinner-border-sm me-1"></span>
+      {{ loadingFinalizationData ? 'Loading...' : 'Refresh' }}
+    </button>
+  </div>
+  <div class="card-body">
+    <div class="alert alert-info mb-3">
+      <i class="bi bi-info-circle me-2"></i>
+      <strong>Faculty Finalization:</strong> Enter the final marks for faculty, site supervisor, and office/admin evaluations. Once submitted, the results will be published to the student.
+    </div>
+
+    <!-- Students List -->
+    <div *ngIf="finalizationStudents.length === 0 && !loadingFinalizationData" class="alert alert-warning">
+      <i class="bi bi-exclamation-triangle me-2"></i>
+      No approved internships available for finalization.
+    </div>
+
+    <!-- Filter & Search -->
+    @if (finalizationStudents.length > 0) {
+    <div class="card filter-card mb-3 bg-light">
+      <div class="card-body">
+        <div class="row g-3 align-items-end">
+          <div class="col-md-6">
+            <label class="form-label">Select Student</label>
+            <select class="form-select" 
+                    [(ngModel)]="selectedFinalizationStudent"
+                    (ngModelChange)="selectStudentForFinalization($event)"
+                    name="finalization_student">
+              <option [ngValue]="null">-- Choose a student --</option>
+              <option *ngFor="let student of finalizationStudents" [ngValue]="student">
+                {{ student.name }} ({{ student.registrationNo }}) — {{ student.companyName }}
+              </option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Finalization Form -->
+    @if (selectedFinalizationStudent) {
+    <div class="card mb-3">
+      <div class="card-header bg-light">
+        <h6 class="mb-0">
+          <i class="bi bi-person me-2"></i>
+          {{ selectedFinalizationStudent.name }} — Finalize Marks
+        </h6>
+      </div>
+      <div class="card-body">
+        <!-- Student Information -->
+        <div class="row g-3 mb-4 pb-3 border-bottom">
+          <div class="col-md-3">
+            <small class="text-muted d-block">Student Name</small>
+            <strong>{{ selectedFinalizationStudent.name }}</strong>
+          </div>
+          <div class="col-md-3">
+            <small class="text-muted d-block">Registration No</small>
+            <strong>{{ selectedFinalizationStudent.registrationNo }}</strong>
+          </div>
+          <div class="col-md-3">
+            <small class="text-muted d-block">Email</small>
+            <a [href]="'mailto:' + selectedFinalizationStudent.email">{{ selectedFinalizationStudent.email }}</a>
+          </div>
+          <div class="col-md-3">
+            <small class="text-muted d-block">Company</small>
+            <strong>{{ selectedFinalizationStudent.companyName }}</strong>
+          </div>
+        </div>
+
+        <!-- Finalization Summary (if loaded) -->
+        @if (finalizationSummary) {
+        <div class="card border-primary mb-4">
+          <div class="card-header bg-light">
+            <h6 class="mb-0"><i class="bi bi-bar-chart-line me-2"></i>Current Marks Preview</h6>
+          </div>
+          <div class="card-body">
+            <div class="row text-center g-3">
+              <div class="col-md-3">
+                <div class="border rounded p-3">
+                  <div class="fw-bold fs-5">{{ finalizationSummary.marks?.facultyMarks ?? 0 }}</div>
+                  <small class="text-muted d-block">Faculty Marks</small>
+                  <small class="text-muted">/ {{ finalizationSummary.marks?.maximumMarks?.faculty ?? 40 }}</small>
+                </div>
+              </div>
+              <div class="col-md-3">
+                <div class="border rounded p-3">
+                  <div class="fw-bold fs-5">{{ finalizationSummary.marks?.siteMarks ?? 0 }}</div>
+                  <small class="text-muted d-block">Site Marks</small>
+                  <small class="text-muted">/ {{ finalizationSummary.marks?.maximumMarks?.site ?? 40 }}</small>
+                </div>
+              </div>
+              <div class="col-md-3">
+                <div class="border rounded p-3">
+                  <div class="fw-bold fs-5">{{ finalizationSummary.marks?.officeMarks ?? 0 }}</div>
+                  <small class="text-muted d-block">Office Marks</small>
+                  <small class="text-muted">/ {{ finalizationSummary.marks?.maximumMarks?.office ?? 20 }}</small>
+                </div>
+              </div>
+              <div class="col-md-3">
+                <div class="border rounded p-3 bg-light">
+                  <div class="fw-bold fs-5">{{ finalizationSummary.marks?.totalPreview ?? 0 }}</div>
+                  <small class="text-muted d-block">Total Preview</small>
+                  <small class="text-muted">/ {{ finalizationSummary.marks?.maximumMarks?.total ?? 100 }}</small>
+                </div>
+              </div>
+            </div>
+            <div class="text-center mt-3">
+              <span class="badge fs-6 px-4 py-2"
+                    [class.text-bg-success]="finalizationSummary.marks?.statusPreview === 'pass'"
+                    [class.text-bg-danger]="finalizationSummary.marks?.statusPreview !== 'pass'">
+                Status: {{ finalizationSummary.marks?.statusPreview | titlecase }}
+              </span>
+            </div>
+          </div>
+        </div>
+        }
+
+        <!-- Finalization Status -->
+        @if (finalizationFinalized && finalizationSummary?.finalization) {
+        <div class="alert alert-success mb-4">
+          <i class="bi bi-check-circle-fill me-2"></i>
+          <strong>Already Finalized:</strong> This internship was finalized on {{ finalizationSummary.finalization.finalizedAt | date:'medium' }}.
+          <br>
+          <small>Finalized by: {{ finalizationSummary.finalization.finalizedById }}</small>
+        </div>
+        }
+
+        <!-- Marks Input Form -->
+        <form (ngSubmit)="submitFinalization()" #finForm="ngForm">
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label class="form-label">
+                <strong>Faculty Marks</strong> <span class="text-danger">*</span>
+                <span class="text-muted small d-block">Out of 40</span>
+              </label>
+              <input type="number" min="0" max="40" step="0.5" 
+                     class="form-control" 
+                     [(ngModel)]="finalizationForm.facultyMarks" 
+                     name="faculty_marks"
+                     [disabled]="finalizationFinalized"
+                     required />
+              <small class="text-muted d-block mt-1">Enter marks out of 40</small>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">
+                <strong>Site Supervisor Marks</strong> <span class="text-danger">*</span>
+                <span class="text-muted small d-block">Out of 40</span>
+              </label>
+              <input type="number" min="0" max="40" step="0.5" 
+                     class="form-control" 
+                     [(ngModel)]="finalizationForm.siteMarks" 
+                     name="site_marks"
+                     [disabled]="finalizationFinalized"
+                     required />
+              <small class="text-muted d-block mt-1">Enter marks out of 40</small>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">
+                <strong>Office/Admin Marks</strong> <span class="text-danger">*</span>
+                <span class="text-muted small d-block">Out of 20</span>
+              </label>
+              <input type="number" min="0" max="20" step="0.5" 
+                     class="form-control" 
+                     [(ngModel)]="finalizationForm.officeMarks" 
+                     name="office_marks"
+                     [disabled]="finalizationFinalized"
+                     required />
+              <small class="text-muted d-block mt-1">Enter marks out of 20</small>
+            </div>
+          </div>
+
+          <!-- Total Preview -->
+          <div class="row g-3 mt-3 p-3 bg-light rounded">
+            <div class="col-md-9">
+              <strong>Total Marks Preview:</strong>
+              <span class="fs-5 ms-2">
+                {{ (finalizationForm.facultyMarks || 0) + (finalizationForm.siteMarks || 0) + (finalizationForm.officeMarks || 0) }}
+                / 100
+              </span>
+            </div>
+            <div class="col-md-3 text-end">
+              <span class="badge fs-6 px-4 py-2"
+                    [class.text-bg-success]="((finalizationForm.facultyMarks || 0) + (finalizationForm.siteMarks || 0) + (finalizationForm.officeMarks || 0)) >= 50"
+                    [class.text-bg-danger]="((finalizationForm.facultyMarks || 0) + (finalizationForm.siteMarks || 0) + (finalizationForm.officeMarks || 0)) < 50">
+                {{ ((finalizationForm.facultyMarks || 0) + (finalizationForm.siteMarks || 0) + (finalizationForm.officeMarks || 0)) >= 50 ? 'Pass' : 'Fail' }}
+              </span>
+            </div>
+          </div>
+
+          <!-- Submit Button -->
+          <div class="mt-4">
+            <button class="btn btn-success btn-lg" 
+                    type="submit"
+                    [disabled]="!finForm.valid || submittingFinalization || finalizationFinalized">
+              <span *ngIf="submittingFinalization" class="spinner-border spinner-border-sm me-2"></span>
+              {{ submittingFinalization ? 'Submitting...' : 'Finalize Results' }}
+            </button>
+            <small class="d-block mt-2 text-muted">
+              Once finalized, results will be published to the student.
+            </small>
+          </div>
+        </form>
+      </div>
+    </div>
+    }
+    }
+  </div>
+</div>
+}
+

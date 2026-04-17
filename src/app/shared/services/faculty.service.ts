@@ -535,4 +535,45 @@ export class FacultyService {
   clearFacultyComplaintsCache(): void {
     this.clearCacheByPrefix('faculty/complaints?');
   }
+
+  /**
+   * GET /api/faculty/finalization?internshipId=...
+   * Returns faculty/site/office marks preview and current finalization state for an internship.
+   * Accessible to assigned faculty supervisor or admin.
+   */
+  async getFinalizationSummary(internshipId: string, options?: FacultyRequestOptions): Promise<any> {
+    const key = this.cacheKey(`finalization-${internshipId}`);
+    const cached = this.readCache<any>(key, options);
+    if (cached) return cached;
+
+    const url = `${this.base}/api/faculty/finalization?internshipId=${encodeURIComponent(internshipId)}`;
+    const res = await firstValueFrom(this.http.get<any>(url, { headers: await this.authHeaders(false, options), context: this.buildContext(options) }));
+    this.writeCache(key, res, options?.cacheTtlMs ?? 60 * 1000);
+    return res;
+  }
+
+  /**
+   * POST /api/faculty/finalization
+   * Faculty supervisor enters final marks for faculty, site supervisor, and office/admin components.
+   * Payload: { internshipId: string; facultyMarks: number; siteMarks: number; officeMarks: number }
+   */
+  async submitFinalization(payload: {
+    internshipId: string;
+    facultyMarks: number;
+    siteMarks: number;
+    officeMarks: number;
+  }): Promise<any> {
+    const url = `${this.base}/api/faculty/finalization`;
+    const res = await firstValueFrom(this.http.post<any>(url, payload, { headers: await this.authHeaders(true) }));
+    this.clearCache(`finalization-${payload.internshipId}`);
+    return res;
+  }
+
+  clearFinalizationCache(internshipId?: string): void {
+    if (internshipId) {
+      this.clearCache(`finalization-${internshipId}`);
+    } else {
+      this.clearCacheByPrefix('finalization-');
+    }
+  }
 }
