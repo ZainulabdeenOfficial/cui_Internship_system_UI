@@ -1276,6 +1276,7 @@ export class FacultySupervisor implements OnInit {
     }
 
     this.submittingFinalization = true;
+    this.cdr.markForCheck();  // Mark for check immediately
     try {
       console.group('📤 [Faculty Finalization] Submitting marks');
       console.log('Internship ID:', internshipId);
@@ -1305,7 +1306,13 @@ export class FacultySupervisor implements OnInit {
       this.toast.danger(msg);
       console.error('❌ [Faculty Finalization] Error:', err);
     } finally {
-      this.submittingFinalization = false;
+      this.submittingFinalization = false;  // Always reset
+      this.cdr.markForCheck();  // Trigger change detection
+      try { 
+        this.cdr.detectChanges(); 
+      } catch (e) {
+        console.warn('⚠️ Change detection failed during finalization:', e);
+      }
     }
   }
 }

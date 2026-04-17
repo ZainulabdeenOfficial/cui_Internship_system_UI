@@ -1447,45 +1447,104 @@
         @if (finalizationSummary) {
         <div class="card border-primary mb-4">
           <div class="card-header bg-light">
-            <h6 class="mb-0"><i class="bi bi-bar-chart-line me-2"></i>Current Marks Preview</h6>
+            <h6 class="mb-0"><i class="bi bi-table me-2"></i>Student Final Results</h6>
           </div>
           <div class="card-body">
-            <div class="row text-center g-3">
-              <div class="col-md-3">
-                <div class="border rounded p-3">
-                  <div class="fw-bold fs-5">{{ finalizationSummary.marks?.facultyMarks ?? 0 }}</div>
-                  <small class="text-muted d-block">Faculty Marks</small>
-                  <small class="text-muted">/ {{ finalizationSummary.marks?.maximumMarks?.faculty ?? 40 }}</small>
-                </div>
-              </div>
-              <div class="col-md-3">
-                <div class="border rounded p-3">
-                  <div class="fw-bold fs-5">{{ finalizationSummary.marks?.siteMarks ?? 0 }}</div>
-                  <small class="text-muted d-block">Site Marks</small>
-                  <small class="text-muted">/ {{ finalizationSummary.marks?.maximumMarks?.site ?? 40 }}</small>
-                </div>
-              </div>
-              <div class="col-md-3">
-                <div class="border rounded p-3">
-                  <div class="fw-bold fs-5">{{ finalizationSummary.marks?.officeMarks ?? 0 }}</div>
-                  <small class="text-muted d-block">Office Marks</small>
-                  <small class="text-muted">/ {{ finalizationSummary.marks?.maximumMarks?.office ?? 20 }}</small>
-                </div>
-              </div>
-              <div class="col-md-3">
-                <div class="border rounded p-3 bg-light">
-                  <div class="fw-bold fs-5">{{ finalizationSummary.marks?.totalPreview ?? 0 }}</div>
-                  <small class="text-muted d-block">Total Preview</small>
-                  <small class="text-muted">/ {{ finalizationSummary.marks?.maximumMarks?.total ?? 100 }}</small>
-                </div>
-              </div>
-            </div>
-            <div class="text-center mt-3">
-              <span class="badge fs-6 px-4 py-2"
-                    [class.text-bg-success]="finalizationSummary.marks?.statusPreview === 'pass'"
-                    [class.text-bg-danger]="finalizationSummary.marks?.statusPreview !== 'pass'">
-                Status: {{ finalizationSummary.marks?.statusPreview | titlecase }}
-              </span>
+            <!-- Results Table -->
+            <div class="table-responsive">
+              <table class="table table-hover table-striped align-middle">
+                <thead class="table-light">
+                  <tr>
+                    <th>Evaluation Type</th>
+                    <th class="text-center">Marks Obtained</th>
+                    <th class="text-center">Maximum Marks</th>
+                    <th class="text-center">Percentage</th>
+                    <th class="text-center">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <!-- Faculty Marks Row -->
+                  <tr>
+                    <td>
+                      <strong><i class="bi bi-person-badge me-2"></i>Faculty Evaluation</strong>
+                    </td>
+                    <td class="text-center">
+                      <span class="badge text-bg-info fs-6">{{ finalizationSummary.marks?.facultyMarks ?? 0 }}</span>
+                    </td>
+                    <td class="text-center">{{ finalizationSummary.marks?.maximumMarks?.faculty ?? 40 }}</td>
+                    <td class="text-center">
+                      <strong>{{ ((finalizationSummary.marks?.facultyMarks ?? 0) / (finalizationSummary.marks?.maximumMarks?.faculty ?? 40) * 100 | number:'1.1-1') }}%</strong>
+                    </td>
+                    <td class="text-center">
+                      <span class="badge" 
+                            [class.text-bg-success]="(finalizationSummary.marks?.facultyMarks ?? 0) >= ((finalizationSummary.marks?.maximumMarks?.faculty ?? 40) * 0.5)"
+                            [class.text-bg-danger]="(finalizationSummary.marks?.facultyMarks ?? 0) < ((finalizationSummary.marks?.maximumMarks?.faculty ?? 40) * 0.5)">
+                        {{ (finalizationSummary.marks?.facultyMarks ?? 0) >= ((finalizationSummary.marks?.maximumMarks?.faculty ?? 40) * 0.5) ? 'Pass' : 'Below 50%' }}
+                      </span>
+                    </td>
+                  </tr>
+                  <!-- Site Supervisor Marks Row -->
+                  <tr>
+                    <td>
+                      <strong><i class="bi bi-briefcase me-2"></i>Site Supervisor Evaluation</strong>
+                    </td>
+                    <td class="text-center">
+                      <span class="badge text-bg-warning fs-6">{{ finalizationSummary.marks?.siteMarks ?? 0 }}</span>
+                    </td>
+                    <td class="text-center">{{ finalizationSummary.marks?.maximumMarks?.site ?? 40 }}</td>
+                    <td class="text-center">
+                      <strong>{{ ((finalizationSummary.marks?.siteMarks ?? 0) / (finalizationSummary.marks?.maximumMarks?.site ?? 40) * 100 | number:'1.1-1') }}%</strong>
+                    </td>
+                    <td class="text-center">
+                      <span class="badge" 
+                            [class.text-bg-success]="(finalizationSummary.marks?.siteMarks ?? 0) >= ((finalizationSummary.marks?.maximumMarks?.site ?? 40) * 0.5)"
+                            [class.text-bg-danger]="(finalizationSummary.marks?.siteMarks ?? 0) < ((finalizationSummary.marks?.maximumMarks?.site ?? 40) * 0.5)">
+                        {{ (finalizationSummary.marks?.siteMarks ?? 0) >= ((finalizationSummary.marks?.maximumMarks?.site ?? 40) * 0.5) ? 'Pass' : 'Below 50%' }}
+                      </span>
+                    </td>
+                  </tr>
+                  <!-- Office/Admin Marks Row -->
+                  <tr>
+                    <td>
+                      <strong><i class="bi bi-building me-2"></i>Office/Admin Evaluation</strong>
+                    </td>
+                    <td class="text-center">
+                      <span class="badge text-bg-secondary fs-6">{{ finalizationSummary.marks?.officeMarks ?? 0 }}</span>
+                    </td>
+                    <td class="text-center">{{ finalizationSummary.marks?.maximumMarks?.office ?? 20 }}</td>
+                    <td class="text-center">
+                      <strong>{{ ((finalizationSummary.marks?.officeMarks ?? 0) / (finalizationSummary.marks?.maximumMarks?.office ?? 20) * 100 | number:'1.1-1') }}%</strong>
+                    </td>
+                    <td class="text-center">
+                      <span class="badge" 
+                            [class.text-bg-success]="(finalizationSummary.marks?.officeMarks ?? 0) >= ((finalizationSummary.marks?.maximumMarks?.office ?? 20) * 0.5)"
+                            [class.text-bg-danger]="(finalizationSummary.marks?.officeMarks ?? 0) < ((finalizationSummary.marks?.maximumMarks?.office ?? 20) * 0.5)">
+                        {{ (finalizationSummary.marks?.officeMarks ?? 0) >= ((finalizationSummary.marks?.maximumMarks?.office ?? 20) * 0.5) ? 'Pass' : 'Below 50%' }}
+                      </span>
+                    </td>
+                  </tr>
+                  <!-- Total Row -->
+                  <tr class="table-light fw-bold bg-light">
+                    <td>
+                      <strong><i class="bi bi-sum me-2"></i>Total Score</strong>
+                    </td>
+                    <td class="text-center">
+                      <span class="badge text-bg-primary fs-6">{{ finalizationSummary.marks?.totalPreview ?? 0 }}</span>
+                    </td>
+                    <td class="text-center">{{ finalizationSummary.marks?.maximumMarks?.total ?? 100 }}</td>
+                    <td class="text-center">
+                      <strong>{{ ((finalizationSummary.marks?.totalPreview ?? 0) / (finalizationSummary.marks?.maximumMarks?.total ?? 100) * 100 | number:'1.1-1') }}%</strong>
+                    </td>
+                    <td class="text-center">
+                      <span class="badge fs-6 px-4 py-2"
+                            [class.text-bg-success]="finalizationSummary.marks?.statusPreview === 'pass'"
+                            [class.text-bg-danger]="finalizationSummary.marks?.statusPreview !== 'pass'">
+                        {{ finalizationSummary.marks?.statusPreview | titlecase }}
+                      </span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
         </div>

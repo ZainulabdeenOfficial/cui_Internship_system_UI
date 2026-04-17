@@ -1516,18 +1516,23 @@ export class Student implements OnInit, OnDestroy {
       await this.loadStudentInternship(true);
       if (!this.studentInternshipId) {
         console.warn('⚠️ [Student] Still no internshipId after fetch — cannot load final result');
+        // Ensure loading state is reset even when no internship ID
+        this.loadingEvaluations = false;
         return;
       }
       internshipId = this.studentInternshipId;
       internshipIdSource = 'from loadStudentInternship()';
     }
 
+    // Prevent concurrent requests
     if (this.loadingEvaluations) {
-      await new Promise<void>(r => setTimeout(r, 0));
+      console.warn('⚠️ [Student] Already loading evaluations, skipping duplicate request');
+      return;
     }
 
     this.loadingEvaluations = true;
     this.cdr.markForCheck();
+    
     try {
       console.log(`🌐 [Student] Fetching final result using internshipId (${internshipIdSource}): ${internshipId}`);
       
@@ -1566,8 +1571,14 @@ export class Student implements OnInit, OnDestroy {
       }
       this.studentFinalResult = null;
     } finally {
+      // Always reset loading state regardless of success or failure
       this.loadingEvaluations = false;
-      try { this.cdr.detectChanges(); } catch {}
+      this.cdr.markForCheck();
+      try { 
+        this.cdr.detectChanges(); 
+      } catch (e) {
+        console.warn('⚠️ [Student] Change detection failed:', e);
+      }
     }
   }
 
