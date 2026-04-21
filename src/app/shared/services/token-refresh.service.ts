@@ -1,5 +1,6 @@
-import { Injectable } from '@angular/core';
+import { Injectable, effect } from '@angular/core';
 import { AuthService } from './auth.service';
+import { VisibilityService } from '../../core/services/visibility.service';
 
 @Injectable({ providedIn: 'root' })
 export class TokenRefreshService {
@@ -7,10 +8,98 @@ export class TokenRefreshService {
   private lastTokenHash = '';
   private readonly skewMs = 120_000; // refresh 2 minutes before expiry for safety
   private watcher: any = null;
+  private isPaused = false;
+  private isInitialized = false;
 
-  constructor(private auth: AuthService) {}
+  constructor(
+    private auth: AuthService,
+    private visibility: VisibilityService
+  ) {
+    // Pause/resume token refresh when app visibility changes
+    effect(() => {
+      const isVisible = this.visibility.isVisible();
+      if (this.isInitialized) {
+        if (!isVisible) {
+          this.pause();
+        } else {
+          this.resume();
+        }
+      }
+    });
+  }
 
-  init() { this.start(); }
+  /**
+   * Initialize token refresh service
+   * Only starts refresh cycle if user has a valid token (i.e., is logged in)
+   * Called from APP_INITIALIZER on app startup
+   */
+  init() {
+    const hasValidToken = this.getToken();
+    if (!hasValidToken) {
+      console.log('[TokenRefresh] No token on init - deferring start (user not logged in)');
+      return;
+    }
+    console.log('[TokenRefresh] Valid token found - starting refresh cycle');
+    this.start();
+  }
+
+  /**
+   * Explicitly start the token refresh cycle
+   * Called after successful login
+   */
+  start() {
+    if (this.isInitialized) {
+      console.log('[TokenRefresh] Already initialized, skipping start()');
+      return;
+    }
+    this.isInitialized = true;
+    // watch token changes periodically and reschedule
+    if (this.watcher) clearInterval(this.watcher);
+    this.watcher = setInterval(() => {
+      if (!this.isPaused) {
+        this.ensureSchedule();
+      }
+    }, 10_000);
+    this.ensureSchedule();
+  }
+
+  /**
+   * Stop the token refresh service completely
+   * Called on logout
+   */
+  stop() {
+    console.log('[TokenRefresh] Stopping refresh service');
+    if (this.timer) { clearTimeout(this.timer); this.timer = null; }
+    if (this.watcher) { clearInterval(this.watcher); this.watcher = null; }
+    this.lastTokenHash = '';
+    this.isInitialized = false;
+    this.isPaused = false;
+  }
+
+  /**
+   * Pause token refresh without stopping completely
+   * Used when app becomes hidden (tab switch, minimize, etc.)
+   */
+  private pause() {
+    if (this.isPaused) return;
+    this.isPaused = true;
+    console.log('[TokenRefresh] ⏸️ Paused - app is hidden');
+    if (this.timer) {
+      clearTimeout(this.timer);
+      this.timer = null;
+    }
+  }
+
+  /**
+   * Resume token refresh after app regains visibility
+   * Reschedules based on current token expiry
+   */
+  private resume() {
+    if (!this.isPaused || !this.isInitialized) return;
+    this.isPaused = false;
+    console.log('[TokenRefresh] ▶️ Resumed - app is visible');
+    this.ensureSchedule();
+  }
 
   private getToken(): string | null {
     try {
@@ -38,13 +127,6 @@ export class TokenRefreshService {
     if (!tok) return '';
     let h = 0; for (let i = 0; i < tok.length; i++) { h = ((h << 5) - h) + tok.charCodeAt(i); h |= 0; }
     return String(h);
-  }
-
-  start() {
-    // watch token changes periodically and reschedule
-    if (this.watcher) clearInterval(this.watcher);
-  this.watcher = setInterval(() => this.ensureSchedule(), 10_000);
-    this.ensureSchedule();
   }
 
   private ensureSchedule() {

@@ -6,12 +6,17 @@ import { StudentRegisterRequest, RegisterResponse, LoginRequest, LoginResponse, 
 import { ResetPasswordRequest, ResetPasswordResponse } from '../models/auth/forgot-reset.models';
 import { GeneratePasswordResponse } from '../models/auth/generate-password.response';
 import { VerifyEmailRequest, VerifyEmailResponse } from '../models/auth/verify-email.models';
+import { TokenRefreshService } from './token-refresh.service';
 import { firstValueFrom } from 'rxjs';
 import { timeout } from 'rxjs/operators';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
-  constructor(private http: HttpClient, private router: Router) {}
+  constructor(
+    private http: HttpClient,
+    private router: Router,
+    private tokenRefresh: TokenRefreshService
+  ) {}
   private absBase = environment.apiBaseUrl.replace(/\/$/, '');
   private rel(path: string) { return path.startsWith('/') ? path : `/${path}`; }
   private async postJson<T>(path: string, body: any, opts?: { timeoutMs?: number }) {
@@ -90,6 +95,10 @@ export class AuthService {
           if (atk) localStorage.setItem('authToken', atk);
           if (atk) localStorage.setItem('accessToken', atk);
           if (rtk) localStorage.setItem('refreshToken', rtk);
+          // Start token refresh service now that user is logged in
+          if (atk) {
+            this.tokenRefresh.start();
+          }
         } catch {}
       // If API omitted token but set success, try refresh once
       if (!token) {
@@ -237,6 +246,9 @@ export class AuthService {
   }
 
   async logout(options?: { redirect?: boolean; returnTo?: string }) {
+    // Stop token refresh before clearing tokens
+    this.tokenRefresh.stop();
+    
     this.clearTokens();
     const doRedirect = options?.redirect !== false;
     if (!doRedirect) return;

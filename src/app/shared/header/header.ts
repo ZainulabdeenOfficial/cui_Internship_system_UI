@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { StoreService } from '../../shared/services/store.service';
 import { FormsModule } from '@angular/forms';
@@ -9,17 +9,27 @@ import { FormsModule } from '@angular/forms';
   standalone: true,
   imports: [CommonModule, FormsModule, RouterLink, RouterLinkActive],
   templateUrl: './header.html',
-  styleUrl: './header.css'
+  styleUrl: './header.css',
+  changeDetection: ChangeDetectionStrategy.OnPush  // Only check when inputs change or events fire
 })
 export class Header implements OnInit, OnDestroy {
   showMobileMenu = false;
   scrolled = false;
 
   private onScroll = () => {
-    this.scrolled = (window.scrollY || document.documentElement.scrollTop || 0) > 8;
+    const newScrolled = (window.scrollY || document.documentElement.scrollTop || 0) > 8;
+    // Only trigger change detection if scrolled state actually changed
+    if (newScrolled !== this.scrolled) {
+      this.scrolled = newScrolled;
+      this.cdr.markForCheck();
+    }
   };
 
-  constructor(public store: StoreService, private router: Router) {}
+  constructor(
+    public store: StoreService,
+    private router: Router,
+    private cdr: ChangeDetectorRef
+  ) {}
 
   ngOnInit(): void {
     window.addEventListener('scroll', this.onScroll, { passive: true });
@@ -34,14 +44,16 @@ export class Header implements OnInit, OnDestroy {
   // toggle mobile menu
   toggleMenu() {
     this.showMobileMenu = !this.showMobileMenu;
+    this.cdr.markForCheck();
   }
 
   // logout and redirect to role-specific login screen
-  logout() {
+  async logout() {
     const role = this.store.currentUser()?.role;
-    this.store.logout();
+    await this.store.logout();
     const qp = role && role !== 'student' ? { role } : {} as any;
-    this.router.navigate(['/login'], { queryParams: qp });
+    await this.router.navigate(['/login'], { queryParams: qp });
+    this.cdr.markForCheck();
   }
 
   // Faculty helper
@@ -70,5 +82,3 @@ export class Header implements OnInit, OnDestroy {
     return this.store.adminProfile();
   }
 }
-
-
