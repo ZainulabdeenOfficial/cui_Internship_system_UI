@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, Injector } from '@angular/core';
 import { Router } from '@angular/router';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
@@ -15,8 +15,12 @@ export class AuthService {
   constructor(
     private http: HttpClient,
     private router: Router,
-    private tokenRefresh: TokenRefreshService
+    private injector: Injector
   ) {}
+
+  private getTokenRefreshService(): TokenRefreshService {
+    return this.injector.get(TokenRefreshService);
+  }
   private absBase = environment.apiBaseUrl.replace(/\/$/, '');
   private rel(path: string) { return path.startsWith('/') ? path : `/${path}`; }
   private async postJson<T>(path: string, body: any, opts?: { timeoutMs?: number }) {
@@ -97,7 +101,7 @@ export class AuthService {
           if (rtk) localStorage.setItem('refreshToken', rtk);
           // Start token refresh service now that user is logged in
           if (atk) {
-            this.tokenRefresh.start();
+            this.getTokenRefreshService().start();
           }
         } catch {}
       // If API omitted token but set success, try refresh once
@@ -247,7 +251,7 @@ export class AuthService {
 
   async logout(options?: { redirect?: boolean; returnTo?: string }) {
     // Stop token refresh before clearing tokens
-    this.tokenRefresh.stop();
+    this.getTokenRefreshService().stop();
     
     this.clearTokens();
     const doRedirect = options?.redirect !== false;
