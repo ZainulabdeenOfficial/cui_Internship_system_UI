@@ -9,13 +9,15 @@ import { VerifyEmailRequest, VerifyEmailResponse } from '../models/auth/verify-e
 import { TokenRefreshService } from './token-refresh.service';
 import { firstValueFrom } from 'rxjs';
 import { timeout } from 'rxjs/operators';
+import { DataCacheService } from '../../core/services/data-cache.service';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   constructor(
     private http: HttpClient,
     private router: Router,
-    private injector: Injector
+    private injector: Injector,
+    private dataCache: DataCacheService
   ) {}
 
   private getTokenRefreshService(): TokenRefreshService {
@@ -252,7 +254,8 @@ export class AuthService {
   async logout(options?: { redirect?: boolean; returnTo?: string }) {
     // Stop token refresh before clearing tokens
     this.getTokenRefreshService().stop();
-    
+    // Clear all cached data so the next login fetches fresh data
+    this.dataCache.invalidateAll();
     this.clearTokens();
     const doRedirect = options?.redirect !== false;
     if (!doRedirect) return;

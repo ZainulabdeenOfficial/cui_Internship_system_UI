@@ -7,6 +7,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { PaginatePipe } from '../../shared/pagination/paginate.pipe';
 import { PaginatorComponent } from '../../shared/pagination/paginator';
 import { FacultyService, FacultyProfile, FacultyInternship, StudentWeeklyLogs, WeeklyLog } from '../../shared/services/faculty.service';
+import { DataCacheService } from '../../core/services/data-cache.service';
 
 @Component({
   selector: 'app-faculty-supervisor',
@@ -19,10 +20,18 @@ export class FacultySupervisor implements OnInit {
   private hasLoadedProfileOnce = false;
   private hasLoadedRequestsOnce = false;
 
-  constructor(private store: StoreService, private toast: ToastService, private route: ActivatedRoute, private router: Router, private facultyApi: FacultyService, private cdr: ChangeDetectorRef) {
-    // Pre-load APEX B requests on initialization for instant display
-    this.loadStudentRequests();
-    this.loadFacultyInternships();
+  constructor(private store: StoreService, private toast: ToastService, private route: ActivatedRoute, private router: Router, private facultyApi: FacultyService, private cdr: ChangeDetectorRef, private cache: DataCacheService) {
+    // Only pre-load on first mount — skip if cache is still fresh (navigating back to this route)
+    if (!this.cache.isFresh('faculty:requests')) {
+      this.loadStudentRequests();
+    } else {
+      this.hasLoadedRequestsOnce = true;
+    }
+    if (!this.cache.isFresh('faculty:internships')) {
+      this.loadFacultyInternships();
+    } else {
+      this.hasLoadedInternshipsOnce = true;
+    }
     
     try {
       this.route.queryParamMap.subscribe(p => {
@@ -364,27 +373,11 @@ export class FacultySupervisor implements OnInit {
       });
       this.facultyInternships = res?.data ?? [];
       this.hasLoadedInternshipsOnce = true;
-      console.group('📋 [Faculty Internships] API Response');
-      console.log('Raw response:', res);
-      console.log('Internships count:', this.facultyInternships.length);
-      if (this.facultyInternships.length > 0) {
-        console.table(this.facultyInternships.map(i => ({
-          internshipId: i.id,
-          student: i.student?.name,
-          regNo: i.student?.regNo,
-          type: i.type,
-          status: i.status,
-          facultyMarks: i.finalResult?.facultyMarks ?? '-',
-          siteMarks: i.finalResult?.siteMarks ?? '-',
-          totalMarks: i.finalResult?.totalMarks ?? '-',
-          hasResult: !!i.finalResult
-        })));
-      } else {
+      this.cache.mark('faculty:internships');
+      if (this.facultyInternships.length === 0) {
         console.warn('No internships returned from API (data array is empty)');
       }
-      console.groupEnd();
     } catch (err: any) {
-      // Non-critical — degrade gracefully if endpoint unavailable
       console.warn('[Faculty] Could not load faculty internships:', err?.error?.message || err?.message);
     } finally {
       this.loadingFacultyInternships = false;
@@ -400,19 +393,8 @@ export class FacultySupervisor implements OnInit {
   async loadStudentRequests(forceRefresh = false, silent = false) {
     if (this.loadingRequests) return;
     if (!silent) this.loadingRequests = true;
-    
-    console.log('🔄 [Faculty - Load Student Requests] Starting...', {
-      filter: this.requestFilter,
-      pageAppexA: this.page.appexA,
-      pageAppexB: this.page.appexB,
-      pageSize: this.pageSize,
-      silent
-    });
-    
     try {
       const statusFilter = this.requestFilter === 'all' ? undefined : this.requestFilter;
-      
-      // Load both requests in parallel for faster performance
       const [resA, resB] = await Promise.all([
         this.facultyApi.getAppexAApprovals(statusFilter, this.page.appexA, this.pageSize, {
           skipGlobalLoading: this.hasLoadedRequestsOnce || forceRefresh,
@@ -425,23 +407,15 @@ export class FacultySupervisor implements OnInit {
           forceRefresh
         })
       ]);
-      
       this.appexARequests = resA?.approvals || resA?.data || [];
       this.appexBRequests = resB?.verifications || resB?.data || [];
       this.hasLoadedRequestsOnce = true;
-      
-      console.log('✅ [Faculty - Load Student Requests] Loaded successfully:', {
-        appexACount: this.appexARequests.length,
-        appexBCount: this.appexBRequests.length,
-        appexARequests: this.appexARequests,
-        appexBRequests: this.appexBRequests
-      });
+      this.cache.mark('faculty:requests');
     } catch (err: any) {
       if (!silent) {
         const msg = err?.error?.message || err?.message || 'Failed to load student requests';
         this.toast.danger(msg);
       }
-      console.error('❌ [Faculty - Load Student Requests] Error:', err);
     } finally {
       if (!silent) this.loadingRequests = false;
     }

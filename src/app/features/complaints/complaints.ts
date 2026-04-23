@@ -5,6 +5,7 @@ import { RouterLink } from '@angular/router';
 import { StoreService, ComplaintCategory, Complaint } from '../../shared/services/store.service';
 import { StudentService } from '../../shared/services/student.service';
 import { RequestTrackerService } from '../../core/services/request-tracker.service';
+import { DataCacheService } from '../../core/services/data-cache.service';
 
 @Component({
   selector: 'app-complaints',
@@ -44,11 +45,15 @@ export class Complaints implements OnInit {
     public store: StoreService,
     private studentService: StudentService,
     private requestTracker: RequestTrackerService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private cache: DataCacheService
   ) {}
 
   ngOnInit() {
-    this.loadMyComplaints();
+    // Only fetch if data is not already cached (prevents spinner on every navigation)
+    if (!this.cache.isFresh('complaints:mine')) {
+      this.loadMyComplaints();
+    }
   }
 
   get isStudent() { return this.store.currentUser()?.role === 'student'; }
@@ -58,18 +63,12 @@ export class Complaints implements OnInit {
     try {
       this.loadingComplaints.set(true);
       this.complaintsError.set(null);
-      const requestId = this.requestTracker.startRequest('load-complaints');
-      
-      console.log('[Complaints] Loading complaints with status:', status);
-      const response = await this.studentService.getMyComplaints({
-        status: status
-      });
-      
-      console.log('[Complaints] Loaded complaints:', response);
+      this.requestTracker.startRequest('load-complaints');
+      const response = await this.studentService.getMyComplaints({ status });
       this.complaintsList.set(response.complaints || []);
+      this.cache.mark('complaints:mine');
       this.cdr.markForCheck();
     } catch (error: any) {
-      console.error('[Complaints] Error loading complaints:', error);
       this.complaintsError.set(error?.error?.message || 'Failed to load complaints. Please try again.');
     } finally {
       this.loadingComplaints.set(false);

@@ -2,6 +2,7 @@ import { Component, inject, signal, computed, OnInit, OnDestroy } from '@angular
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { StoreService } from '../../shared/services/store.service';
+import { DataCacheService } from '../../core/services/data-cache.service';
 
 @Component({
   selector: 'app-home',
@@ -11,8 +12,8 @@ import { StoreService } from '../../shared/services/store.service';
   styleUrl: './home.css'
 })
 export class Home implements OnInit, OnDestroy {
-  // ✅ Inject service instead of constructor parameter
   store = inject(StoreService);
+  private cache = inject(DataCacheService);
 
   // Carousel slides (uses your assets/1.jpg, 2.jpg, 3.jpg)
   readonly slides = [
@@ -139,10 +140,10 @@ export class Home implements OnInit, OnDestroy {
   constructor() {}
 
   ngOnInit(): void {
-    // Load announcements ONCE on component init (not in effect() which re-runs on every signal change)
+    // Only fetch announcements if cache is stale (first visit or >5 min old).
+    // On revisit the spinner will NOT show — data is already present in the store.
     this.loadAnnouncements();
 
-    // Set ready state with animation deferred to next microtask (only once)
     queueMicrotask(() => {
       this.ready.set(true);
       document.body.classList.add('home-solid');
@@ -154,9 +155,11 @@ export class Home implements OnInit, OnDestroy {
   }
 
   private async loadAnnouncements(): Promise<void> {
+    // Skip fetch + spinner if data is already fresh
+    if (this.cache.isFresh('announcements')) return;
     try {
       await this.store.loadAnnouncements();
-      // Reset pagination when reloading
+      this.cache.mark('announcements');
       this.currentAnnouncementsPage.set(1);
     } catch (error) {
       console.error('Failed to load announcements:', error);

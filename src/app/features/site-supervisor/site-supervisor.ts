@@ -1,4 +1,4 @@
-import { Component, computed, effect, OnInit, signal } from '@angular/core';
+import { Component, computed, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { StoreService } from '../../shared/services/store.service';
@@ -8,6 +8,7 @@ import { PaginatePipe } from '../../shared/pagination/paginate.pipe';
 import { PaginatorComponent } from '../../shared/pagination/paginator';
 import { SiteService, SiteEvaluationCriteria, SiteEvaluationPayload } from '../../shared/services/site.service';
 import { SiteInternship } from '../../shared/models/site/internship.models';
+import { DataCacheService } from '../../core/services/data-cache.service';
 
 @Component({
   selector: 'app-site-supervisor',
@@ -17,7 +18,7 @@ import { SiteInternship } from '../../shared/models/site/internship.models';
   styleUrl: './site-supervisor.css'
 })
 export class SiteSupervisor implements OnInit {
-  constructor(private store: StoreService, private toast: ToastService, private route: ActivatedRoute, private router: Router, private siteService: SiteService) {
+  constructor(private store: StoreService, private toast: ToastService, private route: ActivatedRoute, private router: Router, private siteService: SiteService, private cache: DataCacheService) {
     try {
       this.route.queryParamMap.subscribe(p => {
         const t = (p.get('tab') || '').toLowerCase();
@@ -25,30 +26,17 @@ export class SiteSupervisor implements OnInit {
         if ((allowed as readonly string[]).includes(t)) this.currentTab = t as any;
       });
     } catch {}
-    // Set default tab if no tab is provided
-    setTimeout(() => {
-      if (this.currentTab !== 'students' && this.currentTab !== 'details' && this.currentTab !== 'evaluations') {
-        this.currentTab = 'students';
-      }
-    }, 0);
   }
   
   // Expose Object methods to template
   readonly Object = Object;
 
   ngOnInit() {
-    this.loadSiteInternships();
-    
-    // Ensure default tab (students) data is properly initialized
+    // Only fetch on first visit — prevents spinner on every navigation back
+    if (!this.cache.isFresh('site:internships')) {
+      this.loadSiteInternships();
+    }
     setTimeout(() => this.selectTab(this.currentTab), 0);
-    
-    // Auto-load evaluations when evaluations tab is selected with a student
-    effect(() => {
-      if (this.currentTab === 'evaluations' && this.selectedId) {
-        console.log('📋 [SiteSupervisor] Evaluations tab active with student selected - loading evaluations...');
-        this.loadBothEvaluations();
-      }
-    });
   }
   get students() { return this.store.students; }
   selectedId: string | null = null;
@@ -201,17 +189,7 @@ export class SiteSupervisor implements OnInit {
       const raw: any = res.data;
       const list: SiteInternship[] = Array.isArray(raw) ? raw : (raw?.items || []);
       
-      console.log('📥 [SiteSupervisor.loadSiteInternships] Raw API response:', {
-        count: list.length,
-        currentMySiteId: this.mySiteId(),
-        siteIds: list.map(inv => inv.siteId),
-        studentIds: list.map(inv => inv.studentId || inv.student?.id)
-      });
-      
-      // Update the signal so UI re-renders with API data
       this.apiInternships.set(list);
-      console.log('📍 [SiteSupervisor] Signal updated with', list.length, 'internships');
-      
       this.siteInternships = list;
       this.internshipIdByStudentId = {};
       this.siteInternshipsByStudentId = {};
@@ -225,29 +203,10 @@ export class SiteSupervisor implements OnInit {
           }
           // Store full internship data for access to regNo, company, final results
           this.siteInternshipsByStudentId[studentId] = inv;
-          console.log(`✅ [SiteSupervisor] Mapped internship for student ${studentId}`, {
-            name: inv.student?.name,
-            regNo: inv.student?.regNo,
-            company: inv.site?.company?.name,
-            status: inv.status,
-            finalResult: inv.finalResult?.status
-          });
         }
       }
-      
-      // Force recalculation by logging computed values
-      const apiStudentsCount = this.apiStudents().length;
-      const myStudentsCount = this.myStudents().length;
-      
-      console.log(`📊 [SiteSupervisor] Loaded ${list.length} internships`, {
-        internshipCount: list.length,
-        studentCount: Object.keys(this.internshipIdByStudentId).length,
-        apiStudents: apiStudentsCount,
-        myStudents: myStudentsCount,
-        loadingStatus: this.loadingInternships
-      });
+      this.cache.mark('site:internships');
     } catch (err: any) {
-      console.error('❌ [SiteSupervisor] Failed to load internships:', err?.message);
       this.toast.danger('Unable to load internship data. Please refresh the page.');
     } finally {
       this.loadingInternships = false;
