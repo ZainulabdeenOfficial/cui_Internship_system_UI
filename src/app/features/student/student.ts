@@ -10,6 +10,7 @@ import { PaginatePipe } from '../../shared/pagination/paginate.pipe';
 import { PaginatorComponent } from '../../shared/pagination/paginator';
 import { AssignmentForm } from './assignment-form';
 import { Form3Form } from './form3-form';
+import { DataCacheService } from '../../core/services/data-cache.service';
 @Component({
   selector: 'app-student',
   standalone: true,
@@ -226,18 +227,19 @@ export class Student implements OnInit, OnDestroy {
   private hasLoadedMyCompanyRequestsOnce = false;
   private hasLoadedCompanyRequestStatusOnce = false;
   
-  constructor(private store: StoreService, private toast: ToastService, private route: ActivatedRoute, private router: Router, private studentApi: StudentService, private adminApi: AdminService, private cdr: ChangeDetectorRef) {
+  constructor(private store: StoreService, private toast: ToastService, private route: ActivatedRoute, private router: Router, private studentApi: StudentService, private adminApi: AdminService, private cdr: ChangeDetectorRef, private dataCache: DataCacheService) {
     this.lockSelection = effect(() => {
       const mine = this.myStudentId();
       if (mine && this.selectedId !== mine) this.selectedId = mine;
       
-      // Auto-load APEX B status when student is selected
-      if (this.selectedId) {
+      // Only load ApexB status if not already fresh in cache
+      if (this.selectedId && !this.dataCache.isFresh('student:apexb')) {
         this.loadApexBStatus();
-        this.loadStudentInternship();
-        
-        // Start polling for status updates every 30 seconds if not fully approved
+      }
+      // Start polling only once per session
+      if (this.selectedId && !this.dataCache.isFresh('student:polling')) {
         this.startStatusPolling();
+        this.dataCache.mark('student:polling');
       }
     });
     // Initialize tab from query params
@@ -304,23 +306,23 @@ export class Student implements OnInit, OnDestroy {
       effect(() => {
         const sid = this.selectedId;
         if (!sid) return;
-        // Reset all data-loading flags when student changes so they'll reload for the new student
+        // Only run the full AppEx-A load if cache is stale for this student
+        if (this.dataCache.isFresh('student:appexA:' + sid)) return;
+        // Reset tab-specific flags
         this.hasLoadedMyCompanyRequestsOnce = false;
         this.hasLoadedWeeklyLogsOnce = false;
         this.hasLoadedCompanyRequestStatusOnce = false;
         this.evaluationsLoadedOnce = false;
         (async () => {
-          // 1) Try to load from server
           let serverHas = false;
           try {
             const res = await this.apiGetAppExA({ skipGlobalLoading: this.hasLoadedAppExAOnce });
             this.hasLoadedAppExAOnce = true;
-            // Capture internship ID from the wrapper object whenever present
+            this.dataCache.mark('student:appexA:' + sid);
             const internshipObj = (res as any)?.internship;
             const resolvedId: string = internshipObj?.id || internshipObj?._id || (res as any)?.internshipId || '';
             if (resolvedId) this.studentInternshipId = resolvedId;
             const ax = internshipObj?.appexA || (res as any)?.appexA || {};
-            // Track approval status from API
             const status = ax.status || internshipObj?.status || 'pending';
             if (status === 'approved' || status === 'APPROVED') {
               this.appexAStatus = 'approved';
@@ -329,7 +331,6 @@ export class Student implements OnInit, OnDestroy {
             } else {
               this.appexAStatus = 'pending';
             }
-            // treat as present when at least one meaningful field exists
             serverHas = Object.keys(ax).some(k => {
               const v = (ax as any)[k];
               return v !== undefined && v !== null && String(v).toString().trim().length > 0;
@@ -343,22 +344,21 @@ export class Student implements OnInit, OnDestroy {
                 contactDesignation: ax.contactDesignation || '', 
                 contactPhone: ax.contactPhone || '', 
                 contactEmail: ax.contactEmail || '',
-                internshipField: ax.internshipNature || ax.internshipField || '', // Backend uses internshipNature
+                internshipField: ax.internshipNature || ax.internshipField || '',
                 internshipLocation: ax.internshipLocation || '',
                 startDate: (ax.startDate || '').slice(0,10), 
                 endDate: (ax.endDate || '').slice(0,10),
                 workingDays: ax.workingDays || '', 
                 workingHours: ax.workingHours || '',
-                numberOfPositions: ax.numberOfInternship || ax.numberOfPositions || 1, // Backend uses numberOfInternship
+                numberOfPositions: ax.numberOfInternship || ax.numberOfPositions || 1,
                 natureOfInternship: ax.natureOfInternship || { softwareDevelopment: false, dataScience: false, networking: false, cyberSecurity: false, webMobile: false, otherChecked: false, otherText: '' },
                 mode: ax.mode || 'On-Site'
               };
             }
           } catch (err) {
-            // ignore load error, will attempt draft handling
+            // ignore load error
           }
 
-          // 2) Check for draft in localStorage and auto-save if server has no record
           try {
             const key = this.selectedId ? `appexA_draft_${this.selectedId}` : null;
             if (key) {
@@ -366,30 +366,20 @@ export class Student implements OnInit, OnDestroy {
               if (!serverHas && draftRaw) {
                 try {
                   const draft = JSON.parse(draftRaw);
-                  // submit draft to server
                   await this.apiSubmitAppExA(draft);
-                  // clear draft after successful auto-save
                   localStorage.removeItem(key);
                   this.appexASubmitted = true;
                   this.toast.info('Saved saved internship approval draft to server');
-                } catch (err) {
-                  // submission failed — keep draft intact
-                }
-              } else if (!serverHas && !draftRaw) {
-                // nothing saved remotely; keep empty form (student can start filling)
+                } catch (err) {}
               }
             }
           } catch {}
 
-          // 3) Auto-load approved company requests for display in AppEx-A form
           try {
             if (!this.hasLoadedMyCompanyRequestsOnce) {
               await this.loadMyCompanyRequests();
             }
-          } catch (err) {
-            // Silently fail — company requests are optional
-            console.warn('Failed to load company requests:', err);
-          }
+          } catch (err) {}
         })();
       });
     } catch {}
@@ -711,16 +701,13 @@ export class Student implements OnInit, OnDestroy {
     if (this.loadingApexBStatus || !this.selectedId) return;
     
     this.loadingApexBStatus = true;
-    console.log('🔄 [Student] Loading APEX B verification status...');
-    
     try {
-      // Use student-specific API endpoint (not admin endpoint)
       const res = await this.studentApi.getAppexBVerification({
         skipGlobalLoading: this.hasLoadedApexBStatusOnce || isBackground,
         forceRefresh: isBackground
       });
       this.hasLoadedApexBStatusOnce = true;
-      console.log('✅ [Student] APEX B API Response:', res);
+      this.dataCache.mark('student:apexb');
       
       // Response structure from student endpoint
       const apexB = res?.apexB || res?.data || res;
@@ -929,22 +916,30 @@ export class Student implements OnInit, OnDestroy {
     const tabChanged = this.currentTab !== tab;
     this.currentTab = tab;
     
-    // Reflect in URL for deep links only if tab actually changed
     if (tabChanged) {
       try { this.router.navigate([], { relativeTo: this.route, queryParams: { tab }, queryParamsHandling: 'merge' }); } catch {}
     }
     
-    // Auto-load data for the selected tab
+    // Guard every tab load with DataCacheService — prevents spinner on every navigation back
     if (tab === 'appex') {
-      this.loadApexBStatus(true);
-    } else if (tab === 'weeklylogs' && !this.hasLoadedWeeklyLogsOnce) {
-      this.loadWeeklyLogs();
-    } else if (tab === 'company-request' && !this.hasLoadedCompanyRequestStatusOnce) {
-      this.loadCompanyRequestStatus();
-    } else if (tab === 'evaluations' && !this.loadingEvaluations) {
-      const hasId = !!(this.studentInternshipId || this.apexBStatus?.internshipId);
-      const shouldLoad = !this.evaluationsLoadedOnce || hasId;
-      if (shouldLoad) this.loadEvaluations();
+      // Always refresh apexB status silently in background; first time shows spinner
+      if (!this.dataCache.isFresh('student:apexb')) {
+        this.loadApexBStatus(false);
+      } else {
+        this.loadApexBStatus(true); // background refresh, no spinner
+      }
+    } else if (tab === 'weeklylogs') {
+      if (!this.dataCache.isFresh('student:weeklylogs')) {
+        this.loadWeeklyLogs();
+      }
+    } else if (tab === 'company-request') {
+      if (!this.dataCache.isFresh('student:companystatus')) {
+        this.loadCompanyRequestStatus();
+      }
+    } else if (tab === 'evaluations') {
+      if (!this.dataCache.isFresh('student:evaluations') && !this.loadingEvaluations) {
+        this.loadEvaluations();
+      }
     }
   }
 
@@ -1197,6 +1192,8 @@ export class Student implements OnInit, OnDestroy {
   async loadMyCompanyRequests() {
     if (!this.selectedId) return;
     if (!this.ensureMine()) return;
+    // Skip if already fresh (prevents spinner on every tab switch)
+    if (this.dataCache.isFresh('student:companyrequests')) return;
     
     this.loadingMyCompanyRequests = true;
     try {
@@ -1206,10 +1203,9 @@ export class Student implements OnInit, OnDestroy {
         search: ''
       });
       this.myCompanyRequests = result?.companyRequests || [];
-      // Filter approved companies for dropdown in AppEx-A form
       this.approvedCompanyRequests = this.myCompanyRequests.filter(r => r.status === 'APPROVED' || r.status === 'approved');
       this.hasLoadedMyCompanyRequestsOnce = true;
-      console.log('✅ Company requests loaded:', { total: this.myCompanyRequests.length, approved: this.approvedCompanyRequests.length });
+      this.dataCache.mark('student:companyrequests');
     } catch (err: any) {
       const msg = err?.error?.message || err?.message || 'Failed to load company requests';
       this.toast.danger(msg);
@@ -1224,6 +1220,8 @@ export class Student implements OnInit, OnDestroy {
   async loadCompanyRequestStatus() {
     if (!this.selectedId) return;
     if (!this.ensureMine()) return;
+    // Skip if already fresh
+    if (this.dataCache.isFresh('student:companystatus')) return;
     
     this.loadingMyCompanyRequests = true;
     try {
@@ -1234,18 +1232,11 @@ export class Student implements OnInit, OnDestroy {
         page: 1,
         limit: 50
       });
-      
       this.companyRequestStatus = result?.requests || [];
       this.companyRequestStatistics = result?.statistics || null;
       this.hasLoadedCompanyRequestStatusOnce = true;
-      
-      console.log('✅ Company request status loaded:', {
-        total: result?.total,
-        statistics: this.companyRequestStatistics
-      });
+      this.dataCache.mark('student:companystatus');
     } catch (err: any) {
-      const msg = err?.error?.message || err?.message || 'Failed to load company request status';
-      console.warn('[Student] loadCompanyRequestStatus error:', msg);
       this.companyRequestStatus = [];
       this.companyRequestStatistics = null;
     } finally {
@@ -1414,6 +1405,8 @@ export class Student implements OnInit, OnDestroy {
   async loadWeeklyLogs(forceRefresh = false) {
     if (!this.selectedId) return;
     if (!this.ensureMine()) return;
+    // Skip if already fresh and not a forced refresh
+    if (!forceRefresh && this.dataCache.isFresh('student:weeklylogs')) return;
 
     this.loadingWeeklyLogs = true;
     try {
@@ -1424,20 +1417,14 @@ export class Student implements OnInit, OnDestroy {
       this.weeklyLogs = res?.weeklyLogs || [];
       this.weeklyLogStatus = res?.weeklyLogStatus || {};
       this.hasLoadedWeeklyLogsOnce = true;
+      this.dataCache.mark('student:weeklylogs');
       
-      // Capture internship ID if the weekly logs response includes it
       const wlInternshipId: string = res?.internshipId || res?.weeklyLogStatus?.internshipId || '';
       if (wlInternshipId && !this.studentInternshipId) this.studentInternshipId = wlInternshipId;
 
-      // Set default week number to current week if available
       if (this.weeklyLogStatus.currentWeek) {
         this.weeklyLogForm.weekNo = this.weeklyLogStatus.currentWeek;
       }
-      
-      console.log('✅ [Student] Weekly logs loaded:', {
-        count: this.weeklyLogs.length,
-        status: this.weeklyLogStatus
-      });
     } catch (err: any) {
       const msg = err?.error?.message || err?.message || 'Failed to load weekly logs';
       this.toast.danger(msg);
@@ -1453,10 +1440,10 @@ export class Student implements OnInit, OnDestroy {
    */
   async loadStudentInternship(forceRefresh = false) {
     if (!this.selectedId) return;
+    // Skip if we already have an internship ID and not forced
+    if (!forceRefresh && this.studentInternshipId) return;
     try {
       const res = await this.studentApi.getMyInternship({ skipGlobalLoading: true, forceRefresh });
-      // Try every common field name the backend may use for the internship ID
-      // Handle array responses (e.g., from /api/student/internships)
       const id: string =
         res?.internship?.id ||
         res?.internship?._id ||
@@ -1470,19 +1457,12 @@ export class Student implements OnInit, OnDestroy {
         res?._id ||
         res?.internshipId ||
         '';
-      if (id) {
-        this.studentInternshipId = id;
-        console.log('✅ [Student] studentInternshipId resolved:', this.studentInternshipId);
-      } else {
-        console.warn('⚠️ [Student] getMyInternship returned no usable ID. Full response:', res);
-      }
+      if (id) this.studentInternshipId = id;
     } catch (err: any) {
-      // 404 is expected when the student hasn't created an internship yet
       if (err?.status !== 404) {
         console.warn('⚠️ [Student] loadStudentInternship failed:', err?.status, err?.message);
       }
     } finally {
-      // If we still have no ID try to extract it from APEX B status as last resort
       if (!this.studentInternshipId && this.apexBStatus?.internshipId) {
         this.studentInternshipId = this.apexBStatus.internshipId;
       }
@@ -1498,48 +1478,27 @@ export class Student implements OnInit, OnDestroy {
    */
   /** Load student's final result from /api/faculty/evaluation-summary API (student-facing endpoint) */
   async loadFinalResult(forceRefresh = false) {
-    // Resolve internship ID from all available sources (in priority order)
-    let internshipIdSource = '';
-    let internshipId: string | null = null;
+    // Skip if already fresh and not a forced refresh
+    if (!forceRefresh && this.dataCache.isFresh('student:evaluations')) return;
 
-    if (this.studentInternshipId) {
-      internshipId = this.studentInternshipId;
-      internshipIdSource = 'from stored studentInternshipId';
-    } else if (this.apexBStatus?.internshipId) {
-      internshipId = this.apexBStatus.internshipId;
-      internshipIdSource = 'from apexBStatus';
-    }
+    let internshipId: string | null = this.studentInternshipId || this.apexBStatus?.internshipId || null;
 
     if (!internshipId) {
-      // Attempt to load internship first, then retry
-      console.warn('⚠️ [Student] No internshipId yet — fetching internship first...');
       await this.loadStudentInternship(true);
       if (!this.studentInternshipId) {
-        console.warn('⚠️ [Student] Still no internshipId after fetch — cannot load final result');
-        // Ensure loading state is reset even when no internship ID
         this.loadingEvaluations = false;
         return;
       }
       internshipId = this.studentInternshipId;
-      internshipIdSource = 'from loadStudentInternship()';
     }
 
-    // Prevent concurrent requests
-    if (this.loadingEvaluations) {
-      console.warn('⚠️ [Student] Already loading evaluations, skipping duplicate request');
-      return;
-    }
+    if (this.loadingEvaluations) return;
 
     this.loadingEvaluations = true;
     this.cdr.markForCheck();
     
     try {
-      console.log(`🌐 [Student] Fetching final result using internshipId (${internshipIdSource}): ${internshipId}`);
-      
-      // Call the /api/student/final-result endpoint
       const res = await this.studentApi.getEvaluationSummary(internshipId, { forceRefresh });
-      
-      // Extract and store the nested response structure from API
       if (res && res.finalResult) {
         this.studentFinalResult = {
           message: res.message || 'Final result loaded',
@@ -1556,29 +1515,21 @@ export class Student implements OnInit, OnDestroy {
           },
           internship: res.internship || null
         };
-        console.log('✅ [Student] Final result loaded:', this.studentFinalResult);
       } else {
         this.studentFinalResult = null;
       }
       this.evaluationsLoadedOnce = true;
+      this.dataCache.mark('student:evaluations');
     } catch (err: any) {
       const status = err?.status ?? 0;
-      if (status === 404 || status === 400) {
-        console.log('ℹ️ [Student] Final result not available (404/400)');
-      } else {
-        const msg = err?.error?.message || err?.message || 'Failed to load final result';
-        console.warn('[Student] Error loading final result:', msg);
+      if (status !== 404 && status !== 400) {
+        console.warn('[Student] Error loading final result:', err?.error?.message || err?.message);
       }
       this.studentFinalResult = null;
     } finally {
-      // Always reset loading state regardless of success or failure
       this.loadingEvaluations = false;
       this.cdr.markForCheck();
-      try { 
-        this.cdr.detectChanges(); 
-      } catch (e) {
-        console.warn('⚠️ [Student] Change detection failed:', e);
-      }
+      try { this.cdr.detectChanges(); } catch {}
     }
   }
 

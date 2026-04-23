@@ -10,6 +10,7 @@ import { AdminService } from '../../shared/services/admin.service';
 import { SkeletonListComponent } from '../../shared/components/skeleton';
 import { SkeletonLoaderService } from '../../core/services/skeleton-loader.service';
 import { CreateAccountRequest } from '../../shared/models/admin/create-account.models';
+import { DataCacheService } from '../../core/services/data-cache.service';
 
 @Component({
   selector: 'app-admin',
@@ -19,33 +20,33 @@ import { CreateAccountRequest } from '../../shared/models/admin/create-account.m
   styleUrl: './admin.css'
 })
 export class Admin {
-  // Track which tabs have been loaded to prevent reloading on tab switch
-  private hasLoadedTab = new Set<string>();
+  // DataCacheService replaces the instance-level Set — persists across route navigations
+  private readonly CACHE_TTL = 3 * 60 * 1000; // 3 minutes for admin data
 
-  constructor(private store: StoreService, private toast: ToastService, private route: ActivatedRoute, private router: Router, private adminApi: AdminService, private cdr: ChangeDetectorRef) {
+  constructor(private store: StoreService, private toast: ToastService, private route: ActivatedRoute, private router: Router, private adminApi: AdminService, private cdr: ChangeDetectorRef, private dataCache: DataCacheService) {
     try {
       this.route.queryParamMap.subscribe(p => {
         const t = (p.get('tab') || '').toLowerCase();
         const allowed = ['requests','announcements','officers','faculty','companies','sites','compliance','complaints','scheme','formsrequest','evaluation'] as const;
         if ( (allowed as readonly string[]).includes(t) ) {
           this.currentTab = t as any;
-          // Auto-load data when navigating directly via URL (no need to click refresh)
-          if (this.currentTab === 'requests') {
-            // Reset to default view: Pending, first page, no search
+          // Auto-load data when navigating directly via URL — but only if cache is stale
+          if (this.currentTab === 'requests' && !this.dataCache.isFresh('admin:tab:requests', this.CACHE_TTL)) {
             this.reviewCompanyFilter.status = 'PENDING';
             this.reviewCompanyFilter.page = 1;
             this.reviewCompanyFilter.search = '';
             this.loadReviewCompany();
-          } else if (this.currentTab === 'companies' || this.currentTab === 'sites') {
-            // Ensure these sections are populated on direct navigation as well
+          } else if ((this.currentTab === 'companies' || this.currentTab === 'sites') && !this.dataCache.isFresh('admin:tab:companies', this.CACHE_TTL)) {
             this.refreshCompanies();
             if (this.currentTab === 'sites') this.refreshSites();
           }
         }
       });
     } catch {}
-    // Preload companies once for cross-tab usage (site supervisor dropdowns etc.)
-    this.refreshCompanies();
+    // Preload companies once for cross-tab usage
+    if (!this.dataCache.isFresh('admin:companies', this.CACHE_TTL)) {
+      this.refreshCompanies();
+    }
   }
   get students() { return this.store.students; }
   get complaints() { return this.store.complaints; }
@@ -134,9 +135,10 @@ export class Admin {
     this.currentTab = tab;
     try { this.router.navigate([], { relativeTo: this.route, queryParams: { tab }, queryParamsHandling: 'merge' }); } catch {}
     
-    // Load data only once per tab to prevent unnecessary API calls
-    if (this.hasLoadedTab.has(tab)) return;
-    this.hasLoadedTab.add(tab);
+    // Load data only once per tab per cache TTL — prevents re-loading on every navigation
+    const cacheKey = 'admin:tab:' + tab;
+    if (this.dataCache.isFresh(cacheKey, this.CACHE_TTL)) return;
+    this.dataCache.mark(cacheKey);
 
     // Lazy-load data on first visit to tab
     if (tab === 'companies' || tab === 'sites') {
@@ -144,30 +146,22 @@ export class Admin {
       if (tab === 'sites') this.refreshSites();
     }
     if (tab === 'requests') {
-      // Reset to default: Pending with empty search
       this.reviewCompanyFilter.status = 'PENDING';
       this.reviewCompanyFilter.page = 1;
       this.reviewCompanyFilter.search = '';
       this.loadReviewCompany();
     }
     if (tab === 'complaints') {
-      // Load complaints with default filters
       this.complaintsPagination.page = 1;
       this.complaintsFilter.status = '';
       this.complaintsFilter.search = '';
-      // Fire-and-forget async load (runs in background)
       setTimeout(() => this.loadComplaints(), 0);
     }
     if (tab === 'formsRequest') {
-      // Set default sub-tab and auto-load APEX A forms
       this.currentFormsSubTab = 'apexA';
-      console.log('🔄 [FormRequest Tab] Switching to Forms Request tab, current sub-tab:', this.currentFormsSubTab);
-      console.log('📊 [FormRequest Tab] Current APEX A forms count:', this.apexAForms.length);
-      
       this.loadApexAForms();
     }
     if (tab === 'evaluation') {
-      // Load all internships for browsing/selection
       this.loadAllInternships();
     }
   }
@@ -308,6 +302,7 @@ export class Admin {
       this.companiesCache = list.map(x => ({
         id: x.id, name: x.name, address: x.address, email: x.email, website: x.website, description: x.description, industry: x.industry, phone: x.phone, remoteId: x.id
       }));
+      this.dataCache.mark('admin:companies');
     } catch (err: any) {
       const msg = err?.error?.message || err?.message || 'Failed to load companies from server';
       this.toast.danger(msg);
