@@ -1,24 +1,24 @@
 import { Injectable } from '@angular/core';
 import { HttpRequest } from '@angular/common/http';
 import { Observable, shareReplay, finalize } from 'rxjs';
+import { LoadingService } from './loading.service';
 
 /**
  * Request Deduplicator Service
- * Prevents duplicate concurrent identical GET requests
- * If the same GET request is already in-flight, returns the same observable
- * Useful for when multiple components request the same data simultaneously
+ * Prevents duplicate concurrent identical GET requests.
+ * Also ensures the LoadingService counter is kept in sync:
+ * when a component unsubscribes mid-request (navigation), the spinner is force-hidden
+ * so the counter never gets stuck above zero.
  */
 @Injectable({ providedIn: 'root' })
 export class RequestDeduplicatorService {
   private pendingRequests = new Map<string, Observable<any>>();
+  // Track which in-flight keys are currently showing the global spinner
+  private spinnerKeys = new Set<string>();
 
-  /**
-   * Deduplicate a request
-   * If the same request is already in progress, returns the shared observable
-   * Otherwise starts the request and caches it while in-flight
-   */
+  constructor(private loadingService: LoadingService) {}
+
   deduplicate<T>(req: HttpRequest<any>, request$: Observable<T>): Observable<T> {
-    // Only deduplicate GET requests
     if (req.method !== 'GET') {
       return request$;
     }
@@ -26,22 +26,24 @@ export class RequestDeduplicatorService {
     const key = this.generateKey(req);
     
     if (this.pendingRequests.has(key)) {
-      console.log(`[RequestDedup] ⚡ Returning cached request for: ${key}`);
       return this.pendingRequests.get(key) as Observable<T>;
     }
 
-    console.log(`[RequestDedup] 📡 Starting new request: ${key}`);
-    
-    // shareReplay(1) keeps the observable alive until all subscribers unsubscribe
-    // This allows multiple components to subscribe and get the same result
     const deduped$ = request$.pipe(
       shareReplay(1),
       finalize(() => {
-        // Clean up the cache entry after all subscribers have unsubscribed
-        // Use setTimeout to ensure all micro-tasks complete
         setTimeout(() => {
           this.pendingRequests.delete(key);
-          console.log(`[RequestDedup] 🧹 Cleaned up cache for: ${key}`);
+          // If this request was showing the spinner (not skipGlobalLoading),
+          // ensure the spinner is hidden when the stream is fully torn down.
+          // This handles the case where a component navigates away mid-request.
+          if (this.spinnerKeys.has(key)) {
+            this.spinnerKeys.delete(key);
+            // Force the loading count to 0 if no other requests are pending
+            if (this.pendingRequests.size === 0) {
+              this.loadingService.forceHide();
+            }
+          }
         }, 100);
       })
     );
@@ -73,5 +75,10 @@ export class RequestDeduplicatorService {
    */
   getPendingCount(): number {
     return this.pendingRequests.size;
+  }
+
+  /** Called by the HTTP interceptor to mark that a request is showing the global spinner. */
+  trackSpinner(key: string): void {
+    this.spinnerKeys.add(key);
   }
 }

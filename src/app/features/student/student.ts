@@ -738,17 +738,19 @@ export class Student implements OnInit, OnDestroy {
           fullyApproved: this.isFullyApproved()
         });
         
-        // If fully approved, automatically load weekly logs and evaluations; switch to weeklylogs tab
+        // If fully approved, load weekly logs and evaluations — but only if not already cached
         if (this.isFullyApproved()) {
-          console.log('✅ [Student] Fully approved! Auto-loading weekly logs and evaluations...');
-          this.loadWeeklyLogs();
-          if (!this.evaluationsLoadedOnce) this.loadEvaluations();
-          
+          // Use cache guards: skip if already loaded this session
+          if (!this.dataCache.isFresh('student:weeklylogs')) {
+            this.loadWeeklyLogs();
+          }
+          if (!this.dataCache.isFresh('student:evaluations')) {
+            this.loadEvaluations();
+          }
           // Auto-switch to weekly logs tab if currently on approval forms
           if (['appex', 'assignment', 'form3', 'appex-c'].includes(this.currentTab)) {
             this.selectTab('weeklylogs');
           }
-          
           // Stop polling once fully approved
           this.stopStatusPolling();
         }
@@ -922,12 +924,11 @@ export class Student implements OnInit, OnDestroy {
     
     // Guard every tab load with DataCacheService — prevents spinner on every navigation back
     if (tab === 'appex') {
-      // Always refresh apexB status silently in background; first time shows spinner
+      // Only load/refresh if cache is stale; if fresh, data is already in memory
       if (!this.dataCache.isFresh('student:apexb')) {
         this.loadApexBStatus(false);
-      } else {
-        this.loadApexBStatus(true); // background refresh, no spinner
       }
+      // When cache IS fresh: do nothing — apexBStatus is already populated in memory
     } else if (tab === 'weeklylogs') {
       if (!this.dataCache.isFresh('student:weeklylogs')) {
         this.loadWeeklyLogs();

@@ -60,6 +60,11 @@ export const httpInterceptor: HttpInterceptorFn = (req, next) => {
   
   if (!skipGlobalLoading) {
     loadingService.show();
+    // Register this key with the deduplicator so it can fix the counter on navigation
+    if (req.method === 'GET' && !skipDedup) {
+      const key = `${req.method}:${req.urlWithParams}`;
+      dedup.trackSpinner(key);
+    }
   }
 
   // Execute the request with deduplication for GET requests
