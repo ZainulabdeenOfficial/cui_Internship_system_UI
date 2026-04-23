@@ -1,4 +1,4 @@
-import { Component, inject, signal, computed, effect } from '@angular/core';
+import { Component, inject, signal, computed, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { StoreService } from '../../shared/services/store.service';
@@ -10,7 +10,7 @@ import { StoreService } from '../../shared/services/store.service';
   templateUrl: './home.html',
   styleUrl: './home.css'
 })
-export class Home {
+export class Home implements OnInit, OnDestroy {
   // ✅ Inject service instead of constructor parameter
   store = inject(StoreService);
 
@@ -136,28 +136,21 @@ export class Home {
     return this.getDaysOld(createdAt) > this.archivedAfterDays;
   }
 
-  // ✅ Use constructor with effect() instead of lifecycle hooks
-  constructor() {
-    // Load announcements from public API on component init
-    effect(() => {
-      // No token check needed - announcements are loaded from public API
-      this.loadAnnouncements();
-    });
+  constructor() {}
 
-    // Set ready state with animation deferred to next microtask
-    effect(() => {
-      queueMicrotask(() => {
-        this.ready.set(true);
-        document.body.classList.add('home-solid');
-      });
-    });
+  ngOnInit(): void {
+    // Load announcements ONCE on component init (not in effect() which re-runs on every signal change)
+    this.loadAnnouncements();
 
-    // Cleanup on destroy
-    effect(() => {
-      return () => {
-        document.body.classList.remove('home-solid');
-      };
+    // Set ready state with animation deferred to next microtask (only once)
+    queueMicrotask(() => {
+      this.ready.set(true);
+      document.body.classList.add('home-solid');
     });
+  }
+
+  ngOnDestroy(): void {
+    document.body.classList.remove('home-solid');
   }
 
   private async loadAnnouncements(): Promise<void> {

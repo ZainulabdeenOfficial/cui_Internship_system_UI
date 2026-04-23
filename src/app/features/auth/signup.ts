@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, Renderer2 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -15,7 +15,7 @@ import type { StudentRegisterRequest } from '../../shared/models/auth.models';
   styleUrl: './signup.css'
 })
 export class Signup {
-  constructor(private store: StoreService, private router: Router, private auth: AuthService, private toast: ToastService) {}
+  constructor(private store: StoreService, private router: Router, private auth: AuthService, private toast: ToastService, private renderer: Renderer2) {}
   model = { name: '', email: '', password: '', registrationNo: '' };
   error: string | null = null;
   slow = false;
@@ -170,6 +170,16 @@ export class Signup {
     if (this.slowTimer) { clearTimeout(this.slowTimer); this.slowTimer = null; }
     this.slow = false; this.loading = false;
   }
-  ngOnInit(){ document.body.classList.add('auth-light'); }
-  ngOnDestroy(){ document.body.classList.remove('auth-light'); }
+  ngOnInit(){ 
+    document.body.classList.add('auth-light');
+    this.renderer.setStyle(document.body, 'background', 'none');
+    this.renderer.setStyle(document.body, 'background-image', 'none');
+    this.renderer.setStyle(document.body, 'background-color', 'transparent');
+  }
+  ngOnDestroy(){ 
+    document.body.classList.remove('auth-light');
+    this.renderer.removeStyle(document.body, 'background');
+    this.renderer.removeStyle(document.body, 'background-image');
+    this.renderer.removeStyle(document.body, 'background-color');
+  }
 }

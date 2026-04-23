@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit, Renderer2 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink, ActivatedRoute } from '@angular/router';
@@ -16,7 +16,7 @@ import { environment } from '../../../environments/environment';
 })
 
 export class Login implements OnDestroy, OnInit {
-  constructor(private store: StoreService, private router: Router, private auth: AuthService, private route: ActivatedRoute, private toast: ToastService) {
+  constructor(private store: StoreService, private router: Router, private auth: AuthService, private route: ActivatedRoute, private toast: ToastService, private renderer: Renderer2) {
     // Warm up the student route chunk in the background to speed up post-login navigation
     try { import('../../features/student/student'); } catch {}
   }
@@ -41,6 +41,9 @@ export class Login implements OnDestroy, OnInit {
 
   ngOnInit(): void {
     document.body.classList.add('auth-light');
+    this.renderer.setStyle(document.body, 'background', 'none');
+    this.renderer.setStyle(document.body, 'background-image', 'none');
+    this.renderer.setStyle(document.body, 'background-color', 'transparent');
     // Ensure captcha is generated immediately so it's visible on first paint
     if (!this.captchaCode) this.generateCaptcha();
     try {
@@ -64,7 +67,13 @@ export class Login implements OnDestroy, OnInit {
     // System status check removed - endpoint not implemented on backend
   }
 
-  ngOnDestroy(): void { if (this.ticker) clearInterval(this.ticker); document.body.classList.remove('auth-light'); }
+  ngOnDestroy(): void { 
+    if (this.ticker) clearInterval(this.ticker); 
+    document.body.classList.remove('auth-light');
+    this.renderer.removeStyle(document.body, 'background');
+    this.renderer.removeStyle(document.body, 'background-image');
+    this.renderer.removeStyle(document.body, 'background-color');
+  }
   private startTicker() {
     if (this.ticker) clearInterval(this.ticker);
     this.ticker = setInterval(() => { this.now = Date.now(); if (this.cooldownRemaining() === 0) { clearInterval(this.ticker); this.ticker = null; } }, 500);
