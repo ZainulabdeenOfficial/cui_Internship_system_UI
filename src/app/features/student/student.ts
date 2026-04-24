@@ -254,17 +254,23 @@ export class Student implements OnInit, OnDestroy {
             const norm = (tabParam || '').toString().toLowerCase().replace(/[^a-z0-9]/g, '');
             // map some legacy/alternate names to canonical tabs
             const aliasMap: Record<string, string> = {
-              'forms': 'appex', // legacy alias
+              'forms': 'appex',
               'form3': 'form3',
               'form03': 'form3',
-              'form-3': 'form3',
-              'form_3': 'form3',
               'formthree': 'form3',
               'assignment': 'assignment',
-              'assignments': 'assignments',
+              'assignments': 'assignment',
               'complaints': 'complaints',
               'appex': 'appex',
-              'approval': 'appex'
+              'approval': 'appex',
+              // Hyphen stripped by normalizer — must map explicitly
+              'companyrequest': 'company-request',
+              'companyreq': 'company-request',
+              'request': 'company-request',
+              'weeklylogs': 'weeklylogs',
+              'weeklylog': 'weeklylogs',
+              'evaluations': 'evaluations',
+              'evaluation': 'evaluations',
             };
             const mapped = aliasMap[norm] ?? norm;
             if ((allowed as readonly string[]).includes(mapped)) {
@@ -286,7 +292,8 @@ export class Student implements OnInit, OnDestroy {
           }
         // guard: if not approved, restrict to core forms/evidence/complaints
         const isOk = this.isApproved();
-        const visibleWhenPending = new Set(['appex','assignment','form3','evidence','complaints','weeklylogs','evaluations']);
+        // Tabs accessible even before full approval
+        const visibleWhenPending = new Set(['appex','assignment','form3','evidence','complaints','weeklylogs','evaluations','company-request']);
         if (!isOk && !visibleWhenPending.has(this.currentTab)) {
           this.currentTab = 'appex';
           try { this.router.navigate([], { relativeTo: this.route, queryParams: { tab: 'appex' }, queryParamsHandling: 'merge' }); } catch {}

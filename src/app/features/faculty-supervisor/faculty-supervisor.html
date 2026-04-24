@@ -1,12 +1,43 @@
 <div class="container py-4">
   <h2 class="mb-3">Faculty Supervisor</h2>
-  <ul class="nav nav-tabs mb-3">
-    <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='students'" (click)="selectTab('students')">Students</button></li>
-    <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='requests'" (click)="selectTab('requests')">Student Requests</button></li>
-    <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='weekly-logs'" (click)="selectTab('weekly-logs')"><i class="bi bi-journal-text me-1"></i>Weekly Logs</button></li>
-    <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='profile'" (click)="selectTab('profile')">Profile</button></li>
-    <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='marks'" (click)="selectTab('marks')"><i class="bi bi-bar-chart-line me-1"></i>Evaluation Marks</button></li>
-    <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='finalization'" (click)="selectTab('finalization')"><i class="bi bi-check-square me-1"></i>Finalize Results</button></li>
+  <!-- ════ PREMIUM FACULTY TAB BAR ════ -->
+  <ul class="faculty-tabs-bar">
+    <li class="tab-item">
+      <button type="button" class="tab-btn" [class.active]="currentTab==='students'" (click)="selectTab('students')">
+        <i class="bi bi-people-fill tab-icon"></i>
+        Students
+      </button>
+    </li>
+    <li class="tab-item">
+      <button type="button" class="tab-btn" [class.active]="currentTab==='requests'" (click)="selectTab('requests')">
+        <i class="bi bi-file-earmark-check tab-icon"></i>
+        Student Requests
+      </button>
+    </li>
+    <li class="tab-item">
+      <button type="button" class="tab-btn" [class.active]="currentTab==='weekly-logs'" (click)="selectTab('weekly-logs')">
+        <i class="bi bi-journal-text tab-icon"></i>
+        Weekly Logs
+      </button>
+    </li>
+    <li class="tab-item">
+      <button type="button" class="tab-btn" [class.active]="currentTab==='marks'" (click)="selectTab('marks')">
+        <i class="bi bi-bar-chart-line tab-icon"></i>
+        Evaluation Marks
+      </button>
+    </li>
+    <li class="tab-item">
+      <button type="button" class="tab-btn" [class.active]="currentTab==='finalization'" (click)="selectTab('finalization')">
+        <i class="bi bi-check-square tab-icon"></i>
+        Finalize Results
+      </button>
+    </li>
+    <li class="tab-item tab-separator-before">
+      <button type="button" class="tab-btn tab-profile" [class.active]="currentTab==='profile'" (click)="selectTab('profile')">
+        <i class="bi bi-person-circle tab-icon"></i>
+        Profile
+      </button>
+    </li>
   </ul>
   <div class="row g-3 mb-3">
     <div class="col-md-3">

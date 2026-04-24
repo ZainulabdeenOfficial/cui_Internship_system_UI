@@ -1,17 +1,73 @@
 <div class="container py-4">
   <h2 class="mb-3">Internship Office</h2>
-  <ul class="nav nav-tabs mb-3">
-    <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='requests'" (click)="selectTab('requests')">Requests</button></li>
-    <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='announcements'" (click)="selectTab('announcements')">Announcements</button></li>
-    <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='officers'" (click)="selectTab('officers')">Officers</button></li>
-    <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='faculty'" (click)="selectTab('faculty')">Faculty</button></li>
-    <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='companies'" (click)="selectTab('companies')">Companies</button></li>
-    <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='sites'" (click)="selectTab('sites')">Site Supervisors</button></li>
-    <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='compliance'" (click)="selectTab('compliance')">Log Compliance</button></li>
-    <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='complaints'" (click)="selectTab('complaints')">Complaints</button></li>
-    <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='scheme'" (click)="selectTab('scheme')">Scheme</button></li>
-    <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='formsRequest'" (click)="selectTab('formsRequest')">Student Forms Request</button></li>
-    <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='evaluation'" (click)="selectTab('evaluation')"><i class="bi bi-clipboard2-check me-1"></i>Office Evaluation</button></li>
+  <!-- ════ PREMIUM ADMIN TAB BAR ════ -->
+  <ul class="admin-tabs-bar">
+    <li class="tab-item">
+      <button type="button" class="tab-btn" [class.active]="currentTab==='requests'" (click)="selectTab('requests')">
+        <i class="bi bi-inbox tab-icon"></i>
+        Requests
+      </button>
+    </li>
+    <li class="tab-item">
+      <button type="button" class="tab-btn" [class.active]="currentTab==='announcements'" (click)="selectTab('announcements')">
+        <i class="bi bi-megaphone tab-icon"></i>
+        Announcements
+      </button>
+    </li>
+    <li class="tab-item">
+      <button type="button" class="tab-btn" [class.active]="currentTab==='officers'" (click)="selectTab('officers')">
+        <i class="bi bi-person-badge tab-icon"></i>
+        Officers
+      </button>
+    </li>
+    <li class="tab-item">
+      <button type="button" class="tab-btn" [class.active]="currentTab==='faculty'" (click)="selectTab('faculty')">
+        <i class="bi bi-mortarboard tab-icon"></i>
+        Faculty
+      </button>
+    </li>
+    <li class="tab-item">
+      <button type="button" class="tab-btn" [class.active]="currentTab==='companies'" (click)="selectTab('companies')">
+        <i class="bi bi-building tab-icon"></i>
+        Companies
+      </button>
+    </li>
+    <li class="tab-item">
+      <button type="button" class="tab-btn" [class.active]="currentTab==='sites'" (click)="selectTab('sites')">
+        <i class="bi bi-geo-alt tab-icon"></i>
+        Site Supervisors
+      </button>
+    </li>
+    <li class="tab-item">
+      <button type="button" class="tab-btn" [class.active]="currentTab==='compliance'" (click)="selectTab('compliance')">
+        <i class="bi bi-clipboard-check tab-icon"></i>
+        Log Compliance
+      </button>
+    </li>
+    <li class="tab-item">
+      <button type="button" class="tab-btn" [class.active]="currentTab==='formsRequest'" (click)="selectTab('formsRequest')">
+        <i class="bi bi-file-earmark-text tab-icon"></i>
+        Forms Request
+      </button>
+    </li>
+    <li class="tab-item">
+      <button type="button" class="tab-btn" [class.active]="currentTab==='evaluation'" (click)="selectTab('evaluation')">
+        <i class="bi bi-clipboard2-check tab-icon"></i>
+        Evaluation
+      </button>
+    </li>
+    <li class="tab-item">
+      <button type="button" class="tab-btn" [class.active]="currentTab==='scheme'" (click)="selectTab('scheme')">
+        <i class="bi bi-diagram-3 tab-icon"></i>
+        Scheme
+      </button>
+    </li>
+    <li class="tab-item tab-separator-before">
+      <button type="button" class="tab-btn tab-complaints" [class.active]="currentTab==='complaints'" (click)="selectTab('complaints')">
+        <i class="bi bi-exclamation-triangle tab-icon"></i>
+        Complaints
+      </button>
+    </li>
   </ul>
 
   <!-- Clean unified tab switcher using Angular 17+ control flow -->

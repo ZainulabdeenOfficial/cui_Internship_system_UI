@@ -1,9 +1,25 @@
 <div class="container py-4">
   <h2 class="mb-3">Site Supervisor</h2>
-  <ul class="nav nav-tabs mb-3">
-    <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='students'" (click)="selectTab('students')">Students</button></li>
-    <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='details'" (click)="selectTab('details')">Details</button></li>
-    <li class="nav-item"><button class="nav-link" [class.active]="currentTab==='evaluations'" (click)="selectTab('evaluations')">Evaluations</button></li>
+  <!-- ════ PREMIUM SITE SUPERVISOR TAB BAR ════ -->
+  <ul class="site-tabs-bar">
+    <li class="tab-item">
+      <button type="button" class="tab-btn" [class.active]="currentTab==='students'" (click)="selectTab('students')">
+        <i class="bi bi-people-fill tab-icon"></i>
+        Students
+      </button>
+    </li>
+    <li class="tab-item">
+      <button type="button" class="tab-btn" [class.active]="currentTab==='details'" (click)="selectTab('details')">
+        <i class="bi bi-card-list tab-icon"></i>
+        Details
+      </button>
+    </li>
+    <li class="tab-item">
+      <button type="button" class="tab-btn" [class.active]="currentTab==='evaluations'" (click)="selectTab('evaluations')">
+        <i class="bi bi-award tab-icon"></i>
+        Evaluations
+      </button>
+    </li>
   </ul>
   @if (currentTab==='students') {
   <div class="card mb-3">
