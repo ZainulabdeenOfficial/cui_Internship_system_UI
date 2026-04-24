@@ -908,6 +908,10 @@ export class Student implements OnInit, OnDestroy {
       if (!this.dataCache.isFresh('student:weeklylogs')) {
         this.loadWeeklyLogs();
       }
+      // Also load internship report status
+      if (!this.dataCache.isFresh('student:report')) {
+        this.loadInternshipReport();
+      }
     } else if (tab === 'company-request') {
       if (!this.dataCache.isFresh('student:companystatus')) {
         this.loadCompanyRequestStatus();
@@ -1663,5 +1667,119 @@ export class Student implements OnInit, OnDestroy {
     }
   }
 
+  // ═══════════════════ Internship Report ═══════════════════
+  internshipReport: {
+    id?: string;
+    internshipId?: string;
+    type?: string;
+    fileUrl?: string;
+    summary?: string;
+    submittedDate?: string;
+  } | null = null;
+  internshipReportInternship: {
+    id?: string;
+    status?: string;
+    startDate?: string;
+    endDate?: string;
+  } | null = null;
+  loadingReport = false;
+  submittingReport = false;
+  reportFile: File | null = null;
+  reportSummary = '';
+  private hasLoadedReportOnce = false;
+
+  async loadInternshipReport(forceRefresh = false) {
+    if (!this.selectedId) return;
+    if (!forceRefresh && this.dataCache.isFresh('student:report')) return;
+
+    this.loadingReport = true;
+    try {
+      const res = await this.studentApi.getInternshipReport({
+        skipGlobalLoading: this.hasLoadedReportOnce || forceRefresh,
+        forceRefresh
+      });
+      this.internshipReport = res?.report || null;
+      this.internshipReportInternship = res?.internship || null;
+      this.hasLoadedReportOnce = true;
+      this.dataCache.mark('student:report');
+
+      // Resolve internship ID if we don't have one yet
+      const rid = res?.internship?.id || res?.report?.internshipId;
+      if (rid && !this.studentInternshipId) this.studentInternshipId = rid;
+    } catch (err: any) {
+      // 404 = no report submitted yet — expected for most students
+      if (err?.status !== 404 && err?.status !== 400) {
+        this.toast.danger(err?.error?.message || err?.message || 'Failed to load internship report');
+      }
+      this.internshipReport = null;
+      this.internshipReportInternship = null;
+    } finally {
+      this.loadingReport = false;
+      this.cdr.markForCheck();
+    }
+  }
+
+  onReportFileChange(event: Event) {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files.length > 0) {
+      const file = input.files[0];
+      // Validate PDF
+      if (file.type !== 'application/pdf') {
+        this.toast.warning('Only PDF files are allowed for internship reports');
+        this.reportFile = null;
+        input.value = '';
+        return;
+      }
+      // Validate size (max 10MB)
+      if (file.size > 10 * 1024 * 1024) {
+        this.toast.warning('File size must be less than 10MB');
+        this.reportFile = null;
+        input.value = '';
+        return;
+      }
+      this.reportFile = file;
+    }
+  }
+
+  async submitInternshipReport() {
+    if (!this.selectedId) return;
+    if (!this.ensureMine()) return;
+
+    if (!this.reportFile) {
+      this.toast.warning('Please select a PDF file to upload');
+      return;
+    }
+
+    // Resolve internship ID
+    const internshipId = this.studentInternshipId;
+    if (!internshipId) {
+      this.toast.warning('No internship found. Please ensure your APEX forms are submitted and approved first.');
+      return;
+    }
+
+    this.submittingReport = true;
+    try {
+      const res = await this.studentApi.submitInternshipReport({
+        internshipId,
+        file: this.reportFile,
+        summary: this.reportSummary || undefined
+      });
+      this.toast.success(res?.message || 'Internship report uploaded successfully');
+
+      // Reset form
+      this.reportFile = null;
+      this.reportSummary = '';
+
+      // Reload report data
+      this.dataCache.invalidate('student:report');
+      await this.loadInternshipReport(true);
+    } catch (err: any) {
+      const msg = err?.error?.message || err?.message || 'Failed to upload internship report';
+      this.toast.danger(msg);
+    } finally {
+      this.submittingReport = false;
+      this.cdr.detectChanges();
+    }
+  }
 
 }

@@ -680,6 +680,135 @@
         </div>
       </div>
     </div>
+
+    <!-- ═══════════ Internship Final Report ═══════════ -->
+    <div class="card mb-3 mt-4">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span>
+          <i class="bi bi-file-earmark-pdf me-2"></i>
+          Final Internship Report
+        </span>
+        <button class="btn btn-sm btn-outline-primary" (click)="loadInternshipReport(true)" [disabled]="loadingReport">
+          <span *ngIf="loadingReport" class="spinner-border spinner-border-sm me-1"></span>
+          <i *ngIf="!loadingReport" class="bi bi-arrow-clockwise me-1"></i>
+          Refresh
+        </button>
+      </div>
+      <div class="card-body">
+
+        <!-- Loading state -->
+        <div *ngIf="loadingReport" class="text-center py-4">
+          <span class="spinner-border text-primary"></span>
+          <p class="text-muted mt-2">Loading report status...</p>
+        </div>
+
+        <!-- Already submitted report -->
+        <div *ngIf="!loadingReport && internshipReport" class="mb-4">
+          <div class="alert alert-success d-flex align-items-start">
+            <i class="bi bi-check-circle-fill me-3 fs-4 mt-1"></i>
+            <div class="flex-grow-1">
+              <h6 class="alert-heading mb-1">Report Submitted</h6>
+              <p class="mb-2">Your final internship report was submitted on <strong>{{ internshipReport.submittedDate | date:'medium' }}</strong>.</p>
+              
+              <div class="row g-2 mt-2" *ngIf="internshipReport.summary">
+                <div class="col-12">
+                  <small class="text-muted d-block mb-1"><strong>Summary:</strong></small>
+                  <p class="mb-0" style="white-space: pre-wrap;">{{ internshipReport.summary }}</p>
+                </div>
+              </div>
+
+              <div class="mt-3" *ngIf="internshipReport.fileUrl">
+                <a [href]="internshipReport.fileUrl" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-success">
+                  <i class="bi bi-download me-1"></i>
+                  Download Report PDF
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Internship dates info -->
+        <div *ngIf="!loadingReport && internshipReportInternship" class="alert alert-info mb-3">
+          <div class="row g-2">
+            <div class="col-md-4">
+              <small class="text-muted d-block">Internship Status</small>
+              <span class="badge" 
+                [class.text-bg-success]="internshipReportInternship.status === 'APPROVED' || internshipReportInternship.status === 'COMPLETED'"
+                [class.text-bg-warning]="internshipReportInternship.status === 'PENDING'"
+                [class.text-bg-secondary]="internshipReportInternship.status !== 'APPROVED' && internshipReportInternship.status !== 'COMPLETED' && internshipReportInternship.status !== 'PENDING'">
+                {{ internshipReportInternship.status || 'N/A' }}
+              </span>
+            </div>
+            <div class="col-md-4" *ngIf="internshipReportInternship.startDate">
+              <small class="text-muted d-block">Start Date</small>
+              <strong>{{ internshipReportInternship.startDate | date:'mediumDate' }}</strong>
+            </div>
+            <div class="col-md-4" *ngIf="internshipReportInternship.endDate">
+              <small class="text-muted d-block">End Date</small>
+              <strong>{{ internshipReportInternship.endDate | date:'mediumDate' }}</strong>
+            </div>
+          </div>
+        </div>
+
+        <!-- Upload form -->
+        <div *ngIf="!loadingReport">
+          <h6 class="mb-3">
+            <i class="bi bi-cloud-arrow-up me-1"></i>
+            {{ internshipReport ? 'Re-upload Report' : 'Upload Final Report' }}
+          </h6>
+          <div class="row g-3">
+            <div class="col-md-8">
+              <label class="form-label">Report PDF <span class="text-danger">*</span></label>
+              <input type="file" 
+                     class="form-control" 
+                     accept="application/pdf,.pdf"
+                     (change)="onReportFileChange($event)" 
+                     [disabled]="submittingReport"
+                     id="reportFileInput" />
+              <small class="form-text text-muted">
+                <i class="bi bi-info-circle me-1"></i>
+                Only PDF files accepted. Maximum size: 10MB.
+              </small>
+            </div>
+            <div class="col-md-4" *ngIf="reportFile">
+              <div class="card bg-light h-100">
+                <div class="card-body py-2 px-3">
+                  <small class="text-muted d-block">Selected file:</small>
+                  <strong class="d-block text-truncate">{{ reportFile.name }}</strong>
+                  <small class="text-muted">{{ (reportFile.size / 1024 / 1024).toFixed(2) }} MB</small>
+                </div>
+              </div>
+            </div>
+            <div class="col-12">
+              <label class="form-label">Summary <small class="text-muted">(optional)</small></label>
+              <textarea class="form-control" 
+                        [(ngModel)]="reportSummary" 
+                        name="reportSummary"
+                        rows="3" 
+                        placeholder="Brief summary of your internship report..."
+                        [disabled]="submittingReport"
+                        maxlength="1000"></textarea>
+              <small class="form-text text-muted">{{ reportSummary.length }}/1000 characters</small>
+            </div>
+            <div class="col-12">
+              <button class="btn btn-success" 
+                      (click)="submitInternshipReport()" 
+                      [disabled]="submittingReport || !reportFile || !studentInternshipId">
+                <span *ngIf="submittingReport" class="spinner-border spinner-border-sm me-1"></span>
+                <i *ngIf="!submittingReport" class="bi bi-upload me-1"></i>
+                {{ submittingReport ? 'Uploading...' : 'Upload Report' }}
+              </button>
+              <small *ngIf="!studentInternshipId" class="text-warning ms-2">
+                <i class="bi bi-exclamation-triangle me-1"></i>
+                Internship ID not found. Please ensure your APEX forms are approved.
+              </small>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
   </div>
   
   <!-- Complaints tab content (in-page) -->

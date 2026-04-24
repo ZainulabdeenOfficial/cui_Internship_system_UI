@@ -1022,4 +1022,58 @@ export class StudentService {
       throw error;
     }
   }
+
+  /**
+   * GET /api/student/internship-report
+   * Returns the latest final internship report for the current student.
+   * Response: { message, internship: { id, status, startDate, endDate }, report: { id, internshipId, type, fileUrl, summary, submittedDate } }
+   */
+  async getInternshipReport(options?: StudentRequestOptions): Promise<any> {
+    const key = this.cacheKey('internship-report');
+    const cached = this.readCache<any>(key, options);
+    if (cached) return cached;
+
+    const url = this.abs('/api/student/internship-report');
+    const headers = this.withRequestOptions(new HttpHeaders({
+      Accept: 'application/json',
+      ...(this.getAuthToken() ? { Authorization: `Bearer ${this.getAuthToken()}` } : {})
+    }), options);
+    const res = await firstValueFrom(this.http.get<any>(url, {
+      headers,
+      context: this.buildContext(options)
+    }));
+    this.writeCache(key, res, options?.cacheTtlMs ?? 60 * 1000);
+    return res;
+  }
+
+  /**
+   * POST /api/student/internship-report
+   * Uploads a final internship report PDF (multipart/form-data).
+   * Fields: internshipId (required), file (PDF, required), summary (optional string)
+   */
+  async submitInternshipReport(payload: {
+    internshipId: string;
+    file: File;
+    summary?: string;
+  }): Promise<any> {
+    const url = this.abs('/api/student/internship-report');
+    const token = this.getAuthToken();
+
+    const formData = new FormData();
+    formData.append('internshipId', payload.internshipId);
+    formData.append('file', payload.file, payload.file.name);
+    if (payload.summary?.trim()) {
+      formData.append('summary', payload.summary.trim());
+    }
+
+    // NOTE: Do NOT set Content-Type manually for multipart — browser sets it with boundary
+    const headers = new HttpHeaders({
+      ...(token ? { Authorization: `Bearer ${token}` } : {})
+    });
+
+    const res = await firstValueFrom(this.http.post<any>(url, formData, { headers }));
+    // Invalidate cache so next GET fetches the new report
+    this.clearCache('internship-report');
+    return res;
+  }
 }
