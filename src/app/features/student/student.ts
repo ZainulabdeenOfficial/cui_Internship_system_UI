@@ -295,21 +295,26 @@ export class Student implements OnInit, OnDestroy {
             }
           } else {
             // No explicit tab requested: default to weekly logs if approved, otherwise AppEx-A
-            this.currentTab = this.allApexFormsApproved() ? 'weeklylogs' : 'appex';
+            this.currentTab = this.isFullyApproved() ? 'weeklylogs' : 'appex';
           }
-        // guard: if not approved, restrict to core forms/evidence/complaints
-        const isOk = this.isApproved();
-        // Tabs accessible even before full approval
-        const visibleWhenPending = new Set(['appex','assignment','form3','evidence','complaints','weeklylogs','evaluations','company-request']);
-        if (!isOk && !visibleWhenPending.has(this.currentTab)) {
+
+        // Tab visibility guards based on approval status
+        const approved = this.isFullyApproved();
+        // Pre-approval tabs (forms)
+        const formTabs = new Set(['appex', 'assignment', 'form3']);
+        // Post-approval tabs
+        const postApprovalTabs = new Set(['weeklylogs', 'evaluations']);
+
+        if (approved && formTabs.has(this.currentTab)) {
+          // Approved student trying to access form tabs → redirect to weekly logs
+          this.currentTab = 'weeklylogs';
+          try { this.router.navigate([], { relativeTo: this.route, queryParams: { tab: 'weeklylogs' }, queryParamsHandling: 'merge' }); } catch {}
+        } else if (!approved && postApprovalTabs.has(this.currentTab)) {
+          // New student trying to access post-approval tabs → redirect to appex
           this.currentTab = 'appex';
           try { this.router.navigate([], { relativeTo: this.route, queryParams: { tab: 'appex' }, queryParamsHandling: 'merge' }); } catch {}
         }
-        // If all APEX forms approved, redirect from APEX tabs to weekly logs
-        if (this.allApexFormsApproved() && ['appex', 'assignment', 'form3'].includes(this.currentTab)) {
-          this.currentTab = 'weeklylogs';
-          try { this.router.navigate([], { relativeTo: this.route, queryParams: { tab: 'weeklylogs' }, queryParamsHandling: 'merge' }); } catch {}
-        }
+
         // Trigger selectTab to load data for the newly selected tab
         this.selectTab(this.currentTab);
       });
