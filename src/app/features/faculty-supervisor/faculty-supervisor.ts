@@ -21,34 +21,19 @@ export class FacultySupervisor implements OnInit {
   private hasLoadedRequestsOnce = false;
 
   constructor(private store: StoreService, private toast: ToastService, private route: ActivatedRoute, private router: Router, private facultyApi: FacultyService, private cdr: ChangeDetectorRef, private cache: DataCacheService) {
-    // Only pre-load on first mount — skip if cache is still fresh (navigating back to this route)
-    if (!this.cache.isFresh('faculty:requests')) {
-      this.loadStudentRequests();
-    } else {
-      this.hasLoadedRequestsOnce = true;
-    }
-    if (!this.cache.isFresh('faculty:internships')) {
-      this.loadFacultyInternships();
-    } else {
-      this.hasLoadedInternshipsOnce = true;
-    }
-    
     try {
       this.route.queryParamMap.subscribe(p => {
         const t = (p.get('tab') || '').toLowerCase();
         const allowed = ['students','profile','requests','weekly-logs','marks','finalization'] as const;
         if ((allowed as readonly string[]).includes(t)) {
           this.currentTab = t as any;
-          if (this.currentTab === 'profile') this.loadMyProfileFromApi();
-          if (this.currentTab === 'weekly-logs') this.loadWeeklyLogs();
-          // No need to reload requests here since we pre-loaded them
         }
       });
     } catch {}
   }
 
   ngOnInit() {
-    // Ensure default tab (students) is properly initialized
+    // Single entry point: load data for the initial tab once
     setTimeout(() => this.selectTab(this.currentTab), 0);
   }
 
@@ -61,24 +46,43 @@ export class FacultySupervisor implements OnInit {
   page = { students: 1, appexA: 1, appexB: 1 };
   pageSize = 10;
   selectTab(tab: FacultySupervisor['currentTab']) {
+    const tabChanged = this.currentTab !== tab;
     this.currentTab = tab;
-    try { this.router.navigate([], { relativeTo: this.route, queryParams: { tab }, queryParamsHandling: 'merge' }); } catch {}
-    if (tab === 'profile') this.loadMyProfileFromApi();
-    if (tab === 'marks') {
-      // Load APEX B requests first to populate marksTabStudents() with internship IDs
+    
+    if (tabChanged) {
+      try { this.router.navigate([], { relativeTo: this.route, queryParams: { tab }, queryParamsHandling: 'merge' }); } catch {}
+    }
+
+    if (tab === 'profile') {
+      if (!this.cache.isFresh('faculty:profile')) {
+        this.loadMyProfileFromApi().then(() => this.cache.mark('faculty:profile'));
+      }
+    } else if (tab === 'marks') {
+      // Load requests + internships only if not yet loaded
       if (!this.hasLoadedRequestsOnce) this.loadStudentRequests();
-      // Ensure internships are loaded (guard inside prevents double-loading)
-      this.loadFacultyInternships();
+      if (!this.cache.isFresh('faculty:internships')) {
+        this.loadFacultyInternships();
+      }
       this.loadEvaluationSummaryForSelected();
-    }
-    if (tab === 'finalization') {
-      // Ensure internships are loaded for finalization tab
-      this.loadFacultyInternships().then(() => {
+    } else if (tab === 'finalization') {
+      if (!this.cache.isFresh('faculty:internships')) {
+        this.loadFacultyInternships().then(() => this.loadFinalizationData());
+      } else {
         this.loadFinalizationData();
-      });
-    }
-    if (tab === 'weekly-logs') {
-      this.loadWeeklyLogs();
+      }
+    } else if (tab === 'weekly-logs') {
+      if (!this.cache.isFresh('faculty:weeklylogs')) {
+        this.loadWeeklyLogs().then(() => this.cache.mark('faculty:weeklylogs'));
+      }
+    } else if (tab === 'requests') {
+      if (!this.cache.isFresh('faculty:requests')) {
+        this.loadStudentRequests();
+      }
+    } else if (tab === 'students') {
+      // Ensure internships are loaded for student list
+      if (!this.cache.isFresh('faculty:internships')) {
+        this.loadFacultyInternships();
+      }
     }
     // Requests are pre-loaded on init, no need to reload on tab click
   }

@@ -26,20 +26,18 @@ export class Admin {
   constructor(private store: StoreService, private toast: ToastService, private route: ActivatedRoute, private router: Router, private adminApi: AdminService, private cdr: ChangeDetectorRef, private dataCache: DataCacheService) {
     try {
       this.route.queryParamMap.subscribe(p => {
-        const t = (p.get('tab') || '').toLowerCase();
-        const allowed = ['requests','announcements','officers','faculty','companies','sites','compliance','complaints','scheme','formsrequest','evaluation'] as const;
-        if ( (allowed as readonly string[]).includes(t) ) {
+        const raw = (p.get('tab') || '').toLowerCase();
+        // Alias map: URL params are lowercased, but template uses camelCase for some tabs
+        const aliasMap: Record<string, string> = {
+          'formsrequest': 'formsRequest'
+        };
+        const t = aliasMap[raw] ?? raw;
+        const allowed = ['requests','announcements','officers','faculty','companies','sites','compliance','complaints','scheme','formsRequest','evaluation'] as const;
+        // Guard: only update if tab actually changed — prevents the subscription
+        // from re-assigning currentTab when selectTab's own router.navigate fires,
+        // which would cause Angular to flicker the @switch content (double-click feel)
+        if ( (allowed as readonly string[]).includes(t) && this.currentTab !== t ) {
           this.currentTab = t as any;
-          // Auto-load data when navigating directly via URL — but only if cache is stale
-          if (this.currentTab === 'requests' && !this.dataCache.isFresh('admin:tab:requests', this.CACHE_TTL)) {
-            this.reviewCompanyFilter.status = 'PENDING';
-            this.reviewCompanyFilter.page = 1;
-            this.reviewCompanyFilter.search = '';
-            this.loadReviewCompany();
-          } else if ((this.currentTab === 'companies' || this.currentTab === 'sites') && !this.dataCache.isFresh('admin:tab:companies', this.CACHE_TTL)) {
-            this.refreshCompanies();
-            if (this.currentTab === 'sites') this.refreshSites();
-          }
         }
       });
     } catch {}
@@ -101,12 +99,8 @@ export class Admin {
   currentTab: 'requests'|'announcements'|'officers'|'faculty'|'companies'|'sites'|'compliance'|'complaints'|'scheme'|'formsRequest'|'evaluation' = 'requests';
   
   ngOnInit() {
-    // Set default tab if no tab is provided in query params
-    this.route.queryParamMap.subscribe(params => {
-      if (!params.has('tab')) {
-        setTimeout(() => this.selectTab('requests'), 0);
-      }
-    });
+    // Load data for the initial tab once
+    setTimeout(() => this.selectTab(this.currentTab), 0);
   }
   // Maintenance
   cleaningUpTokens = false;
@@ -132,37 +126,39 @@ export class Admin {
   }
 
   selectTab(tab: Admin['currentTab']) {
+    const tabChanged = this.currentTab !== tab;
     this.currentTab = tab;
-    try { this.router.navigate([], { relativeTo: this.route, queryParams: { tab }, queryParamsHandling: 'merge' }); } catch {}
+    
+    if (tabChanged) {
+      try { this.router.navigate([], { relativeTo: this.route, queryParams: { tab }, queryParamsHandling: 'merge' }); } catch {}
+    }
     
     // Load data only once per tab per cache TTL — prevents re-loading on every navigation
     const cacheKey = 'admin:tab:' + tab;
     if (this.dataCache.isFresh(cacheKey, this.CACHE_TTL)) return;
-    this.dataCache.mark(cacheKey);
 
-    // Lazy-load data on first visit to tab
+    // Lazy-load data on first visit to tab — cache is marked AFTER successful API response
     if (tab === 'companies' || tab === 'sites') {
-      this.refreshCompanies();
+      this.refreshCompanies().then(() => this.dataCache.mark(cacheKey));
       if (tab === 'sites') this.refreshSites();
-    }
-    if (tab === 'requests') {
+    } else if (tab === 'requests') {
       this.reviewCompanyFilter.status = 'PENDING';
       this.reviewCompanyFilter.page = 1;
       this.reviewCompanyFilter.search = '';
-      this.loadReviewCompany();
-    }
-    if (tab === 'complaints') {
+      this.loadReviewCompany().then(() => this.dataCache.mark(cacheKey));
+    } else if (tab === 'complaints') {
       this.complaintsPagination.page = 1;
       this.complaintsFilter.status = '';
       this.complaintsFilter.search = '';
-      setTimeout(() => this.loadComplaints(), 0);
-    }
-    if (tab === 'formsRequest') {
+      setTimeout(() => this.loadComplaints().then(() => this.dataCache.mark(cacheKey)), 0);
+    } else if (tab === 'formsRequest') {
       this.currentFormsSubTab = 'apexA';
-      this.loadApexAForms();
-    }
-    if (tab === 'evaluation') {
-      this.loadAllInternships();
+      this.loadApexAForms().then(() => this.dataCache.mark(cacheKey));
+    } else if (tab === 'evaluation') {
+      this.loadAllInternships().then(() => this.dataCache.mark(cacheKey));
+    } else {
+      // Tabs that don't fetch data (announcements, officers, faculty, scheme) — mark immediately
+      this.dataCache.mark(cacheKey);
     }
   }
   get officers() { return this.store.internshipOfficers; }

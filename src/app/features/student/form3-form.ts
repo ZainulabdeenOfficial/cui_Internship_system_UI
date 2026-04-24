@@ -1,4 +1,4 @@
-import { Component, input, effect, signal } from '@angular/core';
+import { Component, input, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { StoreService } from '../../shared/services/store.service';
@@ -27,45 +27,7 @@ export class Form3Form {
 
   submittedData = signal<any>(null);
 
-  constructor(private store: StoreService, private studentService: StudentService, private toast: ToastService) {
-    // Auto-load when selectedId changes using effect
-    effect(() => {
-      const id = this.selectedId();
-      if (!id) return;
-      
-      this.loadExistingData();
-    });
-  }
-
-  async loadExistingData() {
-    try {
-      const response = await this.studentService.getAppExC();
-      if (response?.internshipProposal) {
-        const data = response.internshipProposal;
-        this.model = {
-          organizationOverview: data.organizationOverview || '',
-          roleDescription: data.roleDescription || '',
-          keyActivities: data.keyActivities || '',
-          toolsTechnologies: data.toolsTechnologies || '',
-          expectedDeliverables: data.expectedDeliverables || ''
-        };
-        // Track approval status from API
-        const status = data.status || 'pending';
-        if (status === 'approved' || status === 'APPROVED') {
-          this.form3Status.set('approved');
-        } else if (status === 'rejected' || status === 'REJECTED') {
-          this.form3Status.set('rejected');
-        } else {
-          this.form3Status.set('pending');
-        }
-        this.submittedData.set(data);
-        this.submitted.set(true);
-      }
-    } catch (err: any) {
-      // No existing data - form starts empty
-      console.log('[Form3Form] No existing AppEx-C data found');
-    }
-  }
+  constructor(private store: StoreService, private studentService: StudentService, private toast: ToastService) {}
 
   async submit() {
     try {
@@ -106,12 +68,22 @@ export class Form3Form {
 
       console.log('[Form3Form] Submitting AppEx-C with payload:', payload);
       
-      // Submit to AppEx-C API
+      // Submit to AppEx-C API (POST only — no GET)
       const response = await this.studentService.submitAppExC(payload);
       
       this.loading.set(false);
       this.submitted.set(true);
       this.submittedData.set(response?.internshipProposal);
+      
+      // Track approval status from POST response
+      const status = response?.internshipProposal?.status || 'pending';
+      if (status === 'approved' || status === 'APPROVED') {
+        this.form3Status.set('approved');
+      } else if (status === 'rejected' || status === 'REJECTED') {
+        this.form3Status.set('rejected');
+      } else {
+        this.form3Status.set('pending');
+      }
       
       this.toast.success('Organization Overview & Scope of Work submitted successfully!');
       

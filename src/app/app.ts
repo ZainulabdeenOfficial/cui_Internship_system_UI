@@ -18,12 +18,19 @@ export class App {
   protected title = 'cui_Internship_system';
 
   constructor(router: Router, loadingService: LoadingService) {
-    // Safety net: force-hide the spinner on every completed navigation.
-    // This prevents any in-flight HTTP request (cancelled by navigation) from
-    // leaving the loading counter stuck above zero.
-    router.events.pipe(filter(e => e instanceof NavigationEnd)).subscribe(() => {
-      // Small delay so any finalize() from completing requests runs first
-      setTimeout(() => loadingService.forceHide(), 300);
+    // Safety net: force-hide the spinner on actual route navigations (path changes).
+    // Query-param-only changes (e.g. ?tab=requests → ?tab=complaints) are NOT
+    // route changes — they must NOT reset the loading counter, or API calls
+    // triggered by selectTab() will have their spinners killed mid-flight.
+    let previousPath = '';
+    router.events.pipe(filter(e => e instanceof NavigationEnd)).subscribe((e) => {
+      const nav = e as NavigationEnd;
+      const currentPath = nav.urlAfterRedirects.split('?')[0];
+      if (previousPath && currentPath !== previousPath) {
+        // Genuine route change (e.g. /admin → /home): reset stuck spinners
+        setTimeout(() => loadingService.forceHide(), 300);
+      }
+      previousPath = currentPath;
     });
   }
 }

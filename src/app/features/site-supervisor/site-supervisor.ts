@@ -32,10 +32,7 @@ export class SiteSupervisor implements OnInit {
   readonly Object = Object;
 
   ngOnInit() {
-    // Only fetch on first visit — prevents spinner on every navigation back
-    if (!this.cache.isFresh('site:internships')) {
-      this.loadSiteInternships();
-    }
+    // Single entry point: load data for the initial tab once
     setTimeout(() => this.selectTab(this.currentTab), 0);
   }
   get students() { return this.store.students; }
@@ -55,8 +52,17 @@ export class SiteSupervisor implements OnInit {
   statusFilter = signal<'PENDING' | 'APPROVED' | 'IN_PROGRESS' | 'COMPLETED' | 'REJECTED' | 'all'>('all');
   
   selectTab(tab: SiteSupervisor['currentTab']) {
+    const tabChanged = this.currentTab !== tab;
     this.currentTab = tab;
-    try { this.router.navigate([], { relativeTo: this.route, queryParams: { tab }, queryParamsHandling: 'merge' }); } catch {}
+    
+    if (tabChanged) {
+      try { this.router.navigate([], { relativeTo: this.route, queryParams: { tab }, queryParamsHandling: 'merge' }); } catch {}
+    }
+
+    // Load internships only once — cache prevents repeated API calls
+    if (!this.cache.isFresh('site:internships')) {
+      this.loadSiteInternships();
+    }
   }
   selectedStudent = computed(() => this.selectedId ? this.students().find(s => s.id === this.selectedId!) : undefined);
   logs() { return this.selectedId ? (this.store.logs()[this.selectedId] ?? []) : []; }
