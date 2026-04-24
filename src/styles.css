@@ -42,3 +42,38 @@ body.auth-light{background:#000 !important;background-image:none !important;}
 /* ============== HOME SOLID MODE (no translucent auth bg) ============== */
 body.home-solid {background:#ffffff !important;background-image:none !important;}
 body.home-solid .bg-slides, body.home-solid .bg-tint {display:none !important;}
+
+/* ============== GLOBAL MODAL / DIALOG BOX STYLES ============== */
+.modal-header {
+  background: #f8faff;
+  border-bottom: 1px solid #e5e7eb;
+  padding: .85rem 1.25rem;
+}
+.modal-title {
+  color: #111827 !important;
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+.modal-content {
+  border-radius: 14px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 8px 32px rgba(0,0,0,.15);
+  overflow: hidden;
+}
+.modal-body {
+  color: #1f2937;
+}
+.modal-body .card-header {
+  color: #111827;
+}
+.modal-footer {
+  border-top: 1px solid #e5e7eb;
+  background: #fafbfc;
+}
+.btn-close {
+  opacity: .6;
+}
+.btn-close:hover {
+  opacity: 1;
+}
+

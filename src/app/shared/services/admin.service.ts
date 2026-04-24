@@ -550,6 +550,43 @@ export class AdminService {
     }));
   }
 
+  /**
+   * GET /api/admin/appex-c
+   * Retrieve all AppEx C submissions. If id is provided, returns one specific submission.
+   */
+  async getApexCForms(params?: { id?: string }): Promise<Array<{
+    id: string;
+    organizationOverview: string;
+    roleDescription: string;
+    keyActivities: string;
+    toolsTechnologies: string;
+    expectedDeliverables: string;
+    submittedDate: string;
+    student: { id: string; name: string; email: string; regNo: string };
+  }>> {
+    const base = environment.apiBaseUrl.replace(/\/$/, '');
+    const path = '/api/admin/appex-c';
+    const qs = params?.id ? `?id=${encodeURIComponent(params.id)}` : '';
+    const url = environment.production ? `${path}${qs}` : `${base}${path}${qs}`;
+    const res = await firstValueFrom(this.http.get<any>(url, { headers: await this.authHeaders() }));
+    const data = Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []);
+    return data.map((item: any) => ({
+      id: item.id || item._id || '',
+      organizationOverview: item.organizationOverview || '',
+      roleDescription: item.roleDescription || '',
+      keyActivities: item.keyActivities || '',
+      toolsTechnologies: item.toolsTechnologies || '',
+      expectedDeliverables: item.expectedDeliverables || '',
+      submittedDate: item.submittedDate || '',
+      student: {
+        id: item.student?.id || item.student?._id || '',
+        name: item.student?.name || '',
+        email: item.student?.email || '',
+        regNo: item.student?.regNo || ''
+      }
+    }));
+  }
+
   // Admin updates APEX B extended details (company, role, supervisors, dates, IDs)
   // This PATCH endpoint is for updating internship details and admin approval
 

@@ -220,7 +220,17 @@ export class Admin {
   // APEX Forms Request Management
   apexAForms: Array<{ id: string; startDate?: string; endDate?: string; status?: string; student?: { id: string; name: string; email: string; regNo: string } }> = [];
   apexBForms: Array<{ id: string; name?: string; degreeProgram?: string; email?: string; semester?: string; contactNo?: string; preferredField?: string; agreementAccepted?: boolean; status?: string; student?: { id: string; name: string; email: string; regNo: string } }> = [];
-  apexCForms: Array<{ id: string; status?: string; student?: { id: string; name: string; email: string; regNo: string } }> = [];
+  apexCForms: Array<{
+    id: string;
+    organizationOverview: string;
+    roleDescription: string;
+    keyActivities: string;
+    toolsTechnologies: string;
+    expectedDeliverables: string;
+    submittedDate: string;
+    status?: string;
+    student?: { id: string; name: string; email: string; regNo: string };
+  }> = [];
   loadingApexA = false;
   loadingApexB = false;
   loadingApexC = false;
@@ -1585,15 +1595,14 @@ export class Admin {
 
   get filteredApexCForms() {
     let filtered = this.apexCForms;
-    if (this.apexCFilter !== 'all') {
-      filtered = filtered.filter(f => f.status === this.apexCFilter);
-    }
     if (this.apexCSearch) {
       const search = this.apexCSearch.toLowerCase();
-      filtered = filtered.filter(f => 
+      filtered = filtered.filter(f =>
         (f.student?.name || '').toLowerCase().includes(search) ||
         (f.student?.email || '').toLowerCase().includes(search) ||
-        (f.student?.regNo || '').toLowerCase().includes(search)
+        (f.student?.regNo || '').toLowerCase().includes(search) ||
+        (f.organizationOverview || '').toLowerCase().includes(search) ||
+        (f.roleDescription || '').toLowerCase().includes(search)
       );
     }
     return filtered;
@@ -1729,20 +1738,14 @@ export class Admin {
     this.loadingApexC = true;
     console.log('🔄 [APEX C] Loading forms...');
     try {
-      // TODO: Replace with actual API when available
-      this.apexCForms = [];
       this.selectedApexCIds.clear();
-      // const result = await this.adminApi.getApexCForms();
-      // this.apexCForms = result;
-      
-      // Force change detection to update UI
+      const result = await this.adminApi.getApexCForms();
+      this.apexCForms = result;
       this.cdr.markForCheck();
-      
-      console.log('✅ [APEX C] Forms loaded successfully. Count:', this.apexCForms.length);
+      console.log('✅ [APEX C] Forms loaded. Count:', this.apexCForms.length);
     } catch (err: any) {
       console.error('❌ [APEX C] Error loading forms:', err);
-      const msg = err?.error?.message || err?.message || 'Failed to load APEX C forms';
-      this.toast.danger(msg);
+      this.toast.danger(err?.error?.message || err?.message || 'Failed to load APEX C forms');
       this.apexCForms = [];
     } finally {
       this.loadingApexC = false;
