@@ -232,18 +232,13 @@ export class Student implements OnInit, OnDestroy {
       const mine = this.myStudentId();
       if (mine && this.selectedId !== mine) this.selectedId = mine;
       
+      // NOTE: APEX A/B data is loaded via selectTab('appex'), triggered by
+      // the queryParamMap subscription below. We do NOT auto-load here because
+      // new students (with no submissions) would get 404 errors on every page load.
       if (this.selectedId) {
-        // Load APEX A if not already cached — this is the authoritative trigger
-        // (fires when signal resolves, i.e. user identity is known)
-        if (!this.dataCache.isFresh('student:appexA:' + this.selectedId)) {
-          this.loadAppExAIfNeeded();
-        }
-        // Load APEX B status if not already cached
-        if (!this.dataCache.isFresh('student:apexb')) {
-          this.loadApexBStatus();
-        }
-        // Start polling only once per session
-        if (!this.dataCache.isFresh('student:polling')) {
+        // Start polling only once per session — and only if student has submitted APEX A
+        // (new students with no submissions don't need polling, it just generates 404 noise)
+        if (!this.dataCache.isFresh('student:polling') && this.appexASubmitted) {
           this.startStatusPolling();
           this.dataCache.mark('student:polling');
         }
@@ -339,13 +334,17 @@ export class Student implements OnInit, OnDestroy {
             if (draftRaw && !this.dataCache.isFresh('student:appexA:' + sid)) {
               try {
                 const draft = JSON.parse(draftRaw);
-                await this.apiSubmitAppExA(draft);
-                localStorage.removeItem(key);
-                this.appexASubmitted = true;
-                this.toast.info('Saved offline AppEx-A draft uploaded to server');
-                // Invalidate cache so loadAppExAIfNeeded re-fetches the new data
-                this.dataCache.invalidate('student:appexA:' + sid);
-                this.loadAppExAIfNeeded();
+                // Only auto-submit if the draft has real content (not an empty form)
+                const hasContent = draft && (draft.organization?.trim() || draft.contactName?.trim() || draft.contactEmail?.trim());
+                if (hasContent) {
+                  await this.apiSubmitAppExA(draft);
+                  localStorage.removeItem(key);
+                  this.appexASubmitted = true;
+                  this.toast.info('Saved offline AppEx-A draft uploaded to server');
+                  // Invalidate cache so loadAppExAIfNeeded re-fetches the new data
+                  this.dataCache.invalidate('student:appexA:' + sid);
+                  this.loadAppExAIfNeeded();
+                }
               } catch (err) {}
             }
           } catch {}
@@ -383,8 +382,11 @@ export class Student implements OnInit, OnDestroy {
       effect(() => {
         const sid = this.selectedId;
         if (!sid) return;
-        // stringify a stable representation
-        const dump = JSON.stringify(this.appexAForm || {});
+        const form = this.appexAForm;
+        // Only save if the form has real content (don't save empty forms)
+        const hasContent = form && (form.organization?.trim() || form.contactName?.trim() || form.contactEmail?.trim());
+        if (!hasContent) return;
+        const dump = JSON.stringify(form);
         const key = `appexA_draft_${sid}`;
         try { localStorage.setItem(key, dump); } catch {}
       });
@@ -392,23 +394,9 @@ export class Student implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
-    // Explicitly load APEX A & B data after component initialization.
-    // Angular effects scheduled in the constructor may not fire until the
-    // first user-triggered change detection cycle (e.g. typing in a field).
-    // This microtask ensures the GET calls happen on initial page load.
-    Promise.resolve().then(() => {
-      const sid = this.myStudentId() || this.selectedId;
-      if (sid) {
-        if (!this.selectedId) this.selectedId = sid;
-        console.log('🚀 [Student ngOnInit] Loading APEX A & B for student:', sid);
-        if (!this.dataCache.isFresh('student:appexA:' + sid)) {
-          this.loadAppExAIfNeeded();
-        }
-        if (!this.dataCache.isFresh('student:apexb')) {
-          this.loadApexBStatus();
-        }
-      }
-    });
+    // APEX A/B data is loaded on-demand via selectTab('appex'), which is triggered
+    // by the queryParamMap subscription in the constructor. We do NOT auto-load
+    // here because new students would get 404 errors on every page load.
   }
 
   onCompanyNameInput(value: string) {
