@@ -232,14 +232,21 @@ export class Student implements OnInit, OnDestroy {
       const mine = this.myStudentId();
       if (mine && this.selectedId !== mine) this.selectedId = mine;
       
-      // Only load ApexB status if not already fresh in cache
-      if (this.selectedId && !this.dataCache.isFresh('student:apexb')) {
-        this.loadApexBStatus();
-      }
-      // Start polling only once per session
-      if (this.selectedId && !this.dataCache.isFresh('student:polling')) {
-        this.startStatusPolling();
-        this.dataCache.mark('student:polling');
+      if (this.selectedId) {
+        // Load APEX A if not already cached — this is the authoritative trigger
+        // (fires when signal resolves, i.e. user identity is known)
+        if (!this.dataCache.isFresh('student:appexA:' + this.selectedId)) {
+          this.loadAppExAIfNeeded();
+        }
+        // Load APEX B status if not already cached
+        if (!this.dataCache.isFresh('student:apexb')) {
+          this.loadApexBStatus();
+        }
+        // Start polling only once per session
+        if (!this.dataCache.isFresh('student:polling')) {
+          this.startStatusPolling();
+          this.dataCache.mark('student:polling');
+        }
       }
     });
     // Initialize tab from query params
@@ -308,80 +315,37 @@ export class Student implements OnInit, OnDestroy {
       });
     } catch {}
 
-    // Auto-load AppEx-A for the selected student (no manual Load Existing button)
+    // On student identity resolved: auto-submit any offline AppEx-A draft and load company requests
     try {
       effect(() => {
         const sid = this.selectedId;
         if (!sid) return;
-        // Only run the full AppEx-A load if cache is stale for this student
-        if (this.dataCache.isFresh('student:appexA:' + sid)) return;
-        // Reset tab-specific flags
+        // Reset tab-specific flags so data reloads for the new student session
+        if (this.dataCache.isFresh('student:appexA:' + sid)) return; // wait for first load
         this.hasLoadedMyCompanyRequestsOnce = false;
         this.hasLoadedWeeklyLogsOnce = false;
         this.hasLoadedCompanyRequestStatusOnce = false;
         this.evaluationsLoadedOnce = false;
         (async () => {
-          let serverHas = false;
+          // Try to auto-submit any locally-saved offline draft
           try {
-            const res = await this.apiGetAppExA({ skipGlobalLoading: this.hasLoadedAppExAOnce });
-            this.hasLoadedAppExAOnce = true;
-            this.dataCache.mark('student:appexA:' + sid);
-            const internshipObj = (res as any)?.internship;
-            const resolvedId: string = internshipObj?.id || internshipObj?._id || (res as any)?.internshipId || '';
-            if (resolvedId) this.studentInternshipId = resolvedId;
-            const ax = internshipObj?.appexA || (res as any)?.appexA || {};
-            const status = ax.status || internshipObj?.status || 'pending';
-            if (status === 'approved' || status === 'APPROVED') {
-              this.appexAStatus = 'approved';
-            } else if (status === 'rejected' || status === 'REJECTED') {
-              this.appexAStatus = 'rejected';
-            } else {
-              this.appexAStatus = 'pending';
-            }
-            serverHas = Object.keys(ax).some(k => {
-              const v = (ax as any)[k];
-              return v !== undefined && v !== null && String(v).toString().trim().length > 0;
-            });
-            if (serverHas) {
-              this.appexAForm = {
-                organization: ax.organization || '', 
-                address: ax.address || '', 
-                industrySector: ax.industrySector || '',
-                contactName: ax.contactName || '', 
-                contactDesignation: ax.contactDesignation || '', 
-                contactPhone: ax.contactPhone || '', 
-                contactEmail: ax.contactEmail || '',
-                internshipField: ax.internshipNature || ax.internshipField || '',
-                internshipLocation: ax.internshipLocation || '',
-                startDate: (ax.startDate || '').slice(0,10), 
-                endDate: (ax.endDate || '').slice(0,10),
-                workingDays: ax.workingDays || '', 
-                workingHours: ax.workingHours || '',
-                numberOfPositions: ax.numberOfInternship || ax.numberOfPositions || 1,
-                natureOfInternship: ax.natureOfInternship || { softwareDevelopment: false, dataScience: false, networking: false, cyberSecurity: false, webMobile: false, otherChecked: false, otherText: '' },
-                mode: ax.mode || 'On-Site'
-              };
-            }
-          } catch (err) {
-            // ignore load error
-          }
-
-          try {
-            const key = this.selectedId ? `appexA_draft_${this.selectedId}` : null;
-            if (key) {
-              const draftRaw = localStorage.getItem(key);
-              if (!serverHas && draftRaw) {
-                try {
-                  const draft = JSON.parse(draftRaw);
-                  await this.apiSubmitAppExA(draft);
-                  localStorage.removeItem(key);
-                  this.appexASubmitted = true;
-                  this.toast.info('Saved saved internship approval draft to server');
-                } catch (err) {}
-              }
+            const key = `appexA_draft_${sid}`;
+            const draftRaw = localStorage.getItem(key);
+            if (draftRaw && !this.dataCache.isFresh('student:appexA:' + sid)) {
+              try {
+                const draft = JSON.parse(draftRaw);
+                await this.apiSubmitAppExA(draft);
+                localStorage.removeItem(key);
+                this.appexASubmitted = true;
+                this.toast.info('Saved offline AppEx-A draft uploaded to server');
+                // Invalidate cache so loadAppExAIfNeeded re-fetches the new data
+                this.dataCache.invalidate('student:appexA:' + sid);
+                this.loadAppExAIfNeeded();
+              } catch (err) {}
             }
           } catch {}
 
+          // Load company requests if not already done this session
           try {
             if (!this.hasLoadedMyCompanyRequestsOnce) {
               await this.loadMyCompanyRequests();
@@ -931,7 +895,11 @@ export class Student implements OnInit, OnDestroy {
     
     // Guard every tab load with DataCacheService — prevents spinner on every navigation back
     if (tab === 'appex') {
-      // Only load/refresh if cache is stale; if fresh, data is already in memory
+      // Always ensure APEX A data is loaded/fresh when student opens this tab
+      if (!this.dataCache.isFresh('student:appexA:' + this.selectedId)) {
+        this.loadAppExAIfNeeded();
+      }
+      // Always ensure APEX B status is loaded/fresh
       if (!this.dataCache.isFresh('student:apexb')) {
         this.loadApexBStatus(false);
       }
@@ -947,6 +915,73 @@ export class Student implements OnInit, OnDestroy {
     } else if (tab === 'evaluations') {
       if (!this.dataCache.isFresh('student:evaluations') && !this.loadingEvaluations) {
         this.loadEvaluations();
+      }
+    }
+  }
+
+  /**
+   * Loads AppEx-A form data from the server if not already cached.
+   * Guards with a per-student cache key so it only fires once per TTL window.
+   * Silently handles 404 (new student with no submission yet).
+   */
+  async loadAppExAIfNeeded() {
+    const sid = this.selectedId;
+    if (!sid) return;
+    const cacheKey = 'student:appexA:' + sid;
+    if (this.dataCache.isFresh(cacheKey)) return;
+
+    try {
+      const res = await this.apiGetAppExA({ skipGlobalLoading: this.hasLoadedAppExAOnce });
+      this.hasLoadedAppExAOnce = true;
+      this.dataCache.mark(cacheKey);
+
+      // Resolve internship ID if returned
+      const internshipObj = (res as any)?.internship;
+      const resolvedId: string = internshipObj?.id || internshipObj?._id || (res as any)?.internshipId || '';
+      if (resolvedId) this.studentInternshipId = resolvedId;
+
+      // Determine APEX A approval status
+      const ax = internshipObj?.appexA || (res as any)?.appexA || {};
+      const status = ax.status || internshipObj?.status || 'pending';
+      if (status === 'approved' || status === 'APPROVED') {
+        this.appexAStatus = 'approved';
+      } else if (status === 'rejected' || status === 'REJECTED') {
+        this.appexAStatus = 'rejected';
+      } else {
+        this.appexAStatus = 'pending';
+      }
+
+      // Populate form if server has data
+      const serverHas = Object.keys(ax).some(k => {
+        const v = (ax as any)[k];
+        return v !== undefined && v !== null && String(v).toString().trim().length > 0;
+      });
+      if (serverHas) {
+        this.appexAForm = {
+          organization: ax.organization || '',
+          address: ax.address || '',
+          industrySector: ax.industrySector || '',
+          contactName: ax.contactName || '',
+          contactDesignation: ax.contactDesignation || '',
+          contactPhone: ax.contactPhone || '',
+          contactEmail: ax.contactEmail || '',
+          internshipField: ax.internshipNature || ax.internshipField || '',
+          internshipLocation: ax.internshipLocation || '',
+          startDate: (ax.startDate || '').slice(0, 10),
+          endDate: (ax.endDate || '').slice(0, 10),
+          workingDays: ax.workingDays || '',
+          workingHours: ax.workingHours || '',
+          numberOfPositions: ax.numberOfInternship || ax.numberOfPositions || 1,
+          natureOfInternship: ax.natureOfInternship || { softwareDevelopment: false, dataScience: false, networking: false, cyberSecurity: false, webMobile: false, otherChecked: false, otherText: '' },
+          mode: ax.mode || 'On-Site'
+        };
+        this.appexASubmitted = true;
+      }
+      this.cdr.detectChanges();
+    } catch (err: any) {
+      // 404 = student has not submitted AppEx-A yet; this is expected and silent
+      if (err?.status !== 404 && err?.status !== 400) {
+        this.toast.danger(err?.error?.message || err?.message || 'Failed to load AppEx-A form');
       }
     }
   }
