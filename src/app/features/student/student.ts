@@ -387,8 +387,23 @@ export class Student implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
-    // Tab selection is handled by the queryParamMap subscription in the constructor
-    // This ensures initial tab is set correctly from URL params
+    // Explicitly load APEX A & B data after component initialization.
+    // Angular effects scheduled in the constructor may not fire until the
+    // first user-triggered change detection cycle (e.g. typing in a field).
+    // This microtask ensures the GET calls happen on initial page load.
+    Promise.resolve().then(() => {
+      const sid = this.myStudentId() || this.selectedId;
+      if (sid) {
+        if (!this.selectedId) this.selectedId = sid;
+        console.log('🚀 [Student ngOnInit] Loading APEX A & B for student:', sid);
+        if (!this.dataCache.isFresh('student:appexA:' + sid)) {
+          this.loadAppExAIfNeeded();
+        }
+        if (!this.dataCache.isFresh('student:apexb')) {
+          this.loadApexBStatus();
+        }
+      }
+    });
   }
 
   onCompanyNameInput(value: string) {
