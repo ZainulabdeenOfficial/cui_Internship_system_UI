@@ -35,7 +35,8 @@ export class Student implements OnInit, OnDestroy {
   private lastCompanyQuery: string = '';
   // Selected/preview company state
   companyPreview: { id: string; name: string; email?: string; phone?: string; address?: string; website?: string; industry?: string; description?: string; supervisorCount?: number } | null = null;
-  private selectedCompany: { id: string; name: string; email?: string; address?: string; website?: string; industry?: string } | null = null;
+  /** Exposed publicly so the template can pass the selected company to child components (e.g. AssignmentForm). */
+  selectedCompany: { id: string; name: string; email?: string; address?: string; website?: string; industry?: string } | null = null;
 
   isCompanyNotFound(): boolean {
     const name = this.appexAForm?.organization?.trim();
@@ -245,6 +246,9 @@ export class Student implements OnInit, OnDestroy {
   private hasLoadedWeeklyLogsOnce = false;
   private hasLoadedMyCompanyRequestsOnce = false;
   private hasLoadedCompanyRequestStatusOnce = false;
+  /** Tracks the last tab that was fully initialized (data loaded). Prevents re-loading when the
+   *  queryParamMap subscription fires for internal navigations on the same tab. */
+  private lastInitializedTab: string | null = null;
   
   constructor(private store: StoreService, private toast: ToastService, private route: ActivatedRoute, private router: Router, private studentApi: StudentService, private adminApi: AdminService, private cdr: ChangeDetectorRef, private dataCache: DataCacheService) {
     this.lockSelection = effect(() => {
@@ -327,8 +331,13 @@ export class Student implements OnInit, OnDestroy {
           try { this.router.navigate([], { relativeTo: this.route, queryParams: { tab: 'appex' }, queryParamsHandling: 'merge' }); } catch {}
         }
 
-        // Trigger selectTab to load data for the newly selected tab
-        this.selectTab(this.currentTab);
+        // Only trigger selectTab (and its data-loading) when the tab has actually changed.
+        // Skipping it on same-tab re-navigation prevents the loader from restarting every time
+        // the queryParamMap subscription fires (e.g. after an internal router.navigate call).
+        if (this.currentTab !== this.lastInitializedTab) {
+          this.lastInitializedTab = this.currentTab;
+          this.selectTab(this.currentTab);
+        }
       });
     } catch {}
 
@@ -735,10 +744,8 @@ export class Student implements OnInit, OnDestroy {
           fullyApproved: this.isFullyApproved()
         });
         
-        // Load APEX C status as well after APEX B status is resolved
-        if (!this.apexCSubmitted) {
-          this.checkApexCStatus();
-        }
+        // NOTE: APEX C GET endpoint was removed from the backend.
+        // apexCSubmitted is set only via the onApexCSubmitted() event emitted by the form.
 
         // If fully approved, load weekly logs and evaluations — but only if not already cached
         if (this.isFullyApproved()) {
@@ -949,7 +956,10 @@ export class Student implements OnInit, OnDestroy {
 
     const tabChanged = this.currentTab !== tab;
     this.currentTab = tab;
-    
+    // Keep lastInitializedTab in sync so the queryParamMap subscription
+    // (re-fired by router.navigate below) does NOT call selectTab() again.
+    this.lastInitializedTab = tab;
+
     if (tabChanged) {
       try { this.router.navigate([], { relativeTo: this.route, queryParams: { tab }, queryParamsHandling: 'merge' }); } catch {}
     }
@@ -964,10 +974,8 @@ export class Student implements OnInit, OnDestroy {
       if (!this.dataCache.isFresh('student:apexb')) {
         this.loadApexBStatus(false);
       }
-      // Check APEX C status too
-      if (!this.apexCSubmitted && !this.loadingApexCStatus) {
-        this.checkApexCStatus();
-      }
+      // NOTE: APEX C GET endpoint removed from backend — apexCSubmitted is set only
+      // via onApexCSubmitted() when the student submits the form in the current session.
       // When cache IS fresh: do nothing — apexBStatus is already populated in memory
     } else if (tab === 'weeklylogs') {
       if (!this.dataCache.isFresh('student:weeklylogs')) {
@@ -989,31 +997,12 @@ export class Student implements OnInit, OnDestroy {
   }
 
   /**
-   * Silently check whether the student has already submitted APEX C (Form 3).
-   * Uses GET /api/student/appex-c — a 200 means submitted, 404 means not yet.
+   * APEX C GET endpoint was removed from the backend — this method is now a no-op.
+   * apexCSubmitted is only set to true via onApexCSubmitted() (emitted by Form3Form after POST).
+   * Keeping the method signature to avoid any stale references causing compile errors.
    */
   async checkApexCStatus() {
-    if (this.loadingApexCStatus || !this.selectedId) return;
-    this.loadingApexCStatus = true;
-    try {
-      const res = await this.studentApi.getAppExC();
-      // Any truthy response (even empty object) means a record exists → submitted
-      const proposal = res?.internshipProposal || res?.proposal || res?.data || res;
-      if (proposal && (proposal.organizationOverview || proposal._id || proposal.id || proposal.status)) {
-        this.apexCSubmitted = true;
-        console.log('✅ [Student] APEX C already submitted');
-      } else {
-        this.apexCSubmitted = false;
-      }
-    } catch (err: any) {
-      // 404 means not submitted yet — expected for new students
-      this.apexCSubmitted = (err?.status !== 404 && err?.status !== 400) ? false : false;
-    } finally {
-      this.loadingApexCStatus = false;
-      // Update store so header/footer can react
-      this.store.setStudentInternshipStarted(this.internshipStarted());
-      this.cdr.detectChanges();
-    }
+    // GET /api/student/appex-c has been removed from the backend — do nothing.
   }
 
   /**

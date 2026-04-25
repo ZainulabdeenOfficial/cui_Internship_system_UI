@@ -14,6 +14,8 @@ import { StudentService } from '../../shared/services/student.service';
 })
 export class AssignmentForm {
   selectedId = input<string | null>(null);
+  /** Company selected in the AppEx-A tab — auto-populates organization fields here. */
+  companyFromParent = input<{ id: string; name: string; email?: string; address?: string; website?: string; industry?: string } | null>(null);
   submitted = signal<boolean>(false);
   loading = signal<boolean>(false);
   verificationLoading = signal<boolean>(false);
@@ -33,6 +35,8 @@ export class AssignmentForm {
   companyDropdownOpen: boolean = false;
   loadingCompanies: boolean = false;
   private companySearchDebounceId: any;
+  /** Prevents loadAppexBStatus() from re-firing on every effect evaluation for the same student. */
+  private appexBLoadedForId: string | null = null;
 
   model = {
     // Appendix-B: Student Information
@@ -79,10 +83,14 @@ export class AssignmentForm {
     effect(() => {
       const id = this.selectedId();
       if (!id) return;
-      
-      // Load existing AppEx B data from backend
-      this.loadAppexBStatus();
-      
+
+      // Load AppEx B status only once per student ID to prevent repeated API calls
+      // when the tab is re-visited or Angular re-evaluates this effect.
+      if (id !== this.appexBLoadedForId) {
+        this.appexBLoadedForId = id;
+        this.loadAppexBStatus();
+      }
+
       try {
         const list = this.store.agreements()[id] ?? [];
         if (!list.length) return;
@@ -91,13 +99,22 @@ export class AssignmentForm {
           this.model = { ...this.model, ...(latest.studentAgreementData || {}) };
         }
       } catch {}
-      
+
       // Map legacy fields to new fields
       this.model.name = this.model.name || this.model.fullName;
       this.model.email = this.model.email || this.model.emailAddress;
       this.model.contactNo = this.model.contactNo || this.model.contactNumber;
       // Map deprecated internshipNature to internshipField
       this.model.internshipField = this.model.internshipField || this.model.internshipNature;
+    });
+
+    // When the parent (AppEx-A tab) selects a company, auto-populate organization fields
+    effect(() => {
+      const company = this.companyFromParent();
+      if (!company) return;
+      // Only auto-fill if it's a new/different company from what's already selected
+      if (this.selectedCompany?.id === company.id) return;
+      this.selectCompany(company);
     });
   }
 

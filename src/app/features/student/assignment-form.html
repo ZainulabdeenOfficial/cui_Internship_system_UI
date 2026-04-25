@@ -88,8 +88,8 @@
         <input class="form-control" [(ngModel)]="model.preferredField" name="preferredField" placeholder="e.g., Software Development, Data Science" required />
       </div>
 
-      <!-- Organization/Company Information (Optional) -->
-      <div class="col-12 mt-4"><h5 class="mb-3">Organization Information (Optional - Select from Directory or Enter Manually)</h5></div>
+      <!-- Organization/Company Information - Select from Directory -->
+      <div class="col-12 mt-4"><h5 class="mb-3">Organization Information <small class="text-muted fs-6">(Optional – Search &amp; Select from Directory)</small></h5></div>
       
       @if (!selectedCompany) {
       <div>
@@ -212,20 +212,8 @@
       </div>
       }
 
-      <!-- Manual Company Entry (if not selected) -->
-      @if (!selectedCompany) {
-      <div class="row g-3">
-        <div class="col-md-6">
-          <label class="form-label">Organization Name</label>
-          <input class="form-control" [(ngModel)]="model.organization" name="organization" placeholder="Enter company/organization name" />
-        </div>
-        
-        <div class="col-md-6">
-          <label class="form-label">Industry Sector</label>
-          <input class="form-control" [(ngModel)]="model.industrySector" name="industrySector" placeholder="e.g., IT, Finance, Healthcare" />
-        </div>
-      </div>
-      }
+      <!-- No manual entry fallback — use the directory search above to select a company.
+           The selected company's name, industry, and address are stored in the model automatically. -->
 
       <!-- Agreement Section -->
       <div class="col-12 mt-4"><h5 class="mb-3">Student Internship Agreement Statement</h5></div>
