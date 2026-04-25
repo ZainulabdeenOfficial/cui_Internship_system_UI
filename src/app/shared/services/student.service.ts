@@ -585,7 +585,7 @@ export class StudentService {
     return await firstValueFrom(this.http.put<any>(url, cleanPayload, { headers }));
   }
 
-  // GET /api/student/appex-c
+  // GET /api/student/appex-c  (silent background check — 404 = not submitted yet, which is normal)
   async getAppExC(): Promise<any> {
     const url = this.abs('/api/student/appex-c');
     const token = this.getAuthToken();
@@ -593,7 +593,9 @@ export class StudentService {
       Accept: 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {})
     });
-    return await firstValueFrom(this.http.get<any>(url, { headers }));
+    // SILENT_ERROR + SKIP_GLOBAL_LOADING: 404 means not submitted yet — never show toast
+    const context = this.buildContext({ skipGlobalLoading: true, silentError: true });
+    return await firstValueFrom(this.http.get<any>(url, { headers, context }));
   }
 
   // POST /api/student/appex-c
@@ -724,7 +726,7 @@ export class StudentService {
     return await firstValueFrom(this.http.patch<any>(url, payload, { headers: this.jsonHeaders() }));
   }
 
-  // GET /api/student/appex-b-verification
+  // GET /api/student/appex-b-verification  (silent background check — 404 = not submitted yet)
   async getAppexBVerification(options?: StudentRequestOptions): Promise<any> {
     const key = this.cacheKey('appex-b-verification');
     const cached = this.readCache<any>(key, options);
@@ -736,7 +738,12 @@ export class StudentService {
       Accept: 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {})
     }), options);
-    const res = await firstValueFrom(this.http.get<any>(url, { headers }));
+    // Always silent + skip global loading — 404 just means APEX B not submitted yet
+    const context = this.buildContext({ 
+      skipGlobalLoading: options?.skipGlobalLoading ?? true, 
+      silentError: true    // never toast 404/400 for this background check
+    });
+    const res = await firstValueFrom(this.http.get<any>(url, { headers, context }));
     this.writeCache(key, res, options?.cacheTtlMs ?? 60 * 1000);
     return res;
   }

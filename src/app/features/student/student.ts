@@ -638,22 +638,23 @@ export class Student implements OnInit, OnDestroy {
       throw err;
     }
   }
-  async apiGetAppExA(options?: { skipGlobalLoading?: boolean; forceRefresh?: boolean }) {
+  async apiGetAppExA(options?: { skipGlobalLoading?: boolean; forceRefresh?: boolean; silentError?: boolean }) {
     try {
-      return await this.studentApi.getAppExA(options);
+      // Always silent — 404/400 means no APEX A submitted yet, which is normal for new students
+      return await this.studentApi.getAppExA({ ...options, silentError: true });
     } catch (err: any) {
-      // 404 means no AppEx-A data exists yet (normal for new students)
-      if (err?.status === 404) {
-        return {}; // Return empty object so form can start fresh
-      }
-      // Network/CORS errors surface as status === 0 in Angular HttpErrorResponse
-      const isNet = err && (err.status === 0 || (err.message || '').toString().toLowerCase().includes('unknown error'));
-      if (isNet) {
-        this.toast.warning('Unable to reach AppEx-A server (network/CORS). Working offline and using local draft if available.');
-        // return empty object so caller can fallback to local draft
+      // 404 / 400 → no AppEx-A data yet (new student) — return empty object so form starts fresh
+      if (err?.status === 404 || err?.status === 400) {
         return {};
       }
-      this.toast.danger(err?.error?.message || err?.message || 'Failed to load AppEx-A');
+      // Network/CORS errors
+      const isNet = err && (err.status === 0 || (err.message || '').toString().toLowerCase().includes('unknown error'));
+      if (isNet) {
+        this.toast.warning('Unable to reach AppEx-A server (network/CORS). Working offline.');
+        return {};
+      }
+      // Genuinely unexpected server error (5xx) — show toast
+      this.toast.danger(err?.error?.message || err?.message || 'Failed to load AppEx-A data');
       throw err;
     }
   }
@@ -869,7 +870,7 @@ export class Student implements OnInit, OnDestroy {
   
   async loadAppExA() {
     try {
-      const res = await this.apiGetAppExA();
+      const res = await this.apiGetAppExA({ skipGlobalLoading: true, silentError: true });
       const ax = (res as any)?.internship?.appexA || (res as any)?.appexA || {};
       this.appexAForm = {
         organization: ax.organization || '', address: ax.address || '', industrySector: ax.industrySector || '',
@@ -1027,7 +1028,7 @@ export class Student implements OnInit, OnDestroy {
     if (this.dataCache.isFresh(cacheKey)) return;
 
     try {
-      const res = await this.apiGetAppExA({ skipGlobalLoading: this.hasLoadedAppExAOnce });
+      const res = await this.apiGetAppExA({ skipGlobalLoading: this.hasLoadedAppExAOnce, silentError: true });
       this.hasLoadedAppExAOnce = true;
       this.dataCache.mark(cacheKey);
 
