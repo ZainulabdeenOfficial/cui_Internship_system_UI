@@ -79,6 +79,10 @@ export class Student implements OnInit, OnDestroy {
   /** Internship ID resolved from any available API response; drives evaluations fetch. */
   studentInternshipId: string | null = null;
   loadingApexBStatus = false;
+
+  // APEX C (Form 3 / Organization Overview) submission status
+  apexCSubmitted = false;
+  loadingApexCStatus = false;
   
   // Loading states for skeleton loaders (other tabs)
   loadingData = {
@@ -87,18 +91,29 @@ export class Student implements OnInit, OnDestroy {
     evaluations: false
   };
   
-  // Check if all verifications are complete
+  // Check if all verifications are complete (APEX B triple-approval)
   isFullyApproved = computed(() => {
     const apexB = this.apexBStatus;
     if (!apexB) return this.isApproved();
     return apexB.studentVerified && apexB.facultyVerified && apexB.adminApproved;
   });
+
+  /**
+   * TRUE when the internship is considered started:
+   *   – APEX A approved by admin
+   *   – APEX B fully approved (student + faculty + admin)
+   *   – APEX C (Form 3) submitted by student
+   * Controls which tab-set is shown.
+   */
+  internshipStarted(): boolean {
+    return this.appexAStatus === 'approved'
+      && this.isFullyApproved()
+      && this.apexCSubmitted;
+  }
   
-  // Check if all APEX forms are approved to determine which tabs to show
+  // Check if all APEX forms are approved to determine which tabs to show (legacy helper kept for compat)
   allApexFormsApproved(): boolean {
-    // Check if APEX A and Assignment are submitted and approved
-    // Also check APEX B full approval (all three: student, faculty, admin)
-    return this.appexASubmitted && (this.isFullyApproved() || this.isApproved());
+    return this.internshipStarted();
   }
   
   private lockSelection: any;
@@ -278,8 +293,6 @@ export class Student implements OnInit, OnDestroy {
             if ((allowed as readonly string[]).includes(mapped)) {
               this.currentTab = mapped as any;
               // Reflect canonical tab in URL so aliases normalize in address bar.
-              // Avoid navigating if the incoming param already matches the canonical value
-              // (prevents unnecessary re-navigation / re-entry loops).
               try {
                 if (tabParam !== mapped) {
                   this.router.navigate([], { relativeTo: this.route, queryParams: { tab: mapped }, queryParamsHandling: 'merge' });
@@ -289,23 +302,23 @@ export class Student implements OnInit, OnDestroy {
               this.currentTab = 'appex';
             }
           } else {
-            // No explicit tab requested: default to weekly logs if approved, otherwise AppEx-A
-            this.currentTab = this.isFullyApproved() ? 'weeklylogs' : 'appex';
+            // No explicit tab: default to weekly logs if internship started, otherwise AppEx-A
+            this.currentTab = this.internshipStarted() ? 'weeklylogs' : 'appex';
           }
 
-        // Tab visibility guards based on approval status
-        const approved = this.isFullyApproved();
-        // Pre-approval tabs (forms)
+        // Tab visibility guards based on internship-started status
+        const started = this.internshipStarted();
+        // Pre-internship tabs (forms) — hidden once internship has started
         const formTabs = new Set(['appex', 'assignment', 'form3']);
-        // Post-approval tabs
-        const postApprovalTabs = new Set(['weeklylogs', 'evaluations']);
+        // Post-internship tabs — only visible after internship started
+        const postStartTabs = new Set(['weeklylogs', 'evaluations']);
 
-        if (approved && formTabs.has(this.currentTab)) {
-          // Approved student trying to access form tabs → redirect to weekly logs
+        if (started && formTabs.has(this.currentTab)) {
+          // Internship started — form tabs no longer relevant, redirect to weekly logs
           this.currentTab = 'weeklylogs';
           try { this.router.navigate([], { relativeTo: this.route, queryParams: { tab: 'weeklylogs' }, queryParamsHandling: 'merge' }); } catch {}
-        } else if (!approved && postApprovalTabs.has(this.currentTab)) {
-          // New student trying to access post-approval tabs → redirect to appex
+        } else if (!started && postStartTabs.has(this.currentTab)) {
+          // Internship not yet started — post-start tabs not accessible
           this.currentTab = 'appex';
           try { this.router.navigate([], { relativeTo: this.route, queryParams: { tab: 'appex' }, queryParamsHandling: 'merge' }); } catch {}
         }
@@ -717,6 +730,11 @@ export class Student implements OnInit, OnDestroy {
           fullyApproved: this.isFullyApproved()
         });
         
+        // Load APEX C status as well after APEX B status is resolved
+        if (!this.apexCSubmitted) {
+          this.checkApexCStatus();
+        }
+
         // If fully approved, load weekly logs and evaluations — but only if not already cached
         if (this.isFullyApproved()) {
           // Use cache guards: skip if already loaded this session
@@ -726,13 +744,16 @@ export class Student implements OnInit, OnDestroy {
           if (!this.dataCache.isFresh('student:evaluations')) {
             this.loadEvaluations();
           }
-          // Auto-switch to weekly logs tab if currently on approval forms
-          if (['appex', 'assignment', 'form3', 'appex-c'].includes(this.currentTab)) {
+          // Auto-switch to weekly logs tab if internship has started and student is on form tabs
+          if (this.internshipStarted() && ['appex', 'assignment', 'form3', 'appex-c'].includes(this.currentTab)) {
             this.selectTab('weeklylogs');
           }
           // Stop polling once fully approved
           this.stopStatusPolling();
         }
+
+        // Sync internship-started state to the store (drives header + footer tabs)
+        this.store.setStudentInternshipStarted(this.internshipStarted());
         
         // Update UI immediately
         this.cdr.detectChanges();
@@ -893,7 +914,34 @@ export class Student implements OnInit, OnDestroy {
     // Agreement flow removed from student UI; treat agreement requirement as satisfied when AppEx-A is submitted
     return !!this.appexASubmitted;
   }
+
+  /**
+   * Called when the form3-form child component emits `apexCSubmitted`.
+   * Immediately flips the local flag and propagates to the store so the header
+   * and footer also react without waiting for the next polling cycle.
+   */
+  onApexCSubmitted() {
+    this.apexCSubmitted = true;
+    // Sync to store (drives header + footer tab visibility)
+    this.store.setStudentInternshipStarted(this.internshipStarted());
+    // If all conditions are now met, redirect to weekly logs
+    if (this.internshipStarted()) {
+      this.selectTab('weeklylogs');
+    }
+    this.cdr.detectChanges();
+  }
+
   selectTab(tab: Student['currentTab']) {
+    // Guard: redirect form tabs if internship has started
+    const started = this.internshipStarted();
+    const formTabs = new Set(['appex', 'assignment', 'form3']);
+    const postStartTabs = new Set(['weeklylogs', 'evaluations']);
+    if (started && formTabs.has(tab)) {
+      tab = 'weeklylogs';
+    } else if (!started && postStartTabs.has(tab)) {
+      tab = 'appex';
+    }
+
     const tabChanged = this.currentTab !== tab;
     this.currentTab = tab;
     
@@ -910,6 +958,10 @@ export class Student implements OnInit, OnDestroy {
       // Always ensure APEX B status is loaded/fresh
       if (!this.dataCache.isFresh('student:apexb')) {
         this.loadApexBStatus(false);
+      }
+      // Check APEX C status too
+      if (!this.apexCSubmitted && !this.loadingApexCStatus) {
+        this.checkApexCStatus();
       }
       // When cache IS fresh: do nothing — apexBStatus is already populated in memory
     } else if (tab === 'weeklylogs') {
@@ -928,6 +980,34 @@ export class Student implements OnInit, OnDestroy {
       if (!this.dataCache.isFresh('student:evaluations') && !this.loadingEvaluations) {
         this.loadEvaluations();
       }
+    }
+  }
+
+  /**
+   * Silently check whether the student has already submitted APEX C (Form 3).
+   * Uses GET /api/student/appex-c — a 200 means submitted, 404 means not yet.
+   */
+  async checkApexCStatus() {
+    if (this.loadingApexCStatus || !this.selectedId) return;
+    this.loadingApexCStatus = true;
+    try {
+      const res = await this.studentApi.getAppExC();
+      // Any truthy response (even empty object) means a record exists → submitted
+      const proposal = res?.internshipProposal || res?.proposal || res?.data || res;
+      if (proposal && (proposal.organizationOverview || proposal._id || proposal.id || proposal.status)) {
+        this.apexCSubmitted = true;
+        console.log('✅ [Student] APEX C already submitted');
+      } else {
+        this.apexCSubmitted = false;
+      }
+    } catch (err: any) {
+      // 404 means not submitted yet — expected for new students
+      this.apexCSubmitted = (err?.status !== 404 && err?.status !== 400) ? false : false;
+    } finally {
+      this.loadingApexCStatus = false;
+      // Update store so header/footer can react
+      this.store.setStudentInternshipStarted(this.internshipStarted());
+      this.cdr.detectChanges();
     }
   }
 
@@ -989,6 +1069,8 @@ export class Student implements OnInit, OnDestroy {
         };
         this.appexASubmitted = true;
       }
+      // Sync internship-started state after loading APEX A status
+      this.store.setStudentInternshipStarted(this.internshipStarted());
       this.cdr.detectChanges();
     } catch (err: any) {
       // 404 = student has not submitted AppEx-A yet; this is expected and silent

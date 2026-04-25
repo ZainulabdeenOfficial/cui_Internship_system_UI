@@ -1,4 +1,4 @@
-import { Component, input, signal } from '@angular/core';
+import { Component, input, signal, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { StoreService } from '../../shared/services/store.service';
@@ -16,6 +16,9 @@ export class Form3Form {
   loading = signal<boolean>(false);
   submitted = signal<boolean>(false);
   form3Status = signal<'pending' | 'approved' | 'rejected'>('pending'); // Track approval status
+
+  /** Emitted once after a successful POST so the parent can update internshipStarted() immediately. */
+  @Output() apexCSubmitted = new EventEmitter<void>();
 
   model = {
     organizationOverview: '',
@@ -86,7 +89,10 @@ export class Form3Form {
       }
       
       this.toast.success('Organization Overview & Scope of Work submitted successfully!');
-      
+
+      // Notify parent so it can immediately recalculate internshipStarted()
+      this.apexCSubmitted.emit();
+
       // Reset form after successful submission
       this.model = { 
         organizationOverview: '', 

@@ -17,11 +17,17 @@
 				<h6 class="mb-2">Quick links</h6>
 				<ul class="list-unstyled small mb-0">
 					@if (store.currentUser()?.role === 'student') {
-						<li><a class="link-light text-decoration-none" [routerLink]="['/student']" [queryParams]="{ tab: 'appex' }">Internship Approval (AppEx-A)</a></li>
-						<li><a class="link-light text-decoration-none" [routerLink]="['/student']" [queryParams]="{ tab: 'assignment' }">Assignment &amp; Agreement</a></li>
-						<li><a class="link-light text-decoration-none" [routerLink]="['/student']" [queryParams]="{ tab: 'form3' }">Organization Overview</a></li>
-						<li><a class="link-light text-decoration-none" [routerLink]="['/student']" [queryParams]="{ tab: 'weeklylogs' }">Weekly Logs</a></li>
-						<li><a class="link-light text-decoration-none" [routerLink]="['/student']" [queryParams]="{ tab: 'evaluations' }">Evaluations</a></li>
+						@if (!store.studentInternshipStarted()) {
+							<!-- Pre-internship: shown before internship starts -->
+							<li><a class="link-light text-decoration-none" [routerLink]="['/student']" [queryParams]="{ tab: 'appex' }">Internship Approval (AppEx-A)</a></li>
+							<li><a class="link-light text-decoration-none" [routerLink]="['/student']" [queryParams]="{ tab: 'assignment' }">Assignment &amp; Agreement</a></li>
+							<li><a class="link-light text-decoration-none" [routerLink]="['/student']" [queryParams]="{ tab: 'form3' }">Organization Overview</a></li>
+						} @else {
+							<!-- Post-internship: shown after internship starts -->
+							<li><a class="link-light text-decoration-none" [routerLink]="['/student']" [queryParams]="{ tab: 'weeklylogs' }">Weekly Logs</a></li>
+							<li><a class="link-light text-decoration-none" [routerLink]="['/student']" [queryParams]="{ tab: 'evaluations' }">Evaluations</a></li>
+						}
+						<!-- Always visible for students -->
 						<li><a class="link-light text-decoration-none" [routerLink]="['/student']" [queryParams]="{ tab: 'company-request' }">Company Requests</a></li>
 						<li><a class="link-light text-decoration-none" [routerLink]="['/student']" [queryParams]="{ tab: 'complaints' }">Complaints</a></li>
 					}

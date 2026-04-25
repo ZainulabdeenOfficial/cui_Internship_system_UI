@@ -185,6 +185,20 @@ export class StoreService {
     load('adminProfile', { email: 'office@cuisahiwal.edu.pk', password: 'admin123', name: 'Internship Office' })
   );
 
+  /**
+   * True once: APEX A approved + APEX B (student+faculty+admin) all approved + APEX C (Form 3) submitted.
+   * Written by the Student component; read by Header & Footer for conditional tab visibility.
+   * Persisted in sessionStorage so it resets on logout/browser close.
+   */
+  studentInternshipStarted = signal<boolean>(
+    (() => { try { return sessionStorage.getItem('internshipStarted') === 'true'; } catch { return false; } })()
+  );
+
+  setStudentInternshipStarted(val: boolean) {
+    this.studentInternshipStarted.set(val);
+    try { sessionStorage.setItem('internshipStarted', val ? 'true' : 'false'); } catch {}
+  }
+
   private persist() {
     save('students', this.students());
     save('logs', this.logs());
@@ -459,7 +473,12 @@ export class StoreService {
     this.currentStudentId.set(null);
     this.persist();
   }
-  logout() { this.currentStudentId.set(null); this.currentUser.set(null); this.persist(); }
+  logout() {
+    this.currentStudentId.set(null);
+    this.currentUser.set(null);
+    this.setStudentInternshipStarted(false);
+    this.persist();
+  }
   submitWeeklyLog(studentId: string, log: Omit<WeeklyLog, 'id'|'date'>) {
     const entry: WeeklyLog = { id: crypto.randomUUID(), date: new Date().toISOString(), ...log };
     this.logs.update(m => ({ ...m, [studentId]: [...(m[studentId] ?? []), entry] }));

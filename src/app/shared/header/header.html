@@ -24,13 +24,19 @@
 							<span>Student</span>
 						</a>
 						<ul class="dropdown-menu dropdown-menu-end">
-							<li><a class="dropdown-item" [routerLink]="['/student']" [queryParams]="{ tab: 'appex' }">Internship Approval (AppEx‑A)</a></li>
-							<li><a class="dropdown-item" [routerLink]="['/student']" [queryParams]="{ tab: 'assignment' }">Assignment &amp; Agreement</a></li>
-							<li><a class="dropdown-item" [routerLink]="['/student']" [queryParams]="{ tab: 'form3' }">Organization Overview &amp; Scope of Work</a></li>
+							@if (!store.studentInternshipStarted()) {
+								<!-- Pre-internship tabs: shown only before internship starts -->
+								<li><a class="dropdown-item" [routerLink]="['/student']" [queryParams]="{ tab: 'appex' }">Internship Approval (AppEx&#8209;A)</a></li>
+								<li><a class="dropdown-item" [routerLink]="['/student']" [queryParams]="{ tab: 'assignment' }">Assignment &amp; Agreement</a></li>
+								<li><a class="dropdown-item" [routerLink]="['/student']" [queryParams]="{ tab: 'form3' }">Organization Overview &amp; Scope of Work</a></li>
+							} @else {
+								<!-- Post-internship tabs: shown only after internship starts -->
 								<li><a class="dropdown-item" [routerLink]="['/student']" [queryParams]="{ tab: 'weeklylogs' }">Weekly Logs</a></li>
 								<li><a class="dropdown-item" [routerLink]="['/student']" [queryParams]="{ tab: 'evaluations' }">My Evaluations</a></li>
-								<li><a class="dropdown-item" [routerLink]="['/student']" [queryParams]="{ tab: 'company-request' }">Request Company</a></li>
-								<li><a class="dropdown-item" [routerLink]="['/student']" [queryParams]="{ tab: 'complaints' }">Complaints</a></li>
+							}
+							<!-- Always visible -->
+							<li><a class="dropdown-item" [routerLink]="['/student']" [queryParams]="{ tab: 'company-request' }">Request Company</a></li>
+							<li><a class="dropdown-item" [routerLink]="['/student']" [queryParams]="{ tab: 'complaints' }">Complaints</a></li>
 							<li><hr class="dropdown-divider"></li>
 							<li><button class="dropdown-item" (click)="logout()"><i class="pi pi-sign-out" aria-hidden="true"></i> Logout</button></li>
 						</ul>
