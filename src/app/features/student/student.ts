@@ -33,6 +33,10 @@ export class Student implements OnInit, OnDestroy {
   private companyCacheKeys: string[] = [];
   private lastFetchedCompanyQuery: string = '';
   private lastCompanyQuery: string = '';
+  /** Pre-loaded pool of all companies — filled on first focus so subsequent opens are instant. */
+  private allCompaniesPool: Array<{ id: string; name: string; email?: string; phone?: string; address?: string; website?: string; industry?: string; description?: string; supervisorCount?: number }> = [];
+  private allCompaniesLoading = false;
+  private allCompaniesLoaded = false;
   // Selected/preview company state
   companyPreview: { id: string; name: string; email?: string; phone?: string; address?: string; website?: string; industry?: string; description?: string; supervisorCount?: number } | null = null;
   /** Exposed publicly so the template can pass the selected company to child components (e.g. AssignmentForm). */
@@ -436,80 +440,98 @@ export class Student implements OnInit, OnDestroy {
     if (this.companySearchDebounceId) clearTimeout(this.companySearchDebounceId);
     this.companySearchDebounceId = setTimeout(async () => {
       try {
-        if (!q || q.length < 2) {
-          // Avoid fetching all when empty; clear suggestions
-          this.dropdownCompanies = [];
+        if (!q) {
+          // Empty field — show all pre-loaded companies
+          this.dropdownCompanies = this.allCompaniesPool.slice(0, 50);
+          this.isCompanyDropdownOpen = this.dropdownCompanies.length > 0 || this.allCompaniesLoading;
           this.companyPreview = null;
-          this.isCompanyDropdownOpen = false;
           this.loadingCompanies = false;
           this.activeCompanyIndex = -1;
-        } else {
-          // New search: clear previous suggestions to avoid stale items
-          this.loadingCompanies = true;
-          this.isCompanyDropdownOpen = true;
-          this.dropdownCompanies = [];
-          this.activeCompanyIndex = -1;
+        } else if (q.length < 2) {
+          // Single char — filter from pool for instant results
           const lower = q.toLowerCase();
+          this.dropdownCompanies = this.allCompaniesPool
+            .filter(c => (c.name || '').toLowerCase().includes(lower))
+            .slice(0, 15);
+          this.isCompanyDropdownOpen = true;
+          this.companyPreview = null;
+          this.loadingCompanies = false;
+          this.activeCompanyIndex = this.dropdownCompanies.length ? 0 : -1;
+        } else {
+          // 2+ chars: filter pool instantly, then also fetch from API for fresh results
+          const lower = q.toLowerCase();
+          // Instant filter from pool while API fetches
+          const poolFiltered = this.allCompaniesPool
+            .filter(c => (c.name || '').toLowerCase().includes(lower));
+          this.dropdownCompanies = poolFiltered.slice(0, 15);
+          this.isCompanyDropdownOpen = true;
+          this.activeCompanyIndex = this.dropdownCompanies.length ? 0 : -1;
+
           const cacheKey = `${lower}|${this.companyIndustryFilter}`;
-          // Serve from cache if available
-          let results: Array<{ id: string; name: string; email?: string; phone?: string; address?: string; website?: string; industry?: string; description?: string; supervisorCount?: number }> | null = null;
-          if (this.companyCache.has(cacheKey)) {
-            results = this.companyCache.get(cacheKey)!;
-          } else {
+          if (!this.companyCache.has(cacheKey)) {
+            this.loadingCompanies = true;
             const reqId = ++this.companySearchRequestId;
             this.lastFetchedCompanyQuery = lower;
-            const fetched = await this.studentApi.getDropdownCompanies({
-              search: q,
-              industry: this.companyIndustryFilter || undefined,
-              limit: 50
-            });
-            // If a newer request has been made, ignore this response
-            if (reqId !== this.companySearchRequestId) return;
-            results = (fetched?.data || []) as Array<{ id: string; name: string; email?: string; phone?: string; address?: string; website?: string; industry?: string; description?: string; supervisorCount?: number }>;
-            // Cache with simple LRU of size 50
-            this.companyCache.set(cacheKey, results);
-            this.companyCacheKeys.push(cacheKey);
-            if (this.companyCacheKeys.length > 50) {
-              const oldest = this.companyCacheKeys.shift();
-              if (oldest) this.companyCache.delete(oldest);
+            try {
+              const fetched = await this.studentApi.getDropdownCompanies({
+                search: q,
+                industry: this.companyIndustryFilter || undefined,
+                limit: 50
+              });
+              if (reqId !== this.companySearchRequestId) return;
+              const results = (fetched?.data || []) as typeof this.allCompaniesPool;
+              // Merge into pool
+              results.forEach(r => {
+                if (!this.allCompaniesPool.find(p => p.id === r.id)) this.allCompaniesPool.push(r);
+              });
+              this.companyCache.set(cacheKey, results);
+              this.companyCacheKeys.push(cacheKey);
+              if (this.companyCacheKeys.length > 50) {
+                const oldest = this.companyCacheKeys.shift();
+                if (oldest) this.companyCache.delete(oldest);
+              }
+              // Extract unique industries
+              const industries = new Set<string>();
+              results.forEach((c: any) => { if (c.industry) industries.add(c.industry); });
+              this.availableIndustries = Array.from(industries).sort();
+              // Re-filter with fresh API data
+              const fresh = this.allCompaniesPool
+                .filter(c => (c.name || '').toLowerCase().includes(lower));
+              this.dropdownCompanies = fresh.sort((a, b) => {
+                const an = (a.name || '').toLowerCase();
+                const bn = (b.name || '').toLowerCase();
+                return (an.startsWith(lower) ? 0 : 1) - (bn.startsWith(lower) ? 0 : 1) || an.indexOf(lower) - bn.indexOf(lower);
+              }).slice(0, 15);
+              this.activeCompanyIndex = this.dropdownCompanies.length ? 0 : -1;
+            } catch { /* use pool results already shown */ } finally {
+              this.loadingCompanies = false;
             }
-            // Extract unique industries for filter dropdown
-            const industries = new Set<string>();
-            (fetched?.data || []).forEach((c: any) => {
-              if (c.industry) industries.add(c.industry);
-            });
-            this.availableIndustries = Array.from(industries).sort();
+          } else {
+            // Serve from cache
+            const cached = this.companyCache.get(cacheKey)!;
+            this.dropdownCompanies = cached
+              .filter(c => (c.name || '').toLowerCase().includes(lower))
+              .sort((a, b) => {
+                const an = (a.name || '').toLowerCase();
+                const bn = (b.name || '').toLowerCase();
+                return (an.startsWith(lower) ? 0 : 1) - (bn.startsWith(lower) ? 0 : 1);
+              }).slice(0, 15);
+            this.activeCompanyIndex = this.dropdownCompanies.length ? 0 : -1;
           }
-          // Filter: show only companies whose NAME contains the query (case-insensitive)
-          const filtered = (results || []).filter(c => ((c.name || '').toLowerCase()).includes(lower));
-          // Sort: names starting with query first, then others containing query
-          this.dropdownCompanies = filtered.sort((a, b) => {
-            const an = (a.name || '').toLowerCase();
-            const bn = (b.name || '').toLowerCase();
-            const aStarts = an.startsWith(lower) ? 0 : 1;
-            const bStarts = bn.startsWith(lower) ? 0 : 1;
-            if (aStarts !== bStarts) return aStarts - bStarts;
-            // Secondary: position of substring
-            return an.indexOf(lower) - bn.indexOf(lower);
-          }).slice(0, 10);
-          this.activeCompanyIndex = this.dropdownCompanies.length ? 0 : -1;
         }
       } catch {
         this.dropdownCompanies = [];
         this.activeCompanyIndex = -1;
-      } finally {
         this.loadingCompanies = false;
       }
-      // Compute preview only from current dropdown results (no local fallback)
+      // Update preview
       this.companyPreview = null;
       if (q) {
         const lower = q.toLowerCase();
-        // Only show preview when exact match exists; avoid unrelated suggestions preview
         const match = this.dropdownCompanies.find(c => (c.name || '').toLowerCase() === lower) || null;
         this.companyPreview = match;
-        // Do not auto-fill address while typing; only set on explicit selection
       }
-    }, 150);
+    }, 120);
   }
 
   usePreviewAddress() {
@@ -594,11 +616,58 @@ export class Student implements OnInit, OnDestroy {
 
   onCompanyInputFocus() {
     const q = (this.appexAForm?.organization || '').trim();
-    // Open dropdown if: has search query and has results, or has search query but loading, or exact match not found
-    const hasResults = (this.dropdownCompanies?.length || 0) > 0;
-    const isLoading = this.loadingCompanies;
-    const hasSearchQuery = q.length >= 2;
-    this.isCompanyDropdownOpen = hasSearchQuery && (hasResults || isLoading || this.isCompanyNotFound());
+
+    // If pool already loaded, open dropdown immediately with matching or all companies
+    if (this.allCompaniesLoaded && this.allCompaniesPool.length > 0) {
+      if (!q) {
+        this.dropdownCompanies = this.allCompaniesPool.slice(0, 50);
+      } else {
+        const lower = q.toLowerCase();
+        this.dropdownCompanies = this.allCompaniesPool
+          .filter(c => (c.name || '').toLowerCase().includes(lower))
+          .slice(0, 15);
+      }
+      this.isCompanyDropdownOpen = this.dropdownCompanies.length > 0;
+      this.activeCompanyIndex = this.dropdownCompanies.length ? 0 : -1;
+      return;
+    }
+
+    // First focus — fetch all companies and show them
+    if (!this.allCompaniesLoading) {
+      this.allCompaniesLoading = true;
+      this.loadingCompanies = true;
+      this.isCompanyDropdownOpen = true;
+      this.studentApi.getDropdownCompanies({ limit: 100 }).then(res => {
+        const data = (res?.data || []) as typeof this.allCompaniesPool;
+        this.allCompaniesPool = data.sort((a, b) =>
+          (a.name || '').toLowerCase().localeCompare((b.name || '').toLowerCase())
+        );
+        this.allCompaniesLoaded = true;
+        // Populate industry filter options
+        const industries = new Set<string>();
+        data.forEach((c: any) => { if (c.industry) industries.add(c.industry); });
+        if (!this.availableIndustries.length) {
+          this.availableIndustries = Array.from(industries).sort();
+        }
+        // Show matching or all
+        const current = (this.appexAForm?.organization || '').trim();
+        if (!current) {
+          this.dropdownCompanies = this.allCompaniesPool.slice(0, 50);
+        } else {
+          const lower = current.toLowerCase();
+          this.dropdownCompanies = this.allCompaniesPool
+            .filter(c => (c.name || '').toLowerCase().includes(lower))
+            .slice(0, 15);
+        }
+        this.isCompanyDropdownOpen = this.dropdownCompanies.length > 0;
+        this.activeCompanyIndex = this.dropdownCompanies.length ? 0 : -1;
+      }).catch(() => {
+        this.isCompanyDropdownOpen = false;
+      }).finally(() => {
+        this.loadingCompanies = false;
+        this.allCompaniesLoading = false;
+      });
+    }
   }
 
   onCompanyInputBlur() {
