@@ -100,18 +100,22 @@ export class Student implements OnInit, OnDestroy {
 
   /**
    * TRUE when the internship is considered started:
-   *   – APEX A approved by admin
-   *   – APEX B fully approved (student + faculty + admin)
+   *   – APEX B fully approved: student + faculty + admin all verified
    *   – APEX C (Form 3) submitted by student
-   * Controls which tab-set is shown.
+   *
+   * APEX A admin approval is NOT checked separately because APEX B can only
+   * reach full approval after APEX A is already approved — so isFullyApproved()
+   * implicitly covers it.
+   *
+   * Tab rules:
+   *   NOT started → show: appex, assignment, form3, request-company, complaints
+   *   STARTED     → show: weeklylogs, evaluations, request-company, complaints
    */
   internshipStarted(): boolean {
-    return this.appexAStatus === 'approved'
-      && this.isFullyApproved()
-      && this.apexCSubmitted;
+    return this.isFullyApproved() && this.apexCSubmitted;
   }
-  
-  // Check if all APEX forms are approved to determine which tabs to show (legacy helper kept for compat)
+
+  // Alias kept for any legacy template references
   allApexFormsApproved(): boolean {
     return this.internshipStarted();
   }
