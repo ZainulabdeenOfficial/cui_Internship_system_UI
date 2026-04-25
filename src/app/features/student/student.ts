@@ -962,12 +962,24 @@ export class Student implements OnInit, OnDestroy {
   }
   async submitAppExAFromForm() {
     try {
-      // Check if already approved - prevent resubmission
+      // Approved → permanently locked, cannot resubmit
       if (this.appexAStatus === 'approved') {
         this.toast.warning('Your APEX A form has been approved and cannot be resubmitted');
         return;
       }
-      
+      // Pending → waiting for admin response, block re-submission
+      if (this.appexASubmitted && this.appexAStatus === 'pending') {
+        this.toast.info('Your form is already under review. Please wait for the admin to respond.');
+        return;
+      }
+      // Rejected → use PUT (update) so the student can correct and resubmit
+      if (this.appexASubmitted && this.appexAStatus === 'rejected') {
+        await this.apiUpdateAppExA({ ...this.appexAForm });
+        this.appexAStatus = 'pending';
+        try { if (this.selectedId) localStorage.removeItem(`appexA_draft_${this.selectedId}`); } catch {}
+        return;
+      }
+      // First-time submission → POST
       await this.apiSubmitAppExA({ ...this.appexAForm });
       this.appexASubmitted = true;
       this.appexAStatus = 'pending';

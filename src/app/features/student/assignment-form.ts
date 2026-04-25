@@ -195,31 +195,18 @@ export class AssignmentForm {
       };
 
       console.log('[AssignmentForm] Submitting AppEx B with payload:', appexBPayload);
-      
-      // Include auth token in payload headers (will be sent by store service)
-      const requestConfig = {
-        payload: appexBPayload,
-        authToken: authToken,
-        studentId: id
-      };
-      
       // Set loading state
       this.loading.set(true);
       
-      // Submit to backend via store service with auth
-      const result = this.store.submitAppexB(id, requestConfig as any);
-      
-      // Handle the response
-      if (result && result.observable) {
-        result.observable.subscribe({
-          next: (response) => {
-            this.loading.set(false);
-            this.submitted.set(true);
-            this.toast.success('Student Assignment & Agreement (AppEx B) submitted successfully');
-            console.log('[AssignmentForm] AppEx B submitted successfully:', response);
-            
-            // Load AppEx B status to show approval badges
-            this.loadAppexBStatus();
+      // Submit to backend via student service which uses proper interceptors
+      this.studentService.submitAppExB(appexBPayload).then(response => {
+        this.loading.set(false);
+        this.submitted.set(true);
+        this.toast.success('Student Assignment & Agreement (AppEx B) submitted successfully');
+        console.log('[AssignmentForm] AppEx B submitted successfully:', response);
+        
+        // Load AppEx B status to show approval badges
+        this.loadAppexBStatus();
             
             // reset locally
             this.model = {
@@ -253,19 +240,12 @@ export class AssignmentForm {
               emailAddress: '',
               acknowledged: false
             };
-          },
-          error: (err) => {
-            this.loading.set(false);
-            console.error('[AssignmentForm] Error submitting AppEx B:', err);
-            const errorMsg = err?.error?.message || err?.message || 'Failed to submit. Please try again.';
-            this.toast.danger('Submission failed: ' + errorMsg);
-          }
-        });
-      } else {
-        // Fallback for synchronous error
+      }).catch(err => {
         this.loading.set(false);
-        this.toast.danger('Failed to initiate submission. Please check your connection.');
-      }
+        console.error('[AssignmentForm] Error submitting AppEx B:', err);
+        const errorMsg = err?.error?.message || err?.message || 'Failed to submit. Please try again.';
+        this.toast.danger('Submission failed: ' + errorMsg);
+      });
     } catch (err: any) {
       this.loading.set(false);
       console.error('[AssignmentForm] Submission error:', err);

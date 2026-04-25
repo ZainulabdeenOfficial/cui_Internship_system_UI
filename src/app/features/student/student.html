@@ -286,6 +286,25 @@
       </div>
 
       <form (ngSubmit)="submitAppExAFromForm()" #iapf="ngForm" class="row g-3">
+
+        <!-- Status banner inside the form so students see it clearly -->
+        <div class="col-12" *ngIf="appexASubmitted">
+          <div class="alert mb-2 py-2"
+               [class.alert-secondary]="appexAStatus === 'pending'"
+               [class.alert-danger]="appexAStatus === 'rejected'"
+               [class.alert-success]="appexAStatus === 'approved'">
+            <i class="bi me-2"
+               [class.bi-clock-fill]="appexAStatus === 'pending'"
+               [class.bi-x-circle-fill]="appexAStatus === 'rejected'"
+               [class.bi-patch-check-fill]="appexAStatus === 'approved'"></i>
+            <strong *ngIf="appexAStatus === 'pending'">Under Review</strong>
+            <strong *ngIf="appexAStatus === 'rejected'">Rejected &mdash; Please update the fields below and resubmit.</strong>
+            <strong *ngIf="appexAStatus === 'approved'">Approved &mdash; This form is locked.</strong>
+          </div>
+        </div>
+
+        <!-- fieldset: disabled when pending or approved; editable when rejected or not yet submitted -->
+        <fieldset [disabled]="appexASubmitted && appexAStatus !== 'rejected'" style="display:contents">
         <div class="col-12"><div class="section-title">Section A: Organization Information</div></div>
         
         <!-- Company Search with Autocomplete -->
@@ -443,19 +462,54 @@
             <option [ngValue]="'Freelancing'">Freelancing Based</option>
           </select>
         </div>
+        </fieldset> <!-- End of disabled fieldset -->
 
-        <div class="col-12 d-flex gap-2 mt-2">
-          <button class="btn btn-success" [disabled]="!iapf.form.valid || (appexASubmitted && appexAStatus === 'approved')" type="submit">
-            {{ appexAStatus === 'approved' ? 'Already Approved - Cannot Resubmit' : 'Submit Internship Approval' }}
+        <div class="col-12 d-flex flex-wrap gap-2 mt-2 align-items-center">
+
+          <!-- NOT YET SUBMITTED -->
+          <button *ngIf="!appexASubmitted"
+                  class="btn btn-success"
+                  [disabled]="!iapf.form.valid"
+                  type="submit">
+            <i class="bi bi-send me-2"></i>Submit Internship Approval
           </button>
-          <div *ngIf="appexASubmitted && appexAStatus !== 'approved'" class="alert alert-info mb-0 ms-2">
-            <i class="bi bi-info-circle me-2"></i>
-            <span>Form submitted. Waiting for review.</span>
+
+          <!-- PENDING: disable, show waiting message -->
+          <button *ngIf="appexASubmitted && appexAStatus === 'pending'"
+                  class="btn btn-secondary"
+                  disabled
+                  type="button">
+            <i class="bi bi-clock me-2"></i>Awaiting Admin Review
+          </button>
+          <div *ngIf="appexASubmitted && appexAStatus === 'pending'" class="alert alert-info mb-0 py-2 px-3">
+            <i class="bi bi-info-circle-fill me-2"></i>
+            <strong>Submitted.</strong> Your form is under review. You cannot edit it until the admin responds.
           </div>
-          <div *ngIf="appexASubmitted && appexAStatus === 'approved'" class="alert alert-success mb-0 ms-2">
-            <i class="bi bi-check-circle-fill me-2"></i>
-            Internship Approval  submitted successfully. Waiting for review.
+
+          <!-- REJECTED: enable resubmit -->
+          <button *ngIf="appexASubmitted && appexAStatus === 'rejected'"
+                  class="btn btn-warning"
+                  [disabled]="!iapf.form.valid"
+                  type="submit">
+            <i class="bi bi-arrow-repeat me-2"></i>Resubmit Internship Approval
+          </button>
+          <div *ngIf="appexASubmitted && appexAStatus === 'rejected'" class="alert alert-danger mb-0 py-2 px-3">
+            <i class="bi bi-x-circle-fill me-2"></i>
+            <strong>Rejected.</strong> Please update your details and resubmit.
           </div>
+
+          <!-- APPROVED: locked -->
+          <button *ngIf="appexASubmitted && appexAStatus === 'approved'"
+                  class="btn btn-success"
+                  disabled
+                  type="button">
+            <i class="bi bi-check-circle-fill me-2"></i>Approved – Cannot Resubmit
+          </button>
+          <div *ngIf="appexASubmitted && appexAStatus === 'approved'" class="alert alert-success mb-0 py-2 px-3">
+            <i class="bi bi-patch-check-fill me-2"></i>
+            <strong>Approved!</strong> Your Internship Approval form has been approved.
+          </div>
+
         </div>
       </form>
     </div>
