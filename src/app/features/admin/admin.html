@@ -1198,9 +1198,31 @@
       <div class="card mb-3">
         <div class="card-header d-flex justify-content-between align-items-center">
           <span><i class="bi bi-briefcase me-2"></i>All Internships</span>
-          <span class="badge text-bg-info">{{ internships.length }} internship(s)</span>
+          <span class="badge text-bg-info">{{ filteredInternships.length }} internship(s)</span>
         </div>
         <div class="card-body p-0">
+          
+          <!-- Search & Filter -->
+          <div class="row g-2 p-3 border-bottom border-light">
+            <div class="col-md-6">
+              <input class="form-control form-control-sm" placeholder="Search by student or company..." [(ngModel)]="internshipsSearch" name="internshipsSearch" />
+            </div>
+            <div class="col-md-3">
+              <select class="form-select form-select-sm" [(ngModel)]="internshipsFilter" (ngModelChange)="internshipsPage=1" name="internshipsFilter">
+                <option value="all">All Status</option>
+                <option value="pending">Pending</option>
+                <option value="ongoing">Ongoing</option>
+                <option value="completed">Completed</option>
+              </select>
+            </div>
+            <div class="col-md-3">
+              <select class="form-select form-select-sm" [(ngModel)]="internshipsPageSize" (ngModelChange)="internshipsPage=1" name="internshipsPageSize">
+                <option [ngValue]="10">10 per page</option>
+                <option [ngValue]="25">25 per page</option>
+                <option [ngValue]="50">50 per page</option>
+              </select>
+            </div>
+          </div>
           @if (loadingInternships) {
             <div class="text-center py-3">
               <div class="spinner-border spinner-border-sm" role="status">
@@ -1225,7 +1247,7 @@
                   </tr>
                 </thead>
                 <tbody>
-                  @for (internship of (internships | paginate: internshipsPage : internshipsPageSize); track internship.id) {
+                  @for (internship of (filteredInternships | paginate: internshipsPage : internshipsPageSize); track internship.id) {
                     <tr style="background-color: #fff; color: #333;">
                       <td style="color: #333;">
                         <div class="fw-semibold" style="color: #1a1a1a;">{{ internship.student?.name || internship.studentName || '-' }}</div>
@@ -1247,7 +1269,9 @@
                       </td>
                       <td style="color: #333;">
                         <button class="btn btn-sm btn-outline-primary" 
-                                (click)="selectStudentForEval(prepareStudentForEval(internship))">
+                                (click)="selectStudentForEval(prepareStudentForEval(internship))"
+                                [disabled]="hasOfficeEvaluation(internship)"
+                                [title]="hasOfficeEvaluation(internship) ? 'Marks already entered for this student' : 'Evaluate student'">
                           <i class="bi bi-clipboard2-check me-1"></i>Evaluate
                         </button>
                       </td>
@@ -1257,7 +1281,7 @@
               </table>
             </div>
             <div class="p-2 border-top border-light">
-              <app-paginator [total]="internships.length" [(page)]="internshipsPage" [pageSize]="internshipsPageSize"></app-paginator>
+              <app-paginator [total]="filteredInternships.length" [(page)]="internshipsPage" [pageSize]="internshipsPageSize"></app-paginator>
             </div>
           }
         </div>

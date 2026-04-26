@@ -2392,6 +2392,27 @@ export class Admin {
   loadingInternships = false;
   internshipsPage = 1;
   internshipsPageSize = 10;
+  internshipsSearch = '';
+  internshipsFilter = 'all';
+
+  get filteredInternships() {
+    return this.internships.filter(i => {
+      const q = this.internshipsSearch.toLowerCase();
+      const matchSearch = !q || 
+        i.student?.name?.toLowerCase().includes(q) || 
+        i.student?.email?.toLowerCase().includes(q) || 
+        i.student?.regNo?.toLowerCase().includes(q) ||
+        i.company?.name?.toLowerCase().includes(q);
+      
+      let matchStatus = true;
+      if (this.internshipsFilter !== 'all') {
+        const status = (i.status || 'pending').toLowerCase();
+        matchStatus = status === this.internshipsFilter;
+      }
+      return matchSearch && matchStatus;
+    });
+  }
+
 
   get officeEvalTotal(): number {
     const c = this.officeEvalForm.criteria;
@@ -2721,10 +2742,11 @@ export class Admin {
           console.warn('Failed to refresh internship final result:', err?.message || 'Unknown error');
         } finally {
           foundInternship.loadingFinalResult = false;
+          this.cdr.detectChanges();
         }
       }
       
-      this.cdr.markForCheck();
+      this.cdr.detectChanges();
     } catch (err: any) {
       // Handle 409 Conflict (evaluation already exists)
       if (err?.status === 409) {
