@@ -2479,24 +2479,27 @@ export class Admin {
     this.studentFinalResult = foundInternship?.studentFinalResult ?? null;
     
     // Set loading to true immediately so loading state appears
-    this.loadingInternshipDetails = true;
     this.loadingOfficeEval = true;
     this.loadingFinalResult = false;  // Already loaded from table
     
     if (!internshipId) {
       this.toast.warning('This student does not have an internship ID assigned yet.');
-      this.loadingInternshipDetails = false;
       this.loadingOfficeEval = false;
       return;
     }
     
-    // Load data in parallel for faster loading (internship and office eval only)
-    Promise.all([
-      this.loadInternshipDetails(internshipId),
-      this.loadOfficeEvaluation(internshipId)
-    ]).catch(err => {
-      console.error('Error loading evaluation data:', err);
-    });
+    // Check if we already know they have an evaluation
+    const hasEval = this.hasOfficeEvaluation(student);
+    if (!hasEval) {
+      // Fast path: No evaluation exists, skip loading history!
+      this.officeEvalResult = null;
+      this.loadingOfficeEval = false;
+    } else {
+      // Slow path: They have an evaluation, load its full details
+      this.loadOfficeEvaluation(internshipId).catch(err => {
+        console.error('Error loading evaluation data:', err);
+      });
+    }
   }
 
   async loadInternshipDetails(internshipId: string) {

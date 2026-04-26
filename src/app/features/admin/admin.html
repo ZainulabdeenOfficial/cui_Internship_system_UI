@@ -1277,26 +1277,21 @@
         <div class="card-body">
 
           <!-- Combined Loading Indicator -->
-          @if (loadingInternshipDetails || loadingOfficeEval) {
+          @if (loadingOfficeEval) {
             <div class="alert alert-info d-flex align-items-center gap-3 mb-3" role="status">
               <div class="spinner-border spinner-border-sm shrink-0" role="status">
                 <span class="visually-hidden">Loading...</span>
               </div>
               <div>
                 <strong>Loading evaluation data...</strong>
-                @if (loadingInternshipDetails) {
-                  <div style="font-size: 0.9rem; color: #555;">Loading internship details...</div>
-                }
-                @if (loadingOfficeEval) {
-                  <div style="font-size: 0.9rem; color: #555;">Loading evaluation history...</div>
-                }
+                <div style="font-size: 0.9rem; color: #555;">Loading evaluation history...</div>
               </div>
             </div>
           }
 
           <!-- Internship Details Summary -->
-          <!-- Show form only after internship details are loaded AND no evaluation exists yet -->
-          @if (!loadingInternshipDetails && internshipDetails && !officeEvalResult) {
+          <!-- Show form only after loading finishes AND no evaluation exists yet -->
+          @if (!loadingOfficeEval && !officeEvalResult) {
             <!-- Submit form -->
             <div class="card border mb-3">
               <div class="card-header fw-semibold bg-light" style="color: #333;">Submit Office Evaluation</div>
@@ -1385,9 +1380,9 @@
           }
 
           <!-- Existing Evaluation Result -->
-          @if (!loadingOfficeEval && officeEvalResult && !loadingInternshipDetails) {
+          @if (!loadingOfficeEval && officeEvalResult) {
           <div class="card border-success">
-            <div class="card-header bg-success text-white">
+            <div class="card-header bg-success text-dark" style="color: black !important;">
               <i class="bi bi-check-circle-fill me-2"></i>Submitted Office Evaluation
             </div>
             <div class="card-body">
