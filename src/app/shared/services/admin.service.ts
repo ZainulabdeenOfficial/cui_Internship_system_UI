@@ -675,16 +675,18 @@ export class AdminService {
     const path = '/api/admin/office-evaluation';
     const url = `${base}${path}`;
     const headers = await this.authHeaders(true);
-    const body = {
+    const body: any = {
       internshipId: payload.internshipId,
       criteria: {
-        internshipReport: payload.criteria.internshipReport,
-        portfolioEvidence: payload.criteria.portfolioEvidence,
-        timeManagement: payload.criteria.timeManagement,
-        overallInternshipImpact: payload.criteria.overallInternshipImpact
-      },
-      comments: payload.comments || ''
+        internshipReport: Number(payload.criteria.internshipReport),
+        portfolioEvidence: Number(payload.criteria.portfolioEvidence),
+        timeManagement: Number(payload.criteria.timeManagement),
+        overallInternshipImpact: Number(payload.criteria.overallInternshipImpact)
+      }
     };
+    if (payload.comments && payload.comments.trim() !== '') {
+      body.comments = payload.comments;
+    }
     return await firstValueFrom(this.http.post<any>(url, body, { headers }));
   }
 
