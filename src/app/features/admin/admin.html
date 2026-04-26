@@ -1242,7 +1242,10 @@
                         </span>
                       </td>
                       <td style="color: #333;">
-                        <button class="btn btn-sm btn-outline-primary" (click)="selectStudentForEval(prepareStudentForEval(internship))">
+                        <button class="btn btn-sm btn-outline-primary" 
+                                (click)="selectStudentForEval(prepareStudentForEval(internship))"
+                                [disabled]="(internship.approvalStatus || '').toLowerCase() !== 'approved' && (internship.approvalStatus || '').toLowerCase() !== 'verified'"
+                                [title]="((internship.approvalStatus || '').toLowerCase() !== 'approved' && (internship.approvalStatus || '').toLowerCase() !== 'verified') ? 'Only approved internships can be evaluated' : 'Evaluate student'">
                           <i class="bi bi-clipboard2-check me-1"></i>Evaluate
                         </button>
                       </td>
@@ -1263,9 +1266,9 @@
       <!-- ② Evaluation Panel (shown after selecting a student) -->
       @if (selectedStudentForEval) {
       <div class="card border-primary mb-3">
-        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-          <span><i class="bi bi-person-badge me-2"></i>{{ selectedStudentForEval.name }} — Office Evaluation</span>
-          <button class="btn btn-sm btn-outline-light" (click)="selectedStudentForEval = null; officeEvalResult = null; studentFinalResult = null">
+        <div class="card-header bg-primary text-dark d-flex justify-content-between align-items-center" style="color: black !important;">
+          <span><i class="bi bi-person-badge me-2"></i>{{ selectedStudentForEval.name || selectedStudentForEval.email }} — Office Evaluation</span>
+          <button class="btn btn-sm btn-outline-dark" style="color: black !important; border-color: black !important;" (click)="selectedStudentForEval = null; officeEvalResult = null; studentFinalResult = null">
             <i class="bi bi-x-lg"></i> Deselect
           </button>
         </div>
