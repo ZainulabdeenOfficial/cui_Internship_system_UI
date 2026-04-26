@@ -9,24 +9,24 @@
   <!-- Premium Pill Tab Bar -->
   <ul class="student-tabs-bar mb-3">
 
-    <!-- AppEx-A: always shown so student can review their submission -->
-    <li class="tab-item">
+    <!-- AppEx-A: hidden after internship starts -->
+    <li class="tab-item" *ngIf="!internshipStarted()">
       <button type="button" class="tab-btn" [class.active]="isCurrentTab('appex')" (click)="selectTab('appex')">
         <i class="bi bi-file-earmark-check tab-icon"></i>
         Internship Approval
       </button>
     </li>
 
-    <!-- Assignment & Agreement: always shown -->
-    <li class="tab-item">
+    <!-- Assignment & Agreement: hidden after internship starts -->
+    <li class="tab-item" *ngIf="!internshipStarted()">
       <button type="button" class="tab-btn" [class.active]="isCurrentTab('assignment')" (click)="selectTab('assignment')">
         <i class="bi bi-pen tab-icon"></i>
         Assignment &amp; Agreement
       </button>
     </li>
 
-    <!-- Form 3 / APEX C: always shown -->
-    <li class="tab-item">
+    <!-- Form 3 / APEX C: hidden after internship starts -->
+    <li class="tab-item" *ngIf="!internshipStarted()">
       <button type="button" class="tab-btn" [class.active]="isCurrentTab('form3')" (click)="selectTab('form3')">
         <i class="bi bi-building tab-icon"></i>
         Org. Overview &amp; Scope

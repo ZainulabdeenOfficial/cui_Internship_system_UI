@@ -117,7 +117,7 @@ export class Student implements OnInit, OnDestroy {
    *   STARTED     → show: weeklylogs, evaluations, request-company, complaints
    */
   internshipStarted(): boolean {
-    return this.isFullyApproved() && this.apexCSubmitted;
+    return this.isFullyApproved();
   }
 
   // Alias kept for any legacy template references
@@ -1056,8 +1056,12 @@ export class Student implements OnInit, OnDestroy {
     // Guard: redirect form tabs if internship has started
     const started = this.internshipStarted();
     const postStartTabs = new Set(['weeklylogs', 'evaluations']);
+    const preStartTabs = new Set(['appex', 'assignment', 'form3', 'appex-c']);
+    
     if (!started && postStartTabs.has(tab)) {
       tab = 'appex';
+    } else if (started && preStartTabs.has(tab)) {
+      tab = 'weeklylogs';
     }
 
     const tabChanged = this.currentTab !== tab;
