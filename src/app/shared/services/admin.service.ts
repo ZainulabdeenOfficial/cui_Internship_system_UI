@@ -635,8 +635,8 @@ export class AdminService {
     if (details.durationWeeks !== undefined) body.durationWeeks = details.durationWeeks;
     if (details.startDate !== undefined) body.startDate = toISODate(details.startDate);
     if (details.endDate !== undefined) body.endDate = toISODate(details.endDate);
-    if (details.facultyId !== undefined) body.facultyId = details.facultyId;
-    if (details.siteId !== undefined) body.siteId = details.siteId;
+    if (details.facultyId !== undefined && details.facultyId !== '') body.facultyId = details.facultyId;
+    if (details.siteId !== undefined && details.siteId !== '') body.siteId = details.siteId;
     if (details.adminApprovalAction !== undefined) body.adminApprovalAction = details.adminApprovalAction;
     
     // Verify at least one updateable field beyond studentId is provided
