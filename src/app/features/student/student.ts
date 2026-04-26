@@ -933,26 +933,43 @@ export class Student implements OnInit, OnDestroy {
     // signature and date removed per UX request
   };
 
+  async apiCreateInternship(type: string, siteId?: string, facultyId?: string) {
+    try {
+      const res = await this.studentApi.createInternship({ type, siteId, facultyId } as any);
+      this.toast.success(res?.message || 'Internship created successfully!');
+      return res;
+    } catch (err: any) {
+      this.toast.danger(err?.error?.message || err?.message || 'Failed to create internship');
+      throw err;
+    }
+  }
+
   async createInternshipSubmit() {
     const type = this.createInternshipModel.type;
     const siteId = (this.createInternshipModel.siteId || '').trim() || undefined;
     const facultyId = (this.createInternshipModel.facultyId || '').trim() || undefined;
-    const res = await this.apiCreateInternship(type, siteId, facultyId);
     
-    // Capture internship ID from response and store it for later use
-    if (res?.internship?.id) {
-      this.studentInternshipId = res.internship.id;
-      console.log('✅ [Student] Internship created with ID:', this.studentInternshipId);
+    try {
+      const res = await this.apiCreateInternship(type, siteId, facultyId);
       
-      // Reset evaluation loading flag so it will reload when evaluations tab is selected
-      this.evaluationsLoadedOnce = false;
-      console.log('🔄 [Student] Evaluation cache cleared - ready to fetch final results');
-      
-      // If evaluations tab is already selected, load the final result immediately
-      if (this.isCurrentTab('evaluations')) {
-        console.log('📊 [Student] Evaluations tab is active - fetching final result now...');
-        this.loadFinalResult(false);
+      // Capture internship ID from response and store it for later use
+      if (res?.internship?.id || res?.internship?._id || res?.data?.id) {
+        this.studentInternshipId = res.internship?.id || res.internship?._id || res.data?.id;
+        console.log('✅ [Student] Internship created with ID:', this.studentInternshipId);
+        
+        // Mark as started locally if needed
+        this.loadAppExAIfNeeded();
+        
+        // Reset evaluation loading flag so it will reload when evaluations tab is selected
+        this.evaluationsLoadedOnce = false;
+        
+        // If evaluations tab is already selected, load the final result immediately
+        if (this.isCurrentTab('evaluations')) {
+          this.loadFinalResult(false);
+        }
       }
+    } catch (err) {
+      // Error handled by apiCreateInternship
     }
   }
   
