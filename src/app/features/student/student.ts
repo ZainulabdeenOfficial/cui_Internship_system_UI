@@ -788,10 +788,22 @@ export class Student implements OnInit, OnDestroy {
       const apexB = res?.apexB || res?.data || res;
       
       if (apexB) {
+        const adminStatus = apexB.adminApproved || 
+                           apexB.adminVerified || 
+                           apexB.adminApprovalAction === 'approve' ||
+                           apexB.adminApprovalStatus === 'approved' ||
+                           apexB.status === 'approved' || 
+                           apexB.assignment?.adminApproved || 
+                           apexB.assignment?.adminVerified ||
+                           apexB.assignment?.adminApprovalAction === 'approve' ||
+                           // Also check if admin has filled details (indicates approval)
+                           (apexB.companyName && apexB.internshipRole && (apexB.durationWeeks > 0 || apexB.duration > 0)) ||
+                           false;
+
         this.apexBStatus = {
-          studentVerified: apexB.studentVerified || false,
-          facultyVerified: apexB.facultyVerified || false,
-          adminApproved: apexB.adminApproved || apexB.status === 'approved' || false,
+          studentVerified: apexB.studentVerified || apexB.assignment?.studentVerified || false,
+          facultyVerified: apexB.facultyVerified || apexB.facultyApproved || apexB.assignment?.facultyVerified || false,
+          adminApproved: adminStatus,
           status: apexB.status || 'PENDING',
           internshipId: apexB.internshipId || apexB._id || apexB.id,
           companyName: apexB.companyName,
