@@ -321,15 +321,10 @@ export class Student implements OnInit, OnDestroy {
         // Tab visibility guards based on internship-started status
         const started = this.internshipStarted();
         // Pre-internship tabs (forms) — hidden once internship has started
-        const formTabs = new Set(['appex', 'assignment', 'form3']);
         // Post-internship tabs — only visible after internship started
         const postStartTabs = new Set(['weeklylogs', 'evaluations']);
 
-        if (started && formTabs.has(this.currentTab)) {
-          // Internship started — form tabs no longer relevant, redirect to weekly logs
-          this.currentTab = 'weeklylogs';
-          try { this.router.navigate([], { relativeTo: this.route, queryParams: { tab: 'weeklylogs' }, queryParamsHandling: 'merge' }); } catch {}
-        } else if (!started && postStartTabs.has(this.currentTab)) {
+        if (!started && postStartTabs.has(this.currentTab)) {
           // Internship not yet started — post-start tabs not accessible
           this.currentTab = 'appex';
           try { this.router.navigate([], { relativeTo: this.route, queryParams: { tab: 'appex' }, queryParamsHandling: 'merge' }); } catch {}
@@ -1060,11 +1055,8 @@ export class Student implements OnInit, OnDestroy {
   selectTab(tab: Student['currentTab']) {
     // Guard: redirect form tabs if internship has started
     const started = this.internshipStarted();
-    const formTabs = new Set(['appex', 'assignment', 'form3']);
     const postStartTabs = new Set(['weeklylogs', 'evaluations']);
-    if (started && formTabs.has(tab)) {
-      tab = 'weeklylogs';
-    } else if (!started && postStartTabs.has(tab)) {
+    if (!started && postStartTabs.has(tab)) {
       tab = 'appex';
     }
 
