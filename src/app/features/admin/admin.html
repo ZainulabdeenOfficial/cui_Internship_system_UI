@@ -1752,9 +1752,44 @@
                 <div class="card-header bg-light"><strong>Add Internship Details</strong></div>
                 <div class="card-body">
                   <form #apexBForm="ngForm">
-                    <div class="mb-3">
+                    <!-- Company Search -->
+                    <div class="mb-3 position-relative">
                       <label class="form-label">Company Name <span class="text-danger">*</span></label>
-                      <input type="text" class="form-control" [(ngModel)]="apexBDetails.companyName" name="companyName" required />
+                      <input 
+                        type="text" 
+                        class="form-control" 
+                        [(ngModel)]="companySearchQuery" 
+                        (ngModelChange)="onCompanySearchInput($event)"
+                        (focus)="onCompanyFocus()"
+                        name="companySearch" 
+                        placeholder="Type to search or select from list..."
+                        autocomplete="off"
+                        required />
+                      <small class="form-text text-muted">Select a company or type a new one</small>
+                      
+                      @if (companySearchLoading) {
+                        <div class="position-absolute top-50 end-0 translate-middle-y me-2">
+                          <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+                        </div>
+                      }
+                      
+                      @if (showCompanyDropdown && companySearchResults.length > 0) {
+                        <div class="dropdown-menu show w-100 mt-1" style="max-height: 250px; overflow-y: auto;">
+                          @for (company of companySearchResults; track company.id) {
+                            <button type="button" class="dropdown-item" (click)="selectCompany(company)">
+                              <div><strong>{{ company.name }}</strong></div>
+                              @if (company.address) {
+                                <div class="small text-muted">{{ company.address }}</div>
+                              }
+                            </button>
+                          }
+                        </div>
+                      }
+                      @if (showCompanyDropdown && !companySearchLoading && companySearchResults.length === 0 && companySearchQuery) {
+                        <div class="dropdown-menu show w-100 mt-1">
+                          <div class="dropdown-item text-muted">No matching companies</div>
+                        </div>
+                      }
                     </div>
                     <div class="mb-3">
                       <label class="form-label">Internship Role <span class="text-danger">*</span></label>
@@ -1769,6 +1804,7 @@
                         class="form-control" 
                         [(ngModel)]="facultySearchQuery" 
                         (ngModelChange)="onFacultySearchInput($event)"
+                        (focus)="onFacultyFocus()"
                         name="facultySearch" 
                         placeholder="Type to search faculty..."
                         autocomplete="off"
@@ -1820,6 +1856,7 @@
                         class="form-control" 
                         [(ngModel)]="siteSearchQuery" 
                         (ngModelChange)="onSiteSearchInput($event)"
+                        (focus)="onSiteFocus()"
                         name="siteSearch" 
                         placeholder="Type to search site supervisors..."
                         autocomplete="off"

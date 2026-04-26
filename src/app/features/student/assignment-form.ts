@@ -1,4 +1,4 @@
-import { Component, input, effect, signal } from '@angular/core';
+import { Component, input, effect, signal, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { StoreService } from '../../shared/services/store.service';
@@ -37,6 +37,8 @@ export class AssignmentForm {
   private companySearchDebounceId: any;
   /** Prevents loadAppexBStatus() from re-firing on every effect evaluation for the same student. */
   private appexBLoadedForId: string | null = null;
+
+  @Output() apexBApproved = new EventEmitter<void>();
 
   model = {
     // Appendix-B: Student Information
@@ -383,6 +385,8 @@ export class AssignmentForm {
       const response = await this.studentService.verifyAppexB();
       this.toast.success(response?.message || 'AppEx B approved successfully');
       this.studentApproved.set(true);
+      
+      this.apexBApproved.emit();
       
       // Reload status
       await this.loadAppexBStatus();

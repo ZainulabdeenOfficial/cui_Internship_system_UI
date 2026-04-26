@@ -517,7 +517,7 @@
   </div>
 
   <div *ngIf="isCurrentTab('assignment')">
-    <app-assignment-form [selectedId]="selectedId" [companyFromParent]="selectedCompany"></app-assignment-form>
+    <app-assignment-form [selectedId]="selectedId" [companyFromParent]="selectedCompany" (apexBApproved)="onApexBApproved()"></app-assignment-form>
   </div>
 
   <!-- Form 3: Organization Overview & Scope of Work -->

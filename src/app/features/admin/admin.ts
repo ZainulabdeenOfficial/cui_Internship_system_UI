@@ -288,6 +288,11 @@ export class Admin {
   siteSearchDebounce: any;
   showFacultyDropdown = false;
   showSiteDropdown = false;
+  companySearchQuery = '';
+  companySearchLoading = false;
+  showCompanyDropdown = false;
+  companySearchResults: Array<{ id: string; name: string; address?: string }> = [];
+  private apexBCompanySearchDebounce: any;
 
   latestEvidence(id: string) { const list = this.store.freelance()[id] ?? []; return list.length ? list[list.length - 1] : null; }
   reviewEvidence(id: string) {
@@ -2009,11 +2014,13 @@ export class Admin {
       startDate: '',
       endDate: ''
     };
-    // Initialize search queries
+    this.companySearchQuery = '';
     this.facultySearchQuery = '';
     this.siteSearchQuery = '';
+    this.companySearchResults = [];
     this.facultySearchResults = [];
     this.siteSearchResults = [];
+    this.showCompanyDropdown = false;
     this.showFacultyDropdown = false;
     this.showSiteDropdown = false;
     this.showApexBModal = true;
@@ -2079,10 +2086,13 @@ export class Admin {
       endDate: ''
     };
     // Clear search states
+    this.companySearchResults = [];
     this.facultySearchResults = [];
     this.siteSearchResults = [];
+    this.companySearchQuery = '';
     this.facultySearchQuery = '';
     this.siteSearchQuery = '';
+    this.showCompanyDropdown = false;
     this.showFacultyDropdown = false;
     this.showSiteDropdown = false;
   }
@@ -2090,30 +2100,43 @@ export class Admin {
   // Faculty Search for APEX B
   onFacultySearchInput(value: string) {
     const q = (value || '').trim();
-    this.facultySearchQuery = q;
+    this.facultySearchQuery = value;
     
     if (this.facultySearchDebounce) clearTimeout(this.facultySearchDebounce);
     
-    if (!q || q.length < 2) {
-      this.facultySearchResults = [];
-      this.showFacultyDropdown = false;
-      this.facultySearchLoading = false;
-      return;
-    }
-    
-    this.facultySearchDebounce = setTimeout(async () => {
+    this.facultySearchDebounce = setTimeout(() => {
       try {
         this.facultySearchLoading = true;
         this.showFacultyDropdown = true;
-        this.facultySearchResults = await this.adminApi.searchFaculty(q);
+        
+        const allFaculty = this.facultyList() || [];
+        let results = allFaculty.map((f: any) => ({ 
+          id: f.id, 
+          name: f.name, 
+          email: f.email, 
+          department: f.department 
+        }));
+        
+        if (q) {
+          const lowerQ = q.toLowerCase();
+          results = results.filter(f => 
+            (f.name || '').toLowerCase().includes(lowerQ) || 
+            (f.email || '').toLowerCase().includes(lowerQ)
+          );
+        }
+        
+        this.facultySearchResults = results.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
       } catch (err: any) {
         this.facultySearchResults = [];
-        const msg = err?.error?.message || err?.message || 'Failed to search faculty';
-        console.error('Faculty search error:', msg);
+        console.error('Faculty search error:', err);
       } finally {
         this.facultySearchLoading = false;
       }
-    }, 300);
+    }, 150);
+  }
+
+  onFacultyFocus() {
+    this.onFacultySearchInput(this.facultySearchQuery);
   }
 
   selectFaculty(faculty: { id: string; name: string; email?: string }) {
@@ -2127,30 +2150,40 @@ export class Admin {
   // Site Supervisor Search for APEX B
   onSiteSearchInput(value: string) {
     const q = (value || '').trim();
-    this.siteSearchQuery = q;
+    this.siteSearchQuery = value;
     
     if (this.siteSearchDebounce) clearTimeout(this.siteSearchDebounce);
     
-    if (!q || q.length < 2) {
-      this.siteSearchResults = [];
-      this.showSiteDropdown = false;
-      this.siteSearchLoading = false;
-      return;
-    }
-    
-    this.siteSearchDebounce = setTimeout(async () => {
+    this.siteSearchDebounce = setTimeout(() => {
       try {
         this.siteSearchLoading = true;
         this.showSiteDropdown = true;
-        this.siteSearchResults = await this.adminApi.searchSiteSupervisors(q);
+        
+        let results = this.sitesCache || [];
+        
+        if (q) {
+          const lowerQ = q.toLowerCase();
+          results = results.filter(s => 
+            (s.name || '').toLowerCase().includes(lowerQ) || 
+            (s.email || '').toLowerCase().includes(lowerQ)
+          );
+        }
+        
+        this.siteSearchResults = results.map(s => ({
+          ...s,
+          companyName: this.companiesCache.find(c => c.id === s.companyId)?.name
+        })).sort((a, b) => (a.name || '').localeCompare(b.name || ''));
       } catch (err: any) {
         this.siteSearchResults = [];
-        const msg = err?.error?.message || err?.message || 'Failed to search site supervisors';
-        console.error('Site search error:', msg);
+        console.error('Site search error:', err);
       } finally {
         this.siteSearchLoading = false;
       }
-    }, 300);
+    }, 150);
+  }
+
+  onSiteFocus() {
+    this.onSiteSearchInput(this.siteSearchQuery);
   }
 
   selectSiteSupervisor(site: { id: string; name: string; email?: string }) {
@@ -2159,6 +2192,42 @@ export class Admin {
     this.siteSearchQuery = site.name;
     this.showSiteDropdown = false;
     this.siteSearchResults = [];
+  }
+
+  // Company Search for APEX B
+  onCompanySearchInput(value: string) {
+    const q = (value || '').trim().toLowerCase();
+    this.companySearchQuery = value;
+    this.apexBDetails.companyName = value; // keep form model in sync
+    
+    if (this.apexBCompanySearchDebounce) clearTimeout(this.apexBCompanySearchDebounce);
+    
+    this.apexBCompanySearchDebounce = setTimeout(() => {
+      this.companySearchLoading = true;
+      this.showCompanyDropdown = true;
+      
+      let results = this.companiesCache || [];
+      if (q) {
+        results = results.filter(c => 
+          (c.name || '').toLowerCase().includes(q) || 
+          (c.address || '').toLowerCase().includes(q)
+        );
+      }
+      
+      this.companySearchResults = [...results].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+      this.companySearchLoading = false;
+    }, 150);
+  }
+
+  onCompanyFocus() {
+    this.onCompanySearchInput(this.companySearchQuery);
+  }
+
+  selectCompany(company: { id: string; name: string }) {
+    this.apexBDetails.companyName = company.name;
+    this.companySearchQuery = company.name;
+    this.showCompanyDropdown = false;
+    this.companySearchResults = [];
   }
 
   async submitApexBDetails() {

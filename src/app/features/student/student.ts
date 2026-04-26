@@ -97,11 +97,11 @@ export class Student implements OnInit, OnDestroy {
   };
   
   // Check if all verifications are complete (APEX B triple-approval)
-  isFullyApproved = computed(() => {
+  isFullyApproved(): boolean {
     const apexB = this.apexBStatus;
     if (!apexB) return this.isApproved();
     return apexB.studentVerified && apexB.facultyVerified && apexB.adminApproved;
-  });
+  }
 
   /**
    * TRUE when the internship is considered started:
@@ -1024,6 +1024,18 @@ export class Student implements OnInit, OnDestroy {
     this.cdr.detectChanges();
   }
 
+  onApexBApproved() {
+    if (this.apexBStatus) {
+      this.apexBStatus.studentVerified = true;
+    }
+    this.loadApexBStatus(true).then(() => {
+      // After reloading, check if we need to switch tabs
+      if (this.internshipStarted()) {
+        this.selectTab('weeklylogs');
+      }
+    });
+  }
+
   selectTab(tab: Student['currentTab']) {
     // Guard: redirect form tabs if internship has started
     const started = this.internshipStarted();
@@ -1106,6 +1118,10 @@ export class Student implements OnInit, OnDestroy {
       const internshipObj = (res as any)?.internship;
       const resolvedId: string = internshipObj?.id || internshipObj?._id || (res as any)?.internshipId || '';
       if (resolvedId) this.studentInternshipId = resolvedId;
+
+      if (internshipObj?.appexC || internshipObj?.status === 'APPROVED' || internshipObj?.status === 'STARTED' || internshipObj?.status === 'ACTIVE') {
+        this.apexCSubmitted = true;
+      }
 
       // Determine APEX A approval status
       const ax = internshipObj?.appexA || (res as any)?.appexA || {};
