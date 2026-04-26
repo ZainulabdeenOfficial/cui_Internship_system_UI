@@ -1221,7 +1221,6 @@
                     <th style="color: #333; font-weight: 600;">Reg. No</th>
                     <th style="color: #333; font-weight: 600;">Company</th>
                     <th style="color: #333; font-weight: 600;">Status</th>
-                    <th style="color: #333; font-weight: 600;">Approved Status</th>
                     <th style="color: #333; font-weight: 600;">Action</th>
                   </tr>
                 </thead>
@@ -1234,15 +1233,6 @@
                       </td>
                       <td style="color: #333;">{{ internship.student?.regNo || internship.registrationNo || '-' }}</td>
                       <td style="color: #333;">{{ internship.company?.name || internship.companyName || '-' }}</td>
-                      <td style="color: #333;">
-                        <span class="badge"
-                          [class.text-bg-warning]="(internship.status || '').toLowerCase() === 'ongoing'"
-                          [class.text-bg-success]="(internship.status || '').toLowerCase() === 'completed'"
-                          [class.text-bg-info]="(internship.status || '').toLowerCase() === 'pending'"
-                          [class.text-bg-secondary]="!(internship.status || '')">
-                          {{ internship.status || 'pending' }}
-                        </span>
-                      </td>
                       <td style="color: #333;">
                         <span class="badge"
                           [class.text-bg-success]="(internship.approvalStatus || '').toLowerCase() === 'approved' || (internship.approvalStatus || '').toLowerCase() === 'verified'"
