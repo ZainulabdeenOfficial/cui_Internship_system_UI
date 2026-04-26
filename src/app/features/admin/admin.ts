@@ -2553,6 +2553,7 @@ export class Admin {
       this.officeEvalResult = null;
     } finally {
       this.loadingOfficeEval = false;
+      this.cdr.detectChanges();
     }
   }
 
@@ -2638,28 +2639,20 @@ export class Admin {
         if (internship.id) {
           internship.loadingFinalResult = true;
           try {
-            console.log(`📥 [loadStudentFinalResultsForAll] Fetching result for internship ${internship.id} (student: ${internship.student?.name})`);
-            const res = await this.adminApi.getStudentFinalResult(internship.id);
-            console.log(`📦 [loadStudentFinalResultsForAll] Full Response for ${internship.id}:`, {
-              responseKeys: Object.keys(res || {}),
-              fullResponse: res,
-              hasData: !!res?.data,
-              hasFinalResult: !!res?.finalResult,
-              hasFinalResultObj: !!res?.finalResult,
-              allProps: res ? Object.entries(res).map(([k, v]) => `${k}: ${typeof v}`) : []
-            });
-            // Store entire response (contains both finalResult and internship data from the endpoint)
-            internship.studentFinalResult = res ?? null;
-            console.log('✅ Final result loaded for internship:', internship.id, {
-              data: internship.studentFinalResult,
-              totalMarks: internship.studentFinalResult?.totalMarks,
-              officeMarks: internship.studentFinalResult?.officeMarks,
-              finalResultTotalMarks: internship.studentFinalResult?.finalResult?.totalMarks
-            });
+            console.log(`📥 Fetching data for internship ${internship.id}`);
+            const [finalRes, officeEvalRes] = await Promise.all([
+              this.adminApi.getStudentFinalResult(internship.id).catch(() => null),
+              this.adminApi.getOfficeEvaluation(internship.id).catch(() => null)
+            ]);
+            
+            internship.studentFinalResult = finalRes ?? null;
+            internship.hasOfficeEval = !!officeEvalRes?.evaluation;
+            
             this.cdr.markForCheck();
           } catch (err: any) {
-            console.log('⚠️ Final result not available for internship:', internship.id, err?.message);
+            console.log('⚠️ Data not available for internship:', internship.id, err?.message);
             internship.studentFinalResult = null;
+            internship.hasOfficeEval = false;
           } finally {
             internship.loadingFinalResult = false;
             this.cdr.markForCheck();
@@ -2674,9 +2667,8 @@ export class Admin {
   }
 
   hasOfficeEvaluation(internship: any): boolean {
-    if (!internship || !internship.studentFinalResult) return false;
-    const finalResult = internship.studentFinalResult.finalResult || internship.studentFinalResult;
-    return finalResult.officeMarks != null && finalResult.officeMarks !== undefined;
+    if (!internship) return false;
+    return internship.hasOfficeEval === true;
   }
 
   private async loadAllStudentFinalResults(): Promise<void> {
@@ -2735,6 +2727,7 @@ export class Admin {
         try {
           const updatedResult = await this.adminApi.getStudentFinalResult(id);
           foundInternship.studentFinalResult = updatedResult ?? null;
+          foundInternship.hasOfficeEval = true;
         } catch (err: any) {
           console.warn('Failed to refresh internship final result:', err?.message || 'Unknown error');
         } finally {
