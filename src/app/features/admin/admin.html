@@ -1225,7 +1225,7 @@
                   </tr>
                 </thead>
                 <tbody>
-                  @for (internship of internships; track internship.id) {
+                  @for (internship of (internships | paginate: internshipsPage : internshipsPageSize); track internship.id) {
                     <tr style="background-color: #fff; color: #333;">
                       <td style="color: #333;">
                         <div class="fw-semibold" style="color: #1a1a1a;">{{ internship.student?.name || internship.studentName || '-' }}</div>
@@ -1250,6 +1250,9 @@
                   }
                 </tbody>
               </table>
+            </div>
+            <div class="p-2 border-top border-light">
+              <app-paginator [total]="internships.length" [(page)]="internshipsPage" [pageSize]="internshipsPageSize"></app-paginator>
             </div>
           }
         </div>
