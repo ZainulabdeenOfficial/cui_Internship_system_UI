@@ -933,17 +933,6 @@ export class Student implements OnInit, OnDestroy {
     // signature and date removed per UX request
   };
 
-  async apiCreateInternship(type: string, siteId?: string, facultyId?: string) {
-    try {
-      const res = await this.studentApi.createInternship({ type, siteId, facultyId } as any);
-      this.toast.success(res?.message || 'Internship created successfully!');
-      return res;
-    } catch (err: any) {
-      this.toast.danger(err?.error?.message || err?.message || 'Failed to create internship');
-      throw err;
-    }
-  }
-
   async createInternshipSubmit() {
     const type = this.createInternshipModel.type;
     const siteId = (this.createInternshipModel.siteId || '').trim() || undefined;
