@@ -202,60 +202,127 @@ export class FacultySupervisor implements OnInit {
   // Dashboard helper: get ALL students (unfiltered) for accurate statistics
   getAllDashboardStudents(): Array<any> {
     const seen = new Set<string>();
+    const result = [];
     
     // Primary: Real internship records from API (most reliable)
-    const fromInternships = this.facultyInternships
-      .filter(i => i.student?.id && !seen.has(i.student.id) && seen.add(i.student.id) !== undefined)
-      .map(i => ({
-        id: i.student.id,
-        name: i.student.name,
-        email: i.student.email,
-        registrationNo: i.student.regNo,
-        internshipMode: i.type,
-        status: i.status,
-        approved: i.status !== 'PENDING',
-        facultyId: i.faculty?.id
-      }));
+    for (const i of this.facultyInternships) {
+      if (i.student?.id && !seen.has(i.student.id)) {
+        seen.add(i.student.id);
+        result.push({
+          id: i.student.id,
+          name: i.student.name,
+          email: i.student.email,
+          registrationNo: i.student.regNo,
+          internshipMode: this.normalizeMode(i.type || (i as any).mode || ''),
+          status: i.status,
+          approved: i.status !== 'PENDING',
+          facultyId: i.faculty?.id
+        });
+      }
+    }
 
-    // Fallback: Get ALL store students (no filter applied) not in internships
+    // Secondary: Students from APEX B requests (contains mode)
+    for (const b of this.appexBRequests) {
+       const sid = b.student?.id || b.studentId;
+       if (sid && !seen.has(sid)) {
+         seen.add(sid);
+         result.push({
+           id: sid,
+           name: b.student?.name || b.studentName || b.name,
+           internshipMode: this.normalizeMode(b.internshipType || b.mode || ''),
+           approved: b.facultyVerified === true || b.status === 'approved',
+           facultyId: this.myFacultyId()
+         });
+       }
+    }
+    
+    // Secondary: Students from APEX A requests
+    for (const a of this.appexARequests) {
+       const sid = a.student?.id || a.studentId || a.studentInfo?.id;
+       if (sid && !seen.has(sid)) {
+         seen.add(sid);
+         result.push({
+           id: sid,
+           name: a.student?.name || a.studentInfo?.name || a.name,
+           internshipMode: this.normalizeMode(a.mode || ''),
+           approved: a.facultyVerified === true || a.status === 'approved',
+           facultyId: this.myFacultyId()
+         });
+       }
+    }
+
+    // Fallback: Get ALL store students
     const fid = this.myFacultyId();
     const allStoreStudents = fid ? this.students().filter(s => s.facultyId === fid) : this.students();
-    const fromStore = allStoreStudents.filter(s => !seen.has(s.id) && seen.add(s.id) !== undefined);
+    for (const s of allStoreStudents) {
+      if (!seen.has(s.id)) {
+        seen.add(s.id);
+        
+        let mode = s.internshipMode;
+        if (!mode) {
+           const matchB = this.appexBRequests.find(b => (b.student?.id === s.id || b.studentId === s.id));
+           if (matchB) mode = matchB.internshipType || matchB.mode;
+        }
+        if (!mode) {
+           const matchA = this.appexARequests.find(a => (a.student?.id === s.id || a.studentId === s.id || a.studentInfo?.id === s.id));
+           if (matchA) mode = matchA.mode;
+        }
+        
+        let approved = (s as any).status === 'ACTIVE' || (s as any).status === 'approved';
+        if ((s as any).status === 'PENDING') approved = false;
 
-    const result = [...fromInternships, ...fromStore];
-    
-    // Real-time dashboard stats logging
-    const pending = result.filter(s => !s.approved).length;
-    const onsiteVirtual = result.filter(s => s.internshipMode === 'OnSite' || s.internshipMode === 'Virtual').length;
-    const freelance = result.filter(s => s.internshipMode === 'Fiverr' || s.internshipMode === 'Upwork').length;
-    
-    console.log('Dashboard Stats [Real-Time]:', { 
-      total: result.length, 
-      pending, 
-      onsiteVirtual, 
-      freelance 
-    });
-    
+        result.push({
+          ...s,
+          internshipMode: this.normalizeMode(mode || ''),
+          approved: approved
+        });
+      }
+    }
+
+    // Now update existing result objects that are missing mode but we can find it in APEX requests
+    for (const r of result) {
+       if (!r.internshipMode) {
+           const matchB = this.appexBRequests.find(b => (b.student?.id === r.id || b.studentId === r.id));
+           if (matchB) r.internshipMode = this.normalizeMode(matchB.internshipType || matchB.mode || '');
+       }
+       if (!r.internshipMode) {
+           const matchA = this.appexARequests.find(a => (a.student?.id === r.id || a.studentId === r.id || a.studentInfo?.id === r.id));
+           if (matchA) r.internshipMode = this.normalizeMode(matchA.mode || '');
+       }
+       
+       // Update pending logic: if student has ANY pending request in appexA or appexB that needs faculty verification, they are pending.
+       const pendingA = this.appexARequests.some(a => (a.student?.id === r.id || a.studentId === r.id || a.studentInfo?.id === r.id) && (a.status === 'pending' || a.status === 'PENDING_VERIFICATION'));
+       const pendingB = this.appexBRequests.some(b => (b.student?.id === r.id || b.studentId === r.id) && (b.status === 'pending' || b.status === 'PENDING_VERIFICATION' || b.calculatedStatus === 'PENDING_VERIFICATION'));
+       
+       if (pendingA || pendingB) {
+           r.approved = false;
+       }
+    }
+
     return result;
   }
 
   // Dashboard helper counts for template (show real statistics regardless of current filters)
   countPending() {
     const list = this.getAllDashboardStudents();
-    const count = list.filter(s => !s.approved).length;
-    console.log('Count Pending:', count);
+    // A student is pending if they are NOT approved.
+    const count = list.filter(s => s.approved === false || s.approved === undefined || s.approved === null).length;
     return count;
   }
   countOnsiteVirtual() {
     const list = this.getAllDashboardStudents();
-    const count = list.filter(s => s.internshipMode === 'OnSite' || s.internshipMode === 'Virtual').length;
-    console.log('Count OnSite/Virtual:', count);
+    const count = list.filter(s => {
+      const mode = (s.internshipMode || '').toUpperCase();
+      return mode === 'ONSITE' || mode === 'ON-SITE' || mode === 'ON_SITE' || mode === 'VIRTUAL' || mode === 'REMOTE';
+    }).length;
     return count;
   }
   countFiverrUpwork() {
     const list = this.getAllDashboardStudents();
-    const count = list.filter(s => s.internshipMode === 'Fiverr' || s.internshipMode === 'Upwork').length;
-    console.log('Count Fiverr/Upwork:', count);
+    const count = list.filter(s => {
+      const mode = (s.internshipMode || '').toUpperCase();
+      return mode === 'FIVERR' || mode === 'UPWORK';
+    }).length;
     return count;
   }
   pw = { old: '', next: '', confirm: '' };

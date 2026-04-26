@@ -2003,7 +2003,7 @@ export class Admin {
     }
     
     this.apexBDetails = {
-      studentId: form.student?.id || form.id || '',
+      studentId: form.student?.id || form.studentId || form.id || '',
       companyName: form.companyName || '',
       internshipRole: form.internshipRole || '',
       facultySupervisorNameDesig: form.facultySupervisor?.name || form.facultySupervisorNameDesig || '',
@@ -2262,19 +2262,18 @@ export class Admin {
       return;
     }
     
-    // Validate that at least one field is filled
-    const hasData = this.apexBDetails.companyName ||
-                   this.apexBDetails.internshipRole ||
-                   this.apexBDetails.facultySupervisorNameDesig ||
-                   this.apexBDetails.siteSupervisorNameDesig ||
-                   this.apexBDetails.facultyId ||
-                   this.apexBDetails.siteId ||
-                   this.apexBDetails.durationWeeks > 0 ||
-                   this.apexBDetails.startDate ||
-                   this.apexBDetails.endDate;
+    // Validate all required fields
+    const missingFields = [];
+    if (!this.apexBDetails.companyName) missingFields.push('Company Name');
+    if (!this.apexBDetails.internshipRole) missingFields.push('Internship Role');
+    if (!this.apexBDetails.facultyId && !this.apexBDetails.facultySupervisorNameDesig) missingFields.push('Faculty Supervisor');
+    if (!this.apexBDetails.siteId && !this.apexBDetails.siteSupervisorNameDesig) missingFields.push('Site Supervisor');
+    if (!this.apexBDetails.durationWeeks || this.apexBDetails.durationWeeks <= 0) missingFields.push('Duration (Weeks)');
+    if (!this.apexBDetails.startDate) missingFields.push('Start Date');
+    if (!this.apexBDetails.endDate) missingFields.push('End Date');
     
-    if (!hasData) {
-      this.toast.danger('Please fill at least one field');
+    if (missingFields.length > 0) {
+      this.toast.danger(`Please fill out all required fields: ${missingFields.join(', ')}`);
       return;
     }
     
