@@ -628,16 +628,16 @@ export class AdminService {
       studentId: details.studentId
     };
     
-    if (details.companyName !== undefined) body.companyName = details.companyName;
-    if (details.internshipRole !== undefined) body.internshipRole = details.internshipRole;
-    if (details.facultySupervisorNameDesig !== undefined) body.facultySupervisorNameDesig = details.facultySupervisorNameDesig;
-    if (details.siteSupervisorNameDesig !== undefined) body.siteSupervisorNameDesig = details.siteSupervisorNameDesig;
-    if (details.durationWeeks !== undefined) body.durationWeeks = details.durationWeeks;
-    if (details.startDate !== undefined) body.startDate = toISODate(details.startDate);
-    if (details.endDate !== undefined) body.endDate = toISODate(details.endDate);
-    if (details.facultyId !== undefined && details.facultyId !== '') body.facultyId = details.facultyId;
-    if (details.siteId !== undefined && details.siteId !== '') body.siteId = details.siteId;
-    if (details.adminApprovalAction !== undefined) body.adminApprovalAction = details.adminApprovalAction;
+    if (details.companyName) body.companyName = details.companyName;
+    if (details.internshipRole) body.internshipRole = details.internshipRole;
+    if (details.facultySupervisorNameDesig) body.facultySupervisorNameDesig = details.facultySupervisorNameDesig;
+    if (details.siteSupervisorNameDesig) body.siteSupervisorNameDesig = details.siteSupervisorNameDesig;
+    if (details.durationWeeks !== undefined && details.durationWeeks > 0) body.durationWeeks = details.durationWeeks;
+    if (details.startDate) body.startDate = toISODate(details.startDate);
+    if (details.endDate) body.endDate = toISODate(details.endDate);
+    if (details.facultyId) body.facultyId = details.facultyId;
+    if (details.siteId) body.siteId = details.siteId;
+    if (details.adminApprovalAction) body.adminApprovalAction = details.adminApprovalAction;
     
     // Verify at least one updateable field beyond studentId is provided
     const updateFields = ['companyName', 'internshipRole', 'facultySupervisorNameDesig', 'siteSupervisorNameDesig', 'facultyId', 'siteId', 'durationWeeks', 'startDate', 'endDate', 'adminApprovalAction'];
