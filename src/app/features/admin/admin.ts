@@ -2286,6 +2286,9 @@ export class Admin {
       // Submit details with admin approval action
       const payload = {
         ...this.apexBDetails,
+        id: this.selectedApexBForm.id,
+        appexBId: this.selectedApexBForm.id,
+        status: 'approved',
         adminApprovalAction: 'approve' as 'approve'
       };
       

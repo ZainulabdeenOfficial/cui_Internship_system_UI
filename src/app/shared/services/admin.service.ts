@@ -602,6 +602,9 @@ export class AdminService {
     startDate?: string;
     endDate?: string;
     adminApprovalAction?: 'approve' | 'reject';
+    id?: string;
+    appexBId?: string;
+    status?: string;
   }): Promise<any> {
     if (!details.studentId) {
       throw new Error('studentId is required');
@@ -628,6 +631,9 @@ export class AdminService {
       studentId: details.studentId
     };
     
+    if (details.id) body.id = details.id;
+    if (details.appexBId) body.appexBId = details.appexBId;
+    if (details.status) body.status = details.status;
     if (details.companyName) body.companyName = details.companyName;
     if (details.internshipRole) body.internshipRole = details.internshipRole;
     if (details.facultySupervisorNameDesig) body.facultySupervisorNameDesig = details.facultySupervisorNameDesig;
@@ -640,7 +646,7 @@ export class AdminService {
     if (details.adminApprovalAction) body.adminApprovalAction = details.adminApprovalAction;
     
     // Verify at least one updateable field beyond studentId is provided
-    const updateFields = ['companyName', 'internshipRole', 'facultySupervisorNameDesig', 'siteSupervisorNameDesig', 'facultyId', 'siteId', 'durationWeeks', 'startDate', 'endDate', 'adminApprovalAction'];
+    const updateFields = ['id', 'appexBId', 'status', 'companyName', 'internshipRole', 'facultySupervisorNameDesig', 'siteSupervisorNameDesig', 'facultyId', 'siteId', 'durationWeeks', 'startDate', 'endDate', 'adminApprovalAction'];
     const hasUpdateField = updateFields.some(field => body.hasOwnProperty(field));
     if (!hasUpdateField) {
       throw new Error('At least one field to update must be provided');
