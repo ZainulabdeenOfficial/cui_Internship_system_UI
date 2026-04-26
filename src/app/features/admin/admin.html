@@ -1242,7 +1242,10 @@
                         </span>
                       </td>
                       <td style="color: #333;">
-                        <button class="btn btn-sm btn-outline-primary" (click)="selectStudentForEval(prepareStudentForEval(internship))">
+                        <button class="btn btn-sm btn-outline-primary" 
+                                (click)="selectStudentForEval(prepareStudentForEval(internship))"
+                                [disabled]="((internship.approvalStatus || '').toLowerCase() !== 'approved' && (internship.approvalStatus || '').toLowerCase() !== 'verified') || hasOfficeEvaluation(internship)"
+                                [title]="hasOfficeEvaluation(internship) ? 'Marks already entered for this student' : (((internship.approvalStatus || '').toLowerCase() !== 'approved' && (internship.approvalStatus || '').toLowerCase() !== 'verified') ? 'Only approved internships can be evaluated' : 'Evaluate student')">
                           <i class="bi bi-clipboard2-check me-1"></i>Evaluate
                         </button>
                       </td>

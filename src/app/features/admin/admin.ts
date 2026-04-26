@@ -2592,7 +2592,7 @@ export class Admin {
         studentFinalResult: null,  // Will be populated by loadStudentFinalResults
         loadingFinalResult: false,
         internshipRole: item.internshipRole || ''
-      })).filter(item => item.approvalStatus === 'approved' || item.approvalStatus === 'verified') : [];
+      })) : [];
       
       console.log('✅ Internships list loaded:', this.internships.length, 'internships');
       
@@ -2650,6 +2650,12 @@ export class Admin {
     } catch (error) {
       console.error('Error loading final results:', error);
     }
+  }
+
+  hasOfficeEvaluation(internship: any): boolean {
+    if (!internship || !internship.studentFinalResult) return false;
+    const finalResult = internship.studentFinalResult.finalResult || internship.studentFinalResult;
+    return finalResult.officeMarks != null && finalResult.officeMarks !== undefined;
   }
 
   private async loadAllStudentFinalResults(): Promise<void> {
