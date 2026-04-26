@@ -599,29 +599,29 @@
       </div>
       <div class="card-body">
         <!-- Weekly log status -->
-        <div *ngIf="weeklyLogStatus && weeklyLogStatus.hasStarted" class="alert alert-info mb-3">
+        <div *ngIf="internshipStarted()" class="alert alert-info mb-3">
           <div class="row g-2">
-            <div class="col-md-3"><strong>Total Weeks:</strong> {{ weeklyLogStatus.totalWeeks }}</div>
-            <div class="col-md-3"><strong>Current Week:</strong> {{ weeklyLogStatus.currentWeek }}</div>
-            <div class="col-md-3"><strong>Submitted:</strong> {{ weeklyLogStatus.submittedWeeks?.length || 0 }}</div>
-            <div class="col-md-3"><strong>Pending:</strong> {{ weeklyLogStatus.pendingWeeks?.length || 0 }}</div>
+            <div class="col-md-3"><strong>Total Weeks:</strong> {{ weeklyLogStatus?.totalWeeks || 8 }}</div>
+            <div class="col-md-3"><strong>Current Week:</strong> {{ weeklyLogStatus?.currentWeek || (weeklyLogs.length || 0) + 1 }}</div>
+            <div class="col-md-3"><strong>Submitted:</strong> {{ weeklyLogStatus?.submittedWeeks?.length || weeklyLogs.length || 0 }}</div>
+            <div class="col-md-3"><strong>Pending:</strong> {{ weeklyLogStatus?.pendingWeeks?.length || 0 }}</div>
           </div>
           <div class="mt-2" *ngIf="weeklyLogStatus.pendingWeeks && weeklyLogStatus.pendingWeeks.length > 0">
             <small class="text-muted">Pending weeks: {{ weeklyLogStatus.pendingWeeks.join(', ') }}</small>
           </div>
         </div>
 
-        <div *ngIf="!weeklyLogStatus || !weeklyLogStatus.hasStarted" class="alert alert-warning">
+        <div *ngIf="!internshipStarted()" class="alert alert-warning">
           Weekly logs will be available once your internship has started and APEX A & B forms are approved.
         </div>
 
         <!-- Submit new weekly log -->
-        <div *ngIf="weeklyLogStatus && weeklyLogStatus.hasStarted && !weeklyLogStatus.hasEnded">
+        <div *ngIf="internshipStarted() && !weeklyLogStatus?.hasEnded">
           <h6>Submit Weekly Log</h6>
           <form (ngSubmit)="submitWeeklyLog()" #wlf="ngForm" class="row g-3 mb-4">
             <div class="col-md-2">
               <label class="form-label">Week Number</label>
-              <input type="number" min="1" [max]="weeklyLogStatus.totalWeeks" class="form-control" 
+              <input type="number" min="1" [max]="weeklyLogStatus?.totalWeeks || 8" class="form-control" 
                      [(ngModel)]="weeklyLogForm.weekNo" name="weekNo" required />
             </div>
             <div class="col-md-10">
