@@ -1149,7 +1149,8 @@ export class Student implements OnInit, OnDestroy {
         this.appexASubmitted = true;
         
         // Auto-create internship record if it doesn't exist yet
-        if (!this.studentInternshipId) {
+        const autoCreateFlag = `internship_auto_created_${this.selectedId}`;
+        if (!this.studentInternshipId && localStorage.getItem(autoCreateFlag) !== 'true') {
           console.log('🚀 [Student] APEX A is approved but no internship record exists. Auto-creating...');
           const mappedMode = ax.mode === 'Virtual' ? 'VIRTUAL' : 
                              ax.mode === 'Freelancing' ? 'REMOTE' : 
@@ -1160,7 +1161,17 @@ export class Student implements OnInit, OnDestroy {
                this.studentInternshipId = createRes.internship?.id || createRes.internship?._id || createRes.data?.id;
                console.log('✅ [Student] Auto-created internship with ID:', this.studentInternshipId);
             }
-          }).catch(e => console.error('Failed to auto-create internship:', e));
+            // Mark as created so we don't try again
+            localStorage.setItem(autoCreateFlag, 'true');
+          }).catch(e => {
+            console.error('Failed to auto-create internship:', e);
+            // If it already exists (409 Conflict or 400 with 'already exists' message), set the flag so we don't spam the API
+            const errorMsg = (e?.error?.message || e?.message || '').toLowerCase();
+            if (e?.status === 409 || e?.status === 400 || errorMsg.includes('already exist') || errorMsg.includes('already created')) {
+              console.log('ℹ️ [Student] Internship already exists on backend. Setting local flag.');
+              localStorage.setItem(autoCreateFlag, 'true');
+            }
+          });
         }
       } else if (status === 'rejected' || status === 'REJECTED') {
         this.appexAStatus = 'rejected';

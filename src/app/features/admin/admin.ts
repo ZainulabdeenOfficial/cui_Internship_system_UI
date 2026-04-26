@@ -2155,12 +2155,29 @@ export class Admin {
     const q = (value || '').trim();
     this.siteSearchQuery = value;
     
+    // Allow manual typing: update the model directly as they type
+    this.apexBDetails.siteSupervisorNameDesig = value;
+    // Only clear ID if they change the text completely, but keeping it simple:
+    // If they manually type, it might not have an ID until they select one.
+    if (!value) {
+      this.apexBDetails.siteId = '';
+    }
+    
     if (this.siteSearchDebounce) clearTimeout(this.siteSearchDebounce);
     
-    this.siteSearchDebounce = setTimeout(() => {
+    this.siteSearchDebounce = setTimeout(async () => {
       try {
         this.siteSearchLoading = true;
         this.showSiteDropdown = true;
+        
+        // Ensure cache is loaded so we can show available supervisors
+        if (!this.sitesCache || this.sitesCache.length === 0) {
+          try {
+            this.sitesCache = await this.adminApi.getAssignableSiteSupervisors({});
+          } catch (e) {
+            console.error('Failed to load sitesCache for dropdown', e);
+          }
+        }
         
         let results = this.sitesCache || [];
         
@@ -2172,9 +2189,10 @@ export class Admin {
           );
         }
         
+        // Return results sorted alphabetically
         this.siteSearchResults = results.map(s => ({
           ...s,
-          companyName: this.companiesCache.find(c => c.id === s.companyId)?.name
+          companyName: (this.companiesCache || []).find(c => c.id === s.companyId)?.name
         })).sort((a, b) => (a.name || '').localeCompare(b.name || ''));
       } catch (err: any) {
         this.siteSearchResults = [];
