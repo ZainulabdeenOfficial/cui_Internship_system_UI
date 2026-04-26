@@ -1662,7 +1662,8 @@ export class Student implements OnInit, OnDestroy {
     try {
       const res = await this.studentApi.getWeeklyLogs({
         skipGlobalLoading: this.hasLoadedWeeklyLogsOnce || forceRefresh,
-        forceRefresh
+        forceRefresh,
+        silentError: true
       });
       this.weeklyLogs = res?.weeklyLogs || [];
       this.weeklyLogStatus = res?.weeklyLogStatus || {};
@@ -1676,8 +1677,11 @@ export class Student implements OnInit, OnDestroy {
         this.weeklyLogForm.weekNo = this.weeklyLogStatus.currentWeek;
       }
     } catch (err: any) {
-      const msg = err?.error?.message || err?.message || 'Failed to load weekly logs';
-      this.toast.danger(msg);
+      // 404 simply means the student hasn't submitted any logs yet
+      if (err?.status !== 404 && err?.status !== 400) {
+        const msg = err?.error?.message || err?.message || 'Failed to load weekly logs';
+        this.toast.danger(msg);
+      }
     } finally {
       this.loadingWeeklyLogs = false;
       this.cdr.markForCheck();
