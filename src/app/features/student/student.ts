@@ -1155,6 +1155,21 @@ export class Student implements OnInit, OnDestroy {
       if (status === 'approved' || status === 'APPROVED') {
         this.appexAStatus = 'approved';
         this.appexASubmitted = true;
+        
+        // Auto-create internship record if it doesn't exist yet
+        if (!this.studentInternshipId) {
+          console.log('🚀 [Student] APEX A is approved but no internship record exists. Auto-creating...');
+          const mappedMode = ax.mode === 'Virtual' ? 'VIRTUAL' : 
+                             ax.mode === 'Freelancing' ? 'REMOTE' : 
+                             ax.mode === 'Hybrid' ? 'HYBRID' : 'ONSITE';
+          
+          this.apiCreateInternship(mappedMode).then(createRes => {
+            if (createRes?.internship?.id || createRes?.internship?._id || createRes?.data?.id) {
+               this.studentInternshipId = createRes.internship?.id || createRes.internship?._id || createRes.data?.id;
+               console.log('✅ [Student] Auto-created internship with ID:', this.studentInternshipId);
+            }
+          }).catch(e => console.error('Failed to auto-create internship:', e));
+        }
       } else if (status === 'rejected' || status === 'REJECTED') {
         this.appexAStatus = 'rejected';
         this.appexASubmitted = true;

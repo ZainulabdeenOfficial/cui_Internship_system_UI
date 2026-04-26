@@ -512,56 +512,6 @@
 
         </div>
       </form>
-    </div>
-  </div>
-
-  <!-- CREATE INTERNSHIP FORM (Shows after AppEx-A is Approved) -->
-  <div class="card border-primary shadow-sm mb-4" *ngIf="appexASubmitted && appexAStatus === 'approved' && !studentInternshipId">
-    <div class="card-header bg-primary text-white d-flex align-items-center">
-      <i class="bi bi-rocket-takeoff-fill me-2 fs-5"></i>
-      <h5 class="mb-0">Start Your Internship Record</h5>
-    </div>
-    <div class="card-body bg-light">
-      <div class="alert alert-info">
-        <i class="bi bi-info-circle-fill me-2"></i>
-        <strong>Congratulations!</strong> Your APEX-A is approved. You must now officially start your internship record by selecting your supervisors and mode.
-      </div>
-      <form (ngSubmit)="createInternshipSubmit()" #ciForm="ngForm" class="row g-3 mt-1">
-        <div class="col-md-4">
-          <label class="form-label fw-bold">Internship Type <span class="text-danger">*</span></label>
-          <select class="form-select" [(ngModel)]="createInternshipModel.type" name="ciType" required>
-            <option value="ONSITE">On-Site</option>
-            <option value="REMOTE">Remote</option>
-            <option value="VIRTUAL">Virtual</option>
-            <option value="HYBRID">Hybrid</option>
-          </select>
-        </div>
-        
-        <div class="col-md-4">
-          <label class="form-label fw-bold">Faculty Supervisor <span class="text-muted">(Optional)</span></label>
-          <select class="form-select" [(ngModel)]="createInternshipModel.facultyId" name="ciFaculty">
-            <option value="">-- Select Faculty --</option>
-            <option *ngFor="let f of facultyList()" [value]="f.id">{{ f.name }}</option>
-          </select>
-        </div>
-
-        <div class="col-md-4">
-          <label class="form-label fw-bold">Site Supervisor <span class="text-muted">(Optional)</span></label>
-          <select class="form-select" [(ngModel)]="createInternshipModel.siteId" name="ciSite">
-            <option value="">-- Select Site Supervisor --</option>
-            <option *ngFor="let s of siteList()" [value]="s.id">{{ s.name }} ({{ s.email }})</option>
-          </select>
-        </div>
-
-        <div class="col-12 mt-4 text-end">
-          <button type="submit" class="btn btn-primary" [disabled]="!ciForm.form.valid">
-            <i class="bi bi-play-circle-fill me-2"></i>Create Internship Record
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
-
   </div>
 
   <div *ngIf="isCurrentTab('assignment')">
