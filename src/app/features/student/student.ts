@@ -1027,6 +1027,9 @@ export class Student implements OnInit, OnDestroy {
    */
   onApexCSubmitted() {
     this.apexCSubmitted = true;
+    if (this.selectedId) {
+      localStorage.setItem(`apexC_submitted_${this.selectedId}`, 'true');
+    }
     // Sync to store (drives header + footer tab visibility)
     this.store.setStudentInternshipStarted(this.internshipStarted());
     // If all conditions are now met, redirect to weekly logs
@@ -1134,14 +1137,21 @@ export class Student implements OnInit, OnDestroy {
       if (internshipObj?.appexC || internshipObj?.status === 'APPROVED' || internshipObj?.status === 'STARTED' || internshipObj?.status === 'ACTIVE') {
         this.apexCSubmitted = true;
       }
+      
+      // Check local storage fallback for APEX C since backend endpoint was removed
+      if (this.selectedId && localStorage.getItem(`apexC_submitted_${this.selectedId}`) === 'true') {
+        this.apexCSubmitted = true;
+      }
 
       // Determine APEX A approval status
       const ax = internshipObj?.appexA || (res as any)?.appexA || {};
       const status = ax.status || internshipObj?.status || 'pending';
       if (status === 'approved' || status === 'APPROVED') {
         this.appexAStatus = 'approved';
+        this.appexASubmitted = true;
       } else if (status === 'rejected' || status === 'REJECTED') {
         this.appexAStatus = 'rejected';
+        this.appexASubmitted = true;
       } else {
         this.appexAStatus = 'pending';
       }
@@ -1151,7 +1161,7 @@ export class Student implements OnInit, OnDestroy {
         const v = (ax as any)[k];
         return v !== undefined && v !== null && String(v).toString().trim().length > 0;
       });
-      if (serverHas) {
+      if (serverHas || ax.status) {
         this.appexAForm = {
           organization: ax.organization || '',
           address: ax.address || '',
