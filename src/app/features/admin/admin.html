@@ -1234,18 +1234,20 @@
                       <td style="color: #333;">{{ internship.student?.regNo || internship.registrationNo || '-' }}</td>
                       <td style="color: #333;">{{ internship.company?.name || internship.companyName || '-' }}</td>
                       <td style="color: #333;">
-                        <span class="badge"
-                          [class.text-bg-success]="(internship.approvalStatus || '').toLowerCase() === 'approved' || (internship.approvalStatus || '').toLowerCase() === 'verified'"
-                          [class.text-bg-warning]="(internship.approvalStatus || '').toLowerCase() === 'pending'"
-                          [class.text-bg-secondary]="!(internship.approvalStatus || '')">
-                          {{ (internship.approvalStatus || 'Pending') | titlecase }}
-                        </span>
+                        @if (hasOfficeEvaluation(internship)) {
+                          <span class="badge text-bg-success">Approved</span>
+                        } @else {
+                          <span class="badge"
+                            [class.text-bg-success]="(internship.approvalStatus || '').toLowerCase() === 'approved' || (internship.approvalStatus || '').toLowerCase() === 'verified'"
+                            [class.text-bg-warning]="(internship.approvalStatus || '').toLowerCase() === 'pending'"
+                            [class.text-bg-secondary]="!(internship.approvalStatus || '')">
+                            {{ (internship.approvalStatus || 'Pending') | titlecase }}
+                          </span>
+                        }
                       </td>
                       <td style="color: #333;">
                         <button class="btn btn-sm btn-outline-primary" 
-                                (click)="selectStudentForEval(prepareStudentForEval(internship))"
-                                [disabled]="hasOfficeEvaluation(internship)"
-                                [title]="hasOfficeEvaluation(internship) ? 'Marks already entered for this student' : 'Evaluate student'">
+                                (click)="selectStudentForEval(prepareStudentForEval(internship))">
                           <i class="bi bi-clipboard2-check me-1"></i>Evaluate
                         </button>
                       </td>
