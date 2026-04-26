@@ -99,7 +99,7 @@ export class Student implements OnInit, OnDestroy {
   // Check if all verifications are complete (APEX B triple-approval)
   isFullyApproved(): boolean {
     const apexB = this.apexBStatus;
-    if (!apexB) return this.isApproved();
+    if (!apexB) return false; // If no APEX B form exists, they cannot be fully approved
     return apexB.studentVerified && apexB.facultyVerified && apexB.adminApproved;
   }
 
@@ -1140,7 +1140,7 @@ export class Student implements OnInit, OnDestroy {
       const resolvedId: string = internshipObj?.id || internshipObj?._id || (res as any)?.internshipId || '';
       if (resolvedId) this.studentInternshipId = resolvedId;
 
-      if (internshipObj?.appexC || internshipObj?.status === 'APPROVED' || internshipObj?.status === 'STARTED' || internshipObj?.status === 'ACTIVE') {
+      if (internshipObj?.appexC || internshipObj?.status === 'STARTED' || internshipObj?.status === 'ACTIVE') {
         this.apexCSubmitted = true;
       }
       
