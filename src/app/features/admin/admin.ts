@@ -2294,7 +2294,8 @@ export class Admin {
         startDate: this.apexBDetails.startDate,
         endDate: this.apexBDetails.endDate,
         facultyId: this.apexBDetails.facultyId,
-        siteId: this.apexBDetails.siteId
+        siteId: this.apexBDetails.siteId,
+        adminApprovalAction: 'approve' as 'approve'
       };
       
       const response = await this.adminApi.updateApexBDetails(payload);
