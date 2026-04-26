@@ -117,7 +117,7 @@ export class Student implements OnInit, OnDestroy {
    *   STARTED     → show: weeklylogs, evaluations, request-company, complaints
    */
   internshipStarted(): boolean {
-    return this.isFullyApproved();
+    return this.isFullyApproved() && this.apexCSubmitted;
   }
 
   // Alias kept for any legacy template references
