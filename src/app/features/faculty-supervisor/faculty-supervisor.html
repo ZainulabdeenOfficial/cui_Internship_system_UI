@@ -2,12 +2,7 @@
   <h2 class="mb-3">Faculty Supervisor</h2>
   <!-- ════ PREMIUM FACULTY TAB BAR ════ -->
   <ul class="faculty-tabs-bar">
-    <li class="tab-item">
-      <button type="button" class="tab-btn" [class.active]="currentTab==='students'" (click)="selectTab('students')">
-        <i class="bi bi-people-fill tab-icon"></i>
-        Students
-      </button>
-    </li>
+    <!-- Students tab removed -->
     <li class="tab-item">
       <button type="button" class="tab-btn" [class.active]="currentTab==='requests'" (click)="selectTab('requests')">
         <i class="bi bi-file-earmark-check tab-icon"></i>
@@ -86,14 +81,14 @@
       <li><strong>Freelancing:</strong> Supervisor (60) + Internship Office (40). Office sub-marks are 5 (Proposal) + 5 (Logs) + 10 (Final Report).</li>
     </ul>
   </div>
-  <!-- Filter & Quick Mark Card - Only show on Students & Marks tabs -->
-  @if (currentTab === 'students' || currentTab === 'marks') {
+  <!-- Filter & Quick Mark Card - Only show on Marks tab -->
+  @if (currentTab === 'marks') {
   <div class="card filter-card mb-3">
     <div class="card-body">
       <div class="row g-3 align-items-end">
-        <div class="col-md-4">
+        <div class="col-md-6">
           <label class="form-label">Filter by Mode</label>
-          <select class="form-select" [(ngModel)]="modeFilter" name="mode">
+          <select class="form-select" [(ngModel)]="modeFilter" (ngModelChange)="page.marks=1" name="mode">
             <option [ngValue]="'All'">All</option>
             <option [ngValue]="'OnSite'">On-site</option>
             <option [ngValue]="'Virtual'">Virtual</option>
@@ -101,82 +96,19 @@
             <option [ngValue]="'Upwork'">Upwork</option>
           </select>
         </div>
-        <div class="col-md-4">
+        <div class="col-md-6">
           <label class="form-label">Search</label>
           <div class="input-group">
             <span class="input-group-text"><i class="pi pi-search"></i></span>
-            <input class="form-control" [(ngModel)]="search" name="q" placeholder="Search name, email or reg no" />
+            <input class="form-control" [(ngModel)]="search" (ngModelChange)="page.marks=1" name="q" placeholder="Search name, email or reg no" />
           </div>
-        </div>
-        <div class="col-md-4">
-          @if (currentTab === 'students' && selectedStudent()) {
-            <label class="form-label">Faculty Total (0-60)</label>
-            <div class="input-group">
-              <span class="input-group-text"><i class="pi pi-chart-line"></i></span>
-              <input type="number" min="0" max="60" class="form-control" (ngModelChange)="setMarks($event)" [ngModel]="selectedStudent()?.marks?.faculty ?? ''" />
-            </div>
-          }
         </div>
       </div>
     </div>
   </div>
   }
 
-  @if (currentTab==='students') {
-  <div class="card mb-3">
-    <div class="card-header d-flex justify-content-between align-items-center">
-      <span><i class="bi bi-people-fill me-2"></i>My Students</span>
-      <span class="badge text-bg-primary">{{ filteredStudents().length }} of {{ myStudents().length }} student(s)</span>
-    </div>
-  </div>
-
-  <div class="table-responsive mb-3">
-    <table class="table table-hover align-middle shadow-sm table-card">
-      <thead>
-        <tr>
-          <th>Student</th>
-          <th>Email</th>
-          <th>Registration No</th>
-          <th>Mode</th>
-          <th>Faculty Marks</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-  @for (s of (filteredStudents() | paginate: page.students : pageSize); track s.id) {
-  <tr>
-          <td>{{ s.name }}</td>
-          <td>{{ s.email }}</td>
-          <td>{{ s.registrationNo || '-' }}</td>
-          <td>
-            <span class="badge"
-              [class.text-bg-secondary]="!s.internshipMode"
-              [class.text-bg-info]="s.internshipMode==='Virtual'"
-              [class.text-bg-primary]="s.internshipMode==='OnSite'"
-              [class.text-bg-success]="s.internshipMode==='Fiverr' || s.internshipMode==='Upwork'">
-              {{ s.internshipMode || '—' }}
-            </span>
-          </td>
-          <td>{{ s.marks?.faculty ?? 0 }}</td>
-          <td>
-            <button class="btn btn-sm btn-primary" (click)="selectedId = s.id">Open</button>
-          </td>
-        </tr>
-        }
-        @if (filteredStudents().length === 0) {
-        <tr><td colspan="6" class="text-center text-muted py-3">
-          @if (myStudents().length === 0) {
-            No students assigned yet.
-          } @else {
-            No students match your current filters.
-          }
-        </td></tr>
-        }
-      </tbody>
-    </table>
-    <app-paginator [total]="filteredStudents().length" [(page)]="page.students" [pageSize]="pageSize"></app-paginator>
-  </div>
-  }
+  <!-- Students block completely removed -->
 
   @if (currentTab==='requests') {
   <div class="row g-3 mt-0">
@@ -652,7 +584,7 @@
             </tr>
           </thead>
           <tbody>
-            @for (s of filteredMarksTabStudents(); track s.id) {
+            @for (s of (filteredMarksTabStudents() | paginate: page.marks : pageSize); track s.id) {
               <tr [class.table-primary]="selectedStudentForMarks?.id === s.id">
                 <td>
                   <div class="fw-semibold">{{ s.name }}</div>
@@ -712,6 +644,9 @@
             }
           </tbody>
         </table>
+      </div>
+      <div class="p-2 border-top">
+        <app-paginator [total]="filteredMarksTabStudents().length" [(page)]="page.marks" [pageSize]="pageSize"></app-paginator>
       </div>
     </div>
   </div>
@@ -1022,8 +957,29 @@
         No weekly logs found for your supervised internships.
       </div>
 
+      <!-- Filter & Search -->
+      <div class="row g-3 mb-3">
+        <div class="col-md-4">
+          <label class="form-label">Filter by Mode</label>
+          <select class="form-select" [(ngModel)]="weeklyLogsFilter" (ngModelChange)="page.weeklyLogs=1" name="wl_mode">
+            <option [ngValue]="'All'">All</option>
+            <option [ngValue]="'OnSite'">On-site</option>
+            <option [ngValue]="'Virtual'">Virtual</option>
+            <option [ngValue]="'Fiverr'">Fiverr</option>
+            <option [ngValue]="'Upwork'">Upwork</option>
+          </select>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Search</label>
+          <div class="input-group">
+            <span class="input-group-text"><i class="pi pi-search"></i></span>
+            <input class="form-control" [(ngModel)]="weeklyLogsSearch" (ngModelChange)="page.weeklyLogs=1" name="wl_q" placeholder="Search name, email or reg no" />
+          </div>
+        </div>
+      </div>
+
       <!-- Weekly Logs Table -->
-      <div *ngIf="!loadingWeeklyLogs && weeklyLogsData.length > 0" class="table-responsive">
+      <div *ngIf="!loadingWeeklyLogs && filteredWeeklyLogs().length > 0" class="table-responsive">
         <table class="table table-hover mb-0">
           <thead>
             <tr>
@@ -1038,7 +994,7 @@
             </tr>
           </thead>
           <tbody>
-            @for (item of weeklyLogsData; track item.internship.id) {
+            @for (item of (filteredWeeklyLogs() | paginate: page.weeklyLogs : pageSize); track item.internship.id) {
             <tr>
               <td class="fw-semibold">{{ item.internship.student.name }}</td>
               <td>{{ item.internship.student.regNo }}</td>
@@ -1076,6 +1032,12 @@
             }
           </tbody>
         </table>
+      </div>
+      <div *ngIf="!loadingWeeklyLogs && filteredWeeklyLogs().length === 0" class="alert alert-warning">
+        No students match your current filters.
+      </div>
+      <div *ngIf="!loadingWeeklyLogs && filteredWeeklyLogs().length > 0" class="mt-2">
+        <app-paginator [total]="filteredWeeklyLogs().length" [(page)]="page.weeklyLogs" [pageSize]="pageSize"></app-paginator>
       </div>
     </div>
   </div>
@@ -1424,34 +1386,87 @@
     </div>
 
     <!-- Filter & Search -->
-    @if (finalizationStudents.length > 0) {
-    <div class="card filter-card mb-3 bg-light">
+    @if (finalizationStudents.length > 0 && !selectedFinalizationStudent) {
+    <div class="card filter-card mb-3">
       <div class="card-body">
         <div class="row g-3 align-items-end">
           <div class="col-md-6">
-            <label class="form-label">Select Student</label>
-            <select class="form-select" 
-                    [(ngModel)]="selectedFinalizationStudent"
-                    (ngModelChange)="selectStudentForFinalization($event)"
-                    name="finalization_student">
-              <option [ngValue]="null">-- Choose a student --</option>
-              <option *ngFor="let student of finalizationStudents" [ngValue]="student">
-                {{ student.name }} ({{ student.registrationNo }}) — {{ student.companyName }}
-              </option>
+            <label class="form-label">Filter by Mode</label>
+            <select class="form-select" [(ngModel)]="finalizationFilter" (ngModelChange)="page.finalization=1" name="fin_mode">
+              <option [ngValue]="'All'">All</option>
+              <option [ngValue]="'OnSite'">On-site</option>
+              <option [ngValue]="'Virtual'">Virtual</option>
+              <option [ngValue]="'Fiverr'">Fiverr</option>
+              <option [ngValue]="'Upwork'">Upwork</option>
             </select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Search</label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="pi pi-search"></i></span>
+              <input class="form-control" [(ngModel)]="finalizationSearch" (ngModelChange)="page.finalization=1" name="fin_q" placeholder="Search name, email or reg no" />
+            </div>
           </div>
         </div>
       </div>
     </div>
 
+    <!-- Finalization Students Table -->
+    <div class="table-responsive mb-3">
+      <table class="table table-hover align-middle shadow-sm table-card">
+        <thead>
+          <tr>
+            <th>Student</th>
+            <th>Email</th>
+            <th>Registration No</th>
+            <th>Mode</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (s of (filteredFinalizationStudents() | paginate: page.finalization : pageSize); track s.id) {
+          <tr>
+            <td>{{ s.name }}</td>
+            <td>{{ s.email }}</td>
+            <td>{{ s.registrationNo || '-' }}</td>
+            <td>
+              <span class="badge"
+                [class.text-bg-secondary]="!s.internshipMode"
+                [class.text-bg-info]="s.internshipMode==='Virtual' || s.internshipMode==='VIRTUAL'"
+                [class.text-bg-primary]="s.internshipMode==='OnSite' || s.internshipMode==='ONSITE'"
+                [class.text-bg-success]="s.internshipMode==='Fiverr' || s.internshipMode==='Upwork' || s.internshipMode==='FREELANCE'">
+                {{ s.internshipMode || '—' }}
+              </span>
+            </td>
+            <td>
+              <button class="btn btn-sm btn-primary" (click)="selectStudentForFinalization(s)">
+                <i class="bi bi-pencil-square me-1"></i>Finalize
+              </button>
+            </td>
+          </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <div *ngIf="filteredFinalizationStudents().length === 0" class="alert alert-warning">
+      No students match your current filters.
+    </div>
+    <div *ngIf="filteredFinalizationStudents().length > 0">
+      <app-paginator [total]="filteredFinalizationStudents().length" [(page)]="page.finalization" [pageSize]="pageSize"></app-paginator>
+    </div>
+    }
+
     <!-- Finalization Form -->
     @if (selectedFinalizationStudent) {
     <div class="card mb-3">
-      <div class="card-header bg-light">
+      <div class="card-header bg-light d-flex justify-content-between align-items-center">
         <h6 class="mb-0">
           <i class="bi bi-person me-2"></i>
           {{ selectedFinalizationStudent.name }} — Finalize Marks
         </h6>
+        <button class="btn btn-sm btn-outline-secondary" (click)="selectedFinalizationStudent = null">
+          <i class="bi bi-arrow-left me-1"></i>Back to List
+        </button>
       </div>
       <div class="card-body">
         <!-- Student Information -->
@@ -1668,7 +1683,6 @@
         </form>
       </div>
     </div>
-    }
     }
   </div>
 </div>

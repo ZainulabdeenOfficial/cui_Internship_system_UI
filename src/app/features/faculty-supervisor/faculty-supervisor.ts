@@ -24,12 +24,16 @@ export class FacultySupervisor implements OnInit {
     try {
       this.route.queryParamMap.subscribe(p => {
         const t = (p.get('tab') || '').toLowerCase();
-        const allowed = ['students','profile','requests','weekly-logs','marks','finalization'] as const;
+        const allowed = ['profile','requests','weekly-logs','marks','finalization'] as const;
         if ((allowed as readonly string[]).includes(t)) {
           this.currentTab = t as any;
+        } else {
+          this.currentTab = 'requests';
         }
       });
-    } catch {}
+    } catch (e) {
+      this.currentTab = 'requests';
+    }
   }
 
   ngOnInit() {
@@ -42,9 +46,18 @@ export class FacultySupervisor implements OnInit {
   get siteList() { return this.store.siteSupervisors; }
   get companyList() { return this.store.companies; }
   selectedId: string | null = null;
-  currentTab: 'students'|'requests'|'weekly-logs'|'profile'|'marks'|'finalization' = 'students';
-  page = { students: 1, appexA: 1, appexB: 1 };
+  currentTab: 'requests'|'weekly-logs'|'profile'|'marks'|'finalization' = 'requests';
+  page = { students: 1, appexA: 1, appexB: 1, weeklyLogs: 1, marks: 1, finalization: 1 };
   pageSize = 10;
+  
+  // Weekly Logs Filters
+  weeklyLogsSearch = '';
+  weeklyLogsFilter = 'All';
+
+  // Finalization Filters
+  finalizationSearch = '';
+  finalizationFilter = 'All';
+
   selectTab(tab: FacultySupervisor['currentTab']) {
     const tabChanged = this.currentTab !== tab;
     this.currentTab = tab;
@@ -77,11 +90,6 @@ export class FacultySupervisor implements OnInit {
     } else if (tab === 'requests') {
       if (!this.cache.isFresh('faculty:requests')) {
         this.loadStudentRequests();
-      }
-    } else if (tab === 'students') {
-      // Ensure internships are loaded for student list
-      if (!this.cache.isFresh('faculty:internships')) {
-        this.loadFacultyInternships();
       }
     }
     // Requests are pre-loaded on init, no need to reload on tab click
@@ -1228,6 +1236,53 @@ export class FacultySupervisor implements OnInit {
         startDate: i.startDate,
         endDate: i.endDate
       }));
+  }
+
+  // --- Finalization Methods ---
+  filteredFinalizationStudents() {
+    let list = this.finalizationStudents;
+    if (this.finalizationFilter !== 'All') {
+      list = list.filter(s => {
+        const mode = (s.internshipMode || '').toLowerCase();
+        if (this.finalizationFilter === 'OnSite' && mode === 'onsite') return true;
+        if (this.finalizationFilter === 'Virtual' && mode === 'virtual') return true;
+        if (this.finalizationFilter === 'Fiverr' && mode === 'fiverr') return true;
+        if (this.finalizationFilter === 'Upwork' && mode === 'upwork') return true;
+        return false;
+      });
+    }
+    if (this.finalizationSearch.trim()) {
+      const q = this.finalizationSearch.toLowerCase().trim();
+      list = list.filter(s =>
+        (s.name || '').toLowerCase().includes(q) ||
+        (s.email || '').toLowerCase().includes(q) ||
+        (s.registrationNo || '').toLowerCase().includes(q)
+      );
+    }
+    return list;
+  }
+
+  filteredWeeklyLogs() {
+    let list = this.weeklyLogsData;
+    if (this.weeklyLogsFilter !== 'All') {
+      list = list.filter(item => {
+        const mode = (item.internship.type || '').toLowerCase();
+        if (this.weeklyLogsFilter === 'OnSite' && mode === 'onsite') return true;
+        if (this.weeklyLogsFilter === 'Virtual' && mode === 'virtual') return true;
+        if (this.weeklyLogsFilter === 'Fiverr' && mode === 'fiverr') return true;
+        if (this.weeklyLogsFilter === 'Upwork' && mode === 'upwork') return true;
+        return false;
+      });
+    }
+    if (this.weeklyLogsSearch.trim()) {
+      const q = this.weeklyLogsSearch.toLowerCase().trim();
+      list = list.filter(item =>
+        (item.internship.student.name || '').toLowerCase().includes(q) ||
+        (item.internship.student.email || '').toLowerCase().includes(q) ||
+        (item.internship.student.regNo || '').toLowerCase().includes(q)
+      );
+    }
+    return list;
   }
 
   /** Load finalization data for display */
