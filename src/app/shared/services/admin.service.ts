@@ -632,21 +632,17 @@ export class AdminService {
     };
     
     if (details.id) body.id = details.id;
-    if (details.appexBId) body.appexBId = details.appexBId;
     if (details.status) body.status = details.status;
     if (details.companyName) body.companyName = details.companyName;
     if (details.internshipRole) body.internshipRole = details.internshipRole;
-    if (details.facultySupervisorNameDesig) body.facultySupervisorNameDesig = details.facultySupervisorNameDesig;
-    if (details.siteSupervisorNameDesig) body.siteSupervisorNameDesig = details.siteSupervisorNameDesig;
     if (details.durationWeeks !== undefined && details.durationWeeks > 0) body.durationWeeks = details.durationWeeks;
     if (details.startDate) body.startDate = toISODate(details.startDate);
     if (details.endDate) body.endDate = toISODate(details.endDate);
     if (details.facultyId) body.facultyId = details.facultyId;
     if (details.siteId) body.siteId = details.siteId;
-    if (details.adminApprovalAction) body.adminApprovalAction = details.adminApprovalAction;
     
     // Verify at least one updateable field beyond studentId is provided
-    const updateFields = ['id', 'appexBId', 'status', 'companyName', 'internshipRole', 'facultySupervisorNameDesig', 'siteSupervisorNameDesig', 'facultyId', 'siteId', 'durationWeeks', 'startDate', 'endDate', 'adminApprovalAction'];
+    const updateFields = ['id', 'status', 'companyName', 'internshipRole', 'facultyId', 'siteId', 'durationWeeks', 'startDate', 'endDate'];
     const hasUpdateField = updateFields.some(field => body.hasOwnProperty(field));
     if (!hasUpdateField) {
       throw new Error('At least one field to update must be provided');

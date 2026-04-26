@@ -2285,11 +2285,16 @@ export class Admin {
       
       // Submit details with admin approval action
       const payload = {
-        ...this.apexBDetails,
+        studentId: this.apexBDetails.studentId,
         id: this.selectedApexBForm.id,
-        appexBId: this.selectedApexBForm.id,
         status: 'approved',
-        adminApprovalAction: 'approve' as 'approve'
+        companyName: this.apexBDetails.companyName,
+        internshipRole: this.apexBDetails.internshipRole,
+        durationWeeks: this.apexBDetails.durationWeeks,
+        startDate: this.apexBDetails.startDate,
+        endDate: this.apexBDetails.endDate,
+        facultyId: this.apexBDetails.facultyId,
+        siteId: this.apexBDetails.siteId
       };
       
       const response = await this.adminApi.updateApexBDetails(payload);
