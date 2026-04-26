@@ -1210,9 +1210,8 @@
             <div class="col-md-3">
               <select class="form-select form-select-sm" [(ngModel)]="internshipsFilter" (ngModelChange)="internshipsPage=1" name="internshipsFilter">
                 <option value="all">All Status</option>
-                <option value="pending">Pending</option>
-                <option value="ongoing">Ongoing</option>
-                <option value="completed">Completed</option>
+                <option value="approved">Approved</option>
+                <option value="pending marks">Pending marks</option>
               </select>
             </div>
             <div class="col-md-3">
@@ -1259,12 +1258,7 @@
                         @if (hasOfficeEvaluation(internship)) {
                           <span class="badge text-bg-success">Approved</span>
                         } @else {
-                          <span class="badge"
-                            [class.text-bg-success]="(internship.approvalStatus || '').toLowerCase() === 'approved' || (internship.approvalStatus || '').toLowerCase() === 'verified'"
-                            [class.text-bg-warning]="(internship.approvalStatus || '').toLowerCase() === 'pending'"
-                            [class.text-bg-secondary]="!(internship.approvalStatus || '')">
-                            {{ (internship.approvalStatus || 'Pending') | titlecase }}
-                          </span>
+                          <span class="badge text-bg-warning text-dark">Pending marks</span>
                         }
                       </td>
                       <td style="color: #333;">

@@ -2406,8 +2406,12 @@ export class Admin {
       
       let matchStatus = true;
       if (this.internshipsFilter !== 'all') {
-        const status = (i.status || 'pending').toLowerCase();
-        matchStatus = status === this.internshipsFilter;
+        const hasMarks = this.hasOfficeEvaluation(i);
+        if (this.internshipsFilter === 'approved') {
+          matchStatus = hasMarks;
+        } else if (this.internshipsFilter === 'pending marks') {
+          matchStatus = !hasMarks;
+        }
       }
       return matchSearch && matchStatus;
     });
@@ -2510,17 +2514,10 @@ export class Admin {
     }
     
     // Check if we already know they have an evaluation
-    const hasEval = this.hasOfficeEvaluation(student);
-    if (!hasEval) {
-      // Fast path: No evaluation exists, skip loading history!
-      this.officeEvalResult = null;
-      this.loadingOfficeEval = false;
-    } else {
-      // Slow path: They have an evaluation, load its full details
-      this.loadOfficeEvaluation(internshipId).catch(err => {
-        console.error('Error loading evaluation data:', err);
-      });
-    }
+    // To ensure strict database validation as requested, we ALWAYS fetch from the backend
+    this.loadOfficeEvaluation(internshipId).catch(err => {
+      console.error('Error loading evaluation data:', err);
+    });
   }
 
   async loadInternshipDetails(internshipId: string) {
