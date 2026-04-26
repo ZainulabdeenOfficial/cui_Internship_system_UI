@@ -926,7 +926,7 @@
                           <td>{{ form.startDate ? (form.startDate | date:'mediumDate') : 'N/A' }}</td>
                           <td>{{ form.endDate ? (form.endDate | date:'mediumDate') : 'N/A' }}</td>
                           <td>
-                            <span class="badge" 
+                            <span class="badge text-dark" style="color: black !important;"
                               [class.bg-warning]="form.status === 'pending'"
                               [class.bg-success]="form.status === 'approved'"
                               [class.bg-danger]="form.status === 'rejected'">
@@ -1039,7 +1039,7 @@
                           <td>{{ form.contactNo || 'N/A' }}</td>
                           <td>{{ form.preferredField || 'N/A' }}</td>
                           <td>
-                            <span class="badge" 
+                            <span class="badge text-dark" style="color: black !important;"
                               [class.bg-warning]="form.status === 'pending'"
                               [class.bg-success]="form.status === 'approved'"
                               [class.bg-danger]="form.status === 'rejected'">

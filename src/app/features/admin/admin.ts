@@ -2105,35 +2105,33 @@ export class Admin {
     const q = (value || '').trim();
     this.facultySearchQuery = value;
     
+    // Allow manual typing
+    this.apexBDetails.facultySupervisorNameDesig = value;
+    if (!value) {
+      this.apexBDetails.facultyId = '';
+    }
+    
     if (this.facultySearchDebounce) clearTimeout(this.facultySearchDebounce);
     
-    this.facultySearchDebounce = setTimeout(() => {
+    this.facultySearchDebounce = setTimeout(async () => {
       try {
         this.facultySearchLoading = true;
         this.showFacultyDropdown = true;
         
-        const allFaculty = this.facultyList() || [];
-        let results = allFaculty.map((f: any) => ({ 
-          id: f.id, 
-          name: f.name, 
-          email: f.email, 
-          department: f.department 
-        }));
+        const results = await this.adminApi.searchFaculty(q);
         
-        if (q) {
-          const lowerQ = q.toLowerCase();
-          results = results.filter(f => 
-            (f.name || '').toLowerCase().includes(lowerQ) || 
-            (f.email || '').toLowerCase().includes(lowerQ)
-          );
-        }
-        
-        this.facultySearchResults = results.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+        this.facultySearchResults = (results || []).map(f => ({
+          id: f.id,
+          name: f.name,
+          email: f.email,
+          department: f.profile?.department
+        })).sort((a, b) => (a.name || '').localeCompare(b.name || ''));
       } catch (err: any) {
         this.facultySearchResults = [];
         console.error('Faculty search error:', err);
       } finally {
         this.facultySearchLoading = false;
+        this.cdr.markForCheck();
       }
     }, 150);
   }

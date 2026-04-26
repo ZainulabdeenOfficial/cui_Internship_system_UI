@@ -640,10 +640,12 @@ export class AdminService {
     if (details.endDate) body.endDate = toISODate(details.endDate);
     if (details.facultyId) body.facultyId = details.facultyId;
     if (details.siteId) body.siteId = details.siteId;
+    if (details.facultySupervisorNameDesig) body.facultySupervisorNameDesig = details.facultySupervisorNameDesig;
+    if (details.siteSupervisorNameDesig) body.siteSupervisorNameDesig = details.siteSupervisorNameDesig;
     if (details.adminApprovalAction) body.adminApprovalAction = details.adminApprovalAction;
     
     // Verify at least one updateable field beyond studentId is provided
-    const updateFields = ['id', 'status', 'companyName', 'internshipRole', 'facultyId', 'siteId', 'durationWeeks', 'startDate', 'endDate', 'adminApprovalAction'];
+    const updateFields = ['id', 'status', 'companyName', 'internshipRole', 'facultyId', 'siteId', 'facultySupervisorNameDesig', 'siteSupervisorNameDesig', 'durationWeeks', 'startDate', 'endDate', 'adminApprovalAction'];
     const hasUpdateField = updateFields.some(field => body.hasOwnProperty(field));
     if (!hasUpdateField) {
       throw new Error('At least one field to update must be provided');
