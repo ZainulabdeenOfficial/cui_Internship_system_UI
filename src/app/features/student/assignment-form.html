@@ -54,7 +54,8 @@
     </div>
     }
 
-    <form (ngSubmit)="submit()" #f="ngForm" class="row g-3" [class.d-none]="submitted()">
+    <form (ngSubmit)="submit()" #f="ngForm" class="row g-3">
+      <fieldset [disabled]="submitted()" style="display:contents">
       <!-- Student Information -->
       <div class="col-12"><h5 class="mb-3">Student Information</h5></div>
       

@@ -68,59 +68,7 @@
 
   </ul>
 
-  <!-- Assignment and Approval Status -->
-  <div class="card mb-3" *ngIf="selectedStudent() as ss">
-    <div class="card-body">
-      <div class="row g-3">
-        <div class="col-12 col-md-6">
-          <div class="d-flex flex-wrap gap-3 align-items-center">
-            <span><strong>Overall Status:</strong> 
-              <span class="badge" 
-                [class.text-bg-success]="isFullyApproved()" 
-                [class.text-bg-warning]="!isFullyApproved() && (apexBStatus?.studentVerified || apexBStatus?.facultyVerified || apexBStatus?.adminApproved)"
-                [class.text-bg-secondary]="!isFullyApproved() && !apexBStatus?.studentVerified && !apexBStatus?.facultyVerified && !apexBStatus?.adminApproved">
-                {{ isFullyApproved() ? 'Internship Approved' : 'Pending Verification' }}
-              </span>
-            </span>
-          </div>
-        </div>
-        
-        <div class="col-12 col-md-6" *ngIf="apexBStatus">
-          <div class="d-flex flex-wrap gap-2">
-            <span class="badge" [class.text-bg-success]="apexBStatus.studentVerified" [class.text-bg-secondary]="!apexBStatus.studentVerified">
-              <i class="bi" [class.bi-check-circle-fill]="apexBStatus.studentVerified" [class.bi-clock]="!apexBStatus.studentVerified"></i>
-              Student
-            </span>
-            <span class="badge" [class.text-bg-success]="apexBStatus.facultyVerified" [class.text-bg-secondary]="!apexBStatus.facultyVerified">
-              <i class="bi" [class.bi-check-circle-fill]="apexBStatus.facultyVerified" [class.bi-clock]="!apexBStatus.facultyVerified"></i>
-              Faculty
-            </span>
-            <span class="badge" [class.text-bg-success]="apexBStatus.adminApproved" [class.text-bg-secondary]="!apexBStatus.adminApproved">
-              <i class="bi" [class.bi-check-circle-fill]="apexBStatus.adminApproved" [class.bi-clock]="!apexBStatus.adminApproved"></i>
-              Admin
-            </span>
-          </div>
-        </div>
-        
-        <div class="col-12 col-md-4" *ngIf="apexBStatus?.companyName">
-          <span><strong>Company:</strong> {{ apexBStatus?.companyName }}</span>
-        </div>
-        <div class="col-12 col-md-4" *ngIf="apexBStatus?.internshipRole">
-          <span><strong>Role:</strong> {{ apexBStatus?.internshipRole }}</span>
-        </div>
-        <div class="col-12 col-md-4" *ngIf="apexBStatus?.startDate">
-          <span><strong>Duration:</strong> {{ apexBStatus?.startDate | date:'shortDate' }} - {{ apexBStatus?.endDate | date:'shortDate' }}</span>
-        </div>
-        
-        <div class="col-12 col-md-4">
-          <span><strong>Faculty Supervisor:</strong> {{ facultyName(ss.facultyId) }}</span>
-        </div>
-        <div class="col-12 col-md-8">
-          <span><strong>Site Supervisor:</strong> {{ siteName(ss.siteId) }} <small class="text-muted">{{ siteEmail(ss.siteId) }}</small></span>
-        </div>
-      </div>
-    </div>
-  </div>
+
 
   <!-- Admin-added APEX B Details Card (only shown when fully approved) -->
   <div class="card mb-3 border-success" *ngIf="isFullyApproved() && apexBStatus">
