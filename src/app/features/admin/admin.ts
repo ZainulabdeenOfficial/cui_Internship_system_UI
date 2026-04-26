@@ -2004,19 +2004,22 @@ export class Admin {
     
     this.apexBDetails = {
       studentId: form.student?.id || form.id || '',
-      companyName: '',
-      internshipRole: '',
-      facultySupervisorNameDesig: '',
-      siteSupervisorNameDesig: '',
-      facultyId: '',
-      siteId: '',
-      durationWeeks: 0,
-      startDate: '',
-      endDate: ''
+      companyName: form.companyName || '',
+      internshipRole: form.internshipRole || '',
+      facultySupervisorNameDesig: form.facultySupervisor?.name || form.facultySupervisorNameDesig || '',
+      siteSupervisorNameDesig: form.siteSupervisor?.name || form.siteSupervisorNameDesig || '',
+      facultyId: form.facultySupervisor?.id || form.facultyId || '',
+      siteId: form.siteSupervisor?.id || form.siteId || '',
+      durationWeeks: form.durationWeeks || form.numberOfInternship || 0,
+      startDate: form.startDate ? form.startDate.split('T')[0] : '',
+      endDate: form.endDate ? form.endDate.split('T')[0] : ''
     };
-    this.companySearchQuery = '';
-    this.facultySearchQuery = '';
-    this.siteSearchQuery = '';
+    
+    // Pre-fill search queries so the inputs show the current values
+    this.companySearchQuery = this.apexBDetails.companyName;
+    this.facultySearchQuery = this.apexBDetails.facultySupervisorNameDesig;
+    this.siteSearchQuery = this.apexBDetails.siteSupervisorNameDesig;
+    
     this.companySearchResults = [];
     this.facultySearchResults = [];
     this.siteSearchResults = [];
