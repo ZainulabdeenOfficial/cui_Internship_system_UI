@@ -2592,7 +2592,7 @@ export class Admin {
         studentFinalResult: null,  // Will be populated by loadStudentFinalResults
         loadingFinalResult: false,
         internshipRole: item.internshipRole || ''
-      })) : [];
+      })).filter(item => item.approvalStatus === 'approved' || item.approvalStatus === 'verified') : [];
       
       console.log('✅ Internships list loaded:', this.internships.length, 'internships');
       
