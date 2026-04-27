@@ -147,10 +147,12 @@ export class Admin {
       this.reviewCompanyFilter.search = '';
       this.loadReviewCompany().then(() => this.dataCache.mark(cacheKey));
     } else if (tab === 'complaints') {
-      this.complaintsPagination.page = 1;
-      this.complaintsFilter.status = '';
-      this.complaintsFilter.search = '';
-      setTimeout(() => this.loadComplaints().then(() => this.dataCache.mark(cacheKey)), 0);
+      if (!this.dataCache.isFresh(cacheKey)) {
+        this.complaintsPagination.page = 1;
+        this.complaintsFilter.status = '';
+        this.complaintsFilter.search = '';
+        setTimeout(() => this.loadComplaints().then(() => this.dataCache.mark(cacheKey)), 0);
+      }
     } else if (tab === 'formsRequest') {
       this.currentFormsSubTab = 'apexA';
       this.loadApexAForms().then(() => this.dataCache.mark(cacheKey));
@@ -1183,22 +1185,13 @@ export class Admin {
     if (s) return `${s.name} (${s.email})`;
     return id;
   }
-  resolve(id: string) {
-    const resp = this.responses[id];
-    if (!resp) return;
-    this.resolveComplaintAPI(id, resp);
-  }
-
-  async resolveComplaintAPI(id: string, resolutionNotes: string) {
+  async updateAdminComplaintStatus(id: string, status: 'OPEN'|'IN_REVIEW'|'RESOLVED'|'DISMISSED', notes: string = '') {
     try {
-      const result = await this.adminApi.updateAdminComplaint(id, { status: 'RESOLVED', resolutionNotes });
-      this.toast.success('Complaint resolved successfully');
-      delete this.responses[id];
-      
-      // Refresh complaints list
+      await this.adminApi.updateAdminComplaint(id, { status, resolutionNotes: notes });
+      this.toast.success(`Complaint marked as ${status}`);
       await this.loadComplaints();
     } catch (error: any) {
-      const msg = error?.error?.message || error?.message || 'Failed to resolve complaint';
+      const msg = error?.error?.message || error?.message || 'Failed to update complaint';
       this.toast.danger(msg);
     }
   }
