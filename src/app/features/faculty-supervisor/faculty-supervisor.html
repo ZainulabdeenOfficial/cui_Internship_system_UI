@@ -27,6 +27,12 @@
         Finalize Results
       </button>
     </li>
+    <li class="tab-item">
+      <button type="button" class="tab-btn" [class.active]="currentTab==='complaints'" (click)="selectTab('complaints')">
+        <i class="bi bi-exclamation-triangle tab-icon"></i>
+        Complaints
+      </button>
+    </li>
     <li class="tab-item tab-separator-before">
       <button type="button" class="tab-btn tab-profile" [class.active]="currentTab==='profile'" (click)="selectTab('profile')">
         <i class="bi bi-person-circle tab-icon"></i>
@@ -1688,3 +1694,213 @@
 </div>
 }
 
+@if (currentTab === 'complaints') {
+<div class="card mt-4 shadow-sm border-0">
+  <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+    <h5 class="mb-0">
+      <i class="bi bi-exclamation-triangle text-warning me-2"></i>
+      Complaints
+    </h5>
+    <button class="btn btn-sm btn-outline-secondary" (click)="loadComplaints()" [disabled]="complaintsLoading">
+      <i class="bi bi-arrow-clockwise"></i> Refresh
+    </button>
+  </div>
+  <div class="card-body">
+    <div class="row g-3 mb-4">
+      <div class="col-md-4">
+        <label class="form-label">Filter by Status</label>
+        <select class="form-select" [(ngModel)]="complaintsFilter.status" (change)="changeComplaintStatus(complaintsFilter.status)">
+          <option value="">All Statuses</option>
+          <option value="OPEN">Open</option>
+          <option value="IN_REVIEW">In Review</option>
+          <option value="RESOLVED">Resolved</option>
+          <option value="DISMISSED">Dismissed</option>
+        </select>
+      </div>
+      <div class="col-md-8">
+        <label class="form-label">Search</label>
+        <div class="input-group">
+          <input type="text" class="form-control" [(ngModel)]="complaintsFilter.search" (keyup.enter)="changeComplaintPage(1)" placeholder="Search subject, body, or student...">
+          <button class="btn btn-outline-secondary" type="button" (click)="changeComplaintPage(1)">
+            <i class="bi bi-search"></i> Search
+          </button>
+        </div>
+      </div>
+    </div>
+    
+    <div class="row g-3 mb-4 text-center">
+      <div class="col-3">
+        <div class="p-2 border rounded bg-light">
+          <div class="text-muted small fw-bold">OPEN</div>
+          <div class="fs-4">{{ complaintsStats.OPEN }}</div>
+        </div>
+      </div>
+      <div class="col-3">
+        <div class="p-2 border rounded bg-light">
+          <div class="text-muted small fw-bold">IN REVIEW</div>
+          <div class="fs-4">{{ complaintsStats.IN_REVIEW }}</div>
+        </div>
+      </div>
+      <div class="col-3">
+        <div class="p-2 border rounded bg-light">
+          <div class="text-muted small fw-bold">RESOLVED</div>
+          <div class="fs-4">{{ complaintsStats.RESOLVED }}</div>
+        </div>
+      </div>
+      <div class="col-3">
+        <div class="p-2 border rounded bg-light">
+          <div class="text-muted small fw-bold">DISMISSED</div>
+          <div class="fs-4">{{ complaintsStats.DISMISSED }}</div>
+        </div>
+      </div>
+    </div>
+
+    @if (complaintsLoading) {
+      <div class="text-center py-5">
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden">Loading...</span>
+        </div>
+      </div>
+    } @else if (complaintsError) {
+      <div class="alert alert-danger">{{ complaintsError }}</div>
+    } @else if (complaintsList.length === 0) {
+      <div class="text-center text-muted py-5">
+        <i class="bi bi-inbox fs-1 d-block mb-3"></i>
+        No complaints found matching the criteria.
+      </div>
+    } @else {
+      <div class="table-responsive">
+        <table class="table table-hover align-middle">
+          <thead class="table-light">
+            <tr>
+              <th>Date</th>
+              <th>Student</th>
+              <th>Subject</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (c of complaintsList; track c.id) {
+            <tr>
+              <td>
+                {{ c.createdAt | date:'shortDate' }}<br>
+                <small class="text-muted">{{ c.createdAt | date:'shortTime' }}</small>
+              </td>
+              <td>
+                <div class="fw-medium">{{ c.submittedBy?.name || 'Unknown' }}</div>
+                <small class="text-muted">{{ c.submittedBy?.email }}</small>
+              </td>
+              <td>
+                <div class="fw-medium">{{ c.subject }}</div>
+                <span class="badge bg-secondary">{{ c.category }}</span>
+              </td>
+              <td>
+                <span class="badge" 
+                  [class.bg-danger]="c.status === 'OPEN'"
+                  [class.bg-warning]="c.status === 'IN_REVIEW'"
+                  [class.bg-success]="c.status === 'RESOLVED'"
+                  [class.bg-secondary]="c.status === 'DISMISSED'">
+                  {{ c.status }}
+                </span>
+              </td>
+              <td>
+                <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" [attr.data-bs-target]="'#complaintModal' + c.id">
+                  View Details
+                </button>
+                
+                <!-- Complaint Modal -->
+                <div class="modal fade" [id]="'complaintModal' + c.id" tabindex="-1" aria-hidden="true">
+                  <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                      <div class="modal-header">
+                        <h5 class="modal-title">Complaint Details</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                      </div>
+                      <div class="modal-body">
+                        <div class="row g-3">
+                          <div class="col-md-6">
+                            <strong>Submitted By:</strong><br>
+                            {{ c.submittedBy?.name }} ({{ c.submittedBy?.regNo || 'N/A' }})<br>
+                            <a href="mailto:{{ c.submittedBy?.email }}">{{ c.submittedBy?.email }}</a>
+                          </div>
+                          <div class="col-md-6">
+                            <strong>Date Submitted:</strong><br>
+                            {{ c.createdAt | date:'medium' }}
+                          </div>
+                          <div class="col-12">
+                            <strong>Subject:</strong> {{ c.subject }}
+                          </div>
+                          <div class="col-12">
+                            <strong>Description:</strong>
+                            <div class="p-3 bg-light rounded mt-2 text-break" style="white-space: pre-wrap;">{{ c.body }}</div>
+                          </div>
+                          @if (c.resolutionNotes) {
+                            <div class="col-12 mt-4">
+                              <div class="alert alert-info mb-0">
+                                <strong>Resolution Notes:</strong><br>
+                                {{ c.resolutionNotes }}
+                                <div class="small mt-2 text-muted">
+                                  Updated by {{ c.handledBy?.name || 'Admin' }} on {{ c.handledAt | date:'short' }}
+                                </div>
+                              </div>
+                            </div>
+                          }
+                        </div>
+                        
+                        <hr class="my-4">
+                        
+                        <h6 class="mb-3">Update Status</h6>
+                        <div class="row g-2 align-items-end">
+                          <div class="col-md-4">
+                            <label class="form-label">New Status</label>
+                            <select class="form-select" #newStatusInput [value]="c.status">
+                              <option value="OPEN">Open</option>
+                              <option value="IN_REVIEW">In Review</option>
+                              <option value="RESOLVED">Resolved</option>
+                              <option value="DISMISSED">Dismissed</option>
+                            </select>
+                          </div>
+                          <div class="col-md-6">
+                            <label class="form-label">Resolution Notes</label>
+                            <input type="text" class="form-control" #notesInput [value]="c.resolutionNotes || ''" placeholder="Enter notes...">
+                          </div>
+                          <div class="col-md-2">
+                            <button class="btn btn-primary w-100" data-bs-dismiss="modal" (click)="updateComplaintStatus(c.id, $any(newStatusInput.value), notesInput.value)">
+                              Save
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </td>
+            </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      
+      <!-- Pagination -->
+      @if (complaintsPagination.pages > 1) {
+        <div class="d-flex justify-content-between align-items-center mt-3">
+          <span class="text-muted small">
+            Showing page {{ complaintsPagination.page }} of {{ complaintsPagination.pages }} ({{ complaintsPagination.total }} total)
+          </span>
+          <nav>
+            <ul class="pagination pagination-sm mb-0">
+              <li class="page-item" [class.disabled]="complaintsPagination.page === 1">
+                <button class="page-link" (click)="changeComplaintPage(complaintsPagination.page - 1)">Previous</button>
+              </li>
+              <li class="page-item" [class.disabled]="complaintsPagination.page === complaintsPagination.pages">
+                <button class="page-link" (click)="changeComplaintPage(complaintsPagination.page + 1)">Next</button>
+              </li>
+            </ul>
+          </nav>
+        </div>
+      }
+    }
+  </div>
+</div>
+}

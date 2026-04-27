@@ -24,7 +24,7 @@ export class FacultySupervisor implements OnInit {
     try {
       this.route.queryParamMap.subscribe(p => {
         const t = (p.get('tab') || '').toLowerCase();
-        const allowed = ['profile','requests','weekly-logs','marks','finalization'] as const;
+        const allowed = ['profile','requests','weekly-logs','marks','finalization','complaints'] as const;
         if ((allowed as readonly string[]).includes(t)) {
           this.currentTab = t as any;
         } else {
@@ -46,8 +46,8 @@ export class FacultySupervisor implements OnInit {
   get siteList() { return this.store.siteSupervisors; }
   get companyList() { return this.store.companies; }
   selectedId: string | null = null;
-  currentTab: 'requests'|'weekly-logs'|'profile'|'marks'|'finalization' = 'requests';
-  page = { students: 1, appexA: 1, appexB: 1, weeklyLogs: 1, marks: 1, finalization: 1 };
+  currentTab: 'requests'|'weekly-logs'|'profile'|'marks'|'finalization'|'complaints' = 'requests';
+  page = { students: 1, appexA: 1, appexB: 1, weeklyLogs: 1, marks: 1, finalization: 1, complaints: 1 };
   pageSize = 10;
   
   // Weekly Logs Filters
@@ -91,6 +91,9 @@ export class FacultySupervisor implements OnInit {
       if (!this.cache.isFresh('faculty:requests')) {
         this.loadStudentRequests();
       }
+    } else if (tab === 'complaints') {
+      this.complaintsPagination.page = 1;
+      this.loadComplaints();
     }
     // Requests are pre-loaded on init, no need to reload on tab click
   }
@@ -102,7 +105,8 @@ export class FacultySupervisor implements OnInit {
     requests: false,
     weeklyLogs: false,
     profile: false,
-    marks: false
+    marks: false,
+    complaints: false
   };
   
   // Weekly Logs
@@ -112,6 +116,66 @@ export class FacultySupervisor implements OnInit {
   selectedWeeklyLogForDetails: WeeklyLog | null = null;
   weeklyLogsPageSize = 10;
   weeklyLogsPage = 1;
+  
+  // Complaints API data
+  complaintsList: any[] = [];
+  complaintsLoading = false;
+  complaintsError: string | null = null;
+  complaintsFilter = { status: '' as ''|'OPEN'|'IN_REVIEW'|'RESOLVED'|'DISMISSED', search: '' };
+  complaintsPagination = { page: 1, limit: 10, total: 0, pages: 0 };
+  complaintsStats = { OPEN: 0, IN_REVIEW: 0, RESOLVED: 0, DISMISSED: 0 };
+  
+  async loadComplaints(page?: number) {
+    try {
+      this.complaintsLoading = true;
+      this.complaintsError = null;
+      
+      const result = await this.facultyApi.getFacultyComplaints({
+        page: page || this.complaintsPagination.page,
+        limit: this.complaintsPagination.limit,
+        status: this.complaintsFilter.status || undefined,
+        search: this.complaintsFilter.search || undefined
+      });
+      
+      this.complaintsList = result.complaints || [];
+      this.complaintsPagination = result.pagination || { page: 1, limit: 10, total: 0, pages: 0 };
+      this.complaintsStats = result.statistics || { OPEN: 0, IN_REVIEW: 0, RESOLVED: 0, DISMISSED: 0 };
+      
+    } catch (error: any) {
+      console.error('[Faculty] Error loading complaints:', error);
+      const msg = error?.error?.message || error?.message || 'Failed to load complaints';
+      this.complaintsError = msg;
+      this.toast.danger(msg);
+    } finally {
+      this.complaintsLoading = false;
+    }
+  }
+
+  async changeComplaintPage(page: number) {
+    this.complaintsPagination.page = page;
+    await this.loadComplaints(page);
+  }
+
+  async changeComplaintStatus(status: string | ''|'OPEN'|'IN_REVIEW'|'RESOLVED'|'DISMISSED') {
+    this.complaintsFilter.status = status as any;
+    this.complaintsPagination.page = 1;
+    await this.loadComplaints();
+  }
+
+  onComplaintSearchChange() {
+    this.complaintsPagination.page = 1;
+  }
+  
+  async updateComplaintStatus(id: string, status: 'OPEN'|'IN_REVIEW'|'RESOLVED'|'DISMISSED', notes: string = '') {
+    try {
+      await this.facultyApi.updateFacultyComplaint(id, { status, resolutionNotes: notes });
+      this.toast.success(`Complaint marked as ${status}`);
+      await this.loadComplaints();
+    } catch (error: any) {
+      const msg = error?.error?.message || error?.message || 'Failed to update complaint';
+      this.toast.danger(msg);
+    }
+  }
   
   myFacultyId = computed(() => this.me()?.facultyId);
   myStudents = computed(() => {

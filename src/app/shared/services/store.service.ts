@@ -103,6 +103,11 @@ export type Complaint = {
     name: string;
     email: string;
   };
+  submittedBy?: {
+    id: string;
+    name: string;
+    email: string;
+  };
 };
 
 // Requests from Faculty to Internship Office

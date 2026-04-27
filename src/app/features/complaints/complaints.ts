@@ -89,22 +89,25 @@ export class Complaints implements OnInit {
     return this.filteredComplaints();
   }
 
-  submitComplaint() {
+  async submitComplaint() {
     const uid = this.store.currentUser()?.studentId;
     if (!this.isStudent || !uid || !this.complaint.subject || !this.complaint.body) return;
     
-    this.store.submitComplaint(
-      this.complaint.subject,
-      this.complaint.body,
-      this.complaint.category,
-      this.complaint.internshipId || undefined,
-      uid
-    );
-    
-    this.complaint = { subject: '', body: '', category: 'GENERAL', internshipId: '' };
-    
-    // Reload complaints after submission
-    this.loadMyComplaints();
+    try {
+      await this.studentService.submitComplaint({
+        subject: this.complaint.subject,
+        body: this.complaint.body,
+        category: this.complaint.category,
+        internshipId: this.complaint.internshipId || ''
+      });
+      
+      this.complaint = { subject: '', body: '', category: 'GENERAL', internshipId: '' };
+      
+      // Reload complaints after submission
+      await this.loadMyComplaints();
+    } catch (e) {
+      console.error('Error submitting complaint:', e);
+    }
   }
 
   getComplaintDetails(complaintId: string) {
@@ -115,18 +118,19 @@ export class Complaints implements OnInit {
     this.loadingComplaintDetails = true;
     this.complaintDetailsError = null;
     
-    this.store.getComplaintFromAPI(complaintId).subscribe({
-      next: (response) => {
+    this.studentService.getComplaint(complaintId).then(
+      (response) => {
         this.selectedComplaintDetails = response.complaint;
         this.loadingComplaintDetails = false;
         this.cdr.markForCheck();
-      },
-      error: (error) => {
+      }
+    ).catch(
+      (error) => {
         console.error('Error fetching complaint details:', error);
         this.complaintDetailsError = error?.error?.message || 'Failed to load complaint details. Please try again.';
         this.loadingComplaintDetails = false;
         this.cdr.markForCheck();
       }
-    });
+    );
   }
 }

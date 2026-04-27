@@ -209,13 +209,29 @@ export class Student implements OnInit, OnDestroy {
   // complaints
   complaint = { subject: '', body: '', category: 'GENERAL' as 'GENERAL'|'TECHNICAL'|'SUPERVISOR'|'ORGANIZATION'|'OTHER', internshipId: '' };
   complaintLoading = false;
+  
+  private myComplaintsList: any[] = [];
+  
   myComplaints = () => {
-    if (!this.selectedId) return [] as any[];
-    return this.store.complaints().filter(c => c.submittedById === this.selectedId);
+    return this.myComplaintsList;
   };
   
+  async loadComplaints() {
+    if (!this.selectedId) return;
+    this.complaintLoading = true;
+    try {
+      const res = await this.studentApi.getMyComplaints();
+      this.myComplaintsList = res?.complaints || [];
+      this.hasLoadedComplaintsOnce = true;
+    } catch (e) {
+      console.error('[Student] Error loading complaints:', e);
+    } finally {
+      this.complaintLoading = false;
+    }
+  }
+  
   getComplaintDetails(complaintId: string) {
-    return this.store.getComplaint(complaintId);
+    return this.myComplaintsList.find(c => c.id === complaintId);
   }
   
   // Company request
@@ -253,6 +269,7 @@ export class Student implements OnInit, OnDestroy {
   private hasLoadedWeeklyLogsOnce = false;
   private hasLoadedMyCompanyRequestsOnce = false;
   private hasLoadedCompanyRequestStatusOnce = false;
+  private hasLoadedComplaintsOnce = false;
   /** Tracks the last tab that was fully initialized (data loaded). Prevents re-loading when the
    *  queryParamMap subscription fires for internal navigations on the same tab. */
   private lastInitializedTab: string | null = null;
@@ -381,6 +398,7 @@ export class Student implements OnInit, OnDestroy {
         this.hasLoadedMyCompanyRequestsOnce = false;
         this.hasLoadedWeeklyLogsOnce = false;
         this.hasLoadedCompanyRequestStatusOnce = false;
+        this.hasLoadedComplaintsOnce = false;
         this.evaluationsLoadedOnce = false;
         (async () => {
           // Try to auto-submit any locally-saved offline draft
@@ -1127,8 +1145,12 @@ export class Student implements OnInit, OnDestroy {
         this.loadInternshipReport();
       }
     } else if (tab === 'company-request') {
-      if (!this.dataCache.isFresh('student:companystatus')) {
-        this.loadCompanyRequestStatus();
+      if (!this.hasLoadedMyCompanyRequestsOnce) {
+        this.loadMyCompanyRequests();
+      }
+    } else if (tab === 'complaints') {
+      if (!this.hasLoadedComplaintsOnce) {
+        this.loadComplaints();
       }
     } else if (tab === 'evaluations') {
       if (!this.dataCache.isFresh('student:evaluations') && !this.loadingEvaluations) {
@@ -1439,18 +1461,27 @@ export class Student implements OnInit, OnDestroy {
   this.toast.success('Design proposal submitted');
     this.proposal = { title: '', content: '' };
   }
-  submitComplaint() {
+
+  async submitComplaint() {
     if (!this.selectedId || !this.complaint.subject || !this.complaint.body) return;
     if (!this.ensureMine()) return;
-    this.store.submitComplaint(
-      this.complaint.subject,
-      this.complaint.body,
-      this.complaint.category,
-      this.complaint.internshipId || undefined,
-      this.selectedId
-    );
-    this.toast.success('Complaint submitted successfully');
-    this.complaint = { subject: '', body: '', category: 'GENERAL', internshipId: '' };
+    
+    this.complaintLoading = true;
+    try {
+      await this.studentApi.submitComplaint({
+        subject: this.complaint.subject,
+        body: this.complaint.body,
+        category: this.complaint.category,
+        internshipId: this.complaint.internshipId || ''
+      });
+      this.toast.success('Complaint submitted successfully');
+      this.complaint = { subject: '', body: '', category: 'GENERAL', internshipId: '' };
+      await this.loadComplaints();
+    } catch (err: any) {
+      this.toast.danger(err?.error?.message || err?.message || 'Failed to submit complaint');
+    } finally {
+      this.complaintLoading = false;
+    }
   }
   
   async submitCompanyRequest() {
