@@ -117,7 +117,10 @@ export class Student implements OnInit, OnDestroy {
    *   STARTED     → show: weeklylogs, evaluations, request-company, complaints
    */
   internshipStarted(): boolean {
-    return this.isFullyApproved() && this.apexCSubmitted;
+    // Internship is considered started when APEX B is fully approved.
+    // Relying on apexCSubmitted causes UI bugs across different logins
+    // since the GET endpoint was removed from the backend.
+    return this.isFullyApproved();
   }
 
   // Alias kept for any legacy template references
