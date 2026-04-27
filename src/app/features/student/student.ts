@@ -257,15 +257,21 @@ export class Student implements OnInit, OnDestroy {
    *  queryParamMap subscription fires for internal navigations on the same tab. */
   private lastInitializedTab: string | null = null;
   
+  isInitializingStatus = true;
+  private pendingQueryParams: any = null;
+
   constructor(private store: StoreService, private toast: ToastService, private route: ActivatedRoute, private router: Router, private studentApi: StudentService, private adminApi: AdminService, private cdr: ChangeDetectorRef, private dataCache: DataCacheService) {
+    this.isInitializingStatus = !this.store.studentInternshipStarted();
     this.lockSelection = effect(() => {
       const mine = this.myStudentId();
       if (mine && this.selectedId !== mine) this.selectedId = mine;
       
-      // NOTE: APEX A/B data is loaded via selectTab('appex'), triggered by
-      // the queryParamMap subscription below. We do NOT auto-load here because
-      // new students (with no submissions) would get 404 errors on every page load.
       if (this.selectedId) {
+        // Load initial status BEFORE making routing decisions to prevent UI flickering on login
+        if (this.isInitializingStatus && !this.hasLoadedApexBStatusOnce) {
+          this.initStatusBeforeRouting();
+        }
+
         // Start polling only once per session — and only if student has submitted APEX A
         // (new students with no submissions don't need polling, it just generates 404 noise)
         if (!this.dataCache.isFresh('student:polling') && this.appexASubmitted) {
@@ -274,74 +280,96 @@ export class Student implements OnInit, OnDestroy {
         }
       }
     });
-    // Initialize tab from query params
+
+    // Initialize tab from query params, but delay processing until initial status is loaded
     try {
       this.route.queryParamMap.subscribe(p => {
-          const tabParam = p.get('tab');
-          const allowed = ['appex','assignment','form3','weeklylogs','evaluations','company-request','complaints'] as const;
-          if (tabParam) {
-            // record raw value for diagnostics
-            this.lastQueryTab = tabParam;
-            // Normalize common aliases: remove non-alphanum, collapse dashes/underscores/spaces
-            const norm = (tabParam || '').toString().toLowerCase().replace(/[^a-z0-9]/g, '');
-            // map some legacy/alternate names to canonical tabs
-            const aliasMap: Record<string, string> = {
-              'forms': 'appex',
-              'form3': 'form3',
-              'form03': 'form3',
-              'formthree': 'form3',
-              'assignment': 'assignment',
-              'assignments': 'assignment',
-              'complaints': 'complaints',
-              'appex': 'appex',
-              'approval': 'appex',
-              // Hyphen stripped by normalizer — must map explicitly
-              'companyrequest': 'company-request',
-              'companyreq': 'company-request',
-              'request': 'company-request',
-              'weeklylogs': 'weeklylogs',
-              'weeklylog': 'weeklylogs',
-              'evaluations': 'evaluations',
-              'evaluation': 'evaluations',
-            };
-            const mapped = aliasMap[norm] ?? norm;
-            if ((allowed as readonly string[]).includes(mapped)) {
-              this.currentTab = mapped as any;
-              // Reflect canonical tab in URL so aliases normalize in address bar.
-              try {
-                if (tabParam !== mapped) {
-                  this.router.navigate([], { relativeTo: this.route, queryParams: { tab: mapped }, queryParamsHandling: 'merge' });
-                }
-              } catch {}
-            } else {
-              this.currentTab = 'appex';
-            }
-          } else {
-            // No explicit tab: default to weekly logs if internship started, otherwise AppEx-A
-            this.currentTab = this.internshipStarted() ? 'weeklylogs' : 'appex';
-          }
-
-        // Tab visibility guards based on internship-started status
-        const started = this.internshipStarted();
-        // Pre-internship tabs (forms) — hidden once internship has started
-        // Post-internship tabs — only visible after internship started
-        const postStartTabs = new Set(['weeklylogs', 'evaluations']);
-
-        if (!started && postStartTabs.has(this.currentTab)) {
-          // Internship not yet started — post-start tabs not accessible
-          this.currentTab = 'appex';
-          try { this.router.navigate([], { relativeTo: this.route, queryParams: { tab: 'appex' }, queryParamsHandling: 'merge' }); } catch {}
-        }
-
-        // Only trigger selectTab (and its data-loading) when the tab has actually changed.
-        // Skipping it on same-tab re-navigation prevents the loader from restarting every time
-        // the queryParamMap subscription fires (e.g. after an internal router.navigate call).
-        if (this.currentTab !== this.lastInitializedTab) {
-          this.lastInitializedTab = this.currentTab;
-          this.selectTab(this.currentTab);
+        if (this.isInitializingStatus) {
+          this.pendingQueryParams = p;
+        } else {
+          this.processQueryParams(p);
         }
       });
     } catch {}
+  }
+
+  private async initStatusBeforeRouting() {
+    try {
+      // Use silent Error so we don't spam 404s for new students
+      await this.loadApexBStatus(true); // background = true prevents global loader UI flash inside the component
+    } finally {
+      this.isInitializingStatus = false;
+      if (this.pendingQueryParams) {
+        this.processQueryParams(this.pendingQueryParams);
+        this.pendingQueryParams = null;
+      }
+    }
+  }
+
+  private processQueryParams(p: any) {
+    const tabParam = p.get('tab');
+    const allowed = ['appex','assignment','form3','weeklylogs','evaluations','company-request','complaints'] as const;
+    if (tabParam) {
+      // record raw value for diagnostics
+      this.lastQueryTab = tabParam;
+      // Normalize common aliases: remove non-alphanum, collapse dashes/underscores/spaces
+      const norm = (tabParam || '').toString().toLowerCase().replace(/[^a-z0-9]/g, '');
+      // map some legacy/alternate names to canonical tabs
+      const aliasMap: Record<string, string> = {
+        'forms': 'appex',
+        'form3': 'form3',
+        'form03': 'form3',
+        'formthree': 'form3',
+        'assignment': 'assignment',
+        'assignments': 'assignment',
+        'complaints': 'complaints',
+        'appex': 'appex',
+        'approval': 'appex',
+        // Hyphen stripped by normalizer — must map explicitly
+        'companyrequest': 'company-request',
+        'companyreq': 'company-request',
+        'request': 'company-request',
+        'weeklylogs': 'weeklylogs',
+        'weeklylog': 'weeklylogs',
+        'evaluations': 'evaluations',
+        'evaluation': 'evaluations',
+      };
+      const mapped = aliasMap[norm] ?? norm;
+      if ((allowed as readonly string[]).includes(mapped)) {
+        this.currentTab = mapped as any;
+        // Reflect canonical tab in URL so aliases normalize in address bar.
+        try {
+          if (tabParam !== mapped) {
+            this.router.navigate([], { relativeTo: this.route, queryParams: { tab: mapped }, queryParamsHandling: 'merge' });
+          }
+        } catch {}
+      } else {
+        this.currentTab = 'appex';
+      }
+    } else {
+      // No explicit tab: default to weekly logs if internship started, otherwise AppEx-A
+      this.currentTab = this.internshipStarted() ? 'weeklylogs' : 'appex';
+    }
+
+    // Tab visibility guards based on internship-started status
+    const started = this.internshipStarted();
+    // Pre-internship tabs (forms) — hidden once internship has started
+    // Post-internship tabs — only visible after internship started
+    const postStartTabs = new Set(['weeklylogs', 'evaluations']);
+
+    if (!started && postStartTabs.has(this.currentTab)) {
+      // Internship not yet started — post-start tabs not accessible
+      this.currentTab = 'appex';
+      try { this.router.navigate([], { relativeTo: this.route, queryParams: { tab: 'appex' }, queryParamsHandling: 'merge' }); } catch {}
+    }
+
+    // Only trigger selectTab (and its data-loading) when the tab has actually changed.
+    // Skipping it on same-tab re-navigation prevents the loader from restarting every time
+    // the queryParamMap subscription fires (e.g. after an internal router.navigate call).
+    if (this.currentTab !== this.lastInitializedTab) {
+      this.lastInitializedTab = this.currentTab;
+      this.selectTab(this.currentTab);
+    }
 
     // On student identity resolved: auto-submit any offline AppEx-A draft and load company requests
     try {

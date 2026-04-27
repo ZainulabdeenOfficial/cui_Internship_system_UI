@@ -1,4 +1,13 @@
-<div class="container py-4">
+<div *ngIf="isInitializingStatus" class="d-flex justify-content-center align-items-center" style="min-height: 50vh;">
+  <div class="text-center">
+    <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;">
+      <span class="visually-hidden">Loading dashboard...</span>
+    </div>
+    <h5 class="text-muted">Loading your internship portal...</h5>
+  </div>
+</div>
+
+<div *ngIf="!isInitializingStatus" class="container py-4">
   <h2 class="mb-3">Student</h2>
 
   <div class="alert alert-info d-flex justify-content-between align-items-center" role="alert">
@@ -1515,8 +1524,6 @@
   </div>
 
 </div>
-
-
 
 <!-- hidden usage to ensure standalone imports are recognized -->
 <ng-template #__ensureImports>
