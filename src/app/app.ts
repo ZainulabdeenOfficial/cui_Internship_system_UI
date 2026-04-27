@@ -7,11 +7,23 @@ import { ToastsContainer } from './shared/toast/toasts';
 import { LoadingSpinnerComponent } from './core/components/loading-spinner/loading-spinner.component';
 import { LoadingService } from './core/services/loading.service';
 import { filter } from 'rxjs/operators';
+import { ChatbotComponent } from './shared/components/chatbot/chatbot';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, Header, Footer, ToastsContainer, LoadingSpinnerComponent],
-  templateUrl: './app.html',
+  imports: [RouterOutlet, Header, Footer, ChatbotComponent, ToastsContainer, LoadingSpinnerComponent],
+  template: `
+<div class="app-shell d-flex flex-column min-vh-100">
+	<app-loading-spinner></app-loading-spinner>
+	<app-toasts></app-toasts>
+	<app-header></app-header>
+	<main class="grow">
+		<router-outlet></router-outlet>
+	</main>
+	<app-footer></app-footer>
+	<cui-chatbot></cui-chatbot>
+</div>
+  `,
   styleUrl: './app.css'
 })
 export class App {

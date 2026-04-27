@@ -1,0 +1,215 @@
+/* Floating Action Button */
+.chatbot-fab {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #4f46e5, #3b82f6);
+  color: white;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 1050;
+  transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.3s ease;
+}
+
+.chatbot-fab:hover {
+  transform: scale(1.1);
+  box-shadow: 0 10px 25px rgba(79, 70, 229, 0.4) !important;
+}
+
+.chatbot-fab:active {
+  transform: scale(0.95);
+}
+
+/* Chat Window */
+.chatbot-window {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 360px;
+  height: 520px;
+  max-height: calc(100vh - 48px);
+  background-color: #ffffff;
+  border-radius: 20px;
+  z-index: 1050;
+  overflow: hidden;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(20px) scale(0.95);
+  transform-origin: bottom right;
+  transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15) !important;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.chatbot-window.open {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0) scale(1);
+}
+
+/* Header */
+.chatbot-header {
+  background: linear-gradient(135deg, #4f46e5, #3b82f6);
+  padding: 16px 20px;
+  color: white;
+}
+
+.bot-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(4px);
+}
+
+/* Body */
+.chatbot-body {
+  overflow-y: auto;
+  background-color: #f8fafc;
+  scroll-behavior: smooth;
+}
+
+.chatbot-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.chatbot-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.chatbot-body::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+}
+
+.bot-message-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: #e0e7ff;
+  color: #4f46e5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: auto;
+}
+
+/* Bubbles */
+.message-bubble {
+  max-width: 80%;
+  padding: 12px 16px;
+  border-radius: 16px;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  word-wrap: break-word;
+  animation: slideIn 0.3s ease-out;
+}
+
+.user-bubble {
+  background: linear-gradient(135deg, #4f46e5, #3b82f6);
+  border-bottom-right-radius: 4px;
+}
+
+.bot-bubble {
+  background-color: #ffffff;
+  color: #334155;
+  border: 1px solid #e2e8f0;
+  border-bottom-left-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+}
+
+/* Input Area */
+.chatbot-input-area {
+  background-color: #ffffff;
+}
+
+.form-control.rounded-pill-start {
+  border-top-left-radius: 20px;
+  border-bottom-left-radius: 20px;
+  padding-left: 20px;
+  background-color: #f1f5f9;
+  border-color: transparent;
+}
+
+.form-control:focus {
+  background-color: #ffffff;
+  border-color: #cbd5e1;
+  box-shadow: none;
+}
+
+.btn-send {
+  background-color: #f1f5f9;
+  color: #4f46e5;
+  border-top-right-radius: 20px;
+  border-bottom-right-radius: 20px;
+  border-color: transparent;
+  padding-right: 20px;
+  transition: all 0.2s;
+}
+
+.form-control:focus + .btn-send {
+  background-color: #ffffff;
+  border-color: #cbd5e1;
+}
+
+.btn-send:hover:not(:disabled) {
+  color: #3b82f6;
+  background-color: #e2e8f0;
+}
+
+/* Typing Indicator */
+.typing-indicator {
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  border-bottom-left-radius: 4px;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.typing-indicator span {
+  width: 6px;
+  height: 6px;
+  background-color: #94a3b8;
+  border-radius: 50%;
+  animation: typing 1.4s infinite ease-in-out both;
+}
+
+.typing-indicator span:nth-child(1) {
+  animation-delay: -0.32s;
+}
+
+.typing-indicator span:nth-child(2) {
+  animation-delay: -0.16s;
+}
+
+@keyframes typing {
+  0%, 80%, 100% { transform: scale(0); }
+  40% { transform: scale(1); }
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 480px) {
+  .chatbot-window {
+    width: calc(100vw - 32px);
+    right: 16px;
+    bottom: 16px;
+    height: 600px;
+    max-height: calc(100vh - 32px);
+  }
+}
