@@ -1841,33 +1841,59 @@
                         [(ngModel)]="companySearchQuery" 
                         (ngModelChange)="onCompanySearchInput($event)"
                         (focus)="onCompanyFocus()"
+                        (blur)="onCompanyBlur()"
                         name="companySearch" 
-                        placeholder="Type to search or select from list..."
+                        placeholder="Type to search or enter a new company name..."
                         autocomplete="off"
                         required />
-                      <small class="form-text text-muted">Select a company or type a new one</small>
-                      
+                      <small class="form-text text-muted">
+                        Select from list <strong>or type any company name</strong> — typed name will be used as-is
+                      </small>
+
                       @if (companySearchLoading) {
-                        <div class="position-absolute top-50 end-0 translate-middle-y me-2">
+                        <div class="position-absolute" style="top: 38px; right: 10px;">
                           <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
                         </div>
                       }
-                      
+
+                      <!-- Results dropdown -->
                       @if (showCompanyDropdown && companySearchResults.length > 0) {
-                        <div class="dropdown-menu show w-100 mt-1" style="max-height: 250px; overflow-y: auto;">
+                        <div class="dropdown-menu show w-100 mt-1" style="max-height: 280px; overflow-y: auto; z-index: 1055;">
                           @for (company of companySearchResults; track company.id) {
-                            <button type="button" class="dropdown-item" (click)="selectCompany(company)">
+                            <button type="button" class="dropdown-item py-2" (click)="selectCompany(company)">
                               <div><strong>{{ company.name }}</strong></div>
                               @if (company.address) {
                                 <div class="small text-muted">{{ company.address }}</div>
                               }
                             </button>
                           }
+                          <!-- Always show "use as entered" option when user has typed something -->
+                          @if (companySearchQuery && companySearchQuery.trim()) {
+                            <div class="dropdown-divider"></div>
+                            <button type="button" class="dropdown-item text-primary py-2" (click)="useCustomCompanyName()">
+                              <i class="bi bi-pencil-square me-2"></i>
+                              Use as entered: <strong>"{{ companySearchQuery.trim() }}"</strong>
+                            </button>
+                          }
                         </div>
                       }
-                      @if (showCompanyDropdown && !companySearchLoading && companySearchResults.length === 0 && companySearchQuery) {
-                        <div class="dropdown-menu show w-100 mt-1">
-                          <div class="dropdown-item text-muted">No matching companies</div>
+
+                      <!-- No results — offer to use typed value -->
+                      @if (showCompanyDropdown && !companySearchLoading && companySearchResults.length === 0 && companySearchQuery && companySearchQuery.trim()) {
+                        <div class="dropdown-menu show w-100 mt-1" style="z-index: 1055;">
+                          <div class="dropdown-item text-muted small">No matching companies in directory</div>
+                          <div class="dropdown-divider"></div>
+                          <button type="button" class="dropdown-item text-primary" (click)="useCustomCompanyName()">
+                            <i class="bi bi-plus-circle me-2"></i>
+                            Use <strong>"{{ companySearchQuery.trim() }}"</strong> as company name
+                          </button>
+                        </div>
+                      }
+
+                      <!-- Show current selected value confirmation -->
+                      @if (apexBDetails.companyName && !showCompanyDropdown) {
+                        <div class="form-text text-success mt-1">
+                          <i class="bi bi-check-circle me-1"></i>Company set to: <strong>{{ apexBDetails.companyName }}</strong>
                         </div>
                       }
                     </div>

@@ -2208,31 +2208,80 @@ export class Admin {
 
   // Company Search for APEX B
   onCompanySearchInput(value: string) {
-    const q = (value || '').trim().toLowerCase();
-    this.companySearchQuery = value;
-    this.apexBDetails.companyName = value; // keep form model in sync
-    
+    const raw = value || '';
+    const q = raw.trim().toLowerCase();
+    this.companySearchQuery = raw;
+    this.apexBDetails.companyName = raw.trim(); // keep form model in sync (allows free-text entry)
+
     if (this.apexBCompanySearchDebounce) clearTimeout(this.apexBCompanySearchDebounce);
-    
-    this.apexBCompanySearchDebounce = setTimeout(() => {
-      this.companySearchLoading = true;
+
+    this.apexBCompanySearchDebounce = setTimeout(async () => {
       this.showCompanyDropdown = true;
-      
-      let results = this.companiesCache || [];
-      if (q) {
-        results = results.filter(c => 
-          (c.name || '').toLowerCase().includes(q) || 
-          (c.address || '').toLowerCase().includes(q)
-        );
+
+      // 1) First serve from local cache for instant results
+      const cacheResults = (this.companiesCache || []).filter(c =>
+        !q ||
+        (c.name || '').toLowerCase().includes(q) ||
+        (c.address || '').toLowerCase().includes(q)
+      );
+      this.companySearchResults = [...cacheResults]
+        .sort((a, b) => {
+          if (!q) return (a.name || '').localeCompare(b.name || '');
+          const an = (a.name || '').toLowerCase();
+          const bn = (b.name || '').toLowerCase();
+          return (an.startsWith(q) ? 0 : 1) - (bn.startsWith(q) ? 0 : 1) || an.localeCompare(bn);
+        })
+        .slice(0, 20);
+
+      // 2) If cache is empty or query has 2+ chars, also fetch from API
+      if (this.companiesCache.length === 0 || q.length >= 2) {
+        this.companySearchLoading = true;
+        try {
+          const apiResults = await this.adminApi.getDropdownCompanies(q || '');
+          const lower = q.toLowerCase();
+          const filtered = (apiResults || []).filter(c =>
+            !q ||
+            (c.name || '').toLowerCase().includes(lower) ||
+            ((c as any).address || '').toLowerCase().includes(lower)
+          );
+          this.companySearchResults = filtered
+            .map(c => ({ id: c.id, name: c.name, address: (c as any).address }))
+            .sort((a, b) => {
+              const an = (a.name || '').toLowerCase();
+              const bn = (b.name || '').toLowerCase();
+              return (an.startsWith(lower) ? 0 : 1) - (bn.startsWith(lower) ? 0 : 1) || an.localeCompare(bn);
+            })
+            .slice(0, 20);
+        } catch {
+          // keep cache results shown above
+        } finally {
+          this.companySearchLoading = false;
+        }
       }
-      
-      this.companySearchResults = [...results].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
-      this.companySearchLoading = false;
-    }, 150);
+    }, 200);
   }
 
   onCompanyFocus() {
+    // Show all available companies immediately on focus
+    const q = (this.companySearchQuery || '').trim().toLowerCase();
+    this.showCompanyDropdown = true;
+    if (this.companiesCache.length > 0) {
+      const filtered = this.companiesCache.filter(c =>
+        !q || (c.name || '').toLowerCase().includes(q)
+      );
+      this.companySearchResults = filtered
+        .sort((a, b) => (a.name || '').localeCompare(b.name || ''))
+        .slice(0, 20);
+    }
+    // Also trigger API fetch to ensure fresh data
     this.onCompanySearchInput(this.companySearchQuery);
+  }
+
+  onCompanyBlur() {
+    // Delay so click on dropdown item registers first
+    setTimeout(() => {
+      this.showCompanyDropdown = false;
+    }, 300);
   }
 
   selectCompany(company: { id: string; name: string }) {
@@ -2240,6 +2289,16 @@ export class Admin {
     this.companySearchQuery = company.name;
     this.showCompanyDropdown = false;
     this.companySearchResults = [];
+  }
+
+  /** Admin typed a name not in the list — use exactly what was typed as companyName */
+  useCustomCompanyName() {
+    const typed = (this.companySearchQuery || '').trim();
+    if (!typed) return;
+    this.apexBDetails.companyName = typed;
+    this.showCompanyDropdown = false;
+    this.companySearchResults = [];
+    this.toast.info(`Company set to: "${typed}"`);
   }
 
   async submitApexBDetails() {
