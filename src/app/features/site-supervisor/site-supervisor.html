@@ -180,8 +180,85 @@
   </div>
   }
   @if (currentTab==='details') {
+
+  <!-- Students Overview Table -->
   <div class="card mb-3">
-    <div class="card-header bg-light">Student Selection & Marking</div>
+    <div class="card-header bg-light d-flex justify-content-between align-items-center">
+      <span><i class="bi bi-people me-2"></i><strong>Assigned Students</strong></span>
+      <small class="text-muted">Click "Select" to view details &amp; enter marks</small>
+    </div>
+    <div class="card-body p-0">
+      @if (loadingInternships) {
+        <div class="text-center py-4">
+          <span class="spinner-border text-primary" role="status"></span>
+          <p class="text-muted mt-2 small">Loading students...</p>
+        </div>
+      }
+      @if (!loadingInternships && myStudents().length === 0) {
+        <div class="alert alert-warning m-3">
+          <i class="bi bi-exclamation-triangle me-2"></i>No students assigned yet.
+        </div>
+      }
+      @if (myStudents().length > 0 && !loadingInternships) {
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th style="min-width:180px">Name</th>
+                <th style="min-width:200px">Email</th>
+                <th style="min-width:120px">Reg No</th>
+                <th style="min-width:150px">Company</th>
+                <th style="min-width:110px">Status</th>
+                <th style="min-width:110px">Start Date</th>
+                <th style="min-width:110px">End Date</th>
+                <th style="min-width:110px" class="text-center">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (s of myStudents(); track s.id) {
+              <tr [class.table-primary]="selectedId === s.id">
+                <td><strong>{{ s.name }}</strong></td>
+                <td><small class="text-muted">{{ s.email }}</small></td>
+                <td><span class="badge bg-info text-dark">{{ getStudentRegNo(s.id) || '-' }}</span></td>
+                <td><small>{{ siteInternshipsByStudentId[s.id]?.site?.company?.name || '-' }}</small></td>
+                <td>
+                  <span class="badge fw-semibold"
+                        [class.bg-warning]="siteInternshipsByStudentId[s.id]?.status === 'PENDING'"
+                        [class.bg-success]="siteInternshipsByStudentId[s.id]?.status === 'APPROVED'"
+                        [class.bg-info]="siteInternshipsByStudentId[s.id]?.status === 'IN_PROGRESS'"
+                        [class.bg-secondary]="siteInternshipsByStudentId[s.id]?.status === 'COMPLETED'"
+                        [class.bg-danger]="siteInternshipsByStudentId[s.id]?.status === 'REJECTED'">
+                    {{ siteInternshipsByStudentId[s.id]?.status || '-' }}
+                  </span>
+                </td>
+                <td><small>{{ siteInternshipsByStudentId[s.id]?.startDate | date:'shortDate' }}</small></td>
+                <td><small>{{ siteInternshipsByStudentId[s.id]?.endDate | date:'shortDate' }}</small></td>
+                <td class="text-center">
+                  <button type="button"
+                          class="btn btn-sm"
+                          [class.btn-primary]="selectedId !== s.id"
+                          [class.btn-success]="selectedId === s.id"
+                          (click)="selectedId = s.id">
+                    <i class="bi" [class.bi-person-check]="selectedId === s.id" [class.bi-eye]="selectedId !== s.id"></i>
+                    {{ selectedId === s.id ? 'Selected' : 'Select' }}
+                  </button>
+                </td>
+              </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- Marks Entry -->
+  <div class="card mb-3">
+    <div class="card-header bg-light">
+      <i class="bi bi-pencil-square me-2"></i>
+      Site Marks Entry
+      <span *ngIf="selectedStudent()" class="ms-2 text-primary fw-semibold">— {{ selectedStudent()?.name }}</span>
+    </div>
     <div class="card-body">
       <div class="row g-3">
         <div class="col-md-6">
@@ -194,9 +271,9 @@
         <div class="col-md-6">
           <label class="form-label"><strong>Site Marks (0-40)</strong></label>
           <div class="input-group">
-            <input type="number" min="0" max="40" class="form-control form-control-lg" 
-                   (ngModelChange)="setSiteMarks($event)" 
-                   [ngModel]="selectedStudent()?.marks?.site ?? ''" 
+            <input type="number" min="0" max="40" class="form-control form-control-lg"
+                   (ngModelChange)="setSiteMarks($event)"
+                   [ngModel]="selectedStudent()?.marks?.site ?? ''"
                    placeholder="Enter marks 0-40"
                    [disabled]="!selectedId" />
             <span class="input-group-text fw-bold" *ngIf="selectedStudent()?.marks?.site">
