@@ -279,6 +279,20 @@ export class Student implements OnInit, OnDestroy {
   private pendingQueryParams: any = null;
 
   constructor(private store: StoreService, private toast: ToastService, private route: ActivatedRoute, private router: Router, private studentApi: StudentService, private adminApi: AdminService, private cdr: ChangeDetectorRef, private dataCache: DataCacheService) {
+    // ── Synchronous restore ──────────────────────────────────────────────────
+    // Read studentId and internshipId from localStorage BEFORE any effect() or
+    // change detection runs, so the first rendered frame never shows Step 1
+    // ("Create Internship") for students who already created one.
+    try {
+      const mine = this.store.currentUser()?.studentId;
+      if (mine) {
+        this.selectedId = mine;
+        const cachedIId = localStorage.getItem(`student:internshipId:${mine}`);
+        if (cachedIId) this.studentInternshipId = cachedIId;
+      }
+    } catch {}
+    // ────────────────────────────────────────────────────────────────────────
+
     this.isInitializingStatus = !this.store.studentInternshipStarted();
     this.lockSelection = effect(() => {
       const mine = this.myStudentId();
