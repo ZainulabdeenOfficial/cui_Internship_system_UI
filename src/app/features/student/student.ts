@@ -336,8 +336,33 @@ export class Student implements OnInit, OnDestroy {
 
   private async initStatusBeforeRouting() {
     try {
-      // Use silent Error so we don't spam 404s for new students
-      await this.loadApexBStatus(true); // background = true prevents global loader UI flash inside the component
+      // ── Always fetch from the API on login ──────────────────────────────────
+      // Never rely solely on localStorage / DataCache to determine whether an
+      // internship exists or whether it is approved. This guarantees the correct
+      // state is shown on any device (e.g. a new device where the student never
+      // had a localStorage entry for this account).
+      //
+      // Flow:
+      //   • loadAppExAIfNeeded() → resolves studentInternshipId from the server.
+      //       - 404 / empty   → no internship yet   → Step 1 shown
+      //       - internship found but APEX A pending/rejected → skip Step 1, show APEX form
+      //       - APEX A approved → locked form shown
+      //   • loadApexBStatus()   → resolves full-approval (student + faculty + admin).
+      //       - fully approved → hide all form tabs, redirect to Weekly Logs
+      // ────────────────────────────────────────────────────────────────────────
+      if (this.selectedId) {
+        // Force-invalidate cache so the API is always called fresh on login,
+        // even on the same device that previously cached the data.
+        this.dataCache.invalidate('student:appexA:' + this.selectedId);
+      }
+
+      // Run both checks in parallel for speed.
+      // forceRefresh:true bypasses BOTH the DataCacheService in-memory cache AND
+      // the StudentService sessionStorage cache so the real API is always called.
+      await Promise.all([
+        this.loadAppExAIfNeeded(true),  // sets studentInternshipId + appexAStatus
+        this.loadApexBStatus(true),     // sets apexBStatus + internshipStarted()
+      ]);
     } finally {
       this.isInitializingStatus = false;
       if (this.pendingQueryParams) {
@@ -1250,14 +1275,19 @@ export class Student implements OnInit, OnDestroy {
    * Guards with a per-student cache key so it only fires once per TTL window.
    * Silently handles 404 (new student with no submission yet).
    */
-  async loadAppExAIfNeeded() {
+  /**
+   * @param forceRefresh  When true, bypasses BOTH the DataCacheService entry AND the
+   *                      StudentService sessionStorage cache, hitting the real API.
+   *                      Always pass true on first login so any device gets accurate state.
+   */
+  async loadAppExAIfNeeded(forceRefresh = false) {
     const sid = this.selectedId;
     if (!sid) return;
     const cacheKey = 'student:appexA:' + sid;
-    if (this.dataCache.isFresh(cacheKey)) return;
+    if (!forceRefresh && this.dataCache.isFresh(cacheKey)) return;
 
     try {
-      const res = await this.apiGetAppExA({ skipGlobalLoading: this.hasLoadedAppExAOnce, silentError: true });
+      const res = await this.apiGetAppExA({ skipGlobalLoading: this.hasLoadedAppExAOnce, silentError: true, forceRefresh });
       this.hasLoadedAppExAOnce = true;
       this.dataCache.mark(cacheKey);
 
