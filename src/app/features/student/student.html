@@ -199,6 +199,45 @@
 
   <!-- AppEx-A (API-backed) -->
   <div *ngIf="isCurrentTab('appex')">
+
+    <!-- Phase 3: Internship already started → redirect card -->
+    <div *ngIf="internshipStarted()" class="card mb-3 border-success shadow-sm">
+      <div class="card-body text-center py-5">
+        <i class="bi bi-rocket-takeoff-fill text-success" style="font-size:3rem;"></i>
+        <h4 class="mt-3 fw-bold text-success">Your Internship Has Started!</h4>
+        <p class="text-muted mb-4">All APEX forms have been approved. Submit your weekly progress logs below.</p>
+        <button class="btn btn-success btn-lg" (click)="selectTab('weeklylogs')">
+          <i class="bi bi-journal-text me-2"></i>Go to Weekly Logs
+        </button>
+      </div>
+    </div>
+
+    <!-- Phase 1 & 2: Pre-internship APEX forms -->
+    <div *ngIf="!internshipStarted()">
+
+    <!-- Workflow progress indicator -->
+    <div class="d-flex align-items-center gap-2 mb-4 flex-wrap px-1">
+      <div class="d-flex align-items-center gap-1">
+        <span class="badge rounded-pill" [class.bg-success]="studentInternshipId" [class.bg-primary]="!studentInternshipId">1</span>
+        <small class="fw-semibold" [class.text-success]="studentInternshipId" [class.text-primary]="!studentInternshipId">Create Internship</small>
+      </div>
+      <i class="bi bi-chevron-right text-muted small"></i>
+      <div class="d-flex align-items-center gap-1" [class.text-muted]="!studentInternshipId">
+        <span class="badge rounded-pill" [class.bg-success]="appexAStatus === 'approved'" [class.bg-warning]="appexASubmitted && appexAStatus === 'pending'" [class.bg-primary]="studentInternshipId && !appexASubmitted" [class.bg-light]="!studentInternshipId">2</span>
+        <small class="fw-semibold">APEX A – Approval</small>
+      </div>
+      <i class="bi bi-chevron-right text-muted small"></i>
+      <div class="d-flex align-items-center gap-1 text-muted">
+        <span class="badge rounded-pill bg-light text-secondary">3</span>
+        <small class="fw-semibold">APEX B – Assignment</small>
+      </div>
+      <i class="bi bi-chevron-right text-muted small"></i>
+      <div class="d-flex align-items-center gap-1 text-muted">
+        <span class="badge rounded-pill bg-light text-secondary">4</span>
+        <small class="fw-semibold">APEX C – Org. Overview</small>
+      </div>
+    </div>
+
     <div class="card mb-3">
     <div class="card-header">Internship Approval</div>
     <div class="card-body">
@@ -505,14 +544,15 @@
       </ng-container>
     </div>
   </div>
-</div>
+    </div><!-- end !internshipStarted() -->
+  </div><!-- end isCurrentTab('appex') -->
 
-  <div *ngIf="isCurrentTab('assignment')">
+  <div *ngIf="isCurrentTab('assignment') && !internshipStarted()">
     <app-assignment-form [selectedId]="selectedId" [companyFromParent]="selectedCompany" (apexBApproved)="onApexBApproved()"></app-assignment-form>
   </div>
 
   <!-- Form 3: Organization Overview & Scope of Work -->
-  <div *ngIf="isCurrentTab('form3')">
+  <div *ngIf="isCurrentTab('form3') && !internshipStarted()">
     <!-- Listen for APEX C submission so the tab logic can immediately recalculate internshipStarted() -->
     <app-form3-form [selectedId]="selectedId" (apexCSubmitted)="onApexCSubmitted()"></app-form3-form>
   </div>
@@ -635,7 +675,7 @@
   </div>
 
   <!-- Weekly Logs tab content -->
-  <div *ngIf="isCurrentTab('weeklylogs')">
+  <div *ngIf="isCurrentTab('weeklylogs') && internshipStarted()">
     <div class="card mb-3">
       <div class="card-header">
         <span>Weekly Logs</span>
@@ -1407,7 +1447,7 @@
   <div class="modal-backdrop fade" [class.show]="showCompanyRequestDetailModal" *ngIf="showCompanyRequestDetailModal"></div>
 
   <!-- Evaluations tab content -->
-  <div *ngIf="isCurrentTab('evaluations')">
+  <div *ngIf="isCurrentTab('evaluations') && internshipStarted()">
     <div class="card mb-3">
       <div class="card-header d-flex justify-content-between align-items-center">
         <span><i class="bi bi-award-fill me-2"></i>My Final Result</span>
