@@ -1016,25 +1016,24 @@ export class Student implements OnInit, OnDestroy {
     const type = this.createInternshipModel.type;
     const siteId = (this.createInternshipModel.siteId || '').trim() || undefined;
     const facultyId = (this.createInternshipModel.facultyId || '').trim() || undefined;
-    
+
     try {
       const res = await this.apiCreateInternship(type, siteId, facultyId);
-      
-      // Capture internship ID from response and store it for later use
-      if (res?.internship?.id || res?.internship?._id || res?.data?.id) {
-        this.studentInternshipId = res.internship?.id || res.internship?._id || res.data?.id;
-        console.log('✅ [Student] Internship created with ID:', this.studentInternshipId);
-        
-        // Mark as started locally if needed
-        await this.loadAppExAIfNeeded();
-        
-        // Reset evaluation loading flag so it will reload when evaluations tab is selected
-        this.evaluationsLoadedOnce = false;
-        
-        // If evaluations tab is already selected, load the final result immediately
-        if (this.isCurrentTab('evaluations')) {
-          this.loadFinalResult(false);
-        }
+
+      // Capture internship ID from response, fallback to a dummy truthy string if schema varies
+      const newId = res?.internship?.id || res?.internship?._id || res?.data?.id || res?.id || 'created-internship';
+      this.studentInternshipId = newId;
+      console.log('✅ [Student] Internship created with ID:', this.studentInternshipId);
+
+      // Mark as started locally if needed
+      await this.loadAppExAIfNeeded();
+
+      // Reset evaluation loading flag so it will reload when evaluations tab is selected
+      this.evaluationsLoadedOnce = false;
+
+      // If evaluations tab is already selected, load the final result immediately
+      if (this.isCurrentTab('evaluations')) {
+        this.loadFinalResult(false);
       }
     } catch (err) {
       // Error handled by apiCreateInternship
