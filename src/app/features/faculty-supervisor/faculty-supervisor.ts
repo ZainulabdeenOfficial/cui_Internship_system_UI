@@ -126,6 +126,9 @@ export class FacultySupervisor implements OnInit {
   complaintsStats = { OPEN: 0, IN_REVIEW: 0, RESOLVED: 0, DISMISSED: 0 };
   
   async loadComplaints(page?: number) {
+    // Use session cache to avoid slow repeated API calls
+    const cacheKey = 'faculty:complaints:' + (this.complaintsFilter.status || 'all');
+    if (!page && this.cache.isFresh(cacheKey) && this.complaintsList.length > 0) return;
     try {
       this.complaintsLoading = true;
       this.complaintsError = null;
@@ -140,7 +143,8 @@ export class FacultySupervisor implements OnInit {
       this.complaintsList = result.complaints || [];
       this.complaintsPagination = result.pagination || { page: 1, limit: 10, total: 0, pages: 0 };
       this.complaintsStats = result.statistics || { OPEN: 0, IN_REVIEW: 0, RESOLVED: 0, DISMISSED: 0 };
-      
+      this.cache.mark(cacheKey);
+      this.cdr.detectChanges();
     } catch (error: any) {
       console.error('[Faculty] Error loading complaints:', error);
       const msg = error?.error?.message || error?.message || 'Failed to load complaints';
@@ -148,6 +152,7 @@ export class FacultySupervisor implements OnInit {
       this.toast.danger(msg);
     } finally {
       this.complaintsLoading = false;
+      this.cdr.detectChanges();
     }
   }
 
@@ -554,6 +559,8 @@ export class FacultySupervisor implements OnInit {
       this.appexBRequests = resB?.verifications || resB?.data || [];
       this.hasLoadedRequestsOnce = true;
       this.cache.mark('faculty:requests');
+      // Trigger change detection so the template updates without needing a manual refresh
+      this.cdr.detectChanges();
     } catch (err: any) {
       if (!silent) {
         const msg = err?.error?.message || err?.message || 'Failed to load student requests';
@@ -561,6 +568,7 @@ export class FacultySupervisor implements OnInit {
       }
     } finally {
       if (!silent) this.loadingRequests = false;
+      this.cdr.detectChanges();
     }
   }
 

@@ -66,11 +66,6 @@
             {{ loading ? 'Creating account…' : 'Create Account' }}
           </button>
         </div>
-        @if (loading) {
-          <div class="col-12 text-center mt-1">
-            <span class="spinner-border text-primary" role="status" aria-label="Creating account..."></span>
-          </div>
-        }
         @if (error) {
           <div class="col-12">
             <div class="alert alert-danger">{{ error }}</div>

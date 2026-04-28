@@ -61,11 +61,6 @@
             {{ loading ? 'Logging in…' : 'Login' }}
           </button>
         </div>
-        @if (loading) {
-          <div class="col-12 text-center mt-1">
-            <span class="spinner-border text-primary" role="status" aria-label="Logging in..."></span>
-          </div>
-        }
         @if (cooldownRemaining() > 0) {
           <div class="col-12">
             <div class="alert alert-warning py-2">Too many attempts. Please wait {{ cooldownRemaining() }}s.</div>

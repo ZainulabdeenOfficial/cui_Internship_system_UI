@@ -227,6 +227,7 @@ export class Student implements OnInit, OnDestroy {
       console.error('[Student] Error loading complaints:', e);
     } finally {
       this.complaintLoading = false;
+      this.cdr.detectChanges(); // ensure list re-renders after update
     }
   }
   
@@ -1517,6 +1518,8 @@ export class Student implements OnInit, OnDestroy {
       });
       this.toast.success('Complaint submitted successfully');
       this.complaint = { subject: '', body: '', category: 'GENERAL', internshipId: '' };
+      // Force fresh reload so the new complaint shows immediately
+      this.hasLoadedComplaintsOnce = false;
       await this.loadComplaints();
     } catch (err: any) {
       this.toast.danger(err?.error?.message || err?.message || 'Failed to submit complaint');
