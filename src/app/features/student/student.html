@@ -28,7 +28,7 @@
 
     <!-- Assignment & Agreement: hidden after internship starts -->
     <li class="tab-item" *ngIf="!internshipStarted()">
-      <button type="button" class="tab-btn" [class.active]="isCurrentTab('assignment')" (click)="selectTab('assignment')">
+      <button type="button" class="tab-btn" [class.active]="isCurrentTab('assignment')" (click)="selectTab('assignment')" [disabled]="!studentInternshipId">
         <i class="bi bi-pen tab-icon"></i>
         Assignment &amp; Agreement
       </button>
@@ -36,7 +36,7 @@
 
     <!-- Form 3 / APEX C: hidden after internship starts -->
     <li class="tab-item" *ngIf="!internshipStarted()">
-      <button type="button" class="tab-btn" [class.active]="isCurrentTab('form3')" (click)="selectTab('form3')">
+      <button type="button" class="tab-btn" [class.active]="isCurrentTab('form3')" (click)="selectTab('form3')" [disabled]="!studentInternshipId">
         <i class="bi bi-building tab-icon"></i>
         Org. Overview &amp; Scope
       </button>
@@ -200,8 +200,40 @@
   <!-- AppEx-A (API-backed) -->
   <div *ngIf="isCurrentTab('appex')">
     <div class="card mb-3">
-    <div class="card-header">Internship Approval (Section A & B)</div>
+    <div class="card-header">Internship Approval</div>
     <div class="card-body">
+
+      <!-- Create Internship Request (Step 1) -->
+      <div *ngIf="!studentInternshipId" class="mb-4 p-4 bg-white border border-primary rounded shadow-sm">
+        <h5 class="mb-3 text-primary"><i class="bi bi-rocket-takeoff me-2"></i>Step 1: Create Internship Record</h5>
+        <p class="text-muted mb-4">Please initialize your internship record before filling out the APEX forms.</p>
+        <form (ngSubmit)="createInternshipSubmit()" #cif="ngForm" class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label fw-bold">Internship Type <span class="text-danger">*</span></label>
+            <select class="form-select" [(ngModel)]="createInternshipModel.type" name="type" required>
+              <option value="ONSITE">On-Site</option>
+              <option value="REMOTE">Remote</option>
+              <option value="VIRTUAL">Virtual</option>
+              <option value="HYBRID">Hybrid</option>
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-bold">Site ID <small class="text-muted">(Optional)</small></label>
+            <input type="text" class="form-control" [(ngModel)]="createInternshipModel.siteId" name="siteId" placeholder="Site ID" />
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-bold">Faculty ID <small class="text-muted">(Optional)</small></label>
+            <input type="text" class="form-control" [(ngModel)]="createInternshipModel.facultyId" name="facultyId" placeholder="Faculty Supervisor ID" />
+          </div>
+          <div class="col-12 mt-4">
+            <button class="btn btn-primary" type="submit" [disabled]="!cif.form.valid">
+              <i class="bi bi-plus-circle me-2"></i>Create Internship
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <ng-container *ngIf="studentInternshipId">
       <!-- Approved Company Requests Section -->
       <div *ngIf="approvedCompanyRequests.length > 0" class="mb-4 p-3 bg-light border border-success rounded">
         <div class="d-flex align-items-center mb-3">
@@ -469,6 +501,7 @@
 
         </div>
       </form>
+      </ng-container>
     </div>
   </div>
 </div>

@@ -378,6 +378,10 @@ export class Student implements OnInit, OnDestroy {
       // Internship not yet started — post-start tabs not accessible
       this.currentTab = 'appex';
       try { this.router.navigate([], { relativeTo: this.route, queryParams: { tab: 'appex' }, queryParamsHandling: 'merge' }); } catch {}
+    } else if (!started && !this.studentInternshipId && (this.currentTab === 'assignment' || this.currentTab === 'form3')) {
+      // Internship record not yet created — prevent access to APEX B and C
+      this.currentTab = 'appex';
+      try { this.router.navigate([], { relativeTo: this.route, queryParams: { tab: 'appex' }, queryParamsHandling: 'merge' }); } catch {}
     }
 
     // Only trigger selectTab (and its data-loading) when the tab has actually changed.
@@ -1140,6 +1144,8 @@ export class Student implements OnInit, OnDestroy {
       tab = 'appex';
     } else if (started && preStartTabs.has(tab)) {
       tab = 'weeklylogs';
+    } else if (!started && !this.studentInternshipId && (tab === 'assignment' || tab === 'form3')) {
+      tab = 'appex';
     }
 
     const tabChanged = this.currentTab !== tab;
