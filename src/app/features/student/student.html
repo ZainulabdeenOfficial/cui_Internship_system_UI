@@ -226,8 +226,9 @@
             <input type="text" class="form-control" [(ngModel)]="createInternshipModel.facultyId" name="facultyId" placeholder="Faculty Supervisor ID" />
           </div>
           <div class="col-12 mt-4">
-            <button class="btn btn-primary" type="submit" [disabled]="!cif.form.valid">
-              <i class="bi bi-plus-circle me-2"></i>Create Internship
+            <button class="btn btn-primary" type="submit" [disabled]="!cif.form.valid || isCreatingInternship">
+              <span *ngIf="isCreatingInternship" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+              <i *ngIf="!isCreatingInternship" class="bi bi-plus-circle me-2"></i>Create Internship
             </button>
           </div>
         </form>

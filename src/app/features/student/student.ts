@@ -984,6 +984,7 @@ export class Student implements OnInit, OnDestroy {
 
   // Forms for new API integrations
   createInternshipModel: { type: 'ONSITE'|'REMOTE'|'VIRTUAL'|'HYBRID'; siteId?: string; facultyId?: string } = { type: 'ONSITE', siteId: '', facultyId: '' };
+  isCreatingInternship = false;
   appexAForm = {
     organization: '', address: '', industrySector: '', contactName: '', contactDesignation: '', contactPhone: '', contactEmail: '',
     internshipField: '', internshipLocation: '', startDate: '', endDate: '', workingDays: '', workingHours: '',
@@ -1011,6 +1012,7 @@ export class Student implements OnInit, OnDestroy {
   };
 
   async createInternshipSubmit() {
+    this.isCreatingInternship = true;
     const type = this.createInternshipModel.type;
     const siteId = (this.createInternshipModel.siteId || '').trim() || undefined;
     const facultyId = (this.createInternshipModel.facultyId || '').trim() || undefined;
@@ -1024,7 +1026,7 @@ export class Student implements OnInit, OnDestroy {
         console.log('✅ [Student] Internship created with ID:', this.studentInternshipId);
         
         // Mark as started locally if needed
-        this.loadAppExAIfNeeded();
+        await this.loadAppExAIfNeeded();
         
         // Reset evaluation loading flag so it will reload when evaluations tab is selected
         this.evaluationsLoadedOnce = false;
@@ -1036,6 +1038,9 @@ export class Student implements OnInit, OnDestroy {
       }
     } catch (err) {
       // Error handled by apiCreateInternship
+    } finally {
+      this.isCreatingInternship = false;
+      this.cdr.detectChanges();
     }
   }
   
@@ -1280,6 +1285,7 @@ export class Student implements OnInit, OnDestroy {
       if (err?.status !== 404 && err?.status !== 400) {
         this.toast.danger(err?.error?.message || err?.message || 'Failed to load AppEx-A form');
       }
+      this.cdr.detectChanges();
     }
   }
 
