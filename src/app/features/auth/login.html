@@ -57,9 +57,11 @@
           @if (captchaError) { <div class="text-danger small mt-2">{{ captchaError }}</div> }
         </div>
         <div class="col-12">
-          <button class="btn btn-primary w-100 d-inline-flex justify-content-center align-items-center" [disabled]="!f.form.valid || loading">
-            @if (loading) {<span class="btn-dots me-2" aria-hidden="true"><span></span><span></span><span></span></span>}
-            Login
+          <button type="submit" class="btn btn-primary w-100 d-inline-flex justify-content-center align-items-center gap-2" [disabled]="!f.form.valid || loading">
+            @if (loading) {
+              <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+            }
+            {{ loading ? 'Logging in…' : 'Login' }}
           </button>
         </div>
         @if (cooldownRemaining() > 0) {
