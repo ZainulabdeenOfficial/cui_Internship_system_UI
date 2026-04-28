@@ -913,10 +913,10 @@ export class FacultySupervisor implements OnInit {
       return this.facultyInternships
         .filter(i => i.student?.id && !seen.has(i.student.id) && seen.add(i.student.id) !== undefined)
         .map(i => ({
-          id: i.student.id,
-          name: i.student.name,
-          email: i.student.email,
-          registrationNo: i.student.regNo,
+          id: i.student!.id,
+          name: i.student!.name,
+          email: i.student!.email,
+          registrationNo: i.student!.regNo,
           internshipMode: i.type,
           status: i.status,
           startDate: i.startDate,
@@ -1294,12 +1294,12 @@ export class FacultySupervisor implements OnInit {
     if (this.facultyInternships.length === 0) return [];
     
     return this.facultyInternships
-      .filter(i => i.status === 'APPROVED' || i.status === 'ACTIVE') // Only approved/active internships can be finalized
+      .filter(i => (i.status === 'APPROVED' || i.status === 'ACTIVE') && i.student?.id) // Only approved/active internships can be finalized
       .map(i => ({
-        id: i.student.id,
-        name: i.student.name,
-        email: i.student.email,
-        registrationNo: i.student.regNo,
+        id: i.student!.id,
+        name: i.student!.name,
+        email: i.student!.email,
+        registrationNo: i.student!.regNo,
         internshipId: i.id,
         internshipMode: i.type,
         companyName: i.site?.company?.name || 'Unknown Company',
@@ -1338,7 +1338,7 @@ export class FacultySupervisor implements OnInit {
     let list = this.weeklyLogsData;
     if (this.weeklyLogsFilter !== 'All') {
       list = list.filter(item => {
-        const mode = (item.internship.type || '').toLowerCase();
+        const mode = (item.internship?.type || '').toLowerCase();
         if (this.weeklyLogsFilter === 'OnSite' && mode === 'onsite') return true;
         if (this.weeklyLogsFilter === 'Virtual' && mode === 'virtual') return true;
         if (this.weeklyLogsFilter === 'Fiverr' && mode === 'fiverr') return true;
@@ -1349,9 +1349,9 @@ export class FacultySupervisor implements OnInit {
     if (this.weeklyLogsSearch.trim()) {
       const q = this.weeklyLogsSearch.toLowerCase().trim();
       list = list.filter(item =>
-        (item.internship.student.name || '').toLowerCase().includes(q) ||
-        (item.internship.student.email || '').toLowerCase().includes(q) ||
-        (item.internship.student.regNo || '').toLowerCase().includes(q)
+        (item.internship?.student?.name || '').toLowerCase().includes(q) ||
+        (item.internship?.student?.email || '').toLowerCase().includes(q) ||
+        (item.internship?.student?.regNo || '').toLowerCase().includes(q)
       );
     }
     return list;

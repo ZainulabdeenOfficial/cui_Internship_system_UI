@@ -6,19 +6,19 @@ import { environment } from '../../../environments/environment';
 import { SILENT_ERROR, SKIP_GLOBAL_LOADING } from '../../core/interceptors/http.interceptor';
 
 export interface FacultyInternship {
-  id: string;
-  studentId: string;
-  facultyId: string;
+  id?: string;
+  studentId?: string;
+  facultyId?: string;
   siteId?: string;
-  type: string;
+  type?: string;
   startDate?: string;
   endDate?: string;
-  status: string;
+  status?: string;
   createdAt?: string;
   updatedAt?: string;
-  student: { id: string; name: string; email: string; regNo: string };
-  faculty?: { id: string; name: string; email: string };
-  site?: { id: string; name: string; email: string; company?: { id: string; name: string; industry: string } };
+  student?: { id?: string; name?: string; email?: string; regNo?: string };
+  faculty?: { id?: string; name?: string; email?: string };
+  site?: { id?: string; name?: string; email?: string; company?: { id?: string; name?: string; industry?: string } };
   finalResult?: {
     id: string;
     internshipId: string;
@@ -49,28 +49,28 @@ export type FacultyProfile = {
 };
 
 export interface WeeklyLog {
-  id: string;
-  internshipId: string;
-  weekNo: number;
-  activitiesDone: string;
-  skillsLearned: string;
-  challenges: string;
-  submittedDate: string;
+  id?: string;
+  internshipId?: string;
+  weekNo?: number;
+  activitiesDone?: string;
+  skillsLearned?: string;
+  challenges?: string;
+  submittedDate?: string;
 }
 
 export interface WeeklyLogStatus {
-  totalWeeks: number;
-  currentWeek: number;
-  submittedWeeks: number[];
-  pendingWeeks: number[];
-  hasStarted: boolean;
-  hasEnded: boolean;
+  totalWeeks?: number;
+  currentWeek?: number;
+  submittedWeeks?: number[];
+  pendingWeeks?: number[];
+  hasStarted?: boolean;
+  hasEnded?: boolean;
 }
 
 export interface StudentWeeklyLogs {
-  internship: FacultyInternship;
-  weeklyLogs: WeeklyLog[];
-  weeklyLogStatus: WeeklyLogStatus;
+  internship?: FacultyInternship;
+  weeklyLogs?: WeeklyLog[];
+  weeklyLogStatus?: WeeklyLogStatus;
 }
 
 export interface FacultyRequestOptions {

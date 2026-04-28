@@ -1000,34 +1000,34 @@
             </tr>
           </thead>
           <tbody>
-            @for (item of (filteredWeeklyLogs() | paginate: page.weeklyLogs : pageSize); track item.internship.id) {
+            @for (item of (filteredWeeklyLogs() | paginate: page.weeklyLogs : pageSize); track item.internship?.id) {
             <tr>
-              <td class="fw-semibold">{{ item.internship.student.name }}</td>
-              <td>{{ item.internship.student.regNo }}</td>
+              <td class="fw-semibold">{{ item.internship?.student?.name }}</td>
+              <td>{{ item.internship?.student?.regNo }}</td>
               <td>
-                <a [href]="'mailto:' + item.internship.student.email">{{ item.internship.student.email }}</a>
+                <a [href]="'mailto:' + item.internship?.student?.email">{{ item.internship?.student?.email }}</a>
               </td>
               <td>
                 <span class="badge" 
-                  [class.text-bg-primary]="item.internship.type === 'ONSITE'"
-                  [class.text-bg-success]="item.internship.type === 'VIRTUAL'"
-                  [class.text-bg-warning]="item.internship.type !== 'ONSITE' && item.internship.type !== 'VIRTUAL'">
-                  {{ item.internship.type || 'Unknown' }}
+                  [class.text-bg-primary]="item.internship?.type === 'ONSITE'"
+                  [class.text-bg-success]="item.internship?.type === 'VIRTUAL'"
+                  [class.text-bg-warning]="item.internship?.type !== 'ONSITE' && item.internship?.type !== 'VIRTUAL'">
+                  {{ item.internship?.type || 'Unknown' }}
                 </span>
               </td>
               <td>
                 <span class="badge" 
-                  [class.text-bg-success]="item.internship.status === 'COMPLETED'"
-                  [class.text-bg-info]="item.internship.status === 'ACTIVE'"
-                  [class.text-bg-secondary]="item.internship.status !== 'COMPLETED' && item.internship.status !== 'ACTIVE'">
-                  {{ item.internship.status || 'PENDING' | titlecase }}
+                  [class.text-bg-success]="item.internship?.status === 'COMPLETED'"
+                  [class.text-bg-info]="item.internship?.status === 'ACTIVE'"
+                  [class.text-bg-secondary]="item.internship?.status !== 'COMPLETED' && item.internship?.status !== 'ACTIVE'">
+                  {{ (item.internship?.status || 'PENDING') | titlecase }}
                 </span>
               </td>
               <td>
-                <span class="badge text-bg-success">{{ item.weeklyLogStatus.submittedWeeks.length }}</span>
+                <span class="badge text-bg-success">{{ item.weeklyLogStatus?.submittedWeeks?.length || 0 }}</span>
               </td>
               <td>
-                <span class="badge text-bg-warning">{{ item.weeklyLogStatus.pendingWeeks.length }}</span>
+                <span class="badge text-bg-warning">{{ item.weeklyLogStatus?.pendingWeeks?.length || 0 }}</span>
               </td>
               <td>
                 <button class="btn btn-sm btn-outline-primary" (click)="viewStudentWeeklyLogs(item)">
@@ -1056,7 +1056,7 @@
       <div class="modal-header">
         <h5 class="modal-title">
           <i class="bi bi-journal-text me-2"></i>
-          {{ selectedWeeklyLogStudent.internship.student.name }} — Weekly Logs
+          {{ selectedWeeklyLogStudent.internship?.student?.name || 'Student' }} — Weekly Logs
         </h5>
         <button type="button" class="btn-close" (click)="closeStudentWeeklyLogs()"></button>
       </div>
@@ -1070,29 +1070,30 @@
             <div class="row g-3">
               <div class="col-md-4">
                 <small class="text-muted d-block">Student Name</small>
-                <strong>{{ selectedWeeklyLogStudent.internship.student.name }}</strong>
+                <strong>{{ selectedWeeklyLogStudent.internship?.student?.name || '-' }}</strong>
               </div>
               <div class="col-md-4">
                 <small class="text-muted d-block">Reg No</small>
-                <strong>{{ selectedWeeklyLogStudent.internship.student.regNo }}</strong>
+                <strong>{{ selectedWeeklyLogStudent.internship?.student?.regNo || '-' }}</strong>
               </div>
               <div class="col-md-4">
                 <small class="text-muted d-block">Email</small>
-                <a [href]="'mailto:' + selectedWeeklyLogStudent.internship.student.email">
-                  {{ selectedWeeklyLogStudent.internship.student.email }}
+                <a [href]="'mailto:' + selectedWeeklyLogStudent.internship?.student?.email" *ngIf="selectedWeeklyLogStudent.internship?.student?.email">
+                  {{ selectedWeeklyLogStudent.internship?.student?.email }}
                 </a>
+                <span *ngIf="!selectedWeeklyLogStudent.internship?.student?.email">-</span>
               </div>
               <div class="col-md-4">
                 <small class="text-muted d-block">Internship Type</small>
-                <strong>{{ selectedWeeklyLogStudent.internship.type }}</strong>
+                <strong>{{ selectedWeeklyLogStudent.internship?.type || '-' }}</strong>
               </div>
               <div class="col-md-4">
                 <small class="text-muted d-block">Start Date</small>
-                <strong>{{ selectedWeeklyLogStudent.internship.startDate | date:'mediumDate' }}</strong>
+                <strong>{{ (selectedWeeklyLogStudent.internship?.startDate | date:'mediumDate') || '-' }}</strong>
               </div>
               <div class="col-md-4">
                 <small class="text-muted d-block">End Date</small>
-                <strong>{{ selectedWeeklyLogStudent.internship.endDate | date:'mediumDate' }}</strong>
+                <strong>{{ (selectedWeeklyLogStudent.internship?.endDate | date:'mediumDate') || '-' }}</strong>
               </div>
             </div>
           </div>
@@ -1107,26 +1108,26 @@
             <div class="row g-3 text-center">
               <div class="col-md-3">
                 <div class="border rounded p-2">
-                  <div class="fw-bold fs-5">{{ selectedWeeklyLogStudent.weeklyLogStatus.totalWeeks }}</div>
+                  <div class="fw-bold fs-5">{{ selectedWeeklyLogStudent.weeklyLogStatus?.totalWeeks || 0 }}</div>
                   <small class="text-muted">Total Weeks</small>
                 </div>
               </div>
               <div class="col-md-3">
                 <div class="border rounded p-2">
-                  <div class="fw-bold fs-5 text-success">{{ selectedWeeklyLogStudent.weeklyLogStatus.submittedWeeks.length }}</div>
+                  <div class="fw-bold fs-5 text-success">{{ selectedWeeklyLogStudent.weeklyLogStatus?.submittedWeeks?.length || 0 }}</div>
                   <small class="text-muted">Submitted</small>
                 </div>
               </div>
               <div class="col-md-3">
                 <div class="border rounded p-2">
-                  <div class="fw-bold fs-5 text-warning">{{ selectedWeeklyLogStudent.weeklyLogStatus.pendingWeeks.length }}</div>
+                  <div class="fw-bold fs-5 text-warning">{{ selectedWeeklyLogStudent.weeklyLogStatus?.pendingWeeks?.length || 0 }}</div>
                   <small class="text-muted">Pending</small>
                 </div>
               </div>
               <div class="col-md-3">
                 <div class="border rounded p-2">
-                  <div class="fw-bold fs-5" [class.text-success]="selectedWeeklyLogStudent.weeklyLogStatus.hasEnded">
-                    {{ selectedWeeklyLogStudent.weeklyLogStatus.hasEnded ? 'Ended' : 'Active' }}
+                  <div class="fw-bold fs-5" [class.text-success]="selectedWeeklyLogStudent.weeklyLogStatus?.hasEnded">
+                    {{ selectedWeeklyLogStudent.weeklyLogStatus?.hasEnded ? 'Ended' : 'Active' }}
                   </div>
                   <small class="text-muted">Status</small>
                 </div>
@@ -1139,10 +1140,10 @@
         <div class="card mb-3">
           <div class="card-header bg-light d-flex justify-content-between align-items-center">
             <h6 class="mb-0"><i class="bi bi-list-check me-2"></i>Weekly Log Entries</h6>
-            <small class="text-muted">{{ paginatedWeeklyLogs().length }} of {{ selectedWeeklyLogStudent.weeklyLogs.length }}</small>
+            <small class="text-muted">{{ paginatedWeeklyLogs().length }} of {{ selectedWeeklyLogStudent.weeklyLogs?.length || 0 }}</small>
           </div>
           <div class="card-body">
-            @if (selectedWeeklyLogStudent.weeklyLogs.length === 0) {
+            @if (!selectedWeeklyLogStudent.weeklyLogs || selectedWeeklyLogStudent.weeklyLogs.length === 0) {
             <div class="alert alert-info">
               <i class="bi bi-info-circle me-2"></i>
               No weekly logs submitted yet.
@@ -1162,10 +1163,10 @@
                   @for (log of paginatedWeeklyLogs(); track log.id) {
                   <tr>
                     <td class="fw-semibold">Week {{ log.weekNo }}</td>
-                    <td>{{ log.submittedDate | date:'mediumDate' }}</td>
+                    <td>{{ (log.submittedDate | date:'mediumDate') || '-' }}</td>
                     <td>
-                      <span class="text-truncate d-inline-block" style="max-width: 250px;" [title]="log.activitiesDone">
-                        {{ log.activitiesDone | slice:0:50 }}{{ log.activitiesDone.length > 50 ? '...' : '' }}
+                      <span class="text-truncate d-inline-block" style="max-width: 250px;" [title]="log.activitiesDone || ''">
+                        {{ (log.activitiesDone || '') | slice:0:50 }}{{ (log.activitiesDone?.length || 0) > 50 ? '...' : '' }}
                       </span>
                     </td>
                     <td>
@@ -1215,14 +1216,14 @@
         <!-- Submitted Date -->
         <div class="mb-3">
           <small class="text-muted d-block mb-1"><i class="bi bi-calendar-event me-1"></i>Submitted Date</small>
-          <strong>{{ selectedWeeklyLogForDetails.submittedDate | date:'medium' }}</strong>
+          <strong>{{ (selectedWeeklyLogForDetails.submittedDate | date:'medium') || '-' }}</strong>
         </div>
 
         <!-- Activities Done -->
         <div class="mb-3">
           <h6><i class="bi bi-lightning-charge me-2"></i>Activities Done</h6>
           <div class="bg-light p-3 rounded">
-            <p class="mb-0 text-break">{{ selectedWeeklyLogForDetails.activitiesDone }}</p>
+            <p class="mb-0 text-break">{{ selectedWeeklyLogForDetails.activitiesDone || '-' }}</p>
           </div>
         </div>
 
@@ -1230,7 +1231,7 @@
         <div class="mb-3">
           <h6><i class="bi bi-star me-2"></i>Skills Learned</h6>
           <div class="bg-light p-3 rounded">
-            <p class="mb-0 text-break">{{ selectedWeeklyLogForDetails.skillsLearned }}</p>
+            <p class="mb-0 text-break">{{ selectedWeeklyLogForDetails.skillsLearned || '-' }}</p>
           </div>
         </div>
 
@@ -1238,7 +1239,7 @@
         <div class="mb-3">
           <h6><i class="bi bi-exclamation-circle me-2"></i>Challenges</h6>
           <div class="bg-light p-3 rounded">
-            <p class="mb-0 text-break">{{ selectedWeeklyLogForDetails.challenges }}</p>
+            <p class="mb-0 text-break">{{ selectedWeeklyLogForDetails.challenges || '-' }}</p>
           </div>
         </div>
       </div>
