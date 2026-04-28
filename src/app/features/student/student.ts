@@ -118,9 +118,9 @@ export class Student implements OnInit, OnDestroy {
    */
   internshipStarted(): boolean {
     // Internship is considered started when APEX B is fully approved.
-    // Relying on apexCSubmitted causes UI bugs across different logins
-    // since the GET endpoint was removed from the backend.
-    return this.isFullyApproved();
+    // Also check the store cache so the correct tabs render immediately
+    // on login/refresh without waiting for the async APEX B API call.
+    return this.isFullyApproved() || this.store.studentInternshipStarted();
   }
 
   // Alias kept for any legacy template references
@@ -281,7 +281,16 @@ export class Student implements OnInit, OnDestroy {
     this.isInitializingStatus = !this.store.studentInternshipStarted();
     this.lockSelection = effect(() => {
       const mine = this.myStudentId();
-      if (mine && this.selectedId !== mine) this.selectedId = mine;
+      if (mine && this.selectedId !== mine) {
+        this.selectedId = mine;
+        // Immediately restore internship ID from cache so Step 1 never flashes on refresh
+        if (!this.studentInternshipId) {
+          try {
+            const cached = localStorage.getItem(`student:internshipId:${mine}`);
+            if (cached) this.studentInternshipId = cached;
+          } catch {}
+        }
+      }
       
       if (this.selectedId) {
         // Load initial status BEFORE making routing decisions to prevent UI flickering on login
@@ -382,6 +391,10 @@ export class Student implements OnInit, OnDestroy {
       // Internship record not yet created — prevent access to APEX B and C
       this.currentTab = 'appex';
       try { this.router.navigate([], { relativeTo: this.route, queryParams: { tab: 'appex' }, queryParamsHandling: 'merge' }); } catch {}
+    } else if (started && ['appex','assignment','form3'].includes(this.currentTab)) {
+      // Internship started — pre-internship tabs must never show again
+      this.currentTab = 'weeklylogs';
+      try { this.router.navigate([], { relativeTo: this.route, queryParams: { tab: 'weeklylogs' }, queryParamsHandling: 'merge' }); } catch {}
     }
 
     // Only trigger selectTab (and its data-loading) when the tab has actually changed.
@@ -865,6 +878,14 @@ export class Student implements OnInit, OnDestroy {
           duration: apexB.duration || apexB.durationWeeks ? `${apexB.durationWeeks} weeks` : undefined,
           location: apexB.location || apexB.internshipLocation
         };
+
+        // Sync internship ID from APEX B response so "Step 1: Create Internship"
+        // never re-appears after the student has already created one.
+        const resolvedIId = apexB.internshipId || apexB._id || apexB.id;
+        if (resolvedIId && !this.studentInternshipId) {
+          this.studentInternshipId = resolvedIId;
+          try { if (this.selectedId) localStorage.setItem(`student:internshipId:${this.selectedId}`, resolvedIId); } catch {}
+        }
         
         console.log('✅ [Student] APEX B Status loaded:', {
           studentVerified: this.apexBStatus.studentVerified,
@@ -1023,6 +1044,8 @@ export class Student implements OnInit, OnDestroy {
       // Capture internship ID from response, fallback to a dummy truthy string if schema varies
       const newId = res?.internship?.id || res?.internship?._id || res?.data?.id || res?.id || 'created-internship';
       this.studentInternshipId = newId;
+      // Persist so Step 1 never re-appears on refresh
+      try { if (this.selectedId) localStorage.setItem(`student:internshipId:${this.selectedId}`, newId); } catch {}
       console.log('✅ [Student] Internship created with ID:', this.studentInternshipId);
 
       // Mark as started locally if needed
@@ -1226,7 +1249,11 @@ export class Student implements OnInit, OnDestroy {
       // Resolve internship ID if returned
       const internshipObj = (res as any)?.internship;
       const resolvedId: string = internshipObj?.id || internshipObj?._id || (res as any)?.internshipId || '';
-      if (resolvedId) this.studentInternshipId = resolvedId;
+      if (resolvedId) {
+        this.studentInternshipId = resolvedId;
+        // Persist so the internship ID survives page refresh without flashing Step 1
+        try { if (this.selectedId) localStorage.setItem(`student:internshipId:${this.selectedId}`, resolvedId); } catch {}
+      }
 
       if (internshipObj?.appexC || internshipObj?.status === 'STARTED' || internshipObj?.status === 'ACTIVE') {
         this.apexCSubmitted = true;

@@ -57,13 +57,15 @@
           @if (captchaError) { <div class="text-danger small mt-2">{{ captchaError }}</div> }
         </div>
         <div class="col-12">
-          <button type="submit" class="btn btn-primary w-100 d-inline-flex justify-content-center align-items-center gap-2" [disabled]="!f.form.valid || loading">
-            @if (loading) {
-              <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-            }
+          <button type="submit" class="btn btn-primary w-100" [disabled]="!f.form.valid || loading">
             {{ loading ? 'Logging in…' : 'Login' }}
           </button>
         </div>
+        @if (loading) {
+          <div class="col-12 text-center mt-1">
+            <span class="spinner-border text-primary" role="status" aria-label="Logging in..."></span>
+          </div>
+        }
         @if (cooldownRemaining() > 0) {
           <div class="col-12">
             <div class="alert alert-warning py-2">Too many attempts. Please wait {{ cooldownRemaining() }}s.</div>
