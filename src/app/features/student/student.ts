@@ -336,38 +336,83 @@ export class Student implements OnInit, OnDestroy {
 
   private async initStatusBeforeRouting() {
     try {
-      // ── Always fetch from the API on login ──────────────────────────────────
-      // Never rely solely on localStorage / DataCache to determine whether an
-      // internship exists or whether it is approved. This guarantees the correct
-      // state is shown on any device (e.g. a new device where the student never
-      // had a localStorage entry for this account).
+      // ── Always fetch from the API on login — never rely on any cache ─────────
+      // This guarantees correct state on ANY device (new device, cleared cache, etc.)
       //
-      // Flow:
-      //   • loadAppExAIfNeeded() → resolves studentInternshipId from the server.
-      //       - 404 / empty   → no internship yet   → Step 1 shown
-      //       - internship found but APEX A pending/rejected → skip Step 1, show APEX form
-      //       - APEX A approved → locked form shown
-      //   • loadApexBStatus()   → resolves full-approval (student + faculty + admin).
-      //       - fully approved → hide all form tabs, redirect to Weekly Logs
-      // ────────────────────────────────────────────────────────────────────────
+      // WHY THREE CALLS:
+      //   1. checkInternshipExists() → hits /api/student/internships
+      //         This endpoint returns the internship record regardless of whether
+      //         APEX A has been submitted. So it correctly sets studentInternshipId
+      //         for students who completed Step 1 but haven't yet filled APEX A.
+      //         CRITICAL: /api/student/appex-a returns 404 when APEX A not submitted,
+      //         so it CANNOT be used to detect internship existence.
+      //
+      //   2. loadAppExAIfNeeded(true) → hits /api/student/appex-a
+      //         Sets appexAStatus (pending / approved / rejected) + pre-fills form.
+      //         404 = APEX A not yet submitted (normal for new internships).
+      //
+      //   3. loadApexBStatus(true) → hits /api/student/appex-b-verification
+      //         Sets full-approval state. When all 3 parties approve, internship
+      //         is considered started → hide form tabs, show Weekly Logs.
+      // ─────────────────────────────────────────────────────────────────────────
       if (this.selectedId) {
-        // Force-invalidate cache so the API is always called fresh on login,
-        // even on the same device that previously cached the data.
         this.dataCache.invalidate('student:appexA:' + this.selectedId);
       }
 
-      // Run both checks in parallel for speed.
-      // forceRefresh:true bypasses BOTH the DataCacheService in-memory cache AND
-      // the StudentService sessionStorage cache so the real API is always called.
       await Promise.all([
-        this.loadAppExAIfNeeded(true),  // sets studentInternshipId + appexAStatus
-        this.loadApexBStatus(true),     // sets apexBStatus + internshipStarted()
+        this.checkInternshipExists(),   // ← resolves studentInternshipId from /api/student/internships
+        this.loadAppExAIfNeeded(true),  // ← sets appexAStatus, pre-fills form
+        this.loadApexBStatus(true),     // ← sets apexBStatus + internshipStarted()
       ]);
     } finally {
       this.isInitializingStatus = false;
       if (this.pendingQueryParams) {
         this.processQueryParams(this.pendingQueryParams);
         this.pendingQueryParams = null;
+      }
+    }
+  }
+
+  /**
+   * Checks whether the student already has an internship record on the server
+   * by calling /api/student/internships — independent of APEX form submission status.
+   *
+   * This is the ONLY reliable way to determine if Step 1 (Create Internship) has
+   * been completed, because:
+   *   - /api/student/appex-a returns 404 when APEX A not yet submitted
+   *   - /api/student/appex-b-verification returns 404 when APEX B not submitted
+   * Both 404s are misleading for existence checks.
+   *
+   * Sets studentInternshipId when found; silently does nothing on 404 (no internship yet).
+   */
+  private async checkInternshipExists() {
+    try {
+      const res = await this.studentApi.getMyInternship({ forceRefresh: true, skipGlobalLoading: true });
+      // Handle various API response shapes
+      const internship =
+        res?.internship ||
+        (Array.isArray(res?.internships) ? res.internships[0] : null) ||
+        (Array.isArray(res?.data) ? res.data[0] : null) ||
+        res?.data ||
+        (typeof res === 'object' && (res?.id || res?._id) ? res : null);
+
+      const id: string = (
+        internship?.id || internship?._id ||
+        res?.internshipId || res?.id || res?._id || ''
+      ).toString();
+
+      if (id) {
+        this.studentInternshipId = id;
+        // Persist so next same-device refresh is instant (still verified from API above)
+        try { if (this.selectedId) localStorage.setItem(`student:internshipId:${this.selectedId}`, id); } catch {}
+        console.log('[Student] ✅ Internship exists on server:', id);
+      } else {
+        console.log('[Student] ℹ️ No internship record found — Step 1 will be shown');
+      }
+    } catch (err: any) {
+      // 404 = student has not created an internship yet — completely expected, do nothing
+      if (err?.status !== 404 && err?.status !== 400) {
+        console.warn('[Student] checkInternshipExists error (non-404):', err?.status, err?.message);
       }
     }
   }
