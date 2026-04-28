@@ -1056,7 +1056,9 @@ export class StudentService {
   /**
    * POST /api/student/internship-report
    * Uploads a final internship report PDF (multipart/form-data).
-   * Fields: internshipId (required), file (PDF, required), summary (optional string)
+   * Fields: internshipId (required), file (PDF, required), summary (optional), type (optional)
+   *
+   * NOTE: Vercel serverless has a 4.5MB body limit — validate file size on client before calling.
    */
   async submitInternshipReport(payload: {
     internshipId: string;
@@ -1067,20 +1069,34 @@ export class StudentService {
     const token = this.getAuthToken();
 
     const formData = new FormData();
-    formData.append('internshipId', payload.internshipId);
+    formData.append('internshipId', (payload.internshipId || '').trim());
     formData.append('file', payload.file, payload.file.name);
+    // Some backends require a type discriminator field
+    formData.append('type', 'final_report');
     if (payload.summary?.trim()) {
       formData.append('summary', payload.summary.trim());
     }
 
-    // NOTE: Do NOT set Content-Type manually for multipart — browser sets it with boundary
+    // IMPORTANT: Do NOT set Content-Type manually — browser must set it with multipart boundary.
+    // Only set Authorization + Accept so the server returns JSON errors on failure.
     const headers = new HttpHeaders({
+      Accept: 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {})
     });
 
-    const res = await firstValueFrom(this.http.post<any>(url, formData, { headers }));
-    // Invalidate cache so next GET fetches the new report
-    this.clearCache('internship-report');
-    return res;
+    try {
+      const res = await firstValueFrom(this.http.post<any>(url, formData, { headers }));
+      this.clearCache('internship-report');
+      return res;
+    } catch (err: any) {
+      // Log full server error body for debugging
+      console.error('[StudentService] submitInternshipReport failed:', {
+        status: err?.status,
+        statusText: err?.statusText,
+        errorBody: err?.error,
+        message: err?.error?.message || err?.message
+      });
+      throw err;
+    }
   }
 }

@@ -2160,9 +2160,10 @@ export class Student implements OnInit, OnDestroy {
         input.value = '';
         return;
       }
-      // Validate size (max 10MB)
-      if (file.size > 10 * 1024 * 1024) {
-        this.toast.warning('File size must be less than 10MB');
+      // Validate size — Vercel serverless functions have a 4.5MB body limit.
+      // Keep well under that limit to account for multipart overhead.
+      if (file.size > 4 * 1024 * 1024) {
+        this.toast.warning('PDF file size must be less than 4MB (server upload limit)');
         this.reportFile = null;
         input.value = '';
         return;
@@ -2199,13 +2200,25 @@ export class Student implements OnInit, OnDestroy {
       // Reset form
       this.reportFile = null;
       this.reportSummary = '';
+      // Reset the file input element
+      const fileInput = document.getElementById('reportFileInput') as HTMLInputElement;
+      if (fileInput) fileInput.value = '';
 
       // Reload report data
       this.dataCache.invalidate('student:report');
       await this.loadInternshipReport(true);
     } catch (err: any) {
-      const msg = err?.error?.message || err?.message || 'Failed to upload internship report';
-      this.toast.danger(msg);
+      // Extract the most descriptive error from the server response
+      const serverMsg = err?.error?.message
+        || err?.error?.error
+        || (typeof err?.error === 'string' ? err.error : null)
+        || err?.message
+        || 'Failed to upload internship report';
+      const hint = err?.status === 500
+        ? ' (Server error — ensure your internship end date has passed and the file is under 4MB)'
+        : '';
+      this.toast.danger(serverMsg + hint);
+      console.error('[Student] submitInternshipReport error:', err?.status, err?.error);
     } finally {
       this.submittingReport = false;
       this.cdr.detectChanges();
