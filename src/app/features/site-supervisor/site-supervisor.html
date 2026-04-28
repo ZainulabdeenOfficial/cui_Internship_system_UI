@@ -238,9 +238,9 @@
                           class="btn btn-sm"
                           [class.btn-primary]="selectedId !== s.id"
                           [class.btn-success]="selectedId === s.id"
-                          (click)="selectedId = s.id">
+                          (click)="selectedId = (selectedId === s.id ? null : s.id)">
                     <i class="bi" [class.bi-person-check]="selectedId === s.id" [class.bi-eye]="selectedId !== s.id"></i>
-                    {{ selectedId === s.id ? 'Selected' : 'Select' }}
+                    {{ selectedId === s.id ? 'Unselect' : 'Select' }}
                   </button>
                 </td>
               </tr>
@@ -254,33 +254,32 @@
 
   <!-- Marks Entry -->
   <div class="card mb-3">
-    <div class="card-header bg-light">
-      <i class="bi bi-pencil-square me-2"></i>
-      Site Marks Entry
-      <span *ngIf="selectedStudent()" class="ms-2 text-primary fw-semibold">— {{ selectedStudent()?.name }}</span>
+    <div class="card-header bg-light d-flex justify-content-between align-items-center">
+      <span><i class="bi bi-pencil-square me-2"></i>Site Marks Entry</span>
+      <span *ngIf="selectedStudent()" class="badge bg-primary">{{ selectedStudent()?.name }}</span>
+      <span *ngIf="!selectedStudent()" class="text-muted small">Select a student from the table above</span>
     </div>
     <div class="card-body">
-      <div class="row g-3">
-        <div class="col-md-6">
-          <label class="form-label"><strong>Select Student</strong></label>
-          <select class="form-select" [(ngModel)]="selectedId" name="ssid">
-            <option [ngValue]="null">-- choose --</option>
-            <option *ngFor="let s of myStudents()" [ngValue]="s.id">{{ s.name }} ({{ s.email }})</option>
-          </select>
-        </div>
+      <div *ngIf="!selectedId" class="alert alert-info mb-0">
+        <i class="bi bi-info-circle me-2"></i>Click <strong>Select</strong> on a student row above to enter their site marks.
+      </div>
+      <div *ngIf="selectedId" class="row g-3 align-items-end">
         <div class="col-md-6">
           <label class="form-label"><strong>Site Marks (0-40)</strong></label>
           <div class="input-group">
             <input type="number" min="0" max="40" class="form-control form-control-lg"
                    (ngModelChange)="setSiteMarks($event)"
                    [ngModel]="selectedStudent()?.marks?.site ?? ''"
-                   placeholder="Enter marks 0-40"
-                   [disabled]="!selectedId" />
+                   placeholder="Enter marks 0–40" />
             <span class="input-group-text fw-bold" *ngIf="selectedStudent()?.marks?.site">
               {{ selectedStudent()?.marks?.site }}/40
             </span>
           </div>
-          <small class="text-muted d-block mt-1" *ngIf="!selectedId">Select a student to enter marks</small>
+        </div>
+        <div class="col-md-6">
+          <button type="button" class="btn btn-outline-secondary btn-sm" (click)="selectedId = null">
+            <i class="bi bi-x-circle me-1"></i>Clear Selection
+          </button>
         </div>
       </div>
     </div>
