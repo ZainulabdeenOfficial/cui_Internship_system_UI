@@ -1,10 +1,18 @@
-import { HttpInterceptorFn, HttpRequest } from '@angular/common/http';
+import {
+  HttpInterceptorFn,
+  HttpRequest,
+  HttpContextToken,
+  HttpContext,
+} from '@angular/common/http';
 import { inject } from '@angular/core';
+import { catchError, from, switchMap, throwError } from 'rxjs';
 import { AuthService } from './auth.service';
 import { ApiConfigService } from '../../core/services/api-config.service';
-import { catchError, from, switchMap, throwError } from 'rxjs';
 
+// ─── Route rule sets ────────────────────────────────────────────────────────
 type RouteRule = RegExp;
+
+/** Paths that require a Bearer token. */
 const NEEDS_BEARER: RouteRule[] = [
   /^\/api\/admin\//,
   /^\/api\/admin\/create-account$/,
@@ -12,230 +20,233 @@ const NEEDS_BEARER: RouteRule[] = [
   /^\/api\/faculty\//,
   /^\/api\/site\//,
   /^\/api\/secure\//,
-  /^\/api\/maintenance\//
+  /^\/api\/maintenance\//,
 ];
+
+/** Auth paths that must NOT receive a Bearer token (or be retried). */
 const PUBLIC_AUTH: RouteRule[] = [
   /^\/api\/auth\/login$/,
   /^\/api\/auth\/register$/,
   /^\/api\/auth\/verify-email$/,
   /^\/api\/auth\/forgot-password$/,
   /^\/api\/auth\/reset-password$/,
-  /^\/api\/auth\/refresh-token$/
+  /^\/api\/auth\/refresh-token$/,
 ];
 
-// In-memory token cache: populated whenever storage is successfully read.
-// Falls back to this when browser Tracking Prevention blocks localStorage/sessionStorage.
+// ─── Context token: marks a request as "already retried after refresh" ───────
+/**
+ * Set this token to `true` when cloning a request for the post-refresh retry.
+ * The interceptor will NOT attempt another refresh for such requests.
+ * If the retried request still gets a 401, the user is redirected to login.
+ */
+export const IS_REFRESH_RETRY = new HttpContextToken<boolean>(() => false);
+
+// ─── In-memory token cache ────────────────────────────────────────────────────
 let _cachedToken: string | null = null;
 
 function getSessionToken(): string | null {
   try {
-    const stored = sessionStorage.getItem('authToken')
-      || sessionStorage.getItem('accessToken')
-      || sessionStorage.getItem('token')
-      || localStorage.getItem('authToken')
-      || localStorage.getItem('accessToken');
-    if (stored) { _cachedToken = stored; }
+    const stored =
+      sessionStorage.getItem('authToken') ||
+      sessionStorage.getItem('accessToken') ||
+      sessionStorage.getItem('token') ||
+      localStorage.getItem('authToken') ||
+      localStorage.getItem('accessToken');
+    if (stored) _cachedToken = stored;
     return stored || _cachedToken;
-  } catch (e) {
-    // Storage blocked (e.g. Safari Tracking Prevention, private mode) — use memory cache silently
-    // Don't log or throw - just use cached token if available
-    return _cachedToken || null;
+  } catch {
+    return _cachedToken ?? null;
   }
 }
 
+// ─── Path helpers ─────────────────────────────────────────────────────────────
 function normalizePath(req: HttpRequest<any>, apiConfig: ApiConfigService): string {
   const API_BASE = apiConfig.getBaseUrl();
-  // Strip protocol and host for any absolute URL to get just the path
   const withoutOrigin = req.url.replace(/^https?:\/\/[^/]+/i, '');
-  // Also strip configured API_BASE if it's an absolute backend URL
   const raw = withoutOrigin.replace(API_BASE, '');
   return raw.split('?')[0];
 }
 
-
-
-// Prevents duplicate concurrent refreshes (many parallel API calls all seeing no token).
-let isRefreshingGlobally = false;
-// Prevents multiple simultaneous logout redirects (race condition when multiple API calls
-// fire concurrently and all detect missing tokens before the router navigation completes).
+// ─── Guard: prevent concurrent logouts (race condition) ───────────────────────
 let isLoggingOut = false;
 
-function triggerLogout(auth: AuthService) {
+function triggerSessionExpired(auth: AuthService) {
   if (isLoggingOut) return;
   isLoggingOut = true;
-  auth.logout({ redirect: true }).catch(() => {}).finally(() => {
-    // Reset after navigation so a fresh login can work normally
-    setTimeout(() => { isLoggingOut = false; }, 5000);
-  });
+
+  // Show a visible alert so the user knows why they are being redirected.
+  // We use a small timeout so Angular can finish rendering before the redirect.
+  setTimeout(() => {
+    alert('⚠️ Session expired. Please log in again.');
+  }, 0);
+
+  auth
+    .logout({ redirect: true })
+    .catch(() => {})
+    .finally(() => {
+      setTimeout(() => {
+        isLoggingOut = false;
+      }, 5000);
+    });
 }
 
+// ─── Guard: prevent concurrent refresh calls ──────────────────────────────────
+let isRefreshingGlobally = false;
+
+// ─── Interceptor ──────────────────────────────────────────────────────────────
 export const authTokenInterceptor: HttpInterceptorFn = (req, next) => {
   const auth = inject(AuthService);
   const apiConfig = inject(ApiConfigService);
-  
-  // If a logout redirect is already in progress, abort all further API calls immediately
+
+  // If logout is already in progress abort any further API calls immediately.
   if (isLoggingOut) {
     return throwError(() => new Error('Session expired. Please log in again.'));
   }
+
+  // ── Attach Bearer token when the route requires it ────────────────────────
+  let processedReq = req;
   try {
     const path = normalizePath(req, apiConfig);
     const isApi = path.startsWith('/api');
-    const needsAuth = isApi && NEEDS_BEARER.some(r => r.test(path)) && !PUBLIC_AUTH.some(r => r.test(path));
+    const needsAuth =
+      isApi &&
+      NEEDS_BEARER.some((r) => r.test(path)) &&
+      !PUBLIC_AUTH.some((r) => r.test(path));
 
-    const token = needsAuth ? getSessionToken() : null;
-    if (needsAuth && !token) {
-      console.warn('⚠️ [authTokenInterceptor] No access token for protected endpoint:', path);
-      // Only attempt a proactive refresh if a refresh token exists (cookie or localStorage).
-      // Without one, redirect to login immediately to avoid unnecessary 405 errors.
-      const hasRefreshToken = (() => { try { return !!localStorage.getItem('refreshToken'); } catch { return false; } })();
-      // Skip refresh attempt if no refresh token AND no cached token
-      // This prevents unnecessary 401/CORS errors on unauthenticated public pages (home, login, etc.)
-      if (!hasRefreshToken && !_cachedToken) {
-        // No refresh token in storage and no in-memory cache — do NOT redirect
-        // Let the request proceed without auth and let the API return 401 if needed
-        console.warn('⚠️ [authTokenInterceptor] No token found, skipping refresh (user likely unauthenticated on public page)');
-        return next(req);
-      }
-      if (!hasRefreshToken) {
-        // Memory cache has a token but storage is blocked — use it directly
-        console.log('✅ [authTokenInterceptor] Using in-memory cached token (storage blocked)');
-        return next(req.clone({ setHeaders: { Authorization: `Bearer ${_cachedToken!}` } }));
-      }
-      if (isRefreshingGlobally) {
-        // Another in-flight request is already refreshing; wait then send with available token
-        return from(new Promise<void>(r => setTimeout(r, 800))).pipe(
-          switchMap(() => {
-            const t = getSessionToken();
-            return next(t ? req.clone({ setHeaders: { Authorization: `Bearer ${t}` } }) : req);
-          })
-        );
-      }
-      // Only attempt refresh if we have a refresh token; otherwise skip (user is likely on public page)
-      if (!hasRefreshToken) {
-        console.log('⚠️ [authTokenInterceptor] No refresh token, skipping proactive refresh for:', path);
-        return next(req);
-      }
-      console.log('🔄 [authTokenInterceptor] Proactive refresh (no access token, but has refresh token) for:', path);
-      isRefreshingGlobally = true;
-      return from(auth.refreshAccessToken()).pipe(
-        switchMap(() => {
-          isRefreshingGlobally = false;
-          const newToken = getSessionToken();
-          console.log('✅ [authTokenInterceptor] Proactive refresh done, retrying:', path);
-          const authed = newToken
-            ? req.clone({ setHeaders: { Authorization: `Bearer ${newToken}` } })
-            : req;
-          return next(authed);
-        }),
-        catchError((refreshErr) => {
-          isRefreshingGlobally = false;
-          const refreshStatus: number = refreshErr?.status ?? 0;
-          // For definitive server errors (4xx/5xx, e.g. 405), the refresh endpoint is broken
-          // or the token is invalid. Clear stale tokens and redirect to login immediately
-          // instead of falling through with no token (which causes a 401 storm).
-          if (refreshStatus >= 400 && refreshStatus < 600) {
-            console.warn(`⚠️ [authTokenInterceptor] Proactive refresh failed (HTTP ${refreshStatus}), clearing tokens and redirecting to login`);
-            auth.clearTokens();
-            triggerLogout(auth);
-            return throwError(() => new Error('Session expired. Please log in again.'));
-          }
-          console.warn('⚠️ [authTokenInterceptor] Proactive refresh failed:', refreshErr?.message);
-          // For network errors (status 0), fall through; the 401 handler below will retry
-          return next(req);
-        })
-      );
-    }
-    if (token) {
-      console.log('✅ [authTokenInterceptor] Adding Bearer token for:', path);
-      req = req.clone({ setHeaders: { Authorization: `Bearer ${token}` } });
-    }
-
-    // Ensure JSON headers on write when missing
-  if (isApi) {
-      const method = req.method?.toUpperCase?.() || '';
-      const hasBody = method === 'POST' || method === 'PUT' || method === 'PATCH' || method === 'DELETE';
-      if (hasBody && !req.headers.has('Content-Type')) {
-        req = req.clone({ setHeaders: { 'Content-Type': 'application/json', Accept: 'application/json' } });
-      }
-      // Avoid cross-origin cookies (most vercel endpoints reject). Use bearer token only.
-    }
-  } catch {}
-  return next(req).pipe(
-    catchError(err => {
-      try {
-        const path = normalizePath(req, apiConfig);
-        const isApi = path.startsWith('/api');
-        const isRefresh = /\/api\/auth\/refresh-token$/.test(path);
-        const isLogin = /\/api\/auth\/login$/.test(path);
-        const eligible = isApi && !isRefresh && !isLogin && err?.status === 401;
-        
-        console.log('🔍 [authTokenInterceptor] Error caught:', {
-          status: err?.status,
-          path,
-          isRefresh,
-          isLogin,
-          eligible,
-          isRefreshingGlobally
+    if (needsAuth) {
+      const token = getSessionToken();
+      if (token) {
+        processedReq = req.clone({
+          setHeaders: { Authorization: `Bearer ${token}` },
         });
-        
-        if (!eligible) return throwError(() => err);
-        
-        // The refresh token is an httpOnly cookie — JS cannot read it via localStorage.
-        // Always attempt the refresh; the browser will send the cookie automatically.
-        // If the refresh endpoint itself returns 401 the catchError below will logout.
-        
-        // If another request is already refreshing, wait a bit and retry once
+      }
+    }
+
+    // Ensure JSON Content-Type on mutating requests when missing.
+    if (isApi) {
+      const method = processedReq.method?.toUpperCase?.() ?? '';
+      const hasBody =
+        method === 'POST' ||
+        method === 'PUT' ||
+        method === 'PATCH' ||
+        method === 'DELETE';
+      if (hasBody && !processedReq.headers.has('Content-Type')) {
+        processedReq = processedReq.clone({
+          setHeaders: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+          },
+        });
+      }
+    }
+  } catch {
+    // If path normalisation fails fall through with the original request.
+  }
+
+  // ── Execute request and handle 401 ────────────────────────────────────────
+  return next(processedReq).pipe(
+    catchError((err) => {
+      try {
+        const path = normalizePath(processedReq, apiConfig);
+        const isRefreshEndpoint = /\/api\/auth\/refresh-token$/.test(path);
+        const isLoginEndpoint = /\/api\/auth\/login$/.test(path);
+        const is401 = err?.status === 401;
+        const isRetry = processedReq.context.get(IS_REFRESH_RETRY);
+
+        // ── Case 1: This was already a retried request → session truly expired ──
+        if (is401 && isRetry) {
+          console.warn(
+            '❌ [authInterceptor] Retried request still got 401. Session expired.',
+            path
+          );
+          triggerSessionExpired(auth);
+          return throwError(() => err);
+        }
+
+        // ── Case 2: Eligible for token refresh ────────────────────────────────
+        const eligible =
+          is401 && !isRefreshEndpoint && !isLoginEndpoint && !isRetry;
+
+        if (!eligible) {
+          return throwError(() => err);
+        }
+
+        // ── Case 3: Another refresh already in-flight → wait then retry once ──
         if (isRefreshingGlobally) {
-          console.warn('⚠️ [authTokenInterceptor] Already refreshing, waiting 1s before retry');
-          return from(new Promise<void>((resolve) => {
-            setTimeout(() => resolve(), 1000);
-          })).pipe(
+          console.warn(
+            '⚠️ [authInterceptor] Already refreshing, waiting 1 s before retry for:',
+            path
+          );
+          return from(
+            new Promise<void>((resolve) => setTimeout(resolve, 1000))
+          ).pipe(
             switchMap(() => {
               const newToken = getSessionToken();
-              if (newToken) {
-                console.log('✅ [authTokenInterceptor] Token refreshed by another request, retrying');
-                const needsAuth = NEEDS_BEARER.some(r => r.test(path)) && !PUBLIC_AUTH.some(r => r.test(path));
-                const retried = needsAuth
-                  ? req.clone({ setHeaders: { Authorization: `Bearer ${newToken}` } })
-                  : req;
-                return next(retried);
-              } else {
-                console.error('❌ [authTokenInterceptor] Still no token after wait, logging out');
-                triggerLogout(auth);
+              if (!newToken) {
+                triggerSessionExpired(auth);
                 return throwError(() => err);
               }
+              const needsAuth =
+                NEEDS_BEARER.some((r) => r.test(path)) &&
+                !PUBLIC_AUTH.some((r) => r.test(path));
+              const retried = needsAuth
+                ? processedReq.clone({
+                    setHeaders: { Authorization: `Bearer ${newToken}` },
+                    context: new HttpContext().set(IS_REFRESH_RETRY, true),
+                  })
+                : processedReq.clone({
+                    context: new HttpContext().set(IS_REFRESH_RETRY, true),
+                  });
+              return next(retried);
             })
           );
         }
-        
-        console.log('🔄 [authTokenInterceptor] Attempting token refresh for 401 on:', path);
+
+        // ── Case 4: First 401 for this request → call refresh-token endpoint ──
+        console.log(
+          '🔄 [authInterceptor] 401 received, attempting token refresh for:',
+          path
+        );
         isRefreshingGlobally = true;
-        
+
         return from(auth.refreshAccessToken()).pipe(
           switchMap(() => {
             isRefreshingGlobally = false;
-            console.log('✅ [authTokenInterceptor] Token refreshed successfully, retrying request');
-            const token = getSessionToken();
-            const needsAuth = NEEDS_BEARER.some(r => r.test(path)) && !PUBLIC_AUTH.some(r => r.test(path));
-            const retried = (token && needsAuth)
-              ? req.clone({ setHeaders: { Authorization: `Bearer ${token}` } })
-              : req;
+            const newToken = getSessionToken();
+            console.log(
+              '✅ [authInterceptor] Token refreshed. Retrying request:',
+              path
+            );
+
+            const needsAuth =
+              NEEDS_BEARER.some((r) => r.test(path)) &&
+              !PUBLIC_AUTH.some((r) => r.test(path));
+
+            // Mark the clone as IS_REFRESH_RETRY so a second 401 triggers logout.
+            const retried =
+              newToken && needsAuth
+                ? processedReq.clone({
+                    setHeaders: { Authorization: `Bearer ${newToken}` },
+                    context: new HttpContext().set(IS_REFRESH_RETRY, true),
+                  })
+                : processedReq.clone({
+                    context: new HttpContext().set(IS_REFRESH_RETRY, true),
+                  });
+
             return next(retried);
           }),
           catchError((refreshErr) => {
             isRefreshingGlobally = false;
-            // refresh failed, logout and bubble error
-            console.error('❌ [authTokenInterceptor] Token refresh failed, logging out:', {
-              error: refreshErr,
-              message: refreshErr?.message,
-              status: refreshErr?.status
-            });
-            triggerLogout(auth);
-            return throwError(() => err);
+            console.error(
+              '❌ [authInterceptor] Token refresh failed → session expired.',
+              refreshErr
+            );
+            triggerSessionExpired(auth);
+            return throwError(() => err); // bubble original 401 error
           })
         );
       } catch (interceptErr) {
-        console.error('❌ [authTokenInterceptor] Interceptor error:', interceptErr);
+        console.error('❌ [authInterceptor] Unexpected error:', interceptErr);
         return throwError(() => err);
       }
     })

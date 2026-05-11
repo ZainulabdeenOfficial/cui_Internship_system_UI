@@ -1,10 +1,11 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpContext } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import { firstValueFrom } from 'rxjs';
 import { CreateAccountRequest, CreateAccountResponse } from '../models/admin/create-account.models';
 type Decoded = { exp?: number };
 import { AuthService } from './auth.service';
+import { SKIP_GLOBAL_LOADING, SKIP_DEDUP } from '../../core/interceptors/http.interceptor';
 
 @Injectable({ providedIn: 'root' })
 export class AdminService {
@@ -940,7 +941,10 @@ export class AdminService {
     // Use public API endpoint for announcements (no authentication required)
     const publicApiUrl = 'https://cui-internship-git-dev-talhas-projects-59c8907e.vercel.app/api/announcements';
     try {
-      const res = await firstValueFrom(this.http.get<any>(publicApiUrl));
+      const context = new HttpContext()
+        .set(SKIP_GLOBAL_LOADING, true)
+        .set(SKIP_DEDUP, true);
+      const res = await firstValueFrom(this.http.get<any>(publicApiUrl, { context, withCredentials: false }));
       const list: any[] = Array.isArray(res?.announcements) ? res.announcements : (Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []));
       return list.map((x: any) => ({
         id: (x.id ?? x._id ?? '').toString(),
