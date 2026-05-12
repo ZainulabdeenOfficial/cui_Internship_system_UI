@@ -147,12 +147,11 @@ export class Admin {
       this.reviewCompanyFilter.search = '';
       this.loadReviewCompany().then(() => this.dataCache.mark(cacheKey));
     } else if (tab === 'complaints') {
-      if (!this.dataCache.isFresh(cacheKey)) {
-        this.complaintsPagination.page = 1;
-        this.complaintsFilter.status = '';
-        this.complaintsFilter.search = '';
-        setTimeout(() => this.loadComplaints().then(() => this.dataCache.mark(cacheKey)), 0);
-      }
+      // Reset to default view on first open; outer isFresh guard already prevents repeat fetches
+      this.complaintsPagination.page = 1;
+      this.complaintsFilter.status = '';
+      this.complaintsFilter.search = '';
+      this.loadComplaints().then(() => this.dataCache.mark(cacheKey));
     } else if (tab === 'formsRequest') {
       this.currentFormsSubTab = 'apexA';
       this.loadApexAForms().then(() => this.dataCache.mark(cacheKey));
@@ -1196,12 +1195,16 @@ export class Admin {
     }
   }
 
-  async loadComplaints(page?: number) {
-    try {
-      console.log('[Admin] Loading complaints, page:', page);
+  async loadComplaints(page?: number, forceLoader = false) {
+    // Only show full skeleton loader when there is no data yet (first load) OR when explicitly forced
+    // (e.g. user changes page/filter). On silent tab re-opens the existing list stays visible.
+    const isFirstLoad = this.complaintsList.length === 0;
+    const showLoader = isFirstLoad || forceLoader;
+    if (showLoader) {
       this.complaintsLoading = true;
-      this.complaintsError = null;
-      
+    }
+    this.complaintsError = null;
+    try {
       const result = await this.adminApi.getAdminComplaints({
         page: page || this.complaintsPagination.page,
         limit: this.complaintsPagination.limit,
@@ -1209,32 +1212,28 @@ export class Admin {
         search: this.complaintsFilter.search || undefined
       });
       
-      console.log('[Admin] Complaints loaded:', result);
-      
       this.complaintsList = result.complaints || [];
       this.complaintsPagination = result.pagination || { page: 1, limit: 10, total: 0, pages: 0 };
       this.complaintsStats = result.statistics || { OPEN: 0, IN_REVIEW: 0, RESOLVED: 0, DISMISSED: 0 };
-      
-      console.log('[Admin] Complaints list after load:', this.complaintsList.length, 'items');
     } catch (error: any) {
-      console.error('[Admin] Error loading complaints:', error);
       const msg = error?.error?.message || error?.message || 'Failed to load complaints';
       this.complaintsError = msg;
-      this.toast.danger(msg);
+      // Only toast on first load; silent on background refresh so UX isn't noisy
+      if (showLoader) this.toast.danger(msg);
     } finally {
-      this.complaintsLoading = false;
+      if (showLoader) this.complaintsLoading = false;
     }
   }
 
   async changeComplaintPage(page: number) {
     this.complaintsPagination.page = page;
-    await this.loadComplaints(page);
+    await this.loadComplaints(page, true); // force loader on explicit page change
   }
 
   async changeComplaintStatus(status: string | ''|'OPEN'|'IN_REVIEW'|'RESOLVED'|'DISMISSED') {
     this.complaintsFilter.status = status as any;
     this.complaintsPagination.page = 1;
-    await this.loadComplaints();
+    await this.loadComplaints(undefined, true); // force loader on explicit filter change
   }
 
   onComplaintSearchChange() {
