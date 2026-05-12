@@ -140,8 +140,8 @@ export class Home implements OnInit, OnDestroy {
   constructor() {}
 
   ngOnInit(): void {
-    // Only fetch announcements if cache is stale (first visit or >5 min old).
-    // On revisit the spinner will NOT show — data is already present in the store.
+    // Always fetch fresh from the public API on load.
+    // The public endpoint is no-auth and fast; stale localStorage data should not block.
     this.loadAnnouncements();
 
     queueMicrotask(() => {
@@ -155,9 +155,9 @@ export class Home implements OnInit, OnDestroy {
   }
 
   private async loadAnnouncements(): Promise<void> {
-    // Skip fetch + spinner if data is already fresh
-    if (this.cache.isFresh('announcements')) return;
     try {
+      // Always fetch from the public API — clears stale localStorage data first
+      // so old/archived items don't show while the fetch is in-flight.
       await this.store.loadAnnouncements();
       this.cache.mark('announcements');
       this.currentAnnouncementsPage.set(1);

@@ -1071,12 +1071,14 @@ export class AdminService {
       const qs = q.length ? `?${q.join('&')}` : '';
       const base = environment.apiBaseUrl.replace(/\/$/, '');
       const url = `${base}/api/admin/complaints${qs}`;
-      
-      console.log('[AdminService] Fetching complaints from:', url);
-      
-      const res = await firstValueFrom(this.http.get<any>(url, { headers: await this.authHeaders(false) }));
-      
-      console.log('[AdminService] Admin complaints response:', res);
+
+      // SKIP_DEDUP: each explicit call must go through (deduplicator was silently dropping re-fetches)
+      // SKIP_GLOBAL_LOADING: the complaints tab manages its own local loader; don't show the full-page spinner
+      const context = new HttpContext()
+        .set(SKIP_GLOBAL_LOADING, true)
+        .set(SKIP_DEDUP, true);
+
+      const res = await firstValueFrom(this.http.get<any>(url, { headers: await this.authHeaders(false), context }));
       
       const complaints: any[] = Array.isArray(res?.complaints) ? res.complaints : [];
       const pagination = res?.pagination ?? { page: params?.page ?? 1, limit: params?.limit ?? 10, total: 0, pages: 0 };
