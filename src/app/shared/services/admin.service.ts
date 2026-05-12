@@ -939,13 +939,24 @@ export class AdminService {
    */
   async getAnnouncements(): Promise<Array<{ id: string; message: string; title?: string; link?: string; pinned?: boolean; createdAt: string; createdBy?: any }>> {
     // Use public API endpoint for announcements (no authentication required)
+    // Using native fetch() instead of Angular HttpClient to bypass the HTTP interceptor,
+    // which adds Cache-Control/Pragma headers that trigger a CORS preflight OPTIONS request.
+    // The Vercel public endpoint only needs a plain GET — no custom headers needed.
     const publicApiUrl = 'https://cui-internship-git-dev-talhas-projects-59c8907e.vercel.app/api/announcements';
     try {
-      const context = new HttpContext()
-        .set(SKIP_GLOBAL_LOADING, true)
-        .set(SKIP_DEDUP, true);
-      const res = await firstValueFrom(this.http.get<any>(publicApiUrl, { context, withCredentials: false }));
-      const list: any[] = Array.isArray(res?.announcements) ? res.announcements : (Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []));
+      const response = await fetch(publicApiUrl, {
+        method: 'GET',
+        headers: { 'Accept': 'application/json' }
+      });
+      if (!response.ok) {
+        console.warn('Announcements API responded with', response.status);
+        return [];
+      }
+      const res = await response.json();
+      // API returns { message, data: [...] } — also handle legacy { announcements: [...] } shape
+      const list: any[] = Array.isArray(res?.data) ? res.data
+        : (Array.isArray(res?.announcements) ? res.announcements
+        : (Array.isArray(res) ? res : []));
       return list.map((x: any) => ({
         id: (x.id ?? x._id ?? '').toString(),
         message: x.message ?? '',
@@ -957,7 +968,6 @@ export class AdminService {
       })).filter(a => !!a.id);
     } catch (error) {
       console.warn('Failed to load announcements from public API:', error);
-      // If endpoint doesn't exist, return empty array
       return [];
     }
   }

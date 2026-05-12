@@ -46,18 +46,11 @@ export class Home implements OnInit, OnDestroy {
   });
 
   sortedAndFilteredAnnouncements = computed(() => {
-    const now = new Date();
     const allAnns = this.store.announcements() || [];
     
-    // Filter out archived announcements (older than 30 days)
-    const filtered = allAnns.filter(a => {
-      const annDate = new Date(a.createdAt);
-      const daysOld = Math.floor((now.getTime() - annDate.getTime()) / (1000 * 60 * 60 * 24));
-      return daysOld <= this.archivedAfterDays;
-    });
-
     // Sort: pinned first, then by date descending
-    return filtered.sort((a, b) => {
+    // NOTE: no client-side date filter — the backend controls which announcements are active
+    return allAnns.sort((a, b) => {
       if (a.pinned && !b.pinned) return -1;
       if (!a.pinned && b.pinned) return 1;
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
